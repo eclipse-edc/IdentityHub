@@ -45,7 +45,7 @@ import static org.eclipse.edc.identityhub.spi.authorization.AuthorizationResultH
 
 @Consumes(APPLICATION_JSON)
 @Produces(APPLICATION_JSON)
-@Path(Versions.UNSTABLE + "/participants")
+@Path(Versions.STABLE + "/participants")
 public class ParticipantContextApiController implements ParticipantContextApi {
 
     private final ParticipantManifestValidator participantManifestValidator;

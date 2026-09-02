@@ -34,7 +34,7 @@ import static org.eclipse.edc.identityhub.spi.authorization.AuthorizationResultH
 
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
-@Path(Versions.UNSTABLE + "/dids")
+@Path(Versions.STABLE + "/dids")
 public class GetAllDidsApiController implements GetAllDidsApi {
     private final DidDocumentService documentService;
 

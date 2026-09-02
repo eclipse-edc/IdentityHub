@@ -95,7 +95,7 @@ public class CredentialDefinitionApiEndToEndTest {
                     .contentType(ContentType.JSON)
                     .header(authorizeUser(USER, issuer))
                     .body(definition)
-                    .post("/v1beta/participants/%s/credentialdefinitions".formatted(USER))
+                    .post("/v1/participants/%s/credentialdefinitions".formatted(USER))
                     .then()
                     .statusCode(201)
                     .header("Location", Matchers.endsWith("/credentialdefinitions/test-definition-id"));
@@ -129,7 +129,7 @@ public class CredentialDefinitionApiEndToEndTest {
                     .contentType(ContentType.JSON)
                     .header(authorizeUser(USER, issuer))
                     .body(definition)
-                    .post("/v1beta/participants/%s/credentialdefinitions".formatted(USER))
+                    .post("/v1/participants/%s/credentialdefinitions".formatted(USER))
                     .then()
                     .statusCode(400);
 
@@ -162,7 +162,7 @@ public class CredentialDefinitionApiEndToEndTest {
                               "format": "VC1_0_JWT"
                             }
                             """)
-                    .post("/v1beta/participants/%s/credentialdefinitions".formatted(USER))
+                    .post("/v1/participants/%s/credentialdefinitions".formatted(USER))
                     .then()
                     .log().all()
                     .statusCode(409);
@@ -180,7 +180,7 @@ public class CredentialDefinitionApiEndToEndTest {
                               "id": "test-definition-id"
                             }
                             """)
-                    .post("/v1beta/participants/%s/credentialdefinitions".formatted(USER))
+                    .post("/v1/participants/%s/credentialdefinitions".formatted(USER))
                     .then()
                     .statusCode(400);
         }
@@ -202,7 +202,7 @@ public class CredentialDefinitionApiEndToEndTest {
                               "format": "VC1_0_JWT"
                             }
                             """)
-                    .post("/v1beta/participants/%s/credentialdefinitions".formatted(USER))
+                    .post("/v1/participants/%s/credentialdefinitions".formatted(USER))
                     .then()
                     .statusCode(400)
                     .body("[0].message", containsString("notfound"));
@@ -228,7 +228,7 @@ public class CredentialDefinitionApiEndToEndTest {
                     .contentType(ContentType.JSON)
                     .header(authorizeUser(USER, issuer))
                     .body(QuerySpec.Builder.newInstance().filter(new Criterion("credentialType", "=", "MembershipCredential")).build())
-                    .post("/v1beta/participants/%s/credentialdefinitions/query".formatted(USER))
+                    .post("/v1/participants/%s/credentialdefinitions/query".formatted(USER))
                     .then()
                     .statusCode(200)
                     .body(Matchers.notNullValue())
@@ -256,7 +256,7 @@ public class CredentialDefinitionApiEndToEndTest {
                     .contentType(ContentType.JSON)
                     .header(authorizeUser(USER, issuer))
                     .body(QuerySpec.Builder.newInstance().filter(new Criterion("id", "=", definition.getId())).build())
-                    .post("/v1beta/participants/%s/credentialdefinitions/query".formatted(USER))
+                    .post("/v1/participants/%s/credentialdefinitions/query".formatted(USER))
                     .then()
                     .statusCode(200)
                     .body(Matchers.notNullValue())
@@ -273,7 +273,7 @@ public class CredentialDefinitionApiEndToEndTest {
                     .contentType(ContentType.JSON)
                     .header(authorizeUser(USER, issuer))
                     .body(QuerySpec.Builder.newInstance().filter(new Criterion("id", "=", "test-credential-definition-id")).build())
-                    .post("/v1beta/participants/%s/credentialdefinitions/query".formatted(USER))
+                    .post("/v1/participants/%s/credentialdefinitions/query".formatted(USER))
                     .then()
                     .statusCode(200)
                     .body(Matchers.notNullValue())
@@ -299,7 +299,7 @@ public class CredentialDefinitionApiEndToEndTest {
 
             var res = issuer.getAdminEndpoint().baseRequest()
                     .header(authorizeUser(USER, issuer))
-                    .get("/v1beta/participants/%s/credentialdefinitions/test-credential-definition-id".formatted(USER))
+                    .get("/v1/participants/%s/credentialdefinitions/test-credential-definition-id".formatted(USER))
                     .then()
                     .statusCode(200)
                     .body(Matchers.notNullValue())
@@ -325,7 +325,7 @@ public class CredentialDefinitionApiEndToEndTest {
 
             issuer.getAdminEndpoint().baseRequest()
                     .header(authorizeUser(USER, issuer))
-                    .get("/v1beta/participants/%s/credentialdefinitions/test-credential-definition-id".formatted(USER))
+                    .get("/v1/participants/%s/credentialdefinitions/test-credential-definition-id".formatted(USER))
                     .then()
                     .statusCode(404);
 
@@ -348,7 +348,7 @@ public class CredentialDefinitionApiEndToEndTest {
 
             issuer.getAdminEndpoint().baseRequest()
                     .header(authorizeUser("anotherUser", issuer))
-                    .get("/v1beta/participants/%s/credentialdefinitions/test-credential-definition-id".formatted(USER))
+                    .get("/v1/participants/%s/credentialdefinitions/test-credential-definition-id".formatted(USER))
                     .then()
                     .statusCode(403);
 
@@ -361,7 +361,7 @@ public class CredentialDefinitionApiEndToEndTest {
 
             issuer.getAdminEndpoint().baseRequest()
                     .header(authorizeUser(USER, issuer))
-                    .get("/v1beta/participants/%s/credentialdefinitions/test-credential-definition-id".formatted(USER))
+                    .get("/v1/participants/%s/credentialdefinitions/test-credential-definition-id".formatted(USER))
                     .then()
                     .statusCode(404);
         }
@@ -395,7 +395,7 @@ public class CredentialDefinitionApiEndToEndTest {
                     .contentType(ContentType.JSON)
                     .header(authorizeUser(USER, issuer))
                     .body(definition)
-                    .put("/v1beta/participants/%s/credentialdefinitions".formatted(USER))
+                    .put("/v1/participants/%s/credentialdefinitions".formatted(USER))
                     .then()
                     .statusCode(200);
 
@@ -424,7 +424,7 @@ public class CredentialDefinitionApiEndToEndTest {
                     .contentType(ContentType.JSON)
                     .header(authorizeUser(USER, issuer))
                     .body(definition)
-                    .put("/v1beta/participants/%s/credentialdefinitions".formatted(USER))
+                    .put("/v1/participants/%s/credentialdefinitions".formatted(USER))
                     .then()
                     .statusCode(404);
 
@@ -458,7 +458,7 @@ public class CredentialDefinitionApiEndToEndTest {
                     .contentType(ContentType.JSON)
                     .header(authorizeUser(USER, issuer))
                     .body(definition)
-                    .put("/v1beta/participants/%s/credentialdefinitions".formatted(USER))
+                    .put("/v1/participants/%s/credentialdefinitions".formatted(USER))
                     .then()
                     .statusCode(404);
 
@@ -493,7 +493,7 @@ public class CredentialDefinitionApiEndToEndTest {
                     .contentType(ContentType.JSON)
                     .header(authorizeUser("anotherUser", issuer))
                     .body(definition)
-                    .put("/v1beta/participants/%s/credentialdefinitions".formatted(USER))
+                    .put("/v1/participants/%s/credentialdefinitions".formatted(USER))
                     .then()
                     .statusCode(403);
 
@@ -516,7 +516,7 @@ public class CredentialDefinitionApiEndToEndTest {
 
             issuer.getAdminEndpoint().baseRequest()
                     .header(authorizeUser(USER, issuer))
-                    .delete("/v1beta/participants/%s/credentialdefinitions/test-credential-definition-id".formatted(USER))
+                    .delete("/v1/participants/%s/credentialdefinitions/test-credential-definition-id".formatted(USER))
                     .then()
                     .statusCode(204);
 
@@ -531,7 +531,7 @@ public class CredentialDefinitionApiEndToEndTest {
 
             issuer.getAdminEndpoint().baseRequest()
                     .header(authorizeUser(USER, issuer))
-                    .delete("/v1beta/participants/%s/credentialdefinitions/test-credential-definition-id".formatted(USER))
+                    .delete("/v1/participants/%s/credentialdefinitions/test-credential-definition-id".formatted(USER))
                     .then()
                     .statusCode(404);
 
@@ -554,7 +554,7 @@ public class CredentialDefinitionApiEndToEndTest {
 
             issuer.getAdminEndpoint().baseRequest()
                     .header(authorizeUser("another-user", issuer))
-                    .delete("/v1beta/participants/%s/credentialdefinitions/test-credential-definition-id".formatted(USER))
+                    .delete("/v1/participants/%s/credentialdefinitions/test-credential-definition-id".formatted(USER))
                     .then()
                     .statusCode(403);
 
@@ -586,19 +586,16 @@ public class CredentialDefinitionApiEndToEndTest {
     @Nested
     @PostgresqlIntegrationTest
     class Postgres extends Tests {
+        static final String ISSUER = "issuer";
 
         @Order(0)
         @RegisterExtension
         static final PostgresqlEndToEndExtension POSTGRESQL_EXTENSION = new PostgresqlEndToEndExtension();
-
-        private static final String ISSUER = "issuer";
-
         @Order(1)
         @RegisterExtension
         static final BeforeAllCallback POSTGRES_CONTAINER_STARTER = context -> {
             POSTGRESQL_EXTENSION.createDatabase(ISSUER);
         };
-
         @Order(2)
         @RegisterExtension
         static final RuntimeExtension ISSUER_EXTENSION = ComponentRuntimeExtension.Builder.newInstance()
@@ -619,7 +616,7 @@ public class CredentialDefinitionApiEndToEndTest {
     @Nested
     @EndToEndTest
     class InMemoryOauth2 extends Tests {
-        private static final String ISSUER = "issuer";
+        static final String ISSUER = "issuer";
 
         @Order(0)
         @RegisterExtension
@@ -648,11 +645,8 @@ public class CredentialDefinitionApiEndToEndTest {
     @Nested
     @PostgresqlIntegrationTest
     class PostgresOauth2 extends Tests {
-        @Order(0)
-        @RegisterExtension
-        static final PostgresqlEndToEndExtension POSTGRESQL_EXTENSION = new PostgresqlEndToEndExtension();
-        private static final String ISSUER = "issuer";
 
+        static final String ISSUER = "issuer";
         @Order(0)
         @RegisterExtension
         static final OauthServerEndToEndExtension OAUTH_2_EXTENSION = OauthServerEndToEndExtension.Builder.newInstance()
@@ -660,6 +654,9 @@ public class CredentialDefinitionApiEndToEndTest {
                 .signingKeyId("signing-key-id")
                 .build();
 
+        @Order(0)
+        @RegisterExtension
+        static final PostgresqlEndToEndExtension POSTGRESQL_EXTENSION = new PostgresqlEndToEndExtension();
         @Order(2)
         @RegisterExtension
         static final RuntimeExtension ISSUER_EXTENSION = ComponentRuntimeExtension.Builder.newInstance()
@@ -671,12 +668,12 @@ public class CredentialDefinitionApiEndToEndTest {
                 .configurationProvider(() -> POSTGRESQL_EXTENSION.configFor(ISSUER))
                 .paramProvider(IssuerService.class, IssuerService::forContext)
                 .build();
-
         @Order(1)
         @RegisterExtension
         static final BeforeAllCallback POSTGRES_CONTAINER_STARTER = context -> {
             POSTGRESQL_EXTENSION.createDatabase(ISSUER);
         };
+
 
         @Override
         protected Header authorizeUser(String participantContextId, IssuerService issuerService) {

@@ -113,7 +113,7 @@ public class VerifiableCredentialApiEndToEndTest {
                     .allSatisfy(auth -> identityHub.getIdentityEndpoint().baseRequest()
                             .contentType(JSON)
                             .header(auth)
-                            .get("/v1beta/participants/%s/credentials/%s".formatted(user, resourceId))
+                            .get("/v1/participants/%s/credentials/%s".formatted(user, resourceId))
                             .then()
                             .log().ifValidationFails()
                             .statusCode(200)
@@ -138,7 +138,7 @@ public class VerifiableCredentialApiEndToEndTest {
             identityHub.getIdentityEndpoint().baseRequest()
                     .contentType(JSON)
                     .header(authorizeUser(SUPER_USER, identityHub))
-                    .get("/v1beta/participants/%s/credentials/%s".formatted(user2, resourceIdUser1))
+                    .get("/v1/participants/%s/credentials/%s".formatted(user2, resourceIdUser1))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(404)
@@ -160,7 +160,7 @@ public class VerifiableCredentialApiEndToEndTest {
                                 .contentType(JSON)
                                 .header(auth)
                                 .body(manifest)
-                                .post("/v1beta/participants/%s/credentials".formatted(user))
+                                .post("/v1/participants/%s/credentials".formatted(user))
                                 .then()
                                 .log().ifValidationFails()
                                 .statusCode(204)
@@ -187,7 +187,7 @@ public class VerifiableCredentialApiEndToEndTest {
                                 .contentType(JSON)
                                 .header(auth)
                                 .body(manifest)
-                                .put("/v1beta/participants/%s/credentials".formatted(user))
+                                .put("/v1/participants/%s/credentials".formatted(user))
                                 .then()
                                 .log().ifValidationFails()
                                 .statusCode(204)
@@ -220,7 +220,7 @@ public class VerifiableCredentialApiEndToEndTest {
                     .contentType(JSON)
                     .header(authorizeUser(SUPER_USER, identityHub))
                     .body(updateManifest)
-                    .put("/v1beta/participants/%s/credentials".formatted(otherUser))
+                    .put("/v1/participants/%s/credentials".formatted(otherUser))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(404)
@@ -242,7 +242,7 @@ public class VerifiableCredentialApiEndToEndTest {
                         identityHub.getIdentityEndpoint().baseRequest()
                                 .contentType(JSON)
                                 .header(auth)
-                                .delete("/v1beta/participants/%s/credentials/%s".formatted(user, resourceId))
+                                .delete("/v1/participants/%s/credentials/%s".formatted(user, resourceId))
                                 .then()
                                 .log().ifValidationFails()
                                 .statusCode(204)
@@ -265,7 +265,7 @@ public class VerifiableCredentialApiEndToEndTest {
                     .allSatisfy(auth -> identityHub.getIdentityEndpoint().baseRequest()
                             .contentType(JSON)
                             .header(auth)
-                            .get("/v1beta/participants/%s/credentials?type=%s".formatted(user, credential.getType().get(0)))
+                            .get("/v1/participants/%s/credentials?type=%s".formatted(user, credential.getType().get(0)))
                             .then()
                             .log().ifValidationFails()
                             .statusCode(200)
@@ -285,7 +285,7 @@ public class VerifiableCredentialApiEndToEndTest {
                     .allSatisfy(t -> identityHub.getIdentityEndpoint().baseRequest()
                             .contentType(JSON)
                             .header(t)
-                            .get("/v1beta/participants/%s/credentials".formatted(user))
+                            .get("/v1/participants/%s/credentials".formatted(user))
                             .then()
                             .log().ifValidationFails()
                             .statusCode(200)
@@ -342,11 +342,11 @@ public class VerifiableCredentialApiEndToEndTest {
                         .contentType(JSON)
                         .header(auth)
                         .body(request)
-                        .post("/v1beta/participants/%s/credentials/request".formatted(user))
+                        .post("/v1/participants/%s/credentials/request".formatted(user))
                         .then()
                         .log().ifValidationFails()
                         .statusCode(201)
-                        .header("Location", endsWith("/v1beta/participants/%s/credentials/request/%s".formatted(user, holderPid)));
+                        .header("Location", endsWith("/v1/participants/%s/credentials/request/%s".formatted(user, holderPid)));
 
                 // wait until the state machine has progress to the REQUESTED state
                 await().pollInterval(Duration.ofSeconds(1))
@@ -382,7 +382,7 @@ public class VerifiableCredentialApiEndToEndTest {
             identityHub.getIdentityEndpoint().baseRequest()
                     .contentType(JSON)
                     .header(header)
-                    .get("/v1beta/participants/%s/credentials/request/%s".formatted(userId, holderPid))
+                    .get("/v1/participants/%s/credentials/request/%s".formatted(userId, holderPid))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(200)
@@ -413,7 +413,7 @@ public class VerifiableCredentialApiEndToEndTest {
             identityHub.getIdentityEndpoint().baseRequest()
                     .contentType(JSON)
                     .header(auth2) // user 2 tries to access credential request status for user 1 -> not allowed!
-                    .get("/v1beta/participants/%s/credentials/request/%s".formatted(user1, holderPid))
+                    .get("/v1/participants/%s/credentials/request/%s".formatted(user1, holderPid))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(403);
@@ -457,11 +457,11 @@ public class VerifiableCredentialApiEndToEndTest {
                         .contentType(JSON)
                         .header(auth)
                         .body(request)
-                        .post("/v1beta/participants/%s/credentials/request".formatted(user))
+                        .post("/v1/participants/%s/credentials/request".formatted(user))
                         .then()
                         .log().ifValidationFails()
                         .statusCode(201)
-                        .header("Location", endsWith("/v1beta/participants/%s/credentials/request/%s".formatted(user, holderPid)));
+                        .header("Location", endsWith("/v1/participants/%s/credentials/request/%s".formatted(user, holderPid)));
 
                 // the request transitions to ERROR asynchronously, carrying the issuer's error in errorDetail
                 await().pollInterval(Duration.ofSeconds(1))
@@ -479,7 +479,7 @@ public class VerifiableCredentialApiEndToEndTest {
                 identityHub.getIdentityEndpoint().baseRequest()
                         .contentType(JSON)
                         .header(auth)
-                        .get("/v1beta/participants/%s/credentials/request/%s".formatted(user, holderPid))
+                        .get("/v1/participants/%s/credentials/request/%s".formatted(user, holderPid))
                         .then()
                         .log().ifValidationFails()
                         .statusCode(200)
@@ -499,7 +499,7 @@ public class VerifiableCredentialApiEndToEndTest {
             identityHub.getIdentityEndpoint().baseRequest()
                     .contentType(JSON)
                     .header(auth)
-                    .get("/v1beta/participants/%s/credentials/request/%s".formatted(userId, holderPid))
+                    .get("/v1/participants/%s/credentials/request/%s".formatted(userId, holderPid))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(404);
@@ -530,7 +530,7 @@ public class VerifiableCredentialApiEndToEndTest {
             identityHub.getIdentityEndpoint().baseRequest()
                     .contentType(JSON)
                     .header(authA)
-                    .get("/v1beta/participants/%s/credentials/request/%s".formatted(participantA, holderPidOfB))
+                    .get("/v1/participants/%s/credentials/request/%s".formatted(participantA, holderPidOfB))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(404);
@@ -552,7 +552,7 @@ public class VerifiableCredentialApiEndToEndTest {
             identityHub.getIdentityEndpoint().baseRequest()
                     .contentType(JSON)
                     .header(superUserAuth)
-                    .get("/v1beta/credentials")
+                    .get("/v1/credentials")
                     .then()
                     .log().ifValidationFails()
                     .statusCode(200)
@@ -570,7 +570,7 @@ public class VerifiableCredentialApiEndToEndTest {
             identityHub.getIdentityEndpoint().baseRequest()
                     .contentType(JSON)
                     .header(userAuth)
-                    .get("/v1beta/credentials")
+                    .get("/v1/credentials")
                     .then()
                     .log().ifValidationFails()
                     .statusCode(403);
@@ -609,18 +609,15 @@ public class VerifiableCredentialApiEndToEndTest {
     @Nested
     @PostgresqlIntegrationTest
     class Postgres extends Tests {
-
+        static final String DB_NAME = "runtime";
         @Order(0)
         @RegisterExtension
         static final PostgresqlEndToEndExtension POSTGRESQL_EXTENSION = new PostgresqlEndToEndExtension();
-        private static final String DB_NAME = "runtime";
-
         @Order(1)
         @RegisterExtension
         static final BeforeAllCallback POSTGRES_CONTAINER_STARTER = context -> {
             POSTGRESQL_EXTENSION.createDatabase(DB_NAME);
         };
-
         @Order(2)
         @RegisterExtension
         static final RuntimeExtension IDENTITY_HUB_EXTENSION = ComponentRuntimeExtension.Builder.newInstance()
@@ -633,6 +630,7 @@ public class VerifiableCredentialApiEndToEndTest {
                 .build()
                 .registerServiceMock(DidResolverRegistry.class, DID_RESOLVER_REGISTRY);
 
+
         @Override
         protected Header authorizeUser(String participantContextId, IdentityHub identityHub) {
             return authorizeTokenBased(participantContextId, identityHub);
@@ -642,8 +640,8 @@ public class VerifiableCredentialApiEndToEndTest {
     @Nested
     @EndToEndTest
     class InMemoryOauth2 extends Tests {
+        static final String ISSUER = "issuer";
 
-        private static final String ISSUER = "issuer";
         @Order(0)
         @RegisterExtension
         static final OauthServerEndToEndExtension OAUTH_2_EXTENSION = OauthServerEndToEndExtension.Builder.newInstance()
@@ -662,6 +660,7 @@ public class VerifiableCredentialApiEndToEndTest {
                 .build()
                 .registerServiceMock(DidResolverRegistry.class, DID_RESOLVER_REGISTRY);
 
+
         @Override
         protected Header authorizeUser(String participantContextId, IdentityHub identityHub) {
             return authorizeOauth2(participantContextId, identityHub, OAUTH_2_EXTENSION.getAuthServer());
@@ -671,17 +670,17 @@ public class VerifiableCredentialApiEndToEndTest {
     @Nested
     @EndToEndTest
     class PostgresOauth2 extends Tests {
+        static final String ISSUER = "issuer";
+        static final String DB_NAME = "runtime";
 
-        @Order(0)
-        @RegisterExtension
-        static final PostgresqlEndToEndExtension POSTGRESQL_EXTENSION = new PostgresqlEndToEndExtension();
-        private static final String ISSUER = "issuer";
         @Order(0)
         @RegisterExtension
         static final OauthServerEndToEndExtension OAUTH_2_EXTENSION = OauthServerEndToEndExtension.Builder.newInstance()
                 .issuer(ISSUER)
                 .build();
-        private static final String DB_NAME = "runtime";
+        @Order(0)
+        @RegisterExtension
+        static final PostgresqlEndToEndExtension POSTGRESQL_EXTENSION = new PostgresqlEndToEndExtension();
         @Order(1)
         @RegisterExtension
         static final BeforeAllCallback POSTGRES_CONTAINER_STARTER = context -> {
@@ -699,6 +698,7 @@ public class VerifiableCredentialApiEndToEndTest {
                 .paramProvider(IdentityHub.class, IdentityHub::forContext)
                 .build()
                 .registerServiceMock(DidResolverRegistry.class, DID_RESOLVER_REGISTRY);
+
 
         @Override
         protected Header authorizeUser(String participantContextId, IdentityHub identityHub) {

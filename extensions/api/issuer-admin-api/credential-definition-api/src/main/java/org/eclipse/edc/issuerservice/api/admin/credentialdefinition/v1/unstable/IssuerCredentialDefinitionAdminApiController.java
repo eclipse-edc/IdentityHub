@@ -43,7 +43,7 @@ import static org.eclipse.edc.web.spi.exception.ServiceResultHandler.exceptionMa
 
 @Consumes(APPLICATION_JSON)
 @Produces(APPLICATION_JSON)
-@Path(Versions.UNSTABLE + "/participants/{participantContextId}/credentialdefinitions")
+@Path(Versions.STABLE + "/participants/{participantContextId}/credentialdefinitions")
 public class IssuerCredentialDefinitionAdminApiController implements IssuerCredentialDefinitionAdminApi {
 
     private final AuthorizationService authorizationService;
@@ -61,7 +61,7 @@ public class IssuerCredentialDefinitionAdminApiController implements IssuerCrede
     public Response createCredentialDefinition(@PathParam("participantContextId") String participantContextId, CredentialDefinitionDto definitionDto, @Context SecurityContext context) {
         return authorizationService.authorize(context, participantContextId, participantContextId, IdentityHubParticipantContext.class)
                 .compose(u -> credentialDefinitionService.createCredentialDefinition(definitionDto.toCredentialDefinition(participantContextId)))
-                .map(v -> Response.created(URI.create(Versions.UNSTABLE + "/participants/%s/credentialdefinitions/%s".formatted(participantContextId, definitionDto.getId()))).build())
+                .map(v -> Response.created(URI.create(Versions.STABLE + "/participants/%s/credentialdefinitions/%s".formatted(participantContextId, definitionDto.getId()))).build())
                 .orElseThrow(exceptionMapper(CredentialDefinition.class, definitionDto.getId()));
     }
 

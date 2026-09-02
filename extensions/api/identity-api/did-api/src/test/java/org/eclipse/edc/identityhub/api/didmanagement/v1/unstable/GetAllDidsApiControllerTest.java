@@ -42,7 +42,7 @@ class GetAllDidsApiControllerTest extends RestControllerTestBase {
         var docs = given()
                 .when()
                 .contentType("application/json")
-                .baseUri("http://localhost:" + port + Versions.UNSTABLE + "/dids")
+                .baseUri("http://localhost:" + port + Versions.STABLE + "/dids")
                 .get()
                 .then()
                 .statusCode(200)

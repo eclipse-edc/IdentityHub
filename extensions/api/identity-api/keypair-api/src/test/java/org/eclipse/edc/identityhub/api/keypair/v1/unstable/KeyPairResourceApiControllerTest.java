@@ -161,7 +161,7 @@ class KeyPairResourceApiControllerTest extends RestControllerTestBase {
     }
 
     @ParameterizedTest(name = "Make default: {0}")
-    @ValueSource(booleans = { true, false })
+    @ValueSource(booleans = {true, false})
     void addKeyPair(boolean makeDefault) {
         var descriptor = createKeyDescriptor()
                 .build();
@@ -364,7 +364,7 @@ class KeyPairResourceApiControllerTest extends RestControllerTestBase {
     private RequestSpecification baseRequest() {
         return given()
                 .contentType("application/json")
-                .baseUri("http://localhost:" + port + Versions.UNSTABLE + "/participants/%s/keypairs".formatted(PARTICIPANT_ID))
+                .baseUri("http://localhost:" + port + Versions.STABLE + "/participants/%s/keypairs".formatted(PARTICIPANT_ID))
                 .when();
     }
 }

@@ -84,7 +84,7 @@ public class AttestationApiEndToEndTest {
                     .contentType(JSON)
                     .header(authorizeUser(USER, issuerService))
                     .body(createAttestationDefinition("test-id", "test-type", Map.of("foo", "bar")))
-                    .post("/v1beta/participants/%s/attestations".formatted(USER))
+                    .post("/v1/participants/%s/attestations".formatted(USER))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(201);
@@ -99,7 +99,7 @@ public class AttestationApiEndToEndTest {
                     .contentType(JSON)
                     .header(authorizeUser("anotherUser", issuer))
                     .body(createAttestationDefinition("test-id", "test-type", Map.of("foo", "bar")))
-                    .post("/v1beta/participants/%s/attestations".formatted(USER))
+                    .post("/v1/participants/%s/attestations".formatted(USER))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(403);
@@ -113,7 +113,7 @@ public class AttestationApiEndToEndTest {
                     .contentType(JSON)
                     .header(authorizeUser(USER, issuer))
                     .body(createAttestationDefinition("test-id", "test-failure-type", Map.of("foo", "bar")))
-                    .post("/v1beta/participants/%s/attestations".formatted(USER))
+                    .post("/v1/participants/%s/attestations".formatted(USER))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(400);
@@ -146,7 +146,7 @@ public class AttestationApiEndToEndTest {
                             .sortOrder(SortOrder.ASC)
                             .filter(new Criterion("attestationType", "=", "test-type"))
                             .build())
-                    .post("/v1beta/participants/%s/attestations/query".formatted(USER))
+                    .post("/v1/participants/%s/attestations/query".formatted(USER))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(200)
@@ -173,7 +173,7 @@ public class AttestationApiEndToEndTest {
                             .sortOrder(SortOrder.ASC)
                             .filter(new Criterion("attestationType", "=", "test-type"))
                             .build())
-                    .post("/v1beta/participants/%s/attestations/query".formatted(USER))
+                    .post("/v1/participants/%s/attestations/query".formatted(USER))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(200)
@@ -229,12 +229,11 @@ public class AttestationApiEndToEndTest {
     @PostgresqlIntegrationTest
     class Postgres extends Tests {
 
+        static final String ISSUER = "issuer";
+
         @Order(0)
         @RegisterExtension
         static final PostgresqlEndToEndExtension POSTGRESQL_EXTENSION = new PostgresqlEndToEndExtension();
-
-        private static final String ISSUER = "issuer";
-
         @Order(1)
         @RegisterExtension
         static final BeforeAllCallback POSTGRES_CONTAINER_STARTER = context -> {
@@ -262,7 +261,7 @@ public class AttestationApiEndToEndTest {
     @Nested
     @EndToEndTest
     class InMemoryOauth2 extends Tests {
-        private static final String ISSUER = "issuer";
+        static final String ISSUER = "issuer";
 
         @Order(0)
         @RegisterExtension
@@ -281,6 +280,7 @@ public class AttestationApiEndToEndTest {
                 .paramProvider(IssuerService.class, IssuerService::forContext)
                 .build();
 
+
         @Override
         protected Header authorizeUser(String participantContextId, IssuerService issuerService) {
             return authorizeOauth2(participantContextId, issuerService, OAUTH_2_EXTENSION.getAuthServer());
@@ -290,10 +290,8 @@ public class AttestationApiEndToEndTest {
     @Nested
     @PostgresqlIntegrationTest
     class PostgresOauth2 extends Tests {
-        @Order(0)
-        @RegisterExtension
-        static final PostgresqlEndToEndExtension POSTGRESQL_EXTENSION = new PostgresqlEndToEndExtension();
-        private static final String ISSUER = "issuer";
+
+        static final String ISSUER = "issuer";
 
         @Order(0)
         @RegisterExtension
@@ -301,6 +299,10 @@ public class AttestationApiEndToEndTest {
                 .issuer(ISSUER)
                 .signingKeyId("signing-key-id")
                 .build();
+
+        @Order(0)
+        @RegisterExtension
+        static final PostgresqlEndToEndExtension POSTGRESQL_EXTENSION = new PostgresqlEndToEndExtension();
         @Order(2)
         @RegisterExtension
         static final RuntimeExtension ISSUER_EXTENSION = ComponentRuntimeExtension.Builder.newInstance()
@@ -317,6 +319,7 @@ public class AttestationApiEndToEndTest {
         static final BeforeAllCallback POSTGRES_CONTAINER_STARTER = context -> {
             POSTGRESQL_EXTENSION.createDatabase(ISSUER);
         };
+
 
         @Override
         protected Header authorizeUser(String participantContextId, IssuerService issuerService) {

@@ -112,7 +112,7 @@ public class IdentityHubParticipantContextApiEndToEndTest {
 
             var su = identityHub.getIdentityEndpoint().baseRequest()
                     .header(apikey)
-                    .get("/v1beta/participants/" + SUPER_USER)
+                    .get("/v1/participants/" + SUPER_USER)
                     .then()
                     .statusCode(200)
                     .extract().body().as(IdentityHubParticipantContext.class);
@@ -142,7 +142,7 @@ public class IdentityHubParticipantContextApiEndToEndTest {
             identityHub.getIdentityEndpoint().baseRequest()
                     .header(userAuth)
                     .contentType(ContentType.JSON)
-                    .get("/v1beta/participants/" + user2)
+                    .get("/v1/participants/" + user2)
                     .then()
                     .log().ifValidationFails()
                     .statusCode(403);
@@ -159,7 +159,7 @@ public class IdentityHubParticipantContextApiEndToEndTest {
                     .header(authorizeUser(SUPER_USER, identityHub))
                     .contentType(ContentType.JSON)
                     .body(manifest)
-                    .post("/v1beta/participants/")
+                    .post("/v1/participants/")
                     .then()
                     .log().ifError()
                     .statusCode(anyOf(equalTo(200), equalTo(204)))
@@ -186,7 +186,7 @@ public class IdentityHubParticipantContextApiEndToEndTest {
                     .header(authorizeUser(SUPER_USER, identityHub))
                     .contentType(ContentType.JSON)
                     .body(manifest)
-                    .post("/v1beta/participants/")
+                    .post("/v1/participants/")
                     .then()
                     .log().ifError()
                     .statusCode(anyOf(equalTo(200), equalTo(204)))
@@ -213,7 +213,7 @@ public class IdentityHubParticipantContextApiEndToEndTest {
                     .header(authorizeUser(SUPER_USER, identityHub))
                     .contentType(ContentType.JSON)
                     .body(manifest)
-                    .post("/v1beta/participants/")
+                    .post("/v1/participants/")
                     .then()
                     .log().ifError()
                     .statusCode(anyOf(equalTo(200), equalTo(204)))
@@ -246,7 +246,7 @@ public class IdentityHubParticipantContextApiEndToEndTest {
                     .header(authorizeUser(SUPER_USER, identityHub))
                     .contentType(ContentType.JSON)
                     .body(manifest)
-                    .post("/v1beta/participants/")
+                    .post("/v1/participants/")
                     .then()
                     .log().ifError()
                     .statusCode(anyOf(equalTo(200), equalTo(204)))
@@ -283,7 +283,7 @@ public class IdentityHubParticipantContextApiEndToEndTest {
                     .header(authorizeUser(SUPER_USER, identityHub))
                     .contentType(ContentType.JSON)
                     .body(manifest)
-                    .post("/v1beta/participants/")
+                    .post("/v1/participants/")
                     .then()
                     .log().ifError()
                     .statusCode(anyOf(equalTo(200), equalTo(204)))
@@ -311,7 +311,7 @@ public class IdentityHubParticipantContextApiEndToEndTest {
                     .header(authorizeUser(SUPER_USER, identityHub))
                     .contentType(ContentType.JSON)
                     .body(manifest)
-                    .post("/v1beta/participants/")
+                    .post("/v1/participants/")
                     .then()
                     .log().ifError()
                     .statusCode(anyOf(equalTo(200), equalTo(204)))
@@ -348,7 +348,7 @@ public class IdentityHubParticipantContextApiEndToEndTest {
                     .header(auth)
                     .contentType(ContentType.JSON)
                     .body(manifest)
-                    .post("/v1beta/participants/")
+                    .post("/v1/participants/")
                     .then()
                     .log().ifError()
                     .statusCode(403)
@@ -370,7 +370,7 @@ public class IdentityHubParticipantContextApiEndToEndTest {
                     .header(authorizeUser(principal, identityHub))
                     .contentType(ContentType.JSON)
                     .body(manifest)
-                    .post("/v1beta/participants/")
+                    .post("/v1/participants/")
                     .then()
                     .log().ifValidationFails()
                     .statusCode(403)
@@ -393,7 +393,7 @@ public class IdentityHubParticipantContextApiEndToEndTest {
                     .header(authorizeUser(SUPER_USER, identityHub))
                     .contentType(ContentType.JSON)
                     .body(manifest)
-                    .post("/v1beta/participants/")
+                    .post("/v1/participants/")
                     .then()
                     .log().ifValidationFails()
                     .statusCode(409);
@@ -416,7 +416,7 @@ public class IdentityHubParticipantContextApiEndToEndTest {
                     .header(authorizeUser(SUPER_USER, identityHub))
                     .contentType(ContentType.JSON)
                     .body(manifest)
-                    .post("/v1beta/participants/")
+                    .post("/v1/participants/")
                     .then()
                     .log().ifError()
                     .statusCode(anyOf(equalTo(200), equalTo(204)))
@@ -441,7 +441,7 @@ public class IdentityHubParticipantContextApiEndToEndTest {
                     .header(authorizeUser(SUPER_USER, identityHub))
                     .contentType(ContentType.JSON)
                     .body(manifest)
-                    .post("/v1beta/participants/")
+                    .post("/v1/participants/")
                     .then()
                     .log().ifError()
                     .statusCode(anyOf(equalTo(200), equalTo(204)))
@@ -467,7 +467,7 @@ public class IdentityHubParticipantContextApiEndToEndTest {
 
             identityHub.getIdentityEndpoint().baseRequest()
                     .header(authorizeUser(SUPER_USER, identityHub)).contentType(ContentType.JSON)
-                    .post("/v1beta/participants/%s/state?isActive=true".formatted(participantId))
+                    .post("/v1/participants/%s/state?isActive=true".formatted(participantId))
                     .then()
                     .log().ifError()
                     .statusCode(204);
@@ -497,7 +497,7 @@ public class IdentityHubParticipantContextApiEndToEndTest {
             identityHub.getIdentityEndpoint().baseRequest()
                     .header(authorizeUser(SUPER_USER, identityHub))
                     .contentType(ContentType.JSON)
-                    .post("/v1beta/participants/%s/state?isActive=false".formatted(participantContextId))
+                    .post("/v1/participants/%s/state?isActive=false".formatted(participantContextId))
                     .then()
                     .log().ifError()
                     .statusCode(204);
@@ -527,7 +527,7 @@ public class IdentityHubParticipantContextApiEndToEndTest {
             identityHub.getIdentityEndpoint().baseRequest()
                     .header(authorizeUser(SUPER_USER, identityHub))
                     .contentType(ContentType.JSON)
-                    .delete("/v1beta/participants/%s".formatted(participantContextId))
+                    .delete("/v1/participants/%s".formatted(participantContextId))
                     .then()
                     .log().ifError()
                     .statusCode(204);
@@ -548,7 +548,7 @@ public class IdentityHubParticipantContextApiEndToEndTest {
                     .allSatisfy(t -> identityHub.getIdentityEndpoint().baseRequest()
                             .header(t)
                             .contentType(ContentType.JSON)
-                            .post("/v1beta/participants/%s/token".formatted(participantContextId))
+                            .post("/v1/participants/%s/token".formatted(participantContextId))
                             .then()
                             .log().ifError()
                             .statusCode(200)
@@ -564,7 +564,7 @@ public class IdentityHubParticipantContextApiEndToEndTest {
                     .header(authorizeUser(SUPER_USER, identityHub))
                     .contentType(ContentType.JSON)
                     .body(List.of("role1", "role2", "admin"))
-                    .put("/v1beta/participants/%s/scopes".formatted(participantContextId))
+                    .put("/v1/participants/%s/scopes".formatted(participantContextId))
                     .then()
                     .log().ifError()
                     .statusCode(204);
@@ -582,7 +582,7 @@ public class IdentityHubParticipantContextApiEndToEndTest {
                     .header(userAuth)
                     .contentType(ContentType.JSON)
                     .body(List.of(role))
-                    .put("/v1beta/participants/%s/scopes".formatted(participantContextId))
+                    .put("/v1/participants/%s/scopes".formatted(participantContextId))
                     .then()
                     .log().ifError()
                     .statusCode(403);
@@ -598,7 +598,7 @@ public class IdentityHubParticipantContextApiEndToEndTest {
             var found = identityHub.getIdentityEndpoint().baseRequest()
                     .contentType(JSON)
                     .header(authorizeUser(SUPER_USER, identityHub))
-                    .get("/v1beta/participants")
+                    .get("/v1/participants")
                     .then()
                     .log().ifValidationFails()
                     .statusCode(200)
@@ -616,7 +616,7 @@ public class IdentityHubParticipantContextApiEndToEndTest {
             var found = identityHub.getIdentityEndpoint().baseRequest()
                     .contentType(JSON)
                     .header(authorizeUser(SUPER_USER, identityHub))
-                    .get("/v1beta/participants?offset=2&limit=4")
+                    .get("/v1/participants?offset=2&limit=4")
                     .then()
                     .log().ifValidationFails()
                     .statusCode(200)
@@ -634,7 +634,7 @@ public class IdentityHubParticipantContextApiEndToEndTest {
             var found = identityHub.getIdentityEndpoint().baseRequest()
                     .contentType(JSON)
                     .header(authorizeUser(SUPER_USER, identityHub))
-                    .get("/v1beta/participants")
+                    .get("/v1/participants")
                     .then()
                     .log().ifValidationFails()
                     .statusCode(200)
@@ -654,7 +654,7 @@ public class IdentityHubParticipantContextApiEndToEndTest {
             identityHub.getIdentityEndpoint().baseRequest()
                     .contentType(JSON)
                     .header(attackerAuth)
-                    .get("/v1beta/participants")
+                    .get("/v1/participants")
                     .then()
                     .log().ifValidationFails()
                     .statusCode(403);
@@ -686,18 +686,16 @@ public class IdentityHubParticipantContextApiEndToEndTest {
     @Nested
     @PostgresqlIntegrationTest
     class Postgres extends Tests {
+        static final String DB_NAME = "runtime";
 
         @Order(0)
         @RegisterExtension
         static final PostgresqlEndToEndExtension POSTGRESQL_EXTENSION = new PostgresqlEndToEndExtension();
-        private static final String DB_NAME = "runtime";
-
         @Order(1)
         @RegisterExtension
         static final BeforeAllCallback POSTGRES_CONTAINER_STARTER = context -> {
             POSTGRESQL_EXTENSION.createDatabase(DB_NAME);
         };
-
         @Order(2)
         @RegisterExtension
         static final RuntimeExtension IDENTITY_HUB_EXTENSION = ComponentRuntimeExtension.Builder.newInstance()
@@ -719,8 +717,7 @@ public class IdentityHubParticipantContextApiEndToEndTest {
     @EndToEndTest
     class InMemoryOauth2 extends Tests {
 
-        private static final String ISSUER = "issuer";
-
+        static final String ISSUER = "issuer";
         @Order(0)
         @RegisterExtension
         static final OauthServerEndToEndExtension OAUTH_2_EXTENSION = OauthServerEndToEndExtension.Builder.newInstance()
@@ -748,22 +745,22 @@ public class IdentityHubParticipantContextApiEndToEndTest {
     @EndToEndTest
     class PostgresOauth2 extends Tests {
 
-        @Order(0)
-        @RegisterExtension
-        static final PostgresqlEndToEndExtension POSTGRESQL_EXTENSION = new PostgresqlEndToEndExtension();
-        private static final String ISSUER = "issuer";
+        static final String ISSUER = "issuer";
+        static final String DB_NAME = "runtime";
         @Order(0)
         @RegisterExtension
         static final OauthServerEndToEndExtension OAUTH_2_EXTENSION = OauthServerEndToEndExtension.Builder.newInstance()
                 .issuer(ISSUER)
                 .build();
-        private static final String DB_NAME = "runtime";
+
+        @Order(0)
+        @RegisterExtension
+        static final PostgresqlEndToEndExtension POSTGRESQL_EXTENSION = new PostgresqlEndToEndExtension();
         @Order(1)
         @RegisterExtension
         static final BeforeAllCallback POSTGRES_CONTAINER_STARTER = context -> {
             POSTGRESQL_EXTENSION.createDatabase(DB_NAME);
         };
-
         @Order(2)
         @RegisterExtension
         static final RuntimeExtension IDENTITY_HUB_EXTENSION = ComponentRuntimeExtension.Builder.newInstance()

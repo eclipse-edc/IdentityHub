@@ -121,7 +121,7 @@ class IssuanceProcessAdminApiControllerTest extends RestControllerTestBase {
     private RequestSpecification baseRequest(String participantContextId) {
         return given()
                 .contentType("application/json")
-                .baseUri("http://localhost:" + port + Versions.UNSTABLE + "/participants/%s/issuanceprocesses".formatted(participantContextId))
+                .baseUri("http://localhost:" + port + Versions.STABLE + "/participants/%s/issuanceprocesses".formatted(participantContextId))
                 .when();
     }
 

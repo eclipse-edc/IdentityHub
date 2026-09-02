@@ -63,7 +63,7 @@ import static org.eclipse.edc.spi.result.ServiceResult.badRequest;
 
 @Consumes(APPLICATION_JSON)
 @Produces(APPLICATION_JSON)
-@Path(Versions.UNSTABLE + "/participants/{participantContextId}/credentials")
+@Path(Versions.STABLE + "/participants/{participantContextId}/credentials")
 public class VerifiableCredentialsApiController implements VerifiableCredentialsApi {
 
     private final CredentialStore credentialStore;
@@ -172,7 +172,7 @@ public class VerifiableCredentialsApiController implements VerifiableCredentials
         var requestParameters = credentialRequestDto.credentials().stream().map(cd -> new RequestedCredential(cd.id(), cd.type(), cd.format())).toList();
 
         return credentialRequestService.initiateRequest(participantContextId, credentialRequestDto.issuerDid(), holderPid, requestParameters)
-                .map(id -> Response.created(URI.create(Versions.UNSTABLE + "/participants/%s/credentials/request/%s".formatted(participantContextId, id))).build())
+                .map(id -> Response.created(URI.create(Versions.STABLE + "/participants/%s/credentials/request/%s".formatted(participantContextId, id))).build())
                 .orElseThrow(exceptionMapper(CredentialRequestDto.class));
     }
 

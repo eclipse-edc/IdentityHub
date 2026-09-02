@@ -210,7 +210,7 @@ public class DcpIssuanceFlowAllInOneTest {
                     .contentType(JSON)
                     .header(new Header("x-api-key", participantToken))
                     .body(createIssuanceRequest(holderRequestId))
-                    .post("/v1beta/participants/%s/credentials/request".formatted(PARTICIPANT_ID))
+                    .post("/v1/participants/%s/credentials/request".formatted(PARTICIPANT_ID))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(201)
@@ -289,7 +289,7 @@ public class DcpIssuanceFlowAllInOneTest {
                     .contentType(JSON)
                     .header(new Header("x-api-key", participantToken))
                     .body(createIssuanceRequest(holderRequestId))
-                    .post("/v1beta/participants/%s/credentials/request".formatted(PARTICIPANT_ID))
+                    .post("/v1/participants/%s/credentials/request".formatted(PARTICIPANT_ID))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(201)
@@ -342,7 +342,7 @@ public class DcpIssuanceFlowAllInOneTest {
                     .contentType(JSON)
                     .header(new Header("x-api-key", participantToken))
                     .body(createIssuanceRequest(holderRequestId))
-                    .post("/v1beta/participants/%s/credentials/request".formatted(PARTICIPANT_ID))
+                    .post("/v1/participants/%s/credentials/request".formatted(PARTICIPANT_ID))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(201);
@@ -365,7 +365,7 @@ public class DcpIssuanceFlowAllInOneTest {
             issuer.getAdminEndpoint().baseRequest()
                     .header("x-api-key", participantToken)
                     .contentType(ContentType.JSON)
-                    .post("/v1beta/participants/{participantContextId}/credentials/{credentialId}/revoke",
+                    .post("/v1/participants/{participantContextId}/credentials/{credentialId}/revoke",
                             PARTICIPANT_ID, credentialId)
                     .then()
                     .log().ifValidationFails().statusCode(204);
@@ -404,7 +404,7 @@ public class DcpIssuanceFlowAllInOneTest {
                     .contentType(JSON)
                     .header(new Header("x-api-key", participantToken))
                     .body(createIssuanceRequest(holderRequestId))
-                    .post("/v1beta/participants/%s/credentials/request".formatted(PARTICIPANT_ID))
+                    .post("/v1/participants/%s/credentials/request".formatted(PARTICIPANT_ID))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(201)
@@ -522,11 +522,11 @@ public class DcpIssuanceFlowAllInOneTest {
     @EndToEndTest
     class Postgres extends Tests {
 
+        static final String ISSUER = "issuer";
+
         @Order(0)
         @RegisterExtension
         static final PostgresqlEndToEndExtension POSTGRESQL_EXTENSION = new PostgresqlEndToEndExtension();
-        private static final String ISSUER = "issuer";
-
         @Order(2)
         @RegisterExtension
         static final RuntimeExtension RUNTIME_EXTENSION = ComponentRuntimeExtension.Builder.newInstance()
@@ -540,7 +540,6 @@ public class DcpIssuanceFlowAllInOneTest {
                 .paramProvider(IdentityHub.class, IdentityHub::forContext)
                 .paramProvider(IssuerService.class, IssuerService::forContext)
                 .build();
-
         @Order(1) // must be the first extension to be evaluated since it starts the DB server
         @RegisterExtension
         static final BeforeAllCallback POSTGRES_CONTAINER_STARTER = context -> {

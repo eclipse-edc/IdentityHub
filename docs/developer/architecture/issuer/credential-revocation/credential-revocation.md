@@ -1,15 +1,15 @@
 # Credential status information in the IssuerService
 
-Most verifiable credentials expire naturally, as setting an expiry date is a highly recommended practice.
-However, there could be cases where a credential is put on hold, withdrawn or revoked prematurely, for instance when
-a participant offboards from a dataspace.
+Most verifiable credentials expire naturally, as setting an expiry date is a highly recommended practice. However, there
+could be cases where a credential is put on hold, withdrawn or revoked prematurely, for instance when a participant
+offboards from a dataspace.
 
-Verifiable credentials may contain a `credentialStatus` object (
-c.f. [here](https://www.w3.org/TR/vc-data-model/#status)), which contains information about a remote location, typically
-also a verifiable credential, that contains status information about the holder credential. This remote credential
-contains an encoded and compressed bitstring with a label, e.g. "revocation" and if the bit at the given index is "1",
-the label applies. For example, if the label is `"revocation"` and the bit is "1", then the credential is revoked.
-Common status labels are "suspension" and "revocation", sometimes also "refresh".
+Verifiable credentials may contain a `credentialStatus` object
+(c.f. [here](https://www.w3.org/TR/vc-data-model/#status)), which contains information about a remote location,
+typically also a verifiable credential, that contains status information about the holder credential. This remote
+credential contains an encoded and compressed bitstring with a label, e.g. "revocation" and if the bit at the given
+index is "1", the label applies. For example, if the label is `"revocation"` and the bit is "1", then the credential is
+revoked. Common status labels are "suspension" and "revocation", sometimes also "refresh".
 
 This remote credential is typically referred to as the "status list" or "status list credential" as it provides
 information about a given status (= the label) of a certain holder credential. Similarly, all credentials that are used
@@ -53,7 +53,7 @@ credential:
 Requests to revoke a holder credential are sent via the IssuerService's REST API:
 
 ```http request
-POST /v1beta/participants/{participantContextId}/credentials/{credentialResourceId}/revoke
+POST /v1/participants/{participantContextId}/credentials/{credentialResourceId}/revoke
 ```
 
 This request is processed by
@@ -130,8 +130,8 @@ public class BitstringStatusListFactory implements StatusListInfoFactory {
 }
 ```
 
-The `StatusListInfo` object's job is to convert the generic data model of verifiable credentials specifically for
-the given data model, here, `BitstringStatusList`.
+The `StatusListInfo` object's job is to convert the generic data model of verifiable credentials specifically for the
+given data model, here, `BitstringStatusList`.
 
 _Note: `StatusListInfo` implementations should operate on the object model, **not** on the encoded credential (
 `VerifiableCredentialContainer#rawVc`). The `StatusListInfo` object encapsulates the specifics of each status list
@@ -164,8 +164,8 @@ and serialized JWT.
 
 #### 5. update status list credential and holder credential
 
-Both the status list credential and the holder credential are updated in the database.
-With this, the revocation process is complete.
+Both the status list credential and the holder credential are updated in the database. With this, the revocation process
+is complete.
 
 ## Querying credential status
 
@@ -180,7 +180,7 @@ IssuerService.
 Execute the following REST request against the IssuerService's Admin API:
 
 ```http request
-GET /v1beta/participants/{participantContextId}/credentials/{credentialResourceId}/status
+GET /v1/participants/{participantContextId}/credentials/{credentialResourceId}/status
 ```
 
 the response will be `HTTP 200` if the status information has been obtained. An empty response body indicates that the

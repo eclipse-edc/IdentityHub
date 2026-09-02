@@ -72,7 +72,7 @@ public class DcpIssuanceHolderAttestationTest {
                             "attestationType", "holder",
                             "configuration", emptyMap()
                     ))
-                    .post("/v1beta/participants/{participantContextId}/attestations", issuerId)
+                    .post("/v1/participants/{participantContextId}/attestations", issuerId)
                     .then()
                     .log().ifValidationFails()
                     .statusCode(201);
@@ -89,7 +89,7 @@ public class DcpIssuanceHolderAttestationTest {
                                     "participant", Map.of("name", "Bob")
                             )
                     ))
-                    .post("/v1beta/participants/{participantContextId}/holders", issuerId)
+                    .post("/v1/participants/{participantContextId}/holders", issuerId)
                     .then()
                     .log().ifValidationFails()
                     .statusCode(201);
@@ -126,7 +126,7 @@ public class DcpIssuanceHolderAttestationTest {
                     .contentType(JSON)
                     .header(new Header("x-api-key", participantToken))
                     .body(request)
-                    .post("/v1beta/participants/%s/credentials/request".formatted(participantId))
+                    .post("/v1/participants/%s/credentials/request".formatted(participantId))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(201)
@@ -181,11 +181,11 @@ public class DcpIssuanceHolderAttestationTest {
     @Nested
     @PostgresqlIntegrationTest
     class Postgres implements Tests {
-
+        static final String ISSUER = "issuer";
+        static final String IDENTITY_HUB = "identityhub";
         @Order(0)
         @RegisterExtension
         static final PostgresqlEndToEndExtension POSTGRESQL_EXTENSION = new PostgresqlEndToEndExtension();
-        private static final String ISSUER = "issuer";
         @Order(2)
         @RegisterExtension
         static final RuntimeExtension ISSUER_EXTENSION = ComponentRuntimeExtension.Builder.newInstance()
@@ -196,7 +196,6 @@ public class DcpIssuanceHolderAttestationTest {
                 .paramProvider(IssuerService.class, IssuerService::forContext)
                 .configurationProvider(() -> POSTGRESQL_EXTENSION.configFor(ISSUER))
                 .build();
-        private static final String IDENTITY_HUB = "identityhub";
         @Order(1)
         @RegisterExtension
         static final BeforeAllCallback POSTGRES_CONTAINER_STARTER = context -> {
@@ -213,6 +212,7 @@ public class DcpIssuanceHolderAttestationTest {
                 .paramProvider(IdentityHub.class, IdentityHub::forContext)
                 .configurationProvider(() -> POSTGRESQL_EXTENSION.configFor(IDENTITY_HUB))
                 .build();
+
     }
 
 }

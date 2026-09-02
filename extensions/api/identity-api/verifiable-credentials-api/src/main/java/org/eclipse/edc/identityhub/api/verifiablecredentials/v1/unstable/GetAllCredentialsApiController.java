@@ -34,7 +34,7 @@ import static org.eclipse.edc.identityhub.spi.authorization.AuthorizationResultH
 
 @Consumes(APPLICATION_JSON)
 @Produces(APPLICATION_JSON)
-@Path(Versions.UNSTABLE + "/credentials")
+@Path(Versions.STABLE + "/credentials")
 public class GetAllCredentialsApiController implements GetAllCredentialsApi {
     private final CredentialStore credentialStore;
 

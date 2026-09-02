@@ -128,7 +128,7 @@ public class DcpAnonymousIssuanceFlowEndToEndTest {
                     .contentType(JSON)
                     .header(new Header("x-api-key", participantToken))
                     .body(request)
-                    .post("/v1beta/participants/%s/credentials/request".formatted((PARTICIPANT_ID)))
+                    .post("/v1/participants/%s/credentials/request".formatted((PARTICIPANT_ID)))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(201)
@@ -259,12 +259,11 @@ public class DcpAnonymousIssuanceFlowEndToEndTest {
     @Nested
     @EndToEndTest
     class Postgres extends Tests {
-
+        static final String ISSUER = "issuer";
+        static final String IDENTITY_HUB = "identityhub";
         @Order(0)
         @RegisterExtension
         static final PostgresqlEndToEndExtension POSTGRESQL_EXTENSION = new PostgresqlEndToEndExtension();
-        private static final String ISSUER = "issuer";
-
         @Order(2)
         @RegisterExtension
         static final RuntimeExtension ISSUER_EXTENSION = ComponentRuntimeExtension.Builder.newInstance()
@@ -275,8 +274,6 @@ public class DcpAnonymousIssuanceFlowEndToEndTest {
                 .paramProvider(IssuerService.class, IssuerService::forContext)
                 .configurationProvider(() -> POSTGRESQL_EXTENSION.configFor(ISSUER).merge(ConfigFactory.fromMap(Map.of("edc.issuance.anonymous.allowed", "true"))))
                 .build();
-        private static final String IDENTITY_HUB = "identityhub";
-
         @Order(1) // must be the first extension to be evaluated since it starts the DB server
         @RegisterExtension
         static final BeforeAllCallback POSTGRES_CONTAINER_STARTER = context -> {
