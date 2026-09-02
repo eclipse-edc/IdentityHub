@@ -14,6 +14,7 @@
 
 package org.eclipse.edc.issuerservice.api.admin.credentials;
 
+import jakarta.json.Json;
 import org.eclipse.edc.api.auth.spi.AuthorizationService;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.DcpConstants;
 import org.eclipse.edc.identityhub.protocols.dcp.transform.from.JsonObjectFromCredentialOfferMessageTransformer;
@@ -31,6 +32,8 @@ import org.eclipse.edc.spi.system.ServiceExtension;
 import org.eclipse.edc.spi.system.ServiceExtensionContext;
 import org.eclipse.edc.transform.spi.TypeTransformerRegistry;
 import org.eclipse.edc.web.spi.WebService;
+
+import java.util.Map;
 
 import static org.eclipse.edc.iam.decentralizedclaims.spi.DcpConstants.DSPACE_DCP_NAMESPACE_V_1_0;
 import static org.eclipse.edc.issuerservice.api.admin.credentials.IssuerCredentialsAdminApiExtension.NAME;
@@ -57,13 +60,14 @@ public class IssuerCredentialsAdminApiExtension implements ServiceExtension {
 
     @Override
     public void initialize(ServiceExtensionContext context) {
+        var factory = Json.createBuilderFactory(Map.of());
 
         authorizationService.addLookupFunction(VerifiableCredentialResource.class, this::findById);
         var controller = new IssuerCredentialsAdminApiController(authorizationService, credentialService, credentialOfferService);
         webService.registerResource(IdentityHubApiContext.ISSUERADMIN, controller);
 
         // required for sending CredentialOffer messages to the holder
-        typeTransformerRegistry.forContext(DcpConstants.DCP_SCOPE_V_1_0).register(new JsonObjectFromCredentialOfferMessageTransformer(DSPACE_DCP_NAMESPACE_V_1_0));
+        typeTransformerRegistry.forContext(DcpConstants.DCP_SCOPE_V_1_0).register(new JsonObjectFromCredentialOfferMessageTransformer(DSPACE_DCP_NAMESPACE_V_1_0, factory));
     }
 
     private ParticipantResource findById(String owner, String id) {
