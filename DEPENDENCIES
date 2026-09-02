@@ -88,7 +88,7 @@ maven/mavencentral/io.github.classgraph/classgraph/4.8.184, MIT, approved, CQ225
 maven/mavencentral/io.github.classgraph/classgraph/4.8.192, MIT, approved, CQ22530
 maven/mavencentral/io.nats/jnats/2.26.2, Apache-2.0, approved, #29938
 maven/mavencentral/io.opentelemetry.instrumentation/opentelemetry-instrumentation-annotations/2.26.1, Apache-2.0, approved, #29019
-maven/mavencentral/io.opentelemetry.instrumentation/opentelemetry-instrumentation-annotations/2.31.1, , restricted, clearlydefined
+maven/mavencentral/io.opentelemetry.instrumentation/opentelemetry-instrumentation-annotations/2.31.1, Apache-2.0, approved, #30574
 maven/mavencentral/io.opentelemetry/opentelemetry-api/1.60.1, Apache-2.0, approved, #29017
 maven/mavencentral/io.opentelemetry/opentelemetry-api/1.64.0, Apache-2.0, approved, #29872
 maven/mavencentral/io.opentelemetry/opentelemetry-api/1.65.0, Apache-2.0, approved, #30119
