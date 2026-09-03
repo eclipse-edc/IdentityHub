@@ -131,6 +131,7 @@ public class DcpIssuanceFlowEndToEndTest {
         }
 
         @ParameterizedTest
+        @DisplayName("RT-01: request -> issue -> deliver round trip, once per supported DCP profile")
         @ArgumentsSource(CredentialFormatProvider.class)
         void issuanceFlow(CredentialFormat format, String credentialType, IssuerService issuer, IdentityHub identityHub) {
 
@@ -248,6 +249,7 @@ public class DcpIssuanceFlowEndToEndTest {
         }
 
         @Test
+        @DisplayName("IS-REQ-06: a second request with the same holderPid yields no second issuance")
         void issuanceFlow_rejectExistingProcessByHolderPid(IssuerService issuer, IdentityHub identityHub) {
             var subscriber = mock(EventSubscriber.class);
             issuer.registerListener(IssuanceEvent.class, subscriber);
@@ -307,9 +309,9 @@ public class DcpIssuanceFlowEndToEndTest {
                     .statusCode(409);
         }
 
-        // A2.6: after the request reaches REQUESTED, the holder's HolderCredentialRequest.issuerPid must equal the issuer's issuance process id
+        // CS-REQ-04: after the request reaches REQUESTED, the holder's HolderCredentialRequest.issuerPid must equal the issuer's issuance process id
         @Test
-        @DisplayName("A2.6: the holder request's issuerPid equals the issuer-side issuance process id once the request is REQUESTED")
+        @DisplayName("CS-REQ-04: the holder correlates the request from the issuer's 201 Location header")
         void issuanceFlow_issuerPidCorrelatedAfterRequested(IssuerService issuer, IdentityHub identityHub) {
             // same issuer setup as the happy path (fulfilled attestation, one credential definition)
             var nameMapping = new MappingDefinition("participant.name", "credentialSubject.name", true);
@@ -366,9 +368,9 @@ public class DcpIssuanceFlowEndToEndTest {
                             .isEqualTo(issuerProcessId));
         }
 
-        // B1.16 / C8: one CredentialRequestMessage with TWO credentialObjectIds -> single issuance process, ONE CredentialMessage containing both credentials, both stored on the holder and individually correct
+        // IS-REQ-07 / RT-04: one CredentialRequestMessage with TWO credentialObjectIds -> single issuance process, ONE CredentialMessage containing both credentials, both stored on the holder and individually correct
         @Test
-        @DisplayName("B1.16 / C8: a batch request with two credentialObjectIds yields one issuance process and one CredentialMessage containing both credentials")
+        @DisplayName("IS-REQ-07 / RT-04: a batch request yields one issuance process and one CredentialMessage containing both credentials")
         void issuanceFlow_batchRequest_allCredentialsDeliveredInOneMessage(IssuerService issuer, IdentityHub identityHub) {
             // TWO credential definitions on the issuer, both attestations fulfilled
             var subscriber = mock(EventSubscriber.class);
@@ -467,10 +469,10 @@ public class DcpIssuanceFlowEndToEndTest {
                     });
         }
 
-        // C9 / A2.8 / A6.5: an issuance that fails after the Issuer accepted it is reported as REJECTED by the Issuer's
+        // RT-03 / IS-REQ-02: an issuance that fails after the Issuer accepted it is reported as REJECTED by the Issuer's
         // status API, and the Holder must pick that up instead of waiting for the credentials forever
         @Test
-        @DisplayName("C9 / A2.8 / A6.5: a post-acceptance issuance failure is reported as REJECTED by the issuer and eventually observed by the holder")
+        @DisplayName("RT-03 / IS-REQ-02: a post-acceptance issuance failure is reported as REJECTED by the issuer and eventually observed by the holder")
         void issuanceFlow_failureAfterAcceptance_holderObservesError(IssuerService issuer, IdentityHub identityHub) {
             // the Holder must be known to the Issuer, otherwise its status query is not authorized. Creating it again is
             // harmless, the Issuer keeps the existing one.
@@ -536,7 +538,7 @@ public class DcpIssuanceFlowEndToEndTest {
                 gets credentials signed with the new key, and the runtime is never reset between tests. Enable this once it
                 runs against its own runtime.
                 """)
-        @DisplayName("C12: after signing key rotation, previously issued credentials remain verifiable and new credentials are signed with the new key")
+        @DisplayName("RT-06: after signing key rotation, previously issued credentials remain verifiable and new credentials are signed with the new key")
         void issuanceFlow_keyRotation_previouslyIssuedCredentialsRemainVerifiable(IssuerService issuer, IdentityHub identityHub) {
             // issuer with one credential definition and a fulfilled attestation
             var nameMapping = new MappingDefinition("participant.name", "credentialSubject.name", true);

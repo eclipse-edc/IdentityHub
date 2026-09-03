@@ -73,6 +73,7 @@ public class DcpHolderTokenVerifierImplTest {
             .apiTokenAlias("apiAlias")
             .build();
 
+    @DisplayName("TOK-01: a valid SI token from a registered holder is accepted")
     @Test
     void verify() {
 
@@ -89,7 +90,7 @@ public class DcpHolderTokenVerifierImplTest {
     }
 
     @Test
-    @DisplayName("B5.4: an access token supplied by the Holder is carried on the request context")
+    @DisplayName("IS-DELIV-03: an access token supplied by the Holder is carried on the request context")
     void verify_shouldCaptureAccessToken() {
         var token = TokenRepresentation.Builder.newInstance().token(generateToken()).build();
 
@@ -104,7 +105,7 @@ public class DcpHolderTokenVerifierImplTest {
     }
 
     @Test
-    @DisplayName("B5.4: the request context carries no access token when the Holder did not supply one")
+    @DisplayName("IS-DELIV-03: the request context carries no access token when the Holder did not supply one")
     void verify_whenNoAccessToken_shouldBeNull() {
         var token = TokenRepresentation.Builder.newInstance().token(generateToken()).build();
 
@@ -155,8 +156,8 @@ public class DcpHolderTokenVerifierImplTest {
 
     }
 
-    // B2.6: token without a 'kid' JOSE header -> unauthorized
-    @DisplayName("B2.6: a token without a 'kid' JOSE header is rejected as unauthorized")
+    // TOK-11: token without a 'kid' JOSE header -> unauthorized
+    @DisplayName("TOK-11: a token without a 'kid' JOSE header is rejected as unauthorized")
     @Test
     void verify_missingKidHeader_returnsUnauthorized() throws JOSEException {
         // signed JWT whose JOSE header does NOT carry a 'kid' (the generateJwt() fixture always sets one)

@@ -85,6 +85,7 @@ public class DcpIssuerMetadataApiEndToEndTest {
         }
 
         @Test
+        @DisplayName("IS-META-01: the Issuer Metadata endpoint reports the issuer DID and its credentialsSupported")
         void issuerMetadata(IssuerService issuer, HolderService holderService, CredentialDefinitionService credentialDefinitionService) throws JOSEException {
 
             var credentialDefinition = CredentialDefinition.Builder.newInstance()
@@ -116,9 +117,9 @@ public class DcpIssuerMetadataApiEndToEndTest {
         }
 
 
-        // B7.4: participant context with ZERO credential definitions -> 200 with an empty credentialsSupported array
+        // IS-META-04: participant context with ZERO credential definitions -> 200 with an empty credentialsSupported array
         @Test
-        @DisplayName("B7.4: issuer metadata for a participant context without credential definitions returns an empty credentialsSupported array")
+        @DisplayName("IS-META-04: an issuer with no credential definitions returns an empty credentialsSupported array")
         void issuerMetadata_noCredentialDefinitions_returnsEmptyCredentialsSupported(IssuerService issuer) {
             // no credential definitions exist for the participant context (@AfterEach removes any leftovers
             // from other tests; nothing is created here on purpose)

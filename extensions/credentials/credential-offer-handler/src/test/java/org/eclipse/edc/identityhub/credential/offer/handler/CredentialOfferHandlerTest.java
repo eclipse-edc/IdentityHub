@@ -136,9 +136,9 @@ class CredentialOfferHandlerTest {
         verify(credentialOfferStore, never()).save(argThat(offer -> offer.getState() == CredentialOfferStatus.PROCESSED.code()));
     }
 
-    // A5.4: the same CredentialOfferReceived event / identical offer handled twice -> second handling is a no-op: no second initiateRequest, no duplicate HolderCredentialRequest
+    // CS-OFF-06: the same CredentialOfferReceived event / identical offer handled twice -> second handling is a no-op: no second initiateRequest, no duplicate HolderCredentialRequest
     @Test
-    @DisplayName("A5.4: handling the identical credential offer twice initiates only one credential request")
+    @DisplayName("CS-OFF-06: handling the identical credential offer twice initiates only one credential request")
     void onCredentialOfferEvent_sameOfferTwice_shouldBeIdempotent() {
         var event = event();
 

@@ -87,6 +87,7 @@ class StorageApiControllerTest extends RestControllerTestBase {
     }
 
     @Test
+    @DisplayName("CS-STOR-01: a valid CredentialMessage is accepted and the credential written")
     void storeCredential_success_expect200() {
         when(validatorRegistry.validate(any(), any())).thenReturn(ValidationResult.success());
         baseRequest()
@@ -99,6 +100,7 @@ class StorageApiControllerTest extends RestControllerTestBase {
     }
 
     @Test
+    @DisplayName("TOK-02: a delivery without an Authorization header is rejected with 401")
     void storeCredential_tokenNotPresent_shouldReturn401() {
         when(validatorRegistry.validate(any(), any())).thenReturn(ValidationResult.success());
         baseRequest()
@@ -112,6 +114,7 @@ class StorageApiControllerTest extends RestControllerTestBase {
     }
 
     @Test
+    @DisplayName("CS-STOR-03: a CredentialMessage missing required fields is rejected with 400")
     void storeCredential_validationError_shouldReturn400() {
         when(validatorRegistry.validate(any(), any())).thenReturn(ValidationResult.failure(violation("foo", null)));
         baseRequest()
@@ -209,9 +212,9 @@ class StorageApiControllerTest extends RestControllerTestBase {
                 .body(containsString("foo"));
     }
 
-    // A3.16: a CredentialMessage with status=REJECTED must not store anything and must not transition the request to ISSUED; the request must end in an error/rejected state
+    // CS-STOR-05: a CredentialMessage with status=REJECTED must not store anything and must not transition the request to ISSUED; the request must end in an error/rejected state
     @Test
-    @DisplayName("A3.16: a REJECTED credential message stores nothing and fails the request instead")
+    @DisplayName("CS-STOR-05: a REJECTED credential message stores nothing and fails the request instead")
     void storeCredential_statusRejected_shouldRejectRequestAndNotStore() {
         // message carries status=REJECTED and no credentials
         when(validatorRegistry.validate(any(), any())).thenReturn(ValidationResult.success());
@@ -240,7 +243,7 @@ class StorageApiControllerTest extends RestControllerTestBase {
     }
 
     @Test
-    @DisplayName("A3.25: a rejection the writer refuses is surfaced as an error, not acknowledged")
+    @DisplayName("CS-STOR-05: a rejection the writer refuses is surfaced as an error, not acknowledged")
     void storeCredential_statusRejected_whenWriterFails_shouldReturn403() {
         when(validatorRegistry.validate(any(), any())).thenReturn(ValidationResult.success());
         when(transformerRegistry.transform(isA(JsonObject.class), eq(CredentialMessage.class)))
@@ -261,9 +264,9 @@ class StorageApiControllerTest extends RestControllerTestBase {
                 .statusCode(403);
     }
 
-    // A4.7: token-verification failure must return the same status code on both DCP endpoints — aligned on 401 (this endpoint already returns 401; the Credential Offer API currently returns 403 and must be adjusted)
+    // CS-STOR-15 / CS-OFF-07: token-verification failure must return the same status code on both DCP endpoints — aligned on 401 (this endpoint already returns 401; the Credential Offer API currently returns 403 and must be adjusted)
     @Test
-    @DisplayName("A4.7: token verification failure returns 401, consistent with the Offer API")
+    @DisplayName("CS-STOR-15 / CS-OFF-07: token verification failure returns 401, consistently on the Storage and Offer APIs")
     void storeCredential_tokenVerificationFails_statusCodeConsistentWithOfferApi() {
         when(validatorRegistry.validate(any(), any())).thenReturn(ValidationResult.success());
         when(issuerTokenVerifier.verify(any(), anyString())).thenReturn(Result.failure("foo"));

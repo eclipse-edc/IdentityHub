@@ -76,6 +76,7 @@ public class DcpIssuerServiceImplTest {
             issuanceProcessStore, attestationPipeline, credentialRuleDefinitionEvaluator, dcpProfileRegistry, mock(), issuanceObservable, vault);
 
 
+    @DisplayName("IS-REQ-01: a valid CredentialRequestMessage from an authorized holder creates an issuance process")
     @Test
     void initiateCredentialsIssuance() {
 
@@ -139,6 +140,7 @@ public class DcpIssuerServiceImplTest {
         verify(listener).requested(issuanceProcess);
     }
 
+    @DisplayName("IS-REQ-06: a second request with the same holderPid returns 409 and creates no second process")
     @Test
     void initiateCredentialsIssuance_whenDuplicateHolderPid_returnsConflict() {
 
@@ -221,8 +223,8 @@ public class DcpIssuerServiceImplTest {
         verify(listener).rejected(eq(message.getHolderPid()), eq("participantContextId"), eq("test-failure"));
     }
 
-    // B1.8: CredentialRequestMessage with an empty credentials list -> badRequest "No credentials requested", nothing persisted, rejected event fired
-    @DisplayName("B1.8: an empty credentials list is rejected with 400 'No credentials requested', nothing is persisted, a rejected event is fired")
+    // IS-REQ-04: CredentialRequestMessage with an empty credentials list -> badRequest "No credentials requested", nothing persisted, rejected event fired
+    @DisplayName("IS-REQ-04: an empty credentials list is rejected with 400 'No credentials requested', nothing is persisted, a rejected event is fired")
     @Test
     void initiateCredentialsIssuance_whenNoCredentialsRequested_returnsBadRequest() {
         // message without any credential specifiers

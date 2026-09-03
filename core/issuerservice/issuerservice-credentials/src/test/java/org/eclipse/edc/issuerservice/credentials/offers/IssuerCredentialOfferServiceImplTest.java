@@ -111,7 +111,7 @@ class IssuerCredentialOfferServiceImplTest {
 
     // IS-OFF-03: the offer carries the reason the caller gave, not the placeholder the Issuer Metadata API publishes
     @Test
-    @DisplayName("B6.4: the offered CredentialObjects carry the requested offer reason")
+    @DisplayName("IS-OFF-03: the offered CredentialObjects carry the requested offer reason")
     void sendCredentialOffer_usesRequestedOfferReason() {
         var result = credentialOfferService.sendCredentialOffer(PARTICIPANT_CONTEXT_ID, HOLDER_ID, List.of(CREDENTIAL_OBJECT_UD), OFFER_REASON_PROOF_KEY_REVOCATION);
 
@@ -123,7 +123,7 @@ class IssuerCredentialOfferServiceImplTest {
     }
 
     @Test
-    @DisplayName("B6.4: an offer without a stated reason defaults to reissue")
+    @DisplayName("IS-OFF-03: an offer without a stated reason defaults to reissue")
     void sendCredentialOffer_withoutReason_defaultsToReissue() {
         var result = credentialOfferService.sendCredentialOffer(PARTICIPANT_CONTEXT_ID, HOLDER_ID, List.of(CREDENTIAL_OBJECT_UD), null);
 
@@ -135,6 +135,7 @@ class IssuerCredentialOfferServiceImplTest {
     }
 
     @Test
+    @DisplayName("IS-OFF-01 / IS-OFF-02: a well-formed CredentialOfferMessage is sent to the holder's offers endpoint with an SI token")
     void sendCredentialOffer_success() {
         var result = credentialOfferService.sendCredentialOffer(PARTICIPANT_CONTEXT_ID, HOLDER_ID, List.of(CREDENTIAL_OBJECT_UD), null);
 

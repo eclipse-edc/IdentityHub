@@ -51,7 +51,7 @@ class DcpIssuerMetadataServiceImplTest {
 
     // IS-META-01: the metadata reports the issuer DID and one CredentialObject per configured definition
     @Test
-    @DisplayName("B7.5: issuer metadata reports the issuer DID and the configured credential definitions")
+    @DisplayName("IS-META-01: issuer metadata reports the issuer DID and the configured credential definitions")
     void getIssuerMetadata_reportsIssuerAndSupportedCredentials() {
         stubDefinitions(credentialDefinition());
 
@@ -64,7 +64,7 @@ class DcpIssuerMetadataServiceImplTest {
 
     // IS-META-02: §6.7 requires every CredentialObject in credentialsSupported to carry ALL optional properties
     @Test
-    @DisplayName("B7.6: every CredentialObject carries all optional properties with well-formed values")
+    @DisplayName("IS-META-02: every CredentialObject carries all optional properties with well-formed values")
     void getIssuerMetadata_credentialObjectIsComplete() {
         stubDefinitions(credentialDefinition());
 
@@ -82,7 +82,7 @@ class DcpIssuerMetadataServiceImplTest {
 
     // IS-META-03: clients reference and cache CredentialObjects by id, so nothing about them may change between fetches
     @Test
-    @DisplayName("B7.7: two metadata fetches produce identical CredentialObjects")
+    @DisplayName("IS-META-03: two metadata fetches produce identical CredentialObjects")
     void getIssuerMetadata_isStableAcrossFetches() {
         stubDefinitions(credentialDefinition());
 

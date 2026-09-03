@@ -33,6 +33,7 @@ import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.token.JwtGenerationService;
 import org.eclipse.edc.token.spi.TokenGenerationService;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.text.ParseException;
@@ -72,6 +73,7 @@ public class JwtCredentialGeneratorTest {
 
     @SuppressWarnings({ "unchecked", "rawtypes" })
     @Test
+    @DisplayName("IS-DELIV-04: a generated vc11-sl2021/jwt credential is signed and carries the properties its data model requires")
     void generateCredential() {
 
         var subjectClaims = Map.of("name", "Foo Bar");

@@ -72,7 +72,7 @@ class DcpHolderCoreExtensionTest {
     // TOK-09/TOK-11: the signing key is resolved from the DID named in the 'kid' header, so a token whose 'kid' points at
     // a different DID than the 'iss' claim must not authenticate as that issuer
     @Test
-    @DisplayName("A3.26: a token whose 'kid' names a different DID than 'iss' is rejected")
+    @DisplayName("TOK-09: a token whose 'kid' names a verification method outside the 'iss' DID document is rejected")
     void createTokenVerifier_kidFromForeignDid_isRejected(ServiceExtensionContext context, ObjectFactory factory) throws JOSEException {
         var extension = factory.constructInstance(DcpHolderCoreExtension.class);
         extension.initialize(context);
@@ -96,7 +96,7 @@ class DcpHolderCoreExtensionTest {
     }
 
     @Test
-    @DisplayName("A3.26: a token whose 'kid' belongs to the 'iss' DID passes the key binding rule")
+    @DisplayName("TOK-09: a token whose 'kid' belongs to the 'iss' DID passes the key binding rule")
     void createTokenVerifier_kidFromIssuerDid_passesBinding(ServiceExtensionContext context, ObjectFactory factory) throws JOSEException {
         var extension = factory.constructInstance(DcpHolderCoreExtension.class);
         extension.initialize(context);
@@ -116,7 +116,7 @@ class DcpHolderCoreExtensionTest {
 
     // a token without a 'kid' cannot be bound to its issuer at all, so it never reaches validation
     @Test
-    @DisplayName("A3.26: a token without a 'kid' header is rejected before validation")
+    @DisplayName("TOK-11: a token without a 'kid' header is rejected before validation")
     void createTokenVerifier_withoutKid_isRejected(ServiceExtensionContext context, ObjectFactory factory) throws JOSEException {
         var extension = factory.constructInstance(DcpHolderCoreExtension.class);
         extension.initialize(context);
