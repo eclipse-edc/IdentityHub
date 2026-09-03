@@ -136,7 +136,7 @@ public class IssuerApiExtension implements ServiceExtension {
         dcpRegistry.register(new JsonObjectFromCredentialRequestStatusTransformer(namespace, builderFactory));
         dcpRegistry.register(new JsonObjectFromIssuerMetadataTransformer(namespace));
         dcpRegistry.register(new JsonObjectFromCredentialObjectTransformer(typeManager, JSON_LD, namespace));
-        dcpRegistry.register(new JsonObjectFromCredentialOfferMessageTransformer(namespace));
+        dcpRegistry.register(new JsonObjectFromCredentialOfferMessageTransformer(namespace, builderFactory));
 
         // to
         dcpRegistry.register(new JsonObjectToCredentialRequestMessageTransformer(typeManager, JSON_LD, namespace));

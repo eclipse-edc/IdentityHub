@@ -15,6 +15,7 @@
 package org.eclipse.edc.identityhub.protocols.dcp.transform.from;
 
 import jakarta.json.Json;
+import jakarta.json.JsonBuilderFactory;
 import jakarta.json.JsonObject;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialOfferMessage;
 import org.eclipse.edc.jsonld.spi.JsonLdNamespace;
@@ -24,11 +25,16 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static jakarta.json.stream.JsonCollectors.toJsonArray;
+import static org.eclipse.edc.identityhub.protocols.dcp.spi.DcpConstants.CREDENTIALS_NAMESPACE_W3C;
 import static org.eclipse.edc.jsonld.spi.JsonLdKeywords.TYPE;
 
 public class JsonObjectFromCredentialOfferMessageTransformer extends AbstractNamespaceAwareJsonLdTransformer<CredentialOfferMessage, JsonObject> {
-    public JsonObjectFromCredentialOfferMessageTransformer(JsonLdNamespace namespace) {
+
+    private final JsonBuilderFactory factory;
+
+    public JsonObjectFromCredentialOfferMessageTransformer(JsonLdNamespace namespace, JsonBuilderFactory factory) {
         super(CredentialOfferMessage.class, JsonObject.class, namespace);
+        this.factory = factory;
     }
 
     @Override
@@ -39,7 +45,7 @@ public class JsonObjectFromCredentialOfferMessageTransformer extends AbstractNam
 
         return Json.createObjectBuilder()
                 .add(TYPE, forNamespace(CredentialOfferMessage.CREDENTIAL_OFFER_MESSAGE_TERM))
-                .add(forNamespace(CredentialOfferMessage.CREDENTIAL_ISSUER_TERM), credentialOfferMessage.getIssuer())
+                .add(CREDENTIALS_NAMESPACE_W3C.toIri(CredentialOfferMessage.CREDENTIAL_ISSUER_TERM), createId(factory, credentialOfferMessage.getIssuer()))
                 .add(forNamespace(CredentialOfferMessage.CREDENTIALS_TERM), credentials)
                 .build();
     }
