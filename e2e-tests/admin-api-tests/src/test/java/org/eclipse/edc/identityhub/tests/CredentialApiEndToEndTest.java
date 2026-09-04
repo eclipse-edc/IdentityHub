@@ -56,6 +56,7 @@ import org.hamcrest.Matchers;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
@@ -407,6 +408,7 @@ public class CredentialApiEndToEndTest {
         }
 
         @Test
+        @DisplayName("IS-OFF-01: the issuer POSTs a well-formed CredentialOfferMessage to the holder's offers endpoint")
         void sendCredentialOffer(IssuerService issuer, HolderStore holderStore, CredentialDefinitionStore definitionStore) {
             issuer.createParticipant(USER);
             definitionStore.create(CredentialDefinition.Builder.newInstance()

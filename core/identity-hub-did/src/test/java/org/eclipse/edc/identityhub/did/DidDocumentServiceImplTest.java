@@ -47,6 +47,7 @@ import org.eclipse.edc.spi.result.StoreResult;
 import org.eclipse.edc.spi.telemetry.Telemetry;
 import org.eclipse.edc.transaction.spi.NoopTransactionContext;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.net.URI;
@@ -547,6 +548,7 @@ class DidDocumentServiceImplTest {
 
     @SuppressWarnings("unchecked")
     @Test
+    @DisplayName("CS-PRES-13: an activated key is declared for authentication, as a verifier requires of a VP signing key")
     void onKeyPairActivated() throws JOSEException {
         var keyId = "key-id";
         var key = new ECKeyGenerator(Curve.P_256).keyID(keyId).generate();
@@ -696,6 +698,7 @@ class DidDocumentServiceImplTest {
 
     @SuppressWarnings("unchecked")
     @Test
+    @DisplayName("CS-PRES-13: a revoked key is removed from the authentication relationship as well as from the verification methods")
     void onKeyPairRevoked() throws JOSEException {
         var keyId = "key-id";
         var doc = createDidDocument().verificationMethod(List.of(VerificationMethod.Builder.newInstance()

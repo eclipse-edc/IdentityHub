@@ -292,6 +292,7 @@ public class VerifiableCredentialApiEndToEndTest {
                             .body(notNullValue()));
         }
 
+        @DisplayName("CS-REQ-01: the holder initiates a credential request against the addressed issuer")
         @Test
         void createCredentialRequest(IdentityHub identityHub, HolderCredentialRequestStore store) {
             var port = getFreePort();
@@ -419,9 +420,9 @@ public class VerifiableCredentialApiEndToEndTest {
                     .statusCode(403);
         }
 
-        // A1.7: credential request referencing a credentialObjectId unknown to the issuer -> API returns 201 (by design), the request then transitions to
+        // CS-REQ-06: credential request referencing a credentialObjectId unknown to the issuer -> API returns 201 (by design), the request then transitions to
         // ERROR with the issuer's error in errorDetail, observable via GET credentials/request/{holderPid}
-        @DisplayName("A1.7: A request for a credentialObjectId unknown to the issuer is accepted with 201, then transitions to ERROR carrying the issuer's error")
+        @DisplayName("CS-REQ-06: a credentialObjectId unknown to the issuer is accepted with 201, then transitions to ERROR carrying the issuer's error")
         @Test
         void createCredentialRequest_unknownCredentialObjectId_transitionsToError(IdentityHub identityHub, HolderCredentialRequestStore store) {
             var port = getFreePort();

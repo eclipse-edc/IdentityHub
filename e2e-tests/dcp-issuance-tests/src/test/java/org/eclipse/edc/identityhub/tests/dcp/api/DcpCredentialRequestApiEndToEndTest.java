@@ -142,6 +142,7 @@ public class DcpCredentialRequestApiEndToEndTest {
         }
 
         @Test
+        @DisplayName("IS-REQ-01: a valid CredentialRequestMessage from an authorized holder is accepted with 201 and a Location header")
         void requestCredential(IssuerService issuer, HolderService holderService,
                                CredentialDefinitionService credentialDefinitionService,
                                AttestationDefinitionService attestationDefinitionService,
@@ -239,6 +240,7 @@ public class DcpCredentialRequestApiEndToEndTest {
         }
 
         @Test
+        @DisplayName("IS-REQ-03: a CredentialRequestMessage missing required fields is rejected with 400")
         void requestCredential_validationError_shouldReturn400(IssuerService issuer) {
             var token = generateSiToken();
 
@@ -254,6 +256,7 @@ public class DcpCredentialRequestApiEndToEndTest {
         }
 
         @Test
+        @DisplayName("TOK-02: a request without an Authorization header is rejected with 401")
         void requestCredential_tokenNotPresent_shouldReturn401(IssuerService issuer) {
             issuer.getIssuerApiEndpoint().baseRequest()
                     .contentType(JSON)
@@ -303,6 +306,7 @@ public class DcpCredentialRequestApiEndToEndTest {
         }
 
         @Test
+        @DisplayName("TOK-09: a 'kid' naming a verification method outside the sender's DID document is rejected with 401")
         void requestCredential_spoofedKeyId_shouldReturn401(IssuerService issuer, HolderService holderService) throws JOSEException {
 
             var spoofedKeyId = "did:web:spoofed#key1";
@@ -327,6 +331,7 @@ public class DcpCredentialRequestApiEndToEndTest {
         }
 
         @Test
+        @DisplayName("TOK-05: an 'aud' that is not the receiver's DID is rejected with 401")
         void requestCredential_wrongTokenAudience_shouldReturn401(IssuerService issuer, HolderService holderService) throws JOSEException {
 
             holderService.createHolder(createHolder(PARTICIPANT_DID, PARTICIPANT_DID, "Participant"));
@@ -347,6 +352,7 @@ public class DcpCredentialRequestApiEndToEndTest {
         }
 
         @Test
+        @DisplayName("IS-REQ-05: a credential id absent from credentialsSupported is rejected with 400")
         void requestCredential_definitionNotFound_shouldReturn400(IssuerService issuer, HolderService holderService) throws JOSEException {
 
             holderService.createHolder(createHolder(PARTICIPANT_DID, PARTICIPANT_DID, "Participant"));
@@ -367,6 +373,7 @@ public class DcpCredentialRequestApiEndToEndTest {
         }
 
         @Test
+        @DisplayName("IS-REQ-08: a holder that does not meet the attestation requirements is rejected with 403")
         void requestCredential_attestationsNotFulfilled_shouldReturn403(IssuerService issuer,
                                                                         HolderService holderService,
                                                                         AttestationDefinitionService attestationDefinitionService,
@@ -419,11 +426,11 @@ public class DcpCredentialRequestApiEndToEndTest {
 
         }
 
-        // B2.9: with edc.iam.accesstoken.jti.validation=true on the issuer runtime, sending two requests with the SAME jti in the SI token -> second request 401.
+        // TOK-12: with edc.iam.accesstoken.jti.validation=true on the issuer runtime, sending two requests with the SAME jti in the SI token -> second request 401.
         // NOTE: the issuer runtime used here already enables jti validation (DefaultRuntimes.Issuer.config() sets
         // edc.iam.accesstoken.jti.validation=true), so no dedicated config-variant runtime is required.
         @Test
-        @DisplayName("B2.9: replaying an SI token with the same jti is rejected with 401 on the second request")
+        @DisplayName("TOK-12: replaying an SI token with the same jti is rejected with 401 on the second request")
         void requestCredential_jtiReplay_shouldReturn401(IssuerService issuer, HolderService holderService) throws JOSEException {
             // registered holder, resolvable key
             holderService.createHolder(createHolder(PARTICIPANT_DID, PARTICIPANT_DID, "Participant"));

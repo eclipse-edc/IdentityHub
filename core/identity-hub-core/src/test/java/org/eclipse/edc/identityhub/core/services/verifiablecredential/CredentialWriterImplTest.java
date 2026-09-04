@@ -89,6 +89,7 @@ class CredentialWriterImplTest {
     }
 
     @Test
+    @DisplayName("CS-STOR-01: a valid CredentialMessage stores the credential and completes the request")
     void write() {
         when(credentialTransformerRegistry.transform(isA(String.class), eq(VerifiableCredential.class)))
                 .thenReturn(Result.success(createCredential().build()));
@@ -111,6 +112,7 @@ class CredentialWriterImplTest {
     }
 
     @Test
+    @DisplayName("CS-STOR-08: a credential type that was not requested is rejected and nothing is stored")
     void write_typeNotRequested() {
         when(credentialTransformerRegistry.transform(isA(String.class), eq(VerifiableCredential.class))).thenReturn(Result.success(createCredential().types(List.of("NotRequestedCredential")).build()));
 
@@ -121,6 +123,7 @@ class CredentialWriterImplTest {
     }
 
     @Test
+    @DisplayName("CS-STOR-08: a credential format that was not requested is rejected and nothing is stored")
     void write_formatNotRequested() {
         when(credentialTransformerRegistry.transform(isA(String.class), eq(VerifiableCredential.class))).thenReturn(Result.success(createCredential().build()));
 
@@ -170,6 +173,7 @@ class CredentialWriterImplTest {
     }
 
     @Test
+    @DisplayName("CS-STOR-07: a holderPid matching no pending request is rejected and nothing is stored")
     void write_noHolderRequestFound_expectFailure() {
         when(holderCredentialRequestStore.findByIdAndLease(anyString())).thenReturn(StoreResult.notFound("foo"));
 
@@ -193,9 +197,9 @@ class CredentialWriterImplTest {
         verifyNoInteractions(credentialStore, credentialTransformerRegistry);
     }
 
-    // A3.17: status=ISSUED with empty credentials list -> accepted as no-op: success, nothing stored, holder request state unchanged
+    // CS-STOR-06: status=ISSUED with empty credentials list -> accepted as no-op: success, nothing stored, holder request state unchanged
     @Test
-    @DisplayName("A3.17: an ISSUED message with an empty credentials list is a no-op and leaves the request state unchanged")
+    @DisplayName("CS-STOR-06: an ISSUED message with an empty credentials list is a no-op and leaves the request state unchanged")
     void write_emptyCredentials_expectNoOpSuccess() {
         // default fixture (setUp()) returns a request in state REQUESTED
 
@@ -207,9 +211,9 @@ class CredentialWriterImplTest {
         verify(holderCredentialRequestStore, never()).save(argThat(request -> request.getState() == ISSUED.code()));
     }
 
-    // A3.20: message issuerPid differs from the issuerPid already stored on the HolderCredentialRequest -> rejected, not silently overwritten
+    // CS-STOR-07: message issuerPid differs from the issuerPid already stored on the HolderCredentialRequest -> rejected, not silently overwritten
     @Test
-    @DisplayName("A3.20: a message whose issuerPid differs from the one stored on the request is rejected")
+    @DisplayName("CS-STOR-07: a message whose issuerPid differs from the one stored on the request is rejected")
     void write_issuerPidMismatch_expectFailure() {
         // the stored request already carries a different issuerPid
         when(holderCredentialRequestStore.findByIdAndLease(anyString())).thenReturn(StoreResult.success(HolderCredentialRequest.Builder.newInstance()
@@ -229,9 +233,9 @@ class CredentialWriterImplTest {
         verify(holderCredentialRequestStore, never()).save(argThat(request -> "a-different-issuer-pid".equals(request.getIssuerPid())));
     }
 
-    // A3.21: cross-tenant — holderPid belongs to a request of participant B, but write() is called with participantContextId A -> not-found/unauthorized, nothing stored
+    // CS-STOR-07: cross-tenant — holderPid belongs to a request of participant B, but write() is called with participantContextId A -> not-found/unauthorized, nothing stored
     @Test
-    @DisplayName("A3.21: a holderPid belonging to another participant context is rejected and nothing is stored")
+    @DisplayName("CS-STOR-07: a holderPid belonging to another participant context is rejected and nothing is stored")
     void write_holderRequestBelongsToOtherParticipantContext_expectFailure() {
         // the stored request belongs to participant B
         when(holderCredentialRequestStore.findByIdAndLease(anyString())).thenReturn(StoreResult.success(HolderCredentialRequest.Builder.newInstance()
@@ -252,9 +256,9 @@ class CredentialWriterImplTest {
         verify(credentialStore, never()).create(any());
     }
 
-    // A3.24: exact re-delivery of the same credential to a request already in ISSUED -> no-op success, credentialStore.create not called again, no duplicate
+    // CS-STOR-13: exact re-delivery of the same credential to a request already in ISSUED -> no-op success, credentialStore.create not called again, no duplicate
     @Test
-    @DisplayName("A3.24: re-delivery of the same credential to an ISSUED request is an idempotent no-op without duplicate storage")
+    @DisplayName("CS-STOR-13: re-delivery of the same credential to an ISSUED request is an idempotent no-op without duplicate storage")
     void write_redeliveryToIssuedRequest_expectIdempotentNoOp() {
         // the request is already in state ISSUED
         when(holderCredentialRequestStore.findByIdAndLease(anyString())).thenReturn(StoreResult.success(HolderCredentialRequest.Builder.newInstance()
@@ -280,7 +284,7 @@ class CredentialWriterImplTest {
 
     // A3.25 / CS-STOR-05: a REJECTED CredentialMessage fails the pending request instead of leaving it waiting forever
     @Test
-    @DisplayName("A3.25: a rejection from the request's issuer moves the request to ERROR and stores nothing")
+    @DisplayName("CS-STOR-05: a rejection from the request's issuer moves the request to ERROR and stores nothing")
     void reject_pendingRequest_expectTransitionToError() {
         var request = HolderCredentialRequest.Builder.newInstance()
                 .issuerDid(ISSUER_DID)
@@ -301,7 +305,7 @@ class CredentialWriterImplTest {
     }
 
     @Test
-    @DisplayName("A3.25: a rejection without a reason still fails the request")
+    @DisplayName("CS-STOR-05: a rejection without a reason still fails the request")
     void reject_withoutReason_expectTransitionToError() {
         var request = HolderCredentialRequest.Builder.newInstance()
                 .issuerDid(ISSUER_DID)
@@ -320,7 +324,7 @@ class CredentialWriterImplTest {
     }
 
     @Test
-    @DisplayName("A3.25: a rejection from an issuer other than the one addressed is not accepted")
+    @DisplayName("CS-STOR-09: a rejection from an issuer other than the one addressed is not accepted")
     void reject_fromDifferentIssuer_expectUnauthorized() {
         var request = HolderCredentialRequest.Builder.newInstance()
                 .issuerDid(ISSUER_DID)
@@ -340,7 +344,7 @@ class CredentialWriterImplTest {
     }
 
     @Test
-    @DisplayName("A3.25: a rejection trailing a completed issuance is acknowledged but does not undo it")
+    @DisplayName("CS-STOR-13: a rejection trailing a completed issuance is acknowledged but does not undo it")
     void reject_afterCredentialsIssued_expectNoOp() {
         var request = HolderCredentialRequest.Builder.newInstance()
                 .issuerDid(ISSUER_DID)
@@ -360,7 +364,7 @@ class CredentialWriterImplTest {
     }
 
     @Test
-    @DisplayName("A3.25: a rejection for another participant context's request is not observable")
+    @DisplayName("CS-STOR-05: a rejection for another participant context's request is not observable")
     void reject_crossTenant_expectNotFound() {
         var request = HolderCredentialRequest.Builder.newInstance()
                 .issuerDid(ISSUER_DID)

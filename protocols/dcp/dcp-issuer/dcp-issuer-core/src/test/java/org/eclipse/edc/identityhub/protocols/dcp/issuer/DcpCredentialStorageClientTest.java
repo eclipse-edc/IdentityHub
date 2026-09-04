@@ -109,9 +109,9 @@ class DcpCredentialStorageClientTest {
         when(httpClient.execute(any(Request.class))).thenReturn(response(200));
     }
 
-    // B5.5: successful delivery POSTs a CredentialMessage to <credentialService>/credentials with issuerPid = process id,
+    // IS-DELIV-01 / IS-DELIV-02: successful delivery POSTs a CredentialMessage to <credentialService>/credentials with issuerPid = process id,
     // holderPid, status ISSUED and an Authorization Bearer header carrying the SI token
-    @DisplayName("B5.5: successful delivery POSTs a CredentialMessage with issuerPid, holderPid, status ISSUED and a Bearer token")
+    @DisplayName("IS-DELIV-01 / IS-DELIV-02: successful delivery POSTs a CredentialMessage with issuerPid, holderPid, status ISSUED and an SI token")
     @Test
     void deliverCredentials_success() throws IOException {
         var process = issuanceProcess();
@@ -215,9 +215,9 @@ class DcpCredentialStorageClientTest {
         assertThat(result).isFailed().detail().contains("connection reset");
     }
 
-    // B5.4: when the holder's original request SI token contained a 'token' claim (access token), the delivery SI token
+    // IS-DELIV-03: when the holder's original request SI token contained a 'token' claim (access token), the delivery SI token
     // MUST carry that same access token in its own 'token' claim (DCP spec requirement)
-    @DisplayName("B5.4: the delivery SI token carries the access token from the holder's original request in its 'token' claim")
+    @DisplayName("IS-DELIV-03: the delivery SI token carries the access token from the holder's original request in its 'token' claim")
     @Test
     void deliverCredentials_shouldEchoAccessTokenFromOriginalRequest() {
         when(vault.resolveSecret(ISSUANCE_PROCESS_ID)).thenReturn(HOLDER_ACCESS_TOKEN);
@@ -232,7 +232,7 @@ class DcpCredentialStorageClientTest {
         assertThat(claimsCaptor.getValue()).containsEntry("token", HOLDER_ACCESS_TOKEN);
     }
 
-    @DisplayName("B5.4: no 'token' claim is emitted when the holder did not supply an access token")
+    @DisplayName("IS-DELIV-03: no 'token' claim is emitted when the holder did not supply an access token")
     @ParameterizedTest(name = "vault returns \"{0}\"")
     @NullSource
     @ValueSource(strings = { "", "  " })
@@ -267,7 +267,7 @@ class DcpCredentialStorageClientTest {
 
     // RT-03: an issuance that failed after acceptance is reported to the Holder as a CredentialMessage with status
     // REJECTED, correlating on the same pids as a delivery would, and carrying no credentials
-    @DisplayName("B5.6: a rejection POSTs a CredentialMessage with status REJECTED, the same pids and no credentials")
+    @DisplayName("IS-REQ-02: a rejection POSTs a CredentialMessage with status REJECTED, the same pids and no credentials")
     @Test
     void deliverRejection_success() throws IOException {
         var process = issuanceProcess();
@@ -293,7 +293,7 @@ class DcpCredentialStorageClientTest {
         assertThat(message).doesNotContainKey(CREDENTIALS_TERM);
     }
 
-    @DisplayName("B5.6: a rejection without a reason omits the rejectionReason property")
+    @DisplayName("IS-REQ-02: a rejection without a reason omits the rejectionReason property")
     @Test
     void deliverRejection_withoutReason_omitsRejectionReason() throws IOException {
         var result = client.deliverRejection(issuanceProcess(), null);
@@ -309,7 +309,7 @@ class DcpCredentialStorageClientTest {
         assertThat(message).doesNotContainKey(REJECTION_REASON_TERM);
     }
 
-    @DisplayName("B5.6: a rejection fails when the holder's Credential Service rejects it")
+    @DisplayName("IS-REQ-02: a rejection fails when the holder's Credential Service rejects it")
     @Test
     void deliverRejection_whenNonSuccessfulResponse_returnsFailure() throws IOException {
         when(httpClient.execute(any(Request.class))).thenReturn(response(400));

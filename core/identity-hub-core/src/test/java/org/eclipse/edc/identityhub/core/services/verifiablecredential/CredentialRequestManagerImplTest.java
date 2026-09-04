@@ -150,6 +150,7 @@ class CredentialRequestManagerImplTest {
     @Nested
     class Initiate {
         @Test
+        @DisplayName("CS-REQ-01: initiating a request persists it against the addressed issuer")
         void initiateRequest() {
             var result = credentialRequestService.initiateRequest("test-participant", ISSUER_DID, "test-holder-request-id", List.of(new RequestedCredential("test-id", "TestCredential", CredentialFormat.VC1_0_JWT.toString())));
             assertThat(result)
@@ -198,6 +199,7 @@ class CredentialRequestManagerImplTest {
         private static final Duration MAX_DURATION = Duration.ofSeconds(5);
 
         @ParameterizedTest(name = "state = {0}")
+        @DisplayName("CS-REQ-01 / CS-REQ-02 / CS-REQ-03: the CredentialRequestMessage, its SI token and the discovered endpoint are formed as the spec requires")
         @ValueSource(strings = { "CREATED", "REQUESTING" })
         void processInitial_shouldSendRequest(String stateString) {
             var state = HolderRequestState.valueOf(stateString);
@@ -225,6 +227,7 @@ class CredentialRequestManagerImplTest {
         }
 
         @ParameterizedTest(name = "state = {0}")
+        @DisplayName("CS-REQ-08: an unresolvable issuer DID fails the request cleanly, with no message sent")
         @ValueSource(strings = { "CREATED", "REQUESTING" })
         void processInitial_whenDidNotResolvable_shouldTransitionToError(String stateString) {
             var state = HolderRequestState.valueOf(stateString);
@@ -248,6 +251,7 @@ class CredentialRequestManagerImplTest {
         }
 
         @ParameterizedTest(name = "state = {0}")
+        @DisplayName("CS-REQ-08: an issuer DID document without an IssuerService entry fails the request cleanly")
         @ValueSource(strings = { "CREATED", "REQUESTING" })
         void processInitial_whenDidDoesNotContainEndpoint_shouldTransitionToError(String stateString) {
             var state = HolderRequestState.valueOf(stateString);
@@ -300,6 +304,7 @@ class CredentialRequestManagerImplTest {
         }
 
         @ParameterizedTest(name = "state = {0}")
+        @DisplayName("CS-REQ-06: a synchronous error from the issuer moves the request to ERROR instead of retrying forever")
         @ValueSource(strings = { "CREATED", "REQUESTING" })
         void processInitial_whenIssuerReturnsError_shouldTransitionToError(String stateString) {
             var state = HolderRequestState.valueOf(stateString);
@@ -324,9 +329,9 @@ class CredentialRequestManagerImplTest {
             });
         }
 
-        // A2.7: re-processing a request in REQUESTING (after crash/restart) re-sends the DCP request idempotently: same holderPid reused, an issuer 409/duplicate response must not transition the request to ERROR
+        // CS-REQ-05: re-processing a request in REQUESTING (after crash/restart) re-sends the DCP request idempotently: same holderPid reused, an issuer 409/duplicate response must not transition the request to ERROR
         @Test
-        @DisplayName("A2.7: re-processing a REQUESTING request reuses the holderPid, and an issuer duplicate response does not transition it to ERROR")
+        @DisplayName("CS-REQ-05: a re-sent request keeps its holderPid, and the issuer's duplicate response counts as acceptance")
         void processRequesting_whenIssuerReportsDuplicate_shouldNotTransitionToError() {
             // a request that was already sent once (state REQUESTING); the issuer answers with 409/duplicate
             when(resolver.resolve(eq(ISSUER_DID))).thenReturn(success(didDocument()));
@@ -353,9 +358,9 @@ class CredentialRequestManagerImplTest {
         }
 
 
-        // A6.5/C9: a request the Issuer accepted can still fail later, so the Holder polls the Issuer's status endpoint
+        // CS-REQ-07: a request the Issuer accepted can still fail later, so the Holder polls the Issuer's status endpoint
         @Test
-        @DisplayName("A6.5: an Issuer that reports REJECTED moves the request to ERROR")
+        @DisplayName("CS-REQ-07: an Issuer that reports REJECTED moves the request to ERROR")
         void processRequested_whenIssuerReportsRejected_shouldTransitionToError() {
             when(resolver.resolve(eq(ISSUER_DID))).thenReturn(success(didDocument()));
             when(httpClient.execute(any(), (Function<Response, Result<CredentialRequestStatus>>) any()))
@@ -375,7 +380,7 @@ class CredentialRequestManagerImplTest {
         }
 
         @Test
-        @DisplayName("A6.5: an Issuer that reports RECEIVED leaves the request pending")
+        @DisplayName("CS-REQ-07: an Issuer that reports RECEIVED leaves the request pending")
         void processRequested_whenIssuerReportsReceived_shouldStayRequested() {
             when(resolver.resolve(eq(ISSUER_DID))).thenReturn(success(didDocument()));
             when(httpClient.execute(any(), (Function<Response, Result<CredentialRequestStatus>>) any()))
@@ -394,7 +399,7 @@ class CredentialRequestManagerImplTest {
         }
 
         @Test
-        @DisplayName("A6.5: a request whose Issuer process ID is unknown is not polled")
+        @DisplayName("CS-REQ-07: a request whose Issuer process ID is unknown is not polled")
         void processRequested_whenIssuerPidUnknown_shouldNotQueryIssuer() {
             var rq = createRequest().state(REQUESTED.code()).build();
             when(store.query(any())).thenReturn(List.of(rq));

@@ -111,6 +111,7 @@ public class IssuanceProcessManagerImplTest {
     }
 
 
+    @DisplayName("IS-DELIV-01: an approved process generates the credentials and dispatches them to the holder")
     @Test
     void approved_shouldGenerateAndDispatchCredentials() {
 
@@ -178,6 +179,7 @@ public class IssuanceProcessManagerImplTest {
         });
     }
 
+    @DisplayName("IS-REQ-02: a generation failure after acceptance moves the process to ERRORED, reported as REJECTED")
     @Test
     void approved_shouldTransitionToErrored_whenGenerationErrors() {
 
@@ -210,8 +212,8 @@ public class IssuanceProcessManagerImplTest {
         });
     }
 
-    // B3.3: failure in the "add credentials to status list" step is a FATAL_ERROR: the process transitions to ERRORED immediately, without retry
-    @DisplayName("B3.3: status-list failure transitions the process to ERRORED immediately, without retry")
+    // IS-REQ-02: failure in the "add credentials to status list" step is a FATAL_ERROR: the process transitions to ERRORED immediately, without retry
+    @DisplayName("IS-REQ-02: status-list failure transitions the process to ERRORED immediately, without retry")
     @Test
     void approved_shouldTransitionToErroredImmediately_whenStatusListUpdateFails() {
         var credentialDefinition = CredentialDefinition.Builder.newInstance()
@@ -264,8 +266,8 @@ public class IssuanceProcessManagerImplTest {
         });
     }
 
-    // B3.4: delivery failure -> retry (transitionToApproved, stateCount incremented); once the retry limit is exhausted -> ERRORED with error detail, errored event fired
-    @DisplayName("B3.4: delivery failure is retried, then transitions to ERRORED once the retry limit is exhausted")
+    // IS-DELIV-05: delivery failure -> retry (transitionToApproved, stateCount incremented); once the retry limit is exhausted -> ERRORED with error detail, errored event fired
+    @DisplayName("IS-DELIV-05: delivery failure is retried, then transitions to ERRORED once the retry limit is exhausted")
     @Test
     void approved_shouldRetryAndEventuallyError_whenDeliveryFails() {
         var credentialDefinition = CredentialDefinition.Builder.newInstance()
@@ -331,7 +333,7 @@ public class IssuanceProcessManagerImplTest {
 
     // RT-03: the rejection notice is best effort - a holder that cannot be reached must not keep the process out of its
     // terminal state, because the failure is still served by the Credential Request Status API
-    @DisplayName("B3.6: a failing rejection notice does not keep the process out of ERRORED")
+    @DisplayName("IS-REQ-02: a failing rejection notice does not keep the process out of ERRORED")
     @Test
     void error_whenRejectionNoticeFails_stillTransitionsToErrored() {
         var process = IssuanceProcess.Builder.newInstance().state(APPROVED.code())
@@ -362,8 +364,8 @@ public class IssuanceProcessManagerImplTest {
         });
     }
 
-    // B3.5: credential store failure AFTER successful delivery -> the process retries and RE-DELIVERS on the next tick (duplicate delivery)
-    @DisplayName("B3.5: a store failure after successful delivery causes the credentials to be re-delivered on the next iteration")
+    // IS-DELIV-06: credential store failure AFTER successful delivery -> the process retries and RE-DELIVERS on the next tick (duplicate delivery)
+    @DisplayName("IS-DELIV-06: a store failure after successful delivery causes the credentials to be re-delivered on the next iteration")
     @Test
     void approved_shouldRedeliver_whenStoreFailsAfterSuccessfulDelivery() {
         // NOTE: the "Deliver Credentials" step runs BEFORE "Store Credentials"; a store failure sends the process back to

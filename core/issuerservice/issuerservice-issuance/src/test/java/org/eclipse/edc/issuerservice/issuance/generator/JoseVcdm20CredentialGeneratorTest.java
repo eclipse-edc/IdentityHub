@@ -33,6 +33,7 @@ import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.token.JwtGenerationService;
 import org.eclipse.edc.token.spi.TokenGenerationService;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.text.ParseException;
@@ -76,6 +77,7 @@ class JoseVcdm20CredentialGeneratorTest {
     }
 
     @Test
+    @DisplayName("IS-DELIV-04: a generated vc20-bssl/jwt credential is signed and carries the properties its data model requires")
     void generateCredential() throws ParseException {
         var subjectClaims = Map.of("name", "Foo Bar");
         var statusClaims = Map.of("id", UUID.randomUUID().toString(),

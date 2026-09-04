@@ -96,6 +96,7 @@ class CredentialOfferApiControllerTest extends RestControllerTestBase {
     }
 
     @Test
+    @DisplayName("CS-OFF-01: a valid CredentialOfferMessage is accepted")
     void offerCredential_success() {
         baseRequest()
                 .body(createRequestBody())
@@ -126,6 +127,7 @@ class CredentialOfferApiControllerTest extends RestControllerTestBase {
     }
 
     @Test
+    @DisplayName("TOK-02: an offer without an Authorization header is rejected with 401")
     void offerCredential_missingAuthHeader_expect401() {
         given()
                 .contentType("application/json")
@@ -172,9 +174,9 @@ class CredentialOfferApiControllerTest extends RestControllerTestBase {
                 .statusCode(409);
     }
 
-    // A4.7: token-verification failure must return the same status code on both DCP endpoints — aligned on 401 (the Storage API already returns 401; this endpoint currently returns 403)
+    // CS-OFF-07 / CS-STOR-15: token-verification failure must return the same status code on both DCP endpoints — aligned on 401 (the Storage API already returns 401; this endpoint currently returns 403)
     @Test
-    @DisplayName("A4.7: token verification failure returns 401, consistent with the Storage API")
+    @DisplayName("CS-OFF-07 / CS-STOR-15: token verification failure returns 401, consistently on the Offer and Storage APIs")
     void offerCredential_invalidAuthToken_statusCode401() {
         when(tokenVerifier.verify(any(), anyString())).thenReturn(Result.failure("foobar"));
 

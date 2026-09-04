@@ -134,7 +134,7 @@ public class StorageApiEndToEndTest {
                     .forEach(sts -> accountStore.deleteById(sts.getId()).getContent());
         }
 
-        @DisplayName("Store JWT credential successfully")
+        @DisplayName("CS-STOR-01: a valid JWT credential delivery is accepted and the credential held")
         @Test
         void storeCredential(IdentityHub identityHub, CredentialStore credentialStore) throws JOSEException {
 
@@ -154,7 +154,7 @@ public class StorageApiEndToEndTest {
                     .allSatisfy(vc -> assertThat(vc.getStateAsEnum()).isEqualTo(VcStatus.ISSUED));
         }
 
-        @DisplayName("Issuer's DID not resolvable, expect HTTP 401")
+        @DisplayName("TOK-13: an unresolvable issuer DID is rejected with 401")
         @Test
         void storeCredential_didNotResolved(IdentityHub identityHub) {
             when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq(PROVIDER_DID + "#key1"))).thenReturn(Result.failure("not found"));
@@ -171,7 +171,7 @@ public class StorageApiEndToEndTest {
 
         }
 
-        @DisplayName("Issuer's auth token invalid, expect HTTP 401")
+        @DisplayName("TOK-08: a token signed with a key absent from the sender's DID document is rejected with 401")
         @Test
         void storeCredential_tokenSignedWithWrongKey(IdentityHub identityHub) throws JOSEException {
             var wrongKey = new ECKeyGenerator(Curve.P_256).generate();
@@ -212,7 +212,7 @@ public class StorageApiEndToEndTest {
                     .body(containsString("Invalid format"));
         }
 
-        @DisplayName("Store LD credential successfully")
+        @DisplayName("CS-STOR-02: a JSON-LD credential delivery is accepted and the credential held")
         @Test
         void storeCredential_jsonLdCredential(IdentityHub identityHub, CredentialStore credentialStore) throws JOSEException {
             when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq(PROVIDER_DID + "#key1"))).thenReturn(Result.success(PROVIDER_KEY.toPublicKey()));
@@ -241,7 +241,7 @@ public class StorageApiEndToEndTest {
                     .allSatisfy(vc -> assertThat(vc.getVerifiableCredential().format()).isEqualTo(CredentialFormat.VC1_0_LD));
         }
 
-        @DisplayName("No corresponding holder credential request was found, expect HTTP 404")
+        @DisplayName("CS-STOR-07: a holderPid matching no pending request is rejected with 404")
         @Test
         void storeCredential_whenNoCredentialRequest(IdentityHub identityHub) throws JOSEException {
             when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq(PROVIDER_DID + "#key1"))).thenReturn(Result.success(PROVIDER_KEY.toPublicKey()));
@@ -283,7 +283,7 @@ public class StorageApiEndToEndTest {
                     .body(containsString("HolderCredentialRequest is expected to be in any of the states '[REQUESTED, ISSUED]' but was 'CREATED'"));
         }
 
-        @DisplayName("Corresponding holder credential request was made for a different credential format, expect 400")
+        @DisplayName("CS-STOR-08: a credential format that was not requested is rejected with 400")
         @Test
         void storeCredential_whenFormatNotRequested(IdentityHub identityHub) throws JOSEException {
 
@@ -309,8 +309,8 @@ public class StorageApiEndToEndTest {
                     .body(containsString("No credential request was made for Credentials "));
         }
 
-        // A3.16: CredentialMessage with status=REJECTED -> 2xx, nothing stored, holder request ends in an error/rejected state, NOT in ISSUED (currently still transitions to ISSUED)
-        @DisplayName("A3.16: A CredentialMessage with status=REJECTED stores nothing and fails the request")
+        // CS-STOR-05: CredentialMessage with status=REJECTED -> 2xx, nothing stored, holder request ends in an error/rejected state, NOT in ISSUED (currently still transitions to ISSUED)
+        @DisplayName("CS-STOR-05: a CredentialMessage with status=REJECTED stores nothing and fails the request")
         @Test
         void storeCredential_whenStatusRejected_shouldNotStoreAndTransitionToError(IdentityHub identityHub, CredentialStore credentialStore, HolderCredentialRequestStore requestStore) throws JOSEException {
             // valid issuer key + a REJECTED message correlating to the pending request from setup()
@@ -347,8 +347,8 @@ public class StorageApiEndToEndTest {
             assertThat(holderRequest.getErrorDetail()).contains("attestation could not be satisfied");
         }
 
-        // A3.18: delivery signed by a DIFFERENT issuer DID than the one the request was addressed to (valid SI token for that other DID, correct aud) -> 4xx, nothing stored (currently accepted when type/format match)
-        @DisplayName("A3.18: A delivery from a different issuer than the request's issuerDid is rejected")
+        // CS-STOR-09: delivery signed by a DIFFERENT issuer DID than the one the request was addressed to (valid SI token for that other DID, correct aud) -> 4xx, nothing stored (currently accepted when type/format match)
+        @DisplayName("CS-STOR-09: a delivery from a different issuer than the request was addressed to is rejected")
         @Test
         void storeCredential_fromDifferentIssuerThanRequested_shouldReject(IdentityHub identityHub, CredentialStore credentialStore) throws JOSEException {
             // the pending request from setup() was addressed to PROVIDER_DID, but the delivery comes from another (resolvable) issuer DID
@@ -376,9 +376,9 @@ public class StorageApiEndToEndTest {
             assertThat(credentialStore.query(QuerySpec.max()).getContent()).isEmpty();
         }
 
-        // A3.19: delivery from an issuer that is not trusted by the holder -> 4xx, nothing stored. An Issuer is trusted for a
+        // CS-STOR-10: delivery from an issuer that is not trusted by the holder -> 4xx, nothing stored. An Issuer is trusted for a
         // request exactly when the Holder addressed that request to it, so an Issuer that was never asked is not trusted.
-        @DisplayName("A3.19: A delivery from an issuer that is not trusted by the holder is rejected")
+        @DisplayName("CS-STOR-10: a delivery from an issuer that is not trusted by the holder is rejected")
         @Test
         void storeCredential_fromUntrustedIssuer_shouldReject(IdentityHub identityHub, CredentialStore credentialStore) throws JOSEException {
             // token verification succeeds for this issuer, but no credential request was ever sent to it
@@ -405,8 +405,8 @@ public class StorageApiEndToEndTest {
             assertThat(credentialStore.query(QuerySpec.max()).getContent()).isEmpty();
         }
 
-        // A3.22: credential payload whose JWT signature does not verify against the issuer's DID key (tampered payload) -> 4xx, nothing stored (currently stored without cryptographic verification)
-        @DisplayName("A3.22: A credential payload whose JWT signature does not verify is rejected")
+        // CS-STOR-11: credential payload whose JWT signature does not verify against the issuer's DID key (tampered payload) -> 4xx, nothing stored (currently stored without cryptographic verification)
+        @DisplayName("CS-STOR-11: a credential payload whose JWT signature does not verify is rejected")
         @Test
         void storeCredential_tamperedCredentialSignature_shouldReject(IdentityHub identityHub, CredentialStore credentialStore) throws JOSEException {
             when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq(PROVIDER_DID + "#key1"))).thenReturn(Result.success(PROVIDER_KEY.toPublicKey()));
@@ -435,9 +435,9 @@ public class StorageApiEndToEndTest {
             assertThat(credentialStore.query(QuerySpec.max()).getContent()).isEmpty();
         }
 
-        // A3.22: only token-based credentials can be verified, so a credential carrying an embedded Linked-Data proof is
+        // CS-STOR-11: only token-based credentials can be verified, so a credential carrying an embedded Linked-Data proof is
         // stored as it is - even one whose proof does not hold up
-        @DisplayName("A3.22: A credential that is not token-based is stored without verifying its proof")
+        @DisplayName("CS-STOR-11: a credential that is not token-based is stored without verifying its proof")
         @Test
         void storeCredential_nonTokenBasedCredential_shouldPass(IdentityHub identityHub, CredentialStore credentialStore) throws JOSEException {
             when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq(PROVIDER_DID + "#key1"))).thenReturn(Result.success(PROVIDER_KEY.toPublicKey()));
@@ -467,8 +467,8 @@ public class StorageApiEndToEndTest {
                     .allSatisfy(vc -> assertThat(vc.getVerifiableCredential().format()).isEqualTo(CredentialFormat.VC1_0_LD));
         }
 
-        // A3.23: credential whose credentialSubject.id is NOT the holder participant's DID -> 4xx, nothing stored (currently stored)
-        @DisplayName("A3.23: A credential whose credentialSubject.id is not the holder's DID is rejected")
+        // CS-STOR-12: credential whose credentialSubject.id is NOT the holder participant's DID -> 4xx, nothing stored (currently stored)
+        @DisplayName("CS-STOR-12: a credential whose credentialSubject.id is not the holder's DID is rejected")
         @Test
         void storeCredential_subjectNotHolderDid_shouldReject(IdentityHub identityHub, CredentialStore credentialStore) throws JOSEException {
             when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq(PROVIDER_DID + "#key1"))).thenReturn(Result.success(PROVIDER_KEY.toPublicKey()));
@@ -506,8 +506,8 @@ public class StorageApiEndToEndTest {
             assertThat(credentialStore.query(QuerySpec.max()).getContent()).isEmpty();
         }
 
-        // A3.10: replaying the exact same SI token for a second delivery -> 401. The shared runtime enables "edc.iam.accesstoken.jti.validation=true" (see DefaultRuntimes.IdentityHub.config())
-        @DisplayName("A3.10: Replaying the same SI token for a second delivery returns 401 (jti replay protection)")
+        // TOK-12: replaying the exact same SI token for a second delivery -> 401. The shared runtime enables "edc.iam.accesstoken.jti.validation=true" (see DefaultRuntimes.IdentityHub.config())
+        @DisplayName("TOK-12: replaying the same SI token for a second delivery returns 401")
         @Test
         void storeCredential_replayedSiToken_shouldReturn401(IdentityHub identityHub, CredentialStore credentialStore) throws JOSEException {
             when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq(PROVIDER_DID + "#key1"))).thenReturn(Result.success(PROVIDER_KEY.toPublicKey()));

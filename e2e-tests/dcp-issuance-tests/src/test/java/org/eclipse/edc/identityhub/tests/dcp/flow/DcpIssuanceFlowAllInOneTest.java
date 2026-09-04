@@ -68,6 +68,7 @@ import org.hamcrest.Matchers;
 import org.jetbrains.annotations.NotNull;
 import org.jspecify.annotations.NonNull;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
@@ -203,6 +204,7 @@ public class DcpIssuanceFlowAllInOneTest {
         }
 
         @Test
+        @DisplayName("RT-01: request -> issue -> deliver round trip, with issuer and holder in one runtime")
         void testCredentialIssuance(IssuerService issuer, IdentityHub identityHub) {
             var holderRequestId = UUID.randomUUID().toString();
 
@@ -282,6 +284,7 @@ public class DcpIssuanceFlowAllInOneTest {
         }
 
         @Test
+        @DisplayName("RT-07: a credential nearing expiry is re-issued and the holder ends up holding the fresh one")
         void testRenewal(IssuerService issuer, IdentityHub identityHub) {
             var holderRequestId = UUID.randomUUID().toString();
 
@@ -335,6 +338,7 @@ public class DcpIssuanceFlowAllInOneTest {
         }
 
         @Test
+        @DisplayName("RT-05: revoking an issued credential flips its published status list, observable by a verifier")
         void testRevoke(IssuerService issuer, IdentityHub identityHub) throws ParseException {
             var holderRequestId = UUID.randomUUID().toString();
 
@@ -380,6 +384,7 @@ public class DcpIssuanceFlowAllInOneTest {
         }
 
         @Test
+        @DisplayName("CS-PRES-08: a scope query by credential type returns a VP containing the issued credential")
         void testPresentationQuery(IssuerService issuer, IdentityHub identityHub) throws JOSEException, ParseException {
             // set up consumer DID
             var consumerDid = "did:example:consumer";

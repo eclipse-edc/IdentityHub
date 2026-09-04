@@ -135,7 +135,7 @@ public class CredentialOfferApiEndToEndTest {
                     .forEach(sts -> accountStore.deleteById(sts.getId()).getContent());
         }
 
-        @DisplayName("Store CredentialOffer - success")
+        @DisplayName("CS-OFF-01: a valid CredentialOfferMessage is accepted and stored")
         @Test
         void storeCredentialOffer(IdentityHub identityHub, CredentialOfferStore credentialOfferStore) throws JOSEException {
             when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq(PROVIDER_DID + "#key1"))).thenReturn(Result.success(PROVIDER_KEY.toPublicKey()));
@@ -155,7 +155,7 @@ public class CredentialOfferApiEndToEndTest {
                     .allSatisfy(co -> assertThat(co.getStateAsEnum()).isEqualTo(CredentialOfferStatus.PROCESSED)));
         }
 
-        @DisplayName("Issuer's DID not resolvable, expect HTTP 403")
+        @DisplayName("TOK-13: an unresolvable issuer DID is rejected")
         @Test
         void storeCredentialOffer_didNotResolved(IdentityHub identityHub) {
             when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq(PROVIDER_DID + "#key1"))).thenReturn(Result.failure("not found"));
@@ -172,7 +172,7 @@ public class CredentialOfferApiEndToEndTest {
 
         }
 
-        @DisplayName("Issuer's auth token invalid, expect HTTP 401")
+        @DisplayName("TOK-08: a token signed with a key absent from the sender's DID document is rejected with 401")
         @Test
         void storeCredentialOffer_tokenSignedWithWrongKey(IdentityHub identityHub) throws JOSEException {
             var wrongKey = new ECKeyGenerator(Curve.P_256).generate();
@@ -214,9 +214,9 @@ public class CredentialOfferApiEndToEndTest {
                     .body(containsString("Invalid format"));
         }
 
-        // A4.2: SPARSE offer (credentials entries containing only an id) -> the holder must resolve the remaining CredentialObject properties (type, profile)
+        // CS-OFF-02: SPARSE offer (credentials entries containing only an id) -> the holder must resolve the remaining CredentialObject properties (type, profile)
         // from the issuer's Issuer Metadata endpoint (spec MUST); the stored offer/auto-request must carry the resolved type and format
-        @DisplayName("A4.2: A sparse offer is completed by resolving type and profile from the issuer's Issuer Metadata")
+        @DisplayName("CS-OFF-02: a sparse offer is completed by resolving type and profile from the issuer's Issuer Metadata")
         @Test
         void storeCredentialOffer_sparseOffer_shouldResolveCredentialObjectFromIssuerMetadata(IdentityHub identityHub, CredentialOfferStore credentialOfferStore) throws JOSEException {
             var port = getFreePort();

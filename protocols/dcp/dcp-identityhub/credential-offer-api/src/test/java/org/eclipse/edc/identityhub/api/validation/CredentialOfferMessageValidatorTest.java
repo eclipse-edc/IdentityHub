@@ -40,6 +40,7 @@ class CredentialOfferMessageValidatorTest {
     private final CredentialOfferMessageValidator validator = new CredentialOfferMessageValidator();
 
     @Test
+    @DisplayName("CS-OFF-03: an offer message without an issuer fails validation")
     void validate_missingIssuer() {
         var msg = Json.createObjectBuilder()
                 .add(JsonLdKeywords.TYPE, "CredentialOfferMessage")
@@ -70,9 +71,9 @@ class CredentialOfferMessageValidatorTest {
         assertThat(validator.validate(msg)).isFailed();
     }
 
-    // A4.8: CredentialOfferMessage with an EMPTY credentials array -> validation failure (spec requires a non-empty array; currently passes)
+    // CS-OFF-04: CredentialOfferMessage with an EMPTY credentials array -> validation failure (spec requires a non-empty array; currently passes)
     @Test
-    @DisplayName("A4.8: a credential offer message with an empty credentials array fails validation")
+    @DisplayName("CS-OFF-04: an offer message with an empty credentials array fails validation")
     void validate_emptyCredentialsArray_shouldFail() {
         var msg = Json.createObjectBuilder()
                 .add(CREDENTIALS_NAMESPACE_W3C.toIri(CREDENTIAL_ISSUER_TERM), "test-issuer")
@@ -84,7 +85,7 @@ class CredentialOfferMessageValidatorTest {
     }
 
     @Test
-    @DisplayName("A4.8: a credential offer message with a null credentials array fails validation")
+    @DisplayName("CS-OFF-04: an offer message with a null credentials array fails validation")
     void validate_nullCredentialsArray_shouldFail() {
         // must use map, JsonObject does not allow null values
         var payload = new HashMap<String, String>();

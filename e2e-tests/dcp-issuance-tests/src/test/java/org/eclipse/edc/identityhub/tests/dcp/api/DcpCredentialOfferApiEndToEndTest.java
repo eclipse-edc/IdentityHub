@@ -50,6 +50,7 @@ import org.eclipse.edc.sql.testfixtures.PostgresqlEndToEndExtension;
 import org.eclipse.edc.validator.spi.ValidationResult;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
@@ -138,6 +139,7 @@ public class DcpCredentialOfferApiEndToEndTest {
         }
 
         @Test
+        @DisplayName("CS-OFF-01 / RT-02: an issuer-sent CredentialOfferMessage is accepted by the holder, which initiates the matching credential request")
         void offerCredential(IssuerService issuer, IdentityHub identityHub) throws JOSEException {
             when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq(issuerKey.getKeyID()))).thenReturn(Result.success(issuerKey.toPublicKey()));
 
@@ -247,6 +249,7 @@ public class DcpCredentialOfferApiEndToEndTest {
         }
 
         @Test
+        @DisplayName("CS-OFF-03: an offer without an issuer is rejected with 400")
         void offerCredential_missingIssuer_shouldReturn400(IdentityHub identityHub) {
             var message = Json.createObjectBuilder()
                     .add(DSPACE_DCP_NAMESPACE_V_1_0.toIri(CREDENTIALS_TERM), Json.createArrayBuilder().add(createCredentialObject(UUID.randomUUID().toString())))
@@ -283,6 +286,7 @@ public class DcpCredentialOfferApiEndToEndTest {
         }
 
         @Test
+        @DisplayName("TOK-02: an offer without an Authorization header is rejected with 401")
         void offerCredential_tokenNotPresent_shouldReturn401(IdentityHub identityHub) {
             identityHub.getCredentialsEndpoint().baseRequest()
                     .contentType(JSON)
@@ -321,6 +325,7 @@ public class DcpCredentialOfferApiEndToEndTest {
         }
 
         @Test
+        @DisplayName("TOK-05: an 'aud' that is not the receiver's DID is rejected with 401")
         void offerCredential_wrongTokenAudience_shouldReturn401(IdentityHub identityHub) throws JOSEException {
             when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq(PROVIDER_KEY_ID))).thenReturn(Result.success(PROVIDER_KEY.toPublicKey()));
 

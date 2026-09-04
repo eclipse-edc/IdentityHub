@@ -41,6 +41,7 @@ import org.eclipse.edc.validator.spi.ValidationResult;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
@@ -99,6 +100,7 @@ public class DcpCredentialRequestStatusApiEndToEndTest {
         }
 
         @Test
+        @DisplayName("IS-STAT-01: the requesting holder reads the status of its own request")
         void credentialStatus(IssuerService issuer, HolderService holderService,
                               IssuanceProcessStore issuanceProcessStore) throws JOSEException {
 
@@ -130,6 +132,7 @@ public class DcpCredentialRequestStatusApiEndToEndTest {
         }
 
         @Test
+        @DisplayName("IS-STAT-03: a different holder with a valid token cannot read another holder's request")
         void credentialStatus_wrongParticipant_shouldReturn401(IssuerService issuer, HolderService holderService,
                                                                IssuanceProcessStore issuanceProcessStore) throws JOSEException {
 
@@ -159,6 +162,7 @@ public class DcpCredentialRequestStatusApiEndToEndTest {
         }
 
         @Test
+        @DisplayName("TOK-02: a status query without an Authorization header is rejected with 401")
         void credentialStatus_tokenNotPresent_shouldReturn401(IssuerService issuer) {
             issuer.getIssuerApiEndpoint().baseRequest()
                     .contentType(JSON)
@@ -210,6 +214,7 @@ public class DcpCredentialRequestStatusApiEndToEndTest {
         }
 
         @Test
+        @DisplayName("TOK-09: a 'kid' naming a verification method outside the sender's DID document is rejected with 401")
         void credentialStatus_spoofedKeyId_shouldReturn401(IssuerService issuer, HolderService holderService, IssuanceProcessStore issuanceProcessStore) throws JOSEException {
             var process = createIssuanceProcess();
             holderService.createHolder(createHolder(PARTICIPANT_DID, PARTICIPANT_DID, "Participant"));
@@ -233,6 +238,7 @@ public class DcpCredentialRequestStatusApiEndToEndTest {
         }
 
         @Test
+        @DisplayName("TOK-05: an 'aud' that is not the receiver's DID is rejected with 401")
         void credentialStatus_wrongTokenAudience_shouldReturn401(IssuerService issuer, HolderService holderService, IssuanceProcessStore issuanceProcessStore) throws JOSEException {
 
             var process = createIssuanceProcess();
