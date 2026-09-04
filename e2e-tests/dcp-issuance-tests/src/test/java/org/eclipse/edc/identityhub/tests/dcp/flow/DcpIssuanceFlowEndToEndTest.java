@@ -57,7 +57,6 @@ import org.eclipse.edc.sql.testfixtures.PostgresqlEndToEndExtension;
 import org.eclipse.edc.validator.spi.ValidationResult;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Order;
@@ -531,20 +530,15 @@ public class DcpIssuanceFlowEndToEndTest {
                             .allSatisfy(r -> assertThat(r.getState()).isEqualTo(HolderRequestState.ERROR.code())));
         }
 
-        // C12: issuer rotates its signing key between two issuances -> credential 1 remains verifiable (old verificationMethod retained in DID document), credential 2 is signed with the new key
+        // RT-06: issuer rotates its signing key between two issuances -> credential 1 remains verifiable (old verificationMethod retained in DID document), credential 2 is signed with the new key
         @Test
-        @Disabled("""
-                Rotating the Issuer's signing key mutates state that the whole class shares: every test issued after it
-                gets credentials signed with the new key, and the runtime is never reset between tests. Enable this once it
-                runs against its own runtime.
-                """)
         @DisplayName("RT-06: after signing key rotation, previously issued credentials remain verifiable and new credentials are signed with the new key")
         void issuanceFlow_keyRotation_previouslyIssuedCredentialsRemainVerifiable(IssuerService issuer, IdentityHub identityHub) {
             // issuer with one credential definition and a fulfilled attestation
             var nameMapping = new MappingDefinition("participant.name", "credentialSubject.name", true);
             var idMapping = new MappingDefinition("participant.id", "credentialSubject.id", true);
             var credentialDefinitionId = UUID.randomUUID().toString();
-            var credentialType = "MembershipCredential_C12_" + UUID.randomUUID();
+            var credentialType = "MembershipCredential_RT06_" + UUID.randomUUID();
             var attestationDefinition = setupIssuer(issuer, Map.of(
                     "claim", "onboarding.signedDocuments",
                     "operator", "eq",
