@@ -84,6 +84,7 @@ public interface DefaultRuntimes {
                     put("edc.iam.credential.revocation.mimetype", "*/*");
                     put("edc.iam.credential.status.check.period", "1");
                     put("edc.iam.credential.status.check.delay", "0");
+                    put("edc.did.resolver.cache.expiry", "0"); // disable DID cache which would bite us when testing issuer key rotation
                 }
             });
         }
