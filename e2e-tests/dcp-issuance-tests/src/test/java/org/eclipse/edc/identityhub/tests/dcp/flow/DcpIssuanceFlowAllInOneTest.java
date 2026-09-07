@@ -81,6 +81,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import java.net.URI;
 import java.text.ParseException;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -379,6 +380,63 @@ public class DcpIssuanceFlowAllInOneTest {
         }
 
         @Test
+        @DisplayName("a re-issuance requested while the current credential is still valid supersedes it upon delivery")
+        void testReissuanceWithinValidity(IssuerService issuer, IdentityHub identityHub) {
+            var store = issuer.getService(CredentialStore.class);
+            var firstRequestId = UUID.randomUUID().toString();
+
+            identityHub.getIdentityEndpoint().baseRequest()
+                    .contentType(JSON)
+                    .header(new Header("x-api-key", participantToken))
+                    .body(createIssuanceRequest(firstRequestId))
+                    .post("/v1/participants/%s/credentials/request".formatted(PARTICIPANT_ID))
+                    .then()
+                    .log().ifValidationFails()
+                    .statusCode(201);
+
+            await().pollInterval(INTERVAL)
+                    .atMost(TIMEOUT)
+                    .untilAsserted(() -> assertThat(identityHub.getCredentialRequestForParticipant(PARTICIPANT_ID, firstRequestId))
+                            .hasSize(1)
+                            .allSatisfy(t -> assertThat(t.getState()).isEqualTo(HolderRequestState.ISSUED.code())));
+
+            var activeCredentials = activeMembershipCredentials(store);
+            assertThat(activeCredentials).hasSize(1);
+            var firstCredential = activeCredentials.get(0);
+            assertThat(firstCredential.getStateAsEnum()).isEqualTo(VcStatus.ISSUED);
+            assertThat(firstCredential.getVerifiableCredential().credential().getExpirationDate()).isAfter(Instant.now());
+
+            // request re-issuance long before the first credential expires - once the fresh credential is delivered,
+            // two technically valid credentials exist on the holder, and only the newer one may remain usable
+            var secondRequestId = UUID.randomUUID().toString();
+            identityHub.getIdentityEndpoint().baseRequest()
+                    .contentType(JSON)
+                    .header(new Header("x-api-key", participantToken))
+                    .body(createIssuanceRequest(secondRequestId))
+                    .post("/v1/participants/%s/credentials/request".formatted(PARTICIPANT_ID))
+                    .then()
+                    .log().ifValidationFails()
+                    .statusCode(201);
+
+            await().pollInterval(INTERVAL)
+                    .atMost(TIMEOUT)
+                    .untilAsserted(() -> {
+                        var active = activeMembershipCredentials(store);
+                        assertThat(active).hasSize(1);
+                        var newCredential = active.get(0);
+                        assertThat(newCredential.getId()).isNotEqualTo(firstCredential.getId());
+                        assertThat(newCredential.getStateAsEnum()).isEqualTo(VcStatus.ISSUED);
+
+                        var supersededResult = store.findById(firstCredential.getId());
+                        assertThat(supersededResult.succeeded()).isTrue();
+                        var superseded = supersededResult.getContent();
+                        assertThat(superseded.getVerifiableCredential().credential().getExpirationDate()).isAfter(Instant.now());
+                        assertThat(superseded.getStateAsEnum()).isEqualTo(VcStatus.EXPIRED);
+                        assertThat(superseded.getMetadata()).containsEntry(VerifiableCredentialResource.METADATA_SUPERSEDED_BY, newCredential.getId());
+                    });
+        }
+
+        @Test
         @DisplayName("RT-05: revoking an issued credential flips its published status list, observable by a verifier")
         void testRevoke(IssuerService issuer, IdentityHub identityHub) throws ParseException {
             var holderRequestId = UUID.randomUUID().toString();
@@ -504,6 +562,19 @@ public class DcpIssuanceFlowAllInOneTest {
                                 });
                     });
 
+        }
+
+        /**
+         * The holder's stored MembershipCredentials that are still usable in DCP interactions, i.e. neither expired nor revoked.
+         */
+        private List<VerifiableCredentialResource> activeMembershipCredentials(CredentialStore store) {
+            return store.query(QuerySpec.Builder.newInstance()
+                            .filter(new Criterion("usage", "=", CredentialUsage.Holder.toString()))
+                            .build())
+                    .getContent().stream()
+                    .filter(c -> c.getVerifiableCredential().credential().getType().contains("MembershipCredential"))
+                    .filter(c -> c.getStateAsEnum() != VcStatus.EXPIRED && c.getStateAsEnum() != VcStatus.REVOKED)
+                    .toList();
         }
 
         private @NonNull Map<String, Object> createIssuanceRequest(String holderRequestId) {
