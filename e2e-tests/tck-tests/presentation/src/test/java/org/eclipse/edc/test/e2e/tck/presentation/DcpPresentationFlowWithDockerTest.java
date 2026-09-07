@@ -135,7 +135,7 @@ public class DcpPresentationFlowWithDockerTest {
 
         var response = createParticipant(identityHub, baseCredentialServiceUrl);
 
-        try (var tckContainer = new GenericContainer<>("eclipsedataspacetck/dcp-tck-runtime:sha-f841a76")
+        try (var tckContainer = new GenericContainer<>("eclipsedataspacetck/dcp-tck-runtime:1.2.1")
                 .withExtraHost("host.docker.internal", "host-gateway")
                 .withExposedPorts(CALLBACK_PORT)
                 .withEnv(Map.ofEntries(
@@ -149,7 +149,10 @@ public class DcpPresentationFlowWithDockerTest {
                         entry("dataspacetck.sts.client.id", response.clientId()),
                         entry("dataspacetck.sts.client.secret", response.clientSecret()),
                         entry("dataspacetck.credentials.correlation.id", ISSUANCE_CORRELATION_ID),
-                        entry("dataspacetck.test.package", "org.eclipse.dataspacetck.dcp.verification.presentation.cs")
+                        entry("dataspacetck.test.package", "org.eclipse.dataspacetck.dcp.verification.presentation.cs"),
+                        entry("dataspacetck.vc.scope.membershipcredential", "org.eclipse.dspace.dcp.vc.type:MembershipCredential:read"),
+                        entry("dataspacetck.vc.scope.sensitivedatacredential", "org.eclipse.dspace.dcp.vc.type:SensitiveDataCredential:read"),
+                        entry("dataspacetck.vc.scope.someothercredential", "org.eclipse.dspace.dcp.vc.type:SomeOtherCredential:read")
                 ))
         ) {
             tckContainer.setPortBindings(List.of("%s:%s".formatted(CALLBACK_PORT, CALLBACK_PORT)));

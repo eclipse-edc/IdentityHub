@@ -42,7 +42,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.net.URI;
-import java.util.Map;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -58,7 +59,6 @@ public class DcpIssuanceFlowTest {
     private static final RevocationServiceRegistry REVOCATION_LIST_REGISTRY = mock();
     private static final int CALLBACK_PORT = getFreePort();
     private static final ScopeToCriterionTransformer TCK_TRANSFORMER = new TckTransformer();
-
     @RegisterExtension
     static final RuntimeExtension IDENTITY_HUB_EXTENSION = ComponentRuntimeExtension.Builder.newInstance()
             .name("identity-hub")
@@ -70,6 +70,9 @@ public class DcpIssuanceFlowTest {
             .registerServiceMock(ScopeToCriterionTransformer.class, TCK_TRANSFORMER)
             .registerServiceMock(RevocationServiceRegistry.class, REVOCATION_LIST_REGISTRY);
 
+    private static final List<String> HOLDER_REQUESTS = List.of(
+            ISSUANCE_CORRELATION_ID
+    );
     // the TCK derives its Issuer DID from the callback address, and it must stay resolvable there. Pinning it explicitly
     // keeps the DID the TCK signs and delivers with identical to the one the seeded credential request was addressed to.
     private static final String ISSUER_DID = "did:web:localhost%%3A%s:issuer".formatted(CALLBACK_PORT);
@@ -82,16 +85,18 @@ public class DcpIssuanceFlowTest {
         holderDid = identityHub.didFor(TEST_PARTICIPANT_CONTEXT_ID);
         holderKey = generateEcKey(holderDid + "#key1");
 
-        // fake credentials
-        requestStore.save(HolderCredentialRequest.Builder.newInstance()
-                .issuerDid(ISSUER_DID)
-                .participantContextId(TEST_PARTICIPANT_CONTEXT_ID)
-                .requestId(ISSUANCE_CORRELATION_ID)
-                .state(HolderRequestState.REQUESTED.code())
-                // no issuerPid yet: it is whatever the Issuer reports when it delivers the credentials
-                .requestedCredential("membershipCredential-id", "MembershipCredential", "VC1_0_JWT")
-                .requestedCredential("sensitiveDataCredential-id", "SensitiveDataCredential", "VC1_0_JWT")
-                .build());
+        HOLDER_REQUESTS.forEach(requestId -> {
+            // fake credentials
+            requestStore.save(HolderCredentialRequest.Builder.newInstance()
+                    .issuerDid(ISSUER_DID)
+                    .participantContextId(TEST_PARTICIPANT_CONTEXT_ID)
+                    .requestId(requestId)
+                    .state(HolderRequestState.REQUESTED.code())
+                    // no issuerPid yet: it is whatever the Issuer reports when it delivers the credentials
+                    .requestedCredential("membershipCredential-id", "MembershipCredential", "VC1_0_JWT")
+                    .requestedCredential("sensitiveDataCredential-id", "SensitiveDataCredential", "VC1_0_JWT")
+                    .build());
+        });
     }
 
     @DisplayName("Run TCK Issuance Flow tests")
@@ -108,21 +113,22 @@ public class DcpIssuanceFlowTest {
         var baseCallbackUrl = "http://localhost:%s".formatted(CALLBACK_PORT);
         var baseCredentialServiceUrl = "http://localhost:%s%s/v1/participants/%s".formatted(credentialsPort, credentialsPath, TEST_PARTICIPANT_CONTEXT_ID);
         var baseCallbackUri = URI.create(baseCallbackUrl);
-
         var response = createParticipant(identityHub, baseCredentialServiceUrl);
+
+        var properties = new HashMap<String, String>();
+        properties.put("dataspacetck.callback.address", baseCallbackUrl);
+        properties.put("dataspacetck.host", baseCallbackUri.getHost());
+        properties.put("dataspacetck.port", String.valueOf(baseCallbackUri.getPort()));
+        properties.put("dataspacetck.launcher", "org.eclipse.dataspacetck.dcp.system.DcpSystemLauncher");
+        properties.put("dataspacetck.did.holder", holderDid);
+        properties.put("dataspacetck.did.issuer", ISSUER_DID);
+        properties.put("dataspacetck.sts.url", "http://localhost:%s%s".formatted(stsPort, stsPath));
+        properties.put("dataspacetck.sts.client.id", response.clientId());
+        properties.put("dataspacetck.sts.client.secret", response.clientSecret());
+        properties.put("dataspacetck.credentials.correlation.id", ISSUANCE_CORRELATION_ID);
+
         var result = TckRuntime.Builder.newInstance()
-                .properties(Map.of(
-                        "dataspacetck.callback.address", baseCallbackUrl,
-                        "dataspacetck.host", baseCallbackUri.getHost(),
-                        "dataspacetck.port", String.valueOf(baseCallbackUri.getPort()),
-                        "dataspacetck.launcher", "org.eclipse.dataspacetck.dcp.system.DcpSystemLauncher",
-                        "dataspacetck.did.holder", holderDid,
-                        "dataspacetck.did.issuer", ISSUER_DID,
-                        "dataspacetck.sts.url", "http://localhost:%s%s".formatted(stsPort, stsPath),
-                        "dataspacetck.sts.client.id", response.clientId(),
-                        "dataspacetck.sts.client.secret", response.clientSecret(),
-                        "dataspacetck.credentials.correlation.id", ISSUANCE_CORRELATION_ID
-                ))
+                .properties(properties)
                 .addPackage("org.eclipse.dataspacetck.dcp.verification.issuance.cs")
                 .monitor(monitor)
                 .build()
