@@ -20,10 +20,13 @@ import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialSubject;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.Issuer;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredential;
+import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredentialContainer;
 import org.eclipse.edc.identityhub.spi.credential.request.model.HolderCredentialRequest;
 import org.eclipse.edc.identityhub.spi.credential.request.model.HolderRequestState;
 import org.eclipse.edc.identityhub.spi.credential.request.store.HolderCredentialRequestStore;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.generator.CredentialWriteRequest;
+import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStatus;
+import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialResource;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialStore;
 import org.eclipse.edc.jsonld.util.JacksonJsonLd;
 import org.eclipse.edc.keys.spi.PublicKeyResolver;
@@ -37,6 +40,7 @@ import org.eclipse.edc.transform.spi.TypeTransformerRegistry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 import java.time.Instant;
 import java.util.List;
@@ -80,6 +84,7 @@ class CredentialWriterImplTest {
     @BeforeEach
     void setUp() {
         when(tokenValidationService.validate(anyString(), any(PublicKeyResolver.class), anyList())).thenReturn(Result.success(ClaimToken.Builder.newInstance().build()));
+        when(credentialStore.query(any())).thenReturn(StoreResult.success(List.of()));
         when(holderCredentialRequestStore.findByIdAndLease(anyString())).thenReturn(StoreResult.success(HolderCredentialRequest.Builder.newInstance()
                 .issuerDid(ISSUER_DID)
                 .requestedCredential("test-id", TEST_CREDENTIAL_TYPE, TEST_CREDENTIAL_FORMAT)
@@ -131,6 +136,73 @@ class CredentialWriterImplTest {
 
         var result = credentialWriter.write("holderPid", HOLDER_DID, "issuerPid", ISSUER_DID, Set.of(new CredentialWriteRequest("raw-cred", CredentialFormat.VC2_0_COSE.toString())), PARTICIPANT_ID);
         assertThat(result).isFailed().detail().contains("No credential request was made for Credentials ");
+    }
+
+    @Test
+    @DisplayName("a delivered credential expires the credential it supersedes, e.g. on re-issuance after renewal")
+    void write_expiresSupersededCredential() {
+        when(credentialTransformerRegistry.transform(isA(String.class), eq(VerifiableCredential.class)))
+                .thenReturn(Result.success(createCredential().build()));
+        when(credentialStore.create(any())).thenReturn(StoreResult.success());
+        when(credentialStore.query(any())).thenReturn(StoreResult.success(List.of(createResource("old-credential-id"))));
+        when(credentialStore.update(any())).thenReturn(StoreResult.success());
+
+        var result = credentialWriter.write("holderPid", HOLDER_DID, "issuerPid", ISSUER_DID, Set.of(new CredentialWriteRequest("raw-cred", TEST_CREDENTIAL_FORMAT)), PARTICIPANT_ID);
+
+        assertThat(result).isSucceeded();
+        var newCredential = ArgumentCaptor.forClass(VerifiableCredentialResource.class);
+        verify(credentialStore).create(newCredential.capture());
+        verify(credentialStore).update(argThat(resource -> resource.getId().equals("old-credential-id") &&
+                resource.getStateAsEnum() == VcStatus.EXPIRED &&
+                newCredential.getValue().getId().equals(resource.getMetadata().get(VerifiableCredentialResource.METADATA_SUPERSEDED_BY))));
+        // the lookup must be scoped to the participant's own holder credentials for the same credential object,
+        // must not return the credential just stored, and must leave revoked credentials alone
+        verify(credentialStore).query(argThat(querySpec -> {
+            var filters = querySpec.getFilterExpression().toString();
+            return filters.contains("participantContextId = " + PARTICIPANT_ID) &&
+                    filters.contains("usage = Holder") &&
+                    filters.contains("metadata.credentialObjectId = test-id") &&
+                    filters.contains("id != " + newCredential.getValue().getId()) &&
+                    filters.contains("state != " + VcStatus.REVOKED.code());
+        }));
+    }
+
+    @Test
+    @DisplayName("a first-time issuance finds nothing to supersede and modifies no other credential")
+    void write_noSupersededCredential_updatesNothing() {
+        when(credentialTransformerRegistry.transform(isA(String.class), eq(VerifiableCredential.class)))
+                .thenReturn(Result.success(createCredential().build()));
+        when(credentialStore.create(any())).thenReturn(StoreResult.success());
+
+        var result = credentialWriter.write("holderPid", HOLDER_DID, "issuerPid", ISSUER_DID, Set.of(new CredentialWriteRequest("raw-cred", TEST_CREDENTIAL_FORMAT)), PARTICIPANT_ID);
+
+        assertThat(result).isSucceeded();
+        verify(credentialStore, never()).update(any());
+    }
+
+    @Test
+    void write_supersededCredentialUpdateFails_expectFailure() {
+        when(credentialTransformerRegistry.transform(isA(String.class), eq(VerifiableCredential.class)))
+                .thenReturn(Result.success(createCredential().build()));
+        when(credentialStore.create(any())).thenReturn(StoreResult.success());
+        when(credentialStore.query(any())).thenReturn(StoreResult.success(List.of(createResource("old-credential-id"))));
+        when(credentialStore.update(any())).thenReturn(StoreResult.generalError("update failed"));
+
+        var result = credentialWriter.write("holderPid", HOLDER_DID, "issuerPid", ISSUER_DID, Set.of(new CredentialWriteRequest("raw-cred", TEST_CREDENTIAL_FORMAT)), PARTICIPANT_ID);
+
+        assertThat(result).isFailed().detail().contains("update failed");
+    }
+
+    @Test
+    void write_supersededCredentialLookupFails_expectFailure() {
+        when(credentialTransformerRegistry.transform(isA(String.class), eq(VerifiableCredential.class)))
+                .thenReturn(Result.success(createCredential().build()));
+        when(credentialStore.create(any())).thenReturn(StoreResult.success());
+        when(credentialStore.query(any())).thenReturn(StoreResult.generalError("query failed"));
+
+        var result = credentialWriter.write("holderPid", HOLDER_DID, "issuerPid", ISSUER_DID, Set.of(new CredentialWriteRequest("raw-cred", TEST_CREDENTIAL_FORMAT)), PARTICIPANT_ID);
+
+        assertThat(result).isFailed().detail().contains("query failed");
     }
 
     @Test
@@ -380,6 +452,18 @@ class CredentialWriterImplTest {
         assertThat(result).isFailed();
         Assertions.assertThat(request.stateAsEnum()).isEqualTo(REQUESTED);
         verify(holderCredentialRequestStore).breakLease(request);
+    }
+
+    private VerifiableCredentialResource createResource(String id) {
+        return VerifiableCredentialResource.Builder.newHolder()
+                .id(id)
+                .issuerId(ISSUER_DID)
+                .holderId(HOLDER_DID)
+                .state(VcStatus.REQUESTED)
+                .participantContextId(PARTICIPANT_ID)
+                .metadata(VerifiableCredentialResource.METADATA_CREDENTIAL_OBJECT_ID, "test-id")
+                .credential(new VerifiableCredentialContainer("raw-cred", CredentialFormat.VC1_0_JWT, createCredential().build()))
+                .build();
     }
 
     private VerifiableCredential.Builder createCredential() {

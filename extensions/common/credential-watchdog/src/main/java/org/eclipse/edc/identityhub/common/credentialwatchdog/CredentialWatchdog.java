@@ -98,8 +98,12 @@ public class CredentialWatchdog implements Runnable {
                 }
             });
 
-            // check credentials that are nearing expiry
+            // initiate re-issuance for credentials that are nearing (or past) expiry, unless a replacement credential
+            // was already issued: the state alone cannot express that distinction, because EXPIRED covers both a
+            // superseded credential and one that ran out without a replacement. The latter must still be renewed, while
+            // renewing a superseded one would loop forever, as every delivery expires its predecessor.
             allCredentials.stream()
+                    .filter(cred -> !cred.isSuperseded())
                     .filter(cred -> Instant.now().isAfter(cred.getVerifiableCredential().credential().getExpirationDate().minusSeconds(expiryGracePeriod.toSeconds())))
                     .forEach(this::startReissuance);
         });
@@ -113,10 +117,11 @@ public class CredentialWatchdog implements Runnable {
                 .filter(s -> !s.equalsIgnoreCase("VerifiableCredential"))
                 .findAny()
                 .orElse(null);
-        var credentialObjectId = ofNullable(expiringCredential.getMetadata().get("credentialObjectId")).map(Object::toString);
+        var credentialObjectId = ofNullable(expiringCredential.getMetadata().get(VerifiableCredentialResource.METADATA_CREDENTIAL_OBJECT_ID)).map(Object::toString);
 
         if (credentialObjectId.isEmpty()) {
-            monitor.warning("Attempting to start re-issuance for credential '%s' failed: No CredentialObjectId found (metadata property 'credentialObjectId'). Will abort re-issuance.".formatted(expiringCredential.getId()));
+            monitor.warning("Attempting to start re-issuance for credential '%s' failed: No CredentialObjectId found (metadata property '%s'). Will abort re-issuance."
+                    .formatted(expiringCredential.getId(), VerifiableCredentialResource.METADATA_CREDENTIAL_OBJECT_ID));
             return;
         }
 

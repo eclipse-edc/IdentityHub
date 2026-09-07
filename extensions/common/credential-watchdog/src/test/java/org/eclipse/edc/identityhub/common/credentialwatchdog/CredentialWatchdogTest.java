@@ -191,6 +191,45 @@ class CredentialWatchdogTest {
     }
 
     @Test
+    void run_whenCredentialIsSuperseded_shouldNotInitiateRenewal() {
+        var cred = createCredentialBuilder()
+                .state(VcStatus.EXPIRED)
+                .metadata(VerifiableCredentialResource.METADATA_CREDENTIAL_OBJECT_ID, "cred-object-id")
+                .metadata(VerifiableCredentialResource.METADATA_SUPERSEDED_BY, "new-credential-id")
+                .credential(new VerifiableCredentialContainer("raw-vc-content", VC1_0_JWT, createVerifiableCredential()
+                        .expirationDate(Instant.now().plusSeconds(GRACE_PERIOD / 2))
+                        .build()))
+                .build();
+        when(credentialStore.query(any())).thenReturn(StoreResult.success(List.of(cred)));
+        when(credentialStatusCheckService.checkStatus(any())).thenReturn(Result.success(VcStatus.EXPIRED));
+
+        watchdog.run();
+
+        verifyNoInteractions(credentialRequestManager);
+        verify(credentialStore, never()).update(any());
+    }
+
+    @Test
+    void run_whenCredentialExpiredWithoutReplacement_shouldInitiateRenewal() {
+        var cred = createCredentialBuilder()
+                .state(VcStatus.EXPIRED)
+                .metadata(VerifiableCredentialResource.METADATA_CREDENTIAL_OBJECT_ID, "cred-object-id")
+                .credential(new VerifiableCredentialContainer("raw-vc-content", VC1_0_JWT, createVerifiableCredential()
+                        .expirationDate(Instant.now().minusSeconds(10))
+                        .build()))
+                .build();
+        when(credentialStore.query(any())).thenReturn(StoreResult.success(List.of(cred)));
+        when(credentialStatusCheckService.checkStatus(any())).thenReturn(Result.success(VcStatus.EXPIRED));
+        when(credentialStore.update(any())).thenReturn(StoreResult.success());
+
+        watchdog.run();
+
+        verify(credentialRequestManager).initiateRequest(eq(cred.getParticipantContextId()), eq(cred.getIssuerId()), anyString(), argThat(list ->
+                list.size() == 1 && list.get(0).id().equals("cred-object-id")));
+        verify(credentialStore).update(argThat(vc -> vc.getStateAsEnum() == REQUESTED));
+    }
+
+    @Test
     void run_whenCredentialIsExpiring_noObjectIdPresent() {
         var cred = createCredentialBuilder()
                 // .metadata("credentialObjectId", "cred-object-id") missing!
