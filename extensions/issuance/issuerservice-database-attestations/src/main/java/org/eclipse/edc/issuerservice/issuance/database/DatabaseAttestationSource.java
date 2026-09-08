@@ -37,6 +37,7 @@ public class DatabaseAttestationSource extends AbstractSqlStore implements Attes
     public static final String TABLE_NAME = "tableName";
     public static final String REQUIRED = "required";
     public static final String ID_COLUMN = "idColumn";
+    public static final String DEFAULT_ID_COLUMN = "holder_id";
     private final boolean required;
     private final TransactionContext transactionContext;
     private final QueryExecutor queryExecutor;
