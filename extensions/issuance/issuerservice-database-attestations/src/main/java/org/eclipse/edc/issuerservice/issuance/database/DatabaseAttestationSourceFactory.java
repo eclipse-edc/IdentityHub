@@ -24,6 +24,7 @@ import org.eclipse.edc.transaction.datasource.spi.DataSourceRegistry;
 import org.eclipse.edc.transaction.spi.TransactionContext;
 
 import static org.eclipse.edc.issuerservice.issuance.database.DatabaseAttestationSource.DATASOURCE_NAME;
+import static org.eclipse.edc.issuerservice.issuance.database.DatabaseAttestationSource.DEFAULT_ID_COLUMN;
 import static org.eclipse.edc.issuerservice.issuance.database.DatabaseAttestationSource.ID_COLUMN;
 import static org.eclipse.edc.issuerservice.issuance.database.DatabaseAttestationSource.REQUIRED;
 import static org.eclipse.edc.issuerservice.issuance.database.DatabaseAttestationSource.TABLE_NAME;
@@ -47,7 +48,7 @@ public class DatabaseAttestationSourceFactory implements AttestationSourceFactor
         var required = (Boolean) configuration.getOrDefault(REQUIRED, false);
         var dataSourceName = (String) configuration.get(DATASOURCE_NAME);
         var tableName = (String) configuration.get(TABLE_NAME);
-        var idColumn = (String) configuration.getOrDefault(ID_COLUMN, "holder_id");
+        var idColumn = (String) configuration.getOrDefault(ID_COLUMN, DEFAULT_ID_COLUMN);
 
         return new DatabaseAttestationSource(dataSourceName, required, objectMapper, tableName, dataSourceRegistry, queryExecutor, transactionContext, idColumn);
     }

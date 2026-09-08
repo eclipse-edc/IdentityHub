@@ -48,6 +48,6 @@ public class DatabaseAttestationExtension implements ServiceExtension {
     @Override
     public void initialize(ServiceExtensionContext context) {
         registry.registerFactory(DATABASE_ATTESTATION_TYPE, new DatabaseAttestationSourceFactory(transactionContext, queryExecutor, dataSourceRegistry));
-        validatorRegistry.registerValidator(DATABASE_ATTESTATION_TYPE, new DatabaseAttestationSourceValidator());
+        validatorRegistry.registerValidator(DATABASE_ATTESTATION_TYPE, new DatabaseAttestationSourceValidator(dataSourceRegistry, transactionContext, queryExecutor));
     }
 }
