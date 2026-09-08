@@ -33,6 +33,19 @@ import static org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStat
  * specifically the issuance and re-issuance policies as well as a representation of the VC
  */
 public class VerifiableCredentialResource extends IdentityResource {
+
+    /**
+     * Metadata key holding the ID of the {@code CredentialObject} this credential was requested with. Links a stored
+     * credential back to the Issuer's credential offering, e.g. for automatic re-issuance.
+     */
+    public static final String METADATA_CREDENTIAL_OBJECT_ID = "credentialObjectId";
+
+    /**
+     * Metadata key holding the ID of the credential that superseded this one. Set when a re-issued credential is delivered,
+     * marking this resource as permanently out of use regardless of its own validity dates.
+     */
+    public static final String METADATA_SUPERSEDED_BY = "supersededBy";
+
     private Map<String, Object> metadata = new HashMap<>();
     private int state;
     private Instant timeOfLastStatusUpdate;
@@ -84,6 +97,15 @@ public class VerifiableCredentialResource extends IdentityResource {
     @JsonIgnore
     public boolean isSuspended() {
         return SUSPENDED.code() == state;
+    }
+
+    /**
+     * Whether this credential was replaced by a re-issued one. A superseded credential must no longer be used in DCP
+     * interactions, no matter what its own validity dates say.
+     */
+    @JsonIgnore
+    public boolean isSuperseded() {
+        return metadata != null && metadata.containsKey(METADATA_SUPERSEDED_BY);
     }
 
     public void suspend() {

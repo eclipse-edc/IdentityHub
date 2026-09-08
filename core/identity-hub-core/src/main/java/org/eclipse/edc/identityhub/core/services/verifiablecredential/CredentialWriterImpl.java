@@ -27,10 +27,13 @@ import org.eclipse.edc.identityhub.spi.credential.request.store.HolderCredential
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.generator.CredentialWriteRequest;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.generator.CredentialWriter;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.CredentialProfile;
+import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.CredentialUsage;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStatus;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialResource;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialStore;
 import org.eclipse.edc.spi.monitor.Monitor;
+import org.eclipse.edc.spi.query.Criterion;
+import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.spi.result.ServiceResult;
 import org.eclipse.edc.token.spi.TokenValidationService;
@@ -254,12 +257,17 @@ public class CredentialWriterImpl implements CredentialWriter {
             }
 
             // store the credential object ID for later use, e.g. automatic re-issuance
-            resource.getMetadata().put("credentialObjectId", requestedCredential.get().id());
+            resource.getMetadata().put(VerifiableCredentialResource.METADATA_CREDENTIAL_OBJECT_ID, requestedCredential.get().id());
 
             var createResult = credentialStore.create(resource);
 
             if (createResult.failed()) {
                 return from(createResult);
+            }
+
+            var supersededResult = expireSupersededCredentials(resource, participantContextId);
+            if (supersededResult.failed()) {
+                return supersededResult;
             }
         }
 
@@ -267,6 +275,43 @@ public class CredentialWriterImpl implements CredentialWriter {
         holderRequest.transitionIssued(issuerPid);
         holderCredentialRequestStore.save(holderRequest);
 
+        return success();
+    }
+
+    /**
+     * A delivered credential replaces any credential that was previously obtained for the same {@code CredentialObject}
+     * in the same format, e.g. on re-issuance after automatic renewal. The Issuer may revoke the replaced credential at
+     * any time, so it must no longer be used in DCP interactions: it is moved to {@link VcStatus#EXPIRED}, which excludes
+     * it from presentations immediately, and marked as superseded so the credential watchdog neither re-activates it nor
+     * requests re-issuance for it. The watchdog may still move it on to {@link VcStatus#REVOKED} once the Issuer revokes it.
+     */
+    private ServiceResult<Void> expireSupersededCredentials(VerifiableCredentialResource newCredential, String participantContextId) {
+        var query = QuerySpec.Builder.newInstance()
+                .filter(new Criterion("participantContextId", "=", participantContextId))
+                .filter(new Criterion("usage", "=", CredentialUsage.Holder.toString()))
+                .filter(new Criterion("metadata.%s".formatted(VerifiableCredentialResource.METADATA_CREDENTIAL_OBJECT_ID), "=",
+                        newCredential.getMetadata().get(VerifiableCredentialResource.METADATA_CREDENTIAL_OBJECT_ID)))
+                .filter(new Criterion("verifiableCredential.format", "=", newCredential.getVerifiableCredential().format().ordinal()))
+                .filter(new Criterion("id", "!=", newCredential.getId()))
+                // a revocation is authoritative and must not be masked by the supersession
+                .filter(new Criterion("state", "!=", VcStatus.REVOKED.code()))
+                .build();
+
+        var queryResult = credentialStore.query(query);
+        if (queryResult.failed()) {
+            return from(queryResult).mapEmpty();
+        }
+
+        for (var superseded : queryResult.getContent()) {
+            superseded.getMetadata().put(VerifiableCredentialResource.METADATA_SUPERSEDED_BY, newCredential.getId());
+            superseded.setExpired();
+            var updateResult = credentialStore.update(superseded);
+            if (updateResult.failed()) {
+                return from(updateResult);
+            }
+            monitor.debug("Credential '%s' was superseded by re-issued credential '%s' and is now in state %s"
+                    .formatted(superseded.getId(), newCredential.getId(), VcStatus.EXPIRED));
+        }
         return success();
     }
 

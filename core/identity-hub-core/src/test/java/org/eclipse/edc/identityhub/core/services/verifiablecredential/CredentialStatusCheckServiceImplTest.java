@@ -228,6 +228,37 @@ class CredentialStatusCheckServiceImplTest {
     }
 
     @Test
+    void checkStatus_superseded_staysExpired() {
+        var credential = createVerifiableCredential()
+                .expirationDate(Instant.now(clock).plus(10, ChronoUnit.MINUTES))
+                .build();
+        var resource = createCredentialBuilder(credential)
+                .state(VcStatus.EXPIRED)
+                .metadata(VerifiableCredentialResource.METADATA_SUPERSEDED_BY, "new-credential-id")
+                .build();
+
+        assertThat(service.checkStatus(resource))
+                .isSucceeded()
+                .isEqualTo(VcStatus.EXPIRED);
+    }
+
+    @Test
+    void checkStatus_superseded_becomesRevoked() {
+        when(revocationServiceRegistry.getRevocationStatus(any())).thenReturn(Result.success("revocation"));
+        var credential = createVerifiableCredential()
+                .expirationDate(Instant.now(clock).plus(10, ChronoUnit.MINUTES))
+                .build();
+        var resource = createCredentialBuilder(credential)
+                .state(VcStatus.EXPIRED)
+                .metadata(VerifiableCredentialResource.METADATA_SUPERSEDED_BY, "new-credential-id")
+                .build();
+
+        assertThat(service.checkStatus(resource))
+                .isSucceeded()
+                .isEqualTo(VcStatus.REVOKED);
+    }
+
+    @Test
     void checkStatus_expired_becomesRevoked() {
         when(revocationServiceRegistry.getRevocationStatus(any())).thenReturn(Result.success("revocation"));
         var credential = createVerifiableCredential()

@@ -35,6 +35,7 @@ import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredential;
 import org.eclipse.edc.identityhub.spi.credential.request.model.HolderRequestState;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.CredentialUsage;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStatus;
+import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialResource;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialStore;
 import org.eclipse.edc.identityhub.tests.fixtures.DefaultRuntimes;
 import org.eclipse.edc.identityhub.tests.fixtures.credentialservice.IdentityHub;
@@ -62,6 +63,8 @@ import org.eclipse.edc.spi.query.Criterion;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.spi.security.Vault;
+import org.eclipse.edc.spi.system.configuration.Config;
+import org.eclipse.edc.spi.system.configuration.ConfigFactory;
 import org.eclipse.edc.sql.testfixtures.PostgresqlEndToEndExtension;
 import org.eclipse.edc.validator.spi.ValidationResult;
 import org.hamcrest.Matchers;
@@ -78,6 +81,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import java.net.URI;
 import java.text.ParseException;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -126,6 +130,15 @@ public class DcpIssuanceFlowAllInOneTest {
         private static String participantToken;
         private static String issuerDid;
         private static String participantDid;
+
+        /**
+         * The default renewal grace period (1 week) would put every credential permanently inside the renewal window,
+         * so all of them would be re-issued continuously. With 2 seconds, only the deliberately short-lived
+         * RenewalCredential (5s validity) is ever renewed.
+         */
+        static Config renewalConfig() {
+            return ConfigFactory.fromMap(Map.of("edc.iam.credential.renewal.graceperiod", "2"));
+        }
 
         @BeforeAll
         static void beforeAll(IssuerService issuer, IdentityHub identityHub) {
@@ -192,7 +205,7 @@ public class DcpIssuanceFlowAllInOneTest {
                     .jsonSchemaUrl("https://example.com/schema")
                     .jsonSchema("{}")
                     .attestation(attestationDefinition.getId())
-                    .validity(Duration.ofSeconds(5).toSeconds()) // one second - trigger renewal
+                    .validity(Duration.ofHours(1).toSeconds())
                     .mapping(mappingDefinition)
                     .rule(new CredentialRuleDefinition("expression", ruleConfiguration))
                     .participantContextId("participantContextId")
@@ -200,6 +213,23 @@ public class DcpIssuanceFlowAllInOneTest {
                     .build();
 
             credentialDefinitionService.createCredentialDefinition(credentialDefinition);
+
+            // a separate, short-lived credential type keeps the continuous renewal chain it spawns from interfering
+            // with the tests that expect their MembershipCredential to remain untouched
+            var renewalCredentialDefinition = CredentialDefinition.Builder.newInstance()
+                    .id("renewalCredential-id")
+                    .credentialType("RenewalCredential")
+                    .jsonSchemaUrl("https://example.com/schema")
+                    .jsonSchema("{}")
+                    .attestation(attestationDefinition.getId())
+                    .validity(Duration.ofSeconds(5).toSeconds()) // expires quickly - triggers renewal
+                    .mapping(mappingDefinition)
+                    .rule(new CredentialRuleDefinition("expression", ruleConfiguration))
+                    .participantContextId("participantContextId")
+                    .formatFrom(VC1_0_JWT)
+                    .build();
+
+            credentialDefinitionService.createCredentialDefinition(renewalCredentialDefinition);
             return attestationDefinition;
         }
 
@@ -291,7 +321,7 @@ public class DcpIssuanceFlowAllInOneTest {
             issuer.getIdentityEndpoint().baseRequest()
                     .contentType(JSON)
                     .header(new Header("x-api-key", participantToken))
-                    .body(createIssuanceRequest(holderRequestId))
+                    .body(createIssuanceRequest(holderRequestId, "renewalCredential-id", "RenewalCredential"))
                     .post("/v1/participants/%s/credentials/request".formatted(PARTICIPANT_ID))
                     .then()
                     .log().ifValidationFails()
@@ -321,11 +351,23 @@ public class DcpIssuanceFlowAllInOneTest {
                                 .getContent())
                                 .hasSizeGreaterThanOrEqualTo(2);
 
-                        assertThat(store.query(QuerySpec.Builder.newInstance()
+                        var renewalCredentials = store.query(QuerySpec.Builder.newInstance()
                                         .filter(new Criterion("usage", "=", CredentialUsage.Holder.toString()))
                                         .build())
-                                .getContent())
-                                .hasSizeGreaterThanOrEqualTo(2);
+                                .getContent().stream()
+                                .filter(c -> c.getVerifiableCredential().credential().getType().contains("RenewalCredential"))
+                                .toList();
+                        assertThat(renewalCredentials).hasSizeGreaterThanOrEqualTo(2);
+
+                        // a delivered renewal supersedes the credential it replaces: only the newest credential remains
+                        // usable, previous generations are moved to EXPIRED and marked with their successor
+                        assertThat(renewalCredentials.stream()
+                                .filter(c -> c.getStateAsEnum() != VcStatus.EXPIRED && c.getStateAsEnum() != VcStatus.REVOKED))
+                                .hasSize(1);
+                        assertThat(renewalCredentials).anySatisfy(c -> {
+                            assertThat(c.getStateAsEnum()).isEqualTo(VcStatus.EXPIRED);
+                            assertThat(c.getMetadata()).containsKey(VerifiableCredentialResource.METADATA_SUPERSEDED_BY);
+                        });
 
                         // no issuance process should be in a state _other than_ DELIVERED
                         var query = QuerySpec.Builder.newInstance()
@@ -334,6 +376,63 @@ public class DcpIssuanceFlowAllInOneTest {
                         assertThat(issuanceProcessStore.query(query))
                                 .isEmpty();
 
+                    });
+        }
+
+        @Test
+        @DisplayName("a re-issuance requested while the current credential is still valid supersedes it upon delivery")
+        void testReissuanceWithinValidity(IssuerService issuer, IdentityHub identityHub) {
+            var store = issuer.getService(CredentialStore.class);
+            var firstRequestId = UUID.randomUUID().toString();
+
+            identityHub.getIdentityEndpoint().baseRequest()
+                    .contentType(JSON)
+                    .header(new Header("x-api-key", participantToken))
+                    .body(createIssuanceRequest(firstRequestId))
+                    .post("/v1/participants/%s/credentials/request".formatted(PARTICIPANT_ID))
+                    .then()
+                    .log().ifValidationFails()
+                    .statusCode(201);
+
+            await().pollInterval(INTERVAL)
+                    .atMost(TIMEOUT)
+                    .untilAsserted(() -> assertThat(identityHub.getCredentialRequestForParticipant(PARTICIPANT_ID, firstRequestId))
+                            .hasSize(1)
+                            .allSatisfy(t -> assertThat(t.getState()).isEqualTo(HolderRequestState.ISSUED.code())));
+
+            var activeCredentials = activeMembershipCredentials(store);
+            assertThat(activeCredentials).hasSize(1);
+            var firstCredential = activeCredentials.get(0);
+            assertThat(firstCredential.getStateAsEnum()).isEqualTo(VcStatus.ISSUED);
+            assertThat(firstCredential.getVerifiableCredential().credential().getExpirationDate()).isAfter(Instant.now());
+
+            // request re-issuance long before the first credential expires - once the fresh credential is delivered,
+            // two technically valid credentials exist on the holder, and only the newer one may remain usable
+            var secondRequestId = UUID.randomUUID().toString();
+            identityHub.getIdentityEndpoint().baseRequest()
+                    .contentType(JSON)
+                    .header(new Header("x-api-key", participantToken))
+                    .body(createIssuanceRequest(secondRequestId))
+                    .post("/v1/participants/%s/credentials/request".formatted(PARTICIPANT_ID))
+                    .then()
+                    .log().ifValidationFails()
+                    .statusCode(201);
+
+            await().pollInterval(INTERVAL)
+                    .atMost(TIMEOUT)
+                    .untilAsserted(() -> {
+                        var active = activeMembershipCredentials(store);
+                        assertThat(active).hasSize(1);
+                        var newCredential = active.get(0);
+                        assertThat(newCredential.getId()).isNotEqualTo(firstCredential.getId());
+                        assertThat(newCredential.getStateAsEnum()).isEqualTo(VcStatus.ISSUED);
+
+                        var supersededResult = store.findById(firstCredential.getId());
+                        assertThat(supersededResult.succeeded()).isTrue();
+                        var superseded = supersededResult.getContent();
+                        assertThat(superseded.getVerifiableCredential().credential().getExpirationDate()).isAfter(Instant.now());
+                        assertThat(superseded.getStateAsEnum()).isEqualTo(VcStatus.EXPIRED);
+                        assertThat(superseded.getMetadata()).containsEntry(VerifiableCredentialResource.METADATA_SUPERSEDED_BY, newCredential.getId());
                     });
         }
 
@@ -465,14 +564,31 @@ public class DcpIssuanceFlowAllInOneTest {
 
         }
 
+        /**
+         * The holder's stored MembershipCredentials that are still usable in DCP interactions, i.e. neither expired nor revoked.
+         */
+        private List<VerifiableCredentialResource> activeMembershipCredentials(CredentialStore store) {
+            return store.query(QuerySpec.Builder.newInstance()
+                            .filter(new Criterion("usage", "=", CredentialUsage.Holder.toString()))
+                            .build())
+                    .getContent().stream()
+                    .filter(c -> c.getVerifiableCredential().credential().getType().contains("MembershipCredential"))
+                    .filter(c -> c.getStateAsEnum() != VcStatus.EXPIRED && c.getStateAsEnum() != VcStatus.REVOKED)
+                    .toList();
+        }
+
         private @NonNull Map<String, Object> createIssuanceRequest(String holderRequestId) {
+            return createIssuanceRequest(holderRequestId, "membershipCredential-id", "MembershipCredential");
+        }
+
+        private @NonNull Map<String, Object> createIssuanceRequest(String holderRequestId, String credentialDefinitionId, String credentialType) {
             return Map.of(
                     "issuerDid", issuerDid,
                     "holderPid", holderRequestId,
                     "credentials", List.of(Map.of(
-                            "id", "membershipCredential-id",
+                            "id", credentialDefinitionId,
                             "format", VC1_0_JWT.name(),
-                            "type", "MembershipCredential"
+                            "type", credentialType
                     ))
             );
         }
@@ -518,6 +634,7 @@ public class DcpIssuanceFlowAllInOneTest {
                 .endpoints(ENDPOINTS.build())
                 .configurationProvider(DefaultRuntimes.Issuer::config)
                 .configurationProvider(DefaultRuntimes.IdentityHub::config)
+                .configurationProvider(Tests::renewalConfig)
                 .paramProvider(IdentityHub.class, IdentityHub::forContext)
                 .paramProvider(IssuerService.class, IssuerService::forContext)
                 .build();
@@ -541,6 +658,7 @@ public class DcpIssuanceFlowAllInOneTest {
                 .endpoints(ENDPOINTS.build())
                 .configurationProvider(DefaultRuntimes.Issuer::config)
                 .configurationProvider(DefaultRuntimes.IdentityHub::config)
+                .configurationProvider(Tests::renewalConfig)
                 .configurationProvider(() -> POSTGRESQL_EXTENSION.configFor(ISSUER))
                 .paramProvider(IdentityHub.class, IdentityHub::forContext)
                 .paramProvider(IssuerService.class, IssuerService::forContext)

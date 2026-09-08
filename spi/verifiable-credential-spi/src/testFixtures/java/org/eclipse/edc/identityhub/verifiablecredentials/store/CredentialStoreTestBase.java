@@ -368,6 +368,28 @@ public abstract class CredentialStoreTestBase {
     }
 
     @Test
+    void query_byMetadata_withEqualOperator() {
+        var expectedCred = createCredentialBuilder()
+                .metadata(VerifiableCredentialResource.METADATA_CREDENTIAL_OBJECT_ID, "credential-object-1")
+                .build();
+        var otherCred = createCredentialBuilder()
+                .metadata(VerifiableCredentialResource.METADATA_CREDENTIAL_OBJECT_ID, "credential-object-2")
+                .build();
+
+        getStore().create(expectedCred);
+        getStore().create(otherCred);
+
+        var query = QuerySpec.Builder.newInstance()
+                .filter(new Criterion("metadata.%s".formatted(VerifiableCredentialResource.METADATA_CREDENTIAL_OBJECT_ID), "=", "credential-object-1"))
+                .build();
+
+        assertThat(getStore().query(query)).isSucceeded()
+                .satisfies(str -> Assertions.assertThat(str).hasSize(1)
+                        .usingRecursiveFieldByFieldElementComparator()
+                        .containsExactly(expectedCred));
+    }
+
+    @Test
     void query_noQuerySpec() {
         var resources = range(0, 5)
                 .mapToObj(i -> createCredentialBuilder().id("id" + i).build())
