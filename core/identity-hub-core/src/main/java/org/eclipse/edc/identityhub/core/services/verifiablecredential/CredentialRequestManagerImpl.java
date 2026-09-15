@@ -24,6 +24,7 @@ import okhttp3.RequestBody;
 import okhttp3.Response;
 import org.eclipse.edc.http.spi.EdcHttpClient;
 import org.eclipse.edc.iam.did.spi.resolution.DidResolverRegistry;
+import org.eclipse.edc.identityhub.core.CredentialRequestConfiguration;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialRequestMessage;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialRequestSpecifier;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialRequestStatus;
@@ -88,7 +89,6 @@ public class CredentialRequestManagerImpl extends AbstractStateEntityManager<Hol
     private static final int HTTP_CONFLICT = 409;
     private static final String UNKNOWN_ISSUER_PID = "";
     private ScheduledExecutorService statusPollScheduler;
-    private long statusPollIntervalMs = 5000;
     private DidResolverRegistry didResolverRegistry;
     private TypeTransformerRegistry dcpTypeTransformerRegistry;
     private JsonLd jsonLd;
@@ -96,6 +96,7 @@ public class CredentialRequestManagerImpl extends AbstractStateEntityManager<Hol
     private ParticipantSecureTokenService secureTokenService;
     private TransactionContext transactionContext;
     private IdentityHubParticipantContextService participantContextService;
+    private CredentialRequestConfiguration configuration;
 
     private CredentialRequestManagerImpl() {
 
@@ -131,6 +132,27 @@ public class CredentialRequestManagerImpl extends AbstractStateEntityManager<Hol
     @Override
     public @Nullable HolderCredentialRequest findById(String holderPid) {
         return transactionContext.execute(() -> store.findById(holderPid));
+    }
+
+    /**
+     * Polls the Issuer's Credential Request Status API for requests that were accepted but not yet fulfilled. An
+     * issuance can still fail on the Issuer side after it acknowledged the request, and the Holder would otherwise never
+     * learn about it. A request that the Issuer reports as {@code REJECTED} is transitioned to
+     * {@link HolderRequestState#ERROR}; anything else leaves it untouched so that it is polled again later.
+     */
+    @Override
+    public void start() {
+        super.start();
+        statusPollScheduler = Executors.newSingleThreadScheduledExecutor();
+        statusPollScheduler.scheduleWithFixedDelay(this::pollPendingRequests, configuration.statusPollInterval(), configuration.statusPollInterval(), MILLISECONDS);
+    }
+
+    @Override
+    public void stop() {
+        if (statusPollScheduler != null) {
+            statusPollScheduler.shutdownNow();
+        }
+        super.stop();
     }
 
     @Override
@@ -214,7 +236,6 @@ public class CredentialRequestManagerImpl extends AbstractStateEntityManager<Hol
     private ProcessorImpl<HolderCredentialRequest> createProcessor(Function<HolderCredentialRequest, CompletableFuture<StatusResult<Void>>> function, Criterion[] filter) {
         return ProcessorImpl.Builder.newInstance(() -> store.nextNotLeased(batchSize, filter), entityRetryProcessConfiguration, clock, monitor)
                 .process(telemetry.contextPropagationMiddleware(function))
-                //.guard(pendingGuard, this::setPending) //todo: needed?
                 .onNotProcessed(this::breakLease)
                 .build();
     }
@@ -264,28 +285,6 @@ public class CredentialRequestManagerImpl extends AbstractStateEntityManager<Hol
                         .post(RequestBody.create(json, MediaType.parse("application/json")))
                         .header("Authorization", "Bearer " + token.getToken())
                         .build());
-
-    }
-
-    /**
-     * Polls the Issuer's Credential Request Status API for requests that were accepted but not yet fulfilled. An
-     * issuance can still fail on the Issuer side after it acknowledged the request, and the Holder would otherwise never
-     * learn about it. A request that the Issuer reports as {@code REJECTED} is transitioned to
-     * {@link HolderRequestState#ERROR}; anything else leaves it untouched so that it is polled again later.
-     */
-    @Override
-    public void start() {
-        super.start();
-        statusPollScheduler = Executors.newSingleThreadScheduledExecutor();
-        statusPollScheduler.scheduleWithFixedDelay(this::pollPendingRequests, statusPollIntervalMs, statusPollIntervalMs, MILLISECONDS);
-    }
-
-    @Override
-    public void stop() {
-        if (statusPollScheduler != null) {
-            statusPollScheduler.shutdownNow();
-        }
-        super.stop();
     }
 
     /**
@@ -311,7 +310,10 @@ public class CredentialRequestManagerImpl extends AbstractStateEntityManager<Hol
 
     private void pollStatus(HolderCredentialRequest request) {
         getCredentialRequestEndpoint(request)
-                .compose(endpoint -> requestStatus(request, endpoint))
+                .compose(endpoint -> getAuthToken(request.getParticipantContextId(), request.getIssuerDid())
+                        .map(token -> createStatusRequest(request, endpoint, token))
+                        .compose(httpRequest -> httpClient.execute(httpRequest, this::mapResponseAsStatus))
+                )
                 .onSuccess(status -> handleStatusResponse(status, request))
                 .onFailure(f -> monitor.debug("Could not read the status of credential request '%s': %s".formatted(request.getId(), f.getFailureDetail())));
     }
@@ -344,14 +346,12 @@ public class CredentialRequestManagerImpl extends AbstractStateEntityManager<Hol
         });
     }
 
-    private Result<CredentialRequestStatus> requestStatus(HolderCredentialRequest request, String endpoint) {
-        return getAuthToken(request.getParticipantContextId(), request.getIssuerDid())
-                .map(token -> new Request.Builder()
-                        .url(endpoint + "/requests/" + request.getIssuerPid())
-                        .get()
-                        .header("Authorization", "Bearer " + token.getToken())
-                        .build())
-                .compose(httpRequest -> httpClient.execute(httpRequest, this::mapResponseAsStatus));
+    private @NotNull Request createStatusRequest(HolderCredentialRequest request, String endpoint, TokenRepresentation token) {
+        return new Request.Builder()
+                .url(endpoint + "/requests/" + request.getIssuerPid())
+                .get()
+                .header("Authorization", "Bearer " + token.getToken())
+                .build();
     }
 
     private Result<CredentialRequestStatus> mapResponseAsStatus(Response response) {
@@ -408,15 +408,15 @@ public class CredentialRequestManagerImpl extends AbstractStateEntityManager<Hol
      */
     private Result<TokenRepresentation> getAuthToken(String participantContextId, String audience) {
         return getParticipantContext(participantContextId)
-                .compose(participantContext -> {
-                    var siTokenClaims = Map.of(
-                            ISSUED_AT, Instant.now().toString(),
-                            AUDIENCE, audience,
-                            ISSUER, participantContext.getDid(),
-                            SUBJECT, participantContext.getDid(),
-                            EXPIRATION_TIME, Instant.now().plus(5, ChronoUnit.MINUTES).toString());
-                    return secureTokenService.createToken(participantContextId, siTokenClaims, null);
-                });
+                .map(participantContext -> Map.of(
+                        ISSUED_AT, Instant.now().toString(),
+                        AUDIENCE, audience,
+                        ISSUER, participantContext.getDid(),
+                        SUBJECT, participantContext.getDid(),
+                        EXPIRATION_TIME, Instant.now().plus(5, ChronoUnit.MINUTES).toString())
+                )
+                .compose(siTokenClaims -> secureTokenService
+                        .createToken(participantContextId, siTokenClaims, configuration.bearerAccessScope()));
     }
 
     private Result<IdentityHubParticipantContext> getParticipantContext(String participantContextId) {
@@ -469,14 +469,6 @@ public class CredentialRequestManagerImpl extends AbstractStateEntityManager<Hol
             return this;
         }
 
-        /**
-         * How often the Issuer is asked about requests that are still awaiting their credentials.
-         */
-        public Builder statusPollIntervalMs(long statusPollIntervalMs) {
-            manager.statusPollIntervalMs = statusPollIntervalMs;
-            return this;
-        }
-
         public Builder httpClient(EdcHttpClient httpClient) {
             manager.httpClient = httpClient;
             return this;
@@ -511,6 +503,11 @@ public class CredentialRequestManagerImpl extends AbstractStateEntityManager<Hol
         @Override
         public Builder store(HolderCredentialRequestStore store) {
             manager.store = store;
+            return this;
+        }
+
+        public Builder configuration(CredentialRequestConfiguration configuration) {
+            manager.configuration = configuration;
             return this;
         }
 

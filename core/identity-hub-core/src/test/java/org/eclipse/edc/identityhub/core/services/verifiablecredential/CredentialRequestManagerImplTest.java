@@ -27,6 +27,7 @@ import org.eclipse.edc.iam.did.spi.document.DidDocument;
 import org.eclipse.edc.iam.did.spi.document.Service;
 import org.eclipse.edc.iam.did.spi.resolution.DidResolverRegistry;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat;
+import org.eclipse.edc.identityhub.core.CredentialRequestConfiguration;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialRequestMessage;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialRequestStatus;
 import org.eclipse.edc.identityhub.spi.authentication.ParticipantSecureTokenService;
@@ -75,6 +76,7 @@ import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.inOrder;
@@ -97,6 +99,7 @@ class CredentialRequestManagerImplTest {
     private final ParticipantSecureTokenService sts = mock();
     private final IdentityHubParticipantContextService participantContextService = mock();
     private final JsonLd jsonLd = mock();
+    private final CredentialRequestConfiguration configuration = mock();
     private final CredentialRequestManagerImpl credentialRequestService = CredentialRequestManagerImpl.Builder.newInstance()
             .store(store)
             .didResolverRegistry(resolver)
@@ -108,47 +111,24 @@ class CredentialRequestManagerImplTest {
             .transactionContext(new NoopTransactionContext())
             .monitor(mock())
             .waitStrategy(() -> 500L)
-            .statusPollIntervalMs(50)
+            .configuration(configuration)
             .build();
 
     @BeforeEach
     void setUp() {
+        when(configuration.statusPollInterval()).thenReturn(50L);
+        when(configuration.bearerAccessScope()).thenReturn(null);
         when(transformerRegistry.transform(any(CredentialRequestMessage.class), eq(JsonObject.class)))
                 .thenReturn(success(Json.createObjectBuilder().build()));
         when(jsonLd.compact(any(), eq(DCP_SCOPE_V_1_0))).thenReturn(success(Json.createObjectBuilder().build()));
-        when(sts.createToken(anyString(), anyMap(), ArgumentMatchers.isNull())).thenReturn(success(TokenRepresentation.Builder.newInstance().build()));
         when(participantContextService.getParticipantContext(anyString())).thenReturn(ServiceResult.success(participantContext()));
         when(store.findById(anyString())).thenReturn(null);
         when(store.save(any())).thenReturn(StoreResult.success());
     }
 
-    private IdentityHubParticipantContext participantContext() {
-        return IdentityHubParticipantContext.Builder.newInstance()
-                .participantContextId("participantId")
-                .did("did:web:test")
-                .apiTokenAlias("alias")
-                .build();
-    }
-
-    private DidDocument didDocument() {
-        return DidDocument.Builder.newInstance()
-                .id(UUID.randomUUID().toString())
-                .service(List.of(new Service(UUID.randomUUID().toString(), "IssuerService", "http://issuer.com/issuance")))
-                .build();
-    }
-
-    private Response response(int code, String message, String body) {
-        return new Response.Builder()
-                .request(new Request.Builder().url("http://issuer.com/issuance/credentials").build())
-                .protocol(Protocol.HTTP_1_1)
-                .code(code)
-                .message(message)
-                .body(ResponseBody.create(body, MediaType.parse("application/json")))
-                .build();
-    }
-
     @Nested
     class Initiate {
+
         @Test
         @DisplayName("CS-REQ-01: initiating a request persists it against the addressed issuer")
         void initiateRequest() {
@@ -184,8 +164,7 @@ class CredentialRequestManagerImplTest {
                     .requestedCredential("test-id", "TestCredential", CredentialFormat.VC1_0_JWT.toString())
                     .build());
             var result = credentialRequestService.initiateRequest("test-participant", ISSUER_DID, holderPid, List.of(new RequestedCredential("test-id", "TestCredential", CredentialFormat.VC1_0_JWT.toString())));
-            assertThat(result)
-                    .isFailed();
+            assertThat(result).isFailed();
 
             verify(store, never()).save(any());
             verify(store).findById(eq(holderPid));
@@ -196,7 +175,13 @@ class CredentialRequestManagerImplTest {
 
     @Nested
     class StateMachine {
+
         private static final Duration MAX_DURATION = Duration.ofSeconds(5);
+
+        @BeforeEach
+        void setUp() {
+            when(sts.createToken(anyString(), anyMap(), any())).thenReturn(success(TokenRepresentation.Builder.newInstance().build()));
+        }
 
         @ParameterizedTest(name = "state = {0}")
         @DisplayName("CS-REQ-01 / CS-REQ-02 / CS-REQ-03: the CredentialRequestMessage, its SI token and the discovered endpoint are formed as the spec requires")
@@ -206,6 +191,7 @@ class CredentialRequestManagerImplTest {
             when(resolver.resolve(eq(ISSUER_DID))).thenReturn(success(didDocument()));
             when(httpClient.execute(any(), (Function<Response, Result<String>>) any()))
                     .thenReturn(success("test-issuance-process-id"));
+            when(configuration.bearerAccessScope()).thenReturn(null);
 
             var rq = createRequest()
                     .state(state.code())
@@ -219,7 +205,36 @@ class CredentialRequestManagerImplTest {
                 var inOrder = inOrder(resolver, store, httpClient, sts, jsonLd);
                 inOrder.verify(resolver).resolve(eq(ISSUER_DID));
                 inOrder.verify(store).save(argThat(r -> r.getState() == REQUESTING.code()));
-                inOrder.verify(sts).createToken(anyString(), anyMap(), ArgumentMatchers.isNull());
+                inOrder.verify(sts).createToken(anyString(), anyMap(), isNull());
+                inOrder.verify(jsonLd).compact(any(), eq(DCP_SCOPE_V_1_0));
+                inOrder.verify(httpClient).execute(any(), (Function<Response, Result<String>>) any());
+                inOrder.verify(store).save(argThat(r -> r.getState() == REQUESTED.code() && r.getIssuerPid() != null));
+            });
+        }
+
+        @ParameterizedTest(name = "state = {0}")
+        @DisplayName("CS-REQ-01 / CS-REQ-02 / CS-REQ-03: the CredentialRequestMessage, its SI token and the discovered endpoint are formed as the spec requires with bearer access scope")
+        @ValueSource(strings = { "CREATED", "REQUESTING" })
+        void shouldSendRequest_whenAccessBearerScopeSet(String stateString) {
+            var state = HolderRequestState.valueOf(stateString);
+            when(resolver.resolve(eq(ISSUER_DID))).thenReturn(success(didDocument()));
+            when(httpClient.execute(any(), (Function<Response, Result<String>>) any()))
+                    .thenReturn(success("test-issuance-process-id"));
+            when(configuration.bearerAccessScope()).thenReturn("bearer_access_scope");
+
+            var rq = createRequest()
+                    .state(state.code())
+                    .build();
+            when(store.nextNotLeased(anyInt(), stateIs(state.code())))
+                    .thenReturn(List.of(rq));
+
+            credentialRequestService.start();
+
+            await().atMost(MAX_DURATION).untilAsserted(() -> {
+                var inOrder = inOrder(resolver, store, httpClient, sts, jsonLd);
+                inOrder.verify(resolver).resolve(eq(ISSUER_DID));
+                inOrder.verify(store).save(argThat(r -> r.getState() == REQUESTING.code()));
+                inOrder.verify(sts).createToken(anyString(), anyMap(), eq("bearer_access_scope"));
                 inOrder.verify(jsonLd).compact(any(), eq(DCP_SCOPE_V_1_0));
                 inOrder.verify(httpClient).execute(any(), (Function<Response, Result<String>>) any());
                 inOrder.verify(store).save(argThat(r -> r.getState() == REQUESTED.code() && r.getIssuerPid() != null));
@@ -437,4 +452,28 @@ class CredentialRequestManagerImplTest {
 
     }
 
+    private IdentityHubParticipantContext participantContext() {
+        return IdentityHubParticipantContext.Builder.newInstance()
+                .id("participantId")
+                .did("did:web:test")
+                .apiTokenAlias("alias")
+                .build();
+    }
+
+    private DidDocument didDocument() {
+        return DidDocument.Builder.newInstance()
+                .id(UUID.randomUUID().toString())
+                .service(List.of(new Service(UUID.randomUUID().toString(), "IssuerService", "http://issuer.com/issuance")))
+                .build();
+    }
+
+    private Response response(int code, String message, String body) {
+        return new Response.Builder()
+                .request(new Request.Builder().url("http://issuer.com/issuance/credentials").build())
+                .protocol(Protocol.HTTP_1_1)
+                .code(code)
+                .message(message)
+                .body(ResponseBody.create(body, MediaType.parse("application/json")))
+                .build();
+    }
 }
