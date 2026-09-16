@@ -212,6 +212,7 @@ class CredentialRequestManagerImplTest {
             });
         }
 
+        @Deprecated(since = "1.0.0")
         @ParameterizedTest(name = "state = {0}")
         @DisplayName("CS-REQ-01 / CS-REQ-02 / CS-REQ-03: the CredentialRequestMessage, its SI token and the discovered endpoint are formed as the spec requires with bearer access scope")
         @ValueSource(strings = { "CREATED", "REQUESTING" })

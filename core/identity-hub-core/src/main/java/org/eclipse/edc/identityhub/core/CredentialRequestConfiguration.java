@@ -25,6 +25,10 @@ public record CredentialRequestConfiguration(
         )
         long statusPollInterval,
 
+        /*
+            this setting  has been added only to permit interaction with an external system that's not 100% compliant with DCP v1.0, can be removed after v1.0 release
+         */
+        @Deprecated(since = "1.0.0")
         @Setting(
                 description = "The scope that will be used to issue an access token to be included in the Self-Issued ID token in the 'token' claim. By default, no token will be generated.",
                 required = false, key = "edc.iam.credential.request.bearer.access.scope"
