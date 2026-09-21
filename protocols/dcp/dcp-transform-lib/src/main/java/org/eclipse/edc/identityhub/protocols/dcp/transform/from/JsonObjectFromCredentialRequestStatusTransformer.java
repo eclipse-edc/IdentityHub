@@ -19,7 +19,7 @@ import jakarta.json.JsonBuilderFactory;
 import jakarta.json.JsonObject;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialRequestStatus;
 import org.eclipse.edc.jsonld.spi.JsonLdNamespace;
-import org.eclipse.edc.jsonld.spi.transformer.AbstractNamespaceAwareJsonLdTransformer;
+import org.eclipse.edc.jsonld.spi.transformer.NamespacedJsonLdFromModelTransformer;
 import org.eclipse.edc.transform.spi.TransformerContext;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -30,7 +30,7 @@ import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialRequ
 import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialRequestStatus.CREDENTIAL_REQUEST_TERM;
 import static org.eclipse.edc.jsonld.spi.JsonLdKeywords.TYPE;
 
-public class JsonObjectFromCredentialRequestStatusTransformer extends AbstractNamespaceAwareJsonLdTransformer<CredentialRequestStatus, JsonObject> {
+public class JsonObjectFromCredentialRequestStatusTransformer extends NamespacedJsonLdFromModelTransformer<CredentialRequestStatus, JsonObject> {
 
     private final JsonBuilderFactory builderFactory;
 

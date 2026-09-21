@@ -23,7 +23,7 @@ import org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialRequestMess
 import org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialRequestSpecifier;
 import org.eclipse.edc.jsonld.spi.JsonLdKeywords;
 import org.eclipse.edc.jsonld.spi.JsonLdNamespace;
-import org.eclipse.edc.jsonld.spi.transformer.AbstractNamespaceAwareJsonLdTransformer;
+import org.eclipse.edc.jsonld.spi.transformer.NamespacedJsonLdToModelTransformer;
 import org.eclipse.edc.spi.types.TypeManager;
 import org.eclipse.edc.transform.spi.TransformerContext;
 import org.jetbrains.annotations.NotNull;
@@ -35,7 +35,7 @@ import java.util.Optional;
 import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialRequestMessage.CREDENTIAL_REQUEST_MESSAGE_CREDENTIALS_TERM;
 import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialRequestMessage.CREDENTIAL_REQUEST_MESSAGE_HOLDER_PID_TERM;
 
-public class JsonObjectToCredentialRequestMessageTransformer extends AbstractNamespaceAwareJsonLdTransformer<JsonObject, CredentialRequestMessage> {
+public class JsonObjectToCredentialRequestMessageTransformer extends NamespacedJsonLdToModelTransformer<JsonObject, CredentialRequestMessage> {
 
     private final TypeManager typeManager;
     private final String typeContext;

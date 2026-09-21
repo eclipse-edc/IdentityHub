@@ -23,7 +23,7 @@ import org.eclipse.edc.iam.verifiablecredentials.spi.model.presentationdefinitio
 import org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialObject;
 import org.eclipse.edc.jsonld.spi.JsonLdKeywords;
 import org.eclipse.edc.jsonld.spi.JsonLdNamespace;
-import org.eclipse.edc.jsonld.spi.transformer.AbstractNamespaceAwareJsonLdTransformer;
+import org.eclipse.edc.jsonld.spi.transformer.NamespacedJsonLdToModelTransformer;
 import org.eclipse.edc.spi.types.TypeManager;
 import org.eclipse.edc.transform.spi.TransformerContext;
 import org.jetbrains.annotations.NotNull;
@@ -39,7 +39,7 @@ import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialObje
 import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialObject.CREDENTIAL_OBJECT_OFFER_REASON_TERM;
 import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialObject.CREDENTIAL_OBJECT_PROFILE_TERM;
 
-public class JsonObjectToCredentialObjectTransformer extends AbstractNamespaceAwareJsonLdTransformer<JsonObject, CredentialObject> {
+public class JsonObjectToCredentialObjectTransformer extends NamespacedJsonLdToModelTransformer<JsonObject, CredentialObject> {
 
     private final TypeManager typeManager;
     private final String typeContext;
