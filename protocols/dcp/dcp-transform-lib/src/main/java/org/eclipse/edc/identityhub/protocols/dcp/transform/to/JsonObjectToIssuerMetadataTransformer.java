@@ -18,14 +18,14 @@ import jakarta.json.JsonObject;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialObject;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.model.IssuerMetadata;
 import org.eclipse.edc.jsonld.spi.JsonLdNamespace;
-import org.eclipse.edc.jsonld.spi.transformer.AbstractNamespaceAwareJsonLdTransformer;
+import org.eclipse.edc.jsonld.spi.transformer.NamespacedJsonLdToModelTransformer;
 import org.eclipse.edc.transform.spi.TransformerContext;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Optional;
 
-public class JsonObjectToIssuerMetadataTransformer extends AbstractNamespaceAwareJsonLdTransformer<JsonObject, IssuerMetadata> {
+public class JsonObjectToIssuerMetadataTransformer extends NamespacedJsonLdToModelTransformer<JsonObject, IssuerMetadata> {
 
 
     public JsonObjectToIssuerMetadataTransformer(JsonLdNamespace namespace) {

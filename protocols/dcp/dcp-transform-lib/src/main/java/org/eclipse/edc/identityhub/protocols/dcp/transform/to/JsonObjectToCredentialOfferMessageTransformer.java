@@ -18,7 +18,7 @@ import jakarta.json.JsonObject;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialObject;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialOfferMessage;
 import org.eclipse.edc.jsonld.spi.JsonLdNamespace;
-import org.eclipse.edc.jsonld.spi.transformer.AbstractNamespaceAwareJsonLdTransformer;
+import org.eclipse.edc.jsonld.spi.transformer.NamespacedJsonLdToModelTransformer;
 import org.eclipse.edc.transform.spi.TransformerContext;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -27,7 +27,7 @@ import static org.eclipse.edc.identityhub.protocols.dcp.spi.DcpConstants.CREDENT
 import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialOfferMessage.CREDENTIALS_TERM;
 import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialOfferMessage.CREDENTIAL_ISSUER_TERM;
 
-public class JsonObjectToCredentialOfferMessageTransformer extends AbstractNamespaceAwareJsonLdTransformer<JsonObject, CredentialOfferMessage> {
+public class JsonObjectToCredentialOfferMessageTransformer extends NamespacedJsonLdToModelTransformer<JsonObject, CredentialOfferMessage> {
     public JsonObjectToCredentialOfferMessageTransformer(JsonLdNamespace namespace) {
         super(JsonObject.class, CredentialOfferMessage.class, namespace);
     }

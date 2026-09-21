@@ -21,7 +21,7 @@ import jakarta.json.JsonObject;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialRequestMessage;
 import org.eclipse.edc.jsonld.spi.JsonLdKeywords;
 import org.eclipse.edc.jsonld.spi.JsonLdNamespace;
-import org.eclipse.edc.jsonld.spi.transformer.AbstractNamespaceAwareJsonLdTransformer;
+import org.eclipse.edc.jsonld.spi.transformer.NamespacedJsonLdFromModelTransformer;
 import org.eclipse.edc.spi.types.TypeManager;
 import org.eclipse.edc.transform.spi.TransformerContext;
 import org.jetbrains.annotations.NotNull;
@@ -32,7 +32,7 @@ import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialRequ
 import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialRequestMessage.CREDENTIAL_REQUEST_MESSAGE_TERM;
 import static org.eclipse.edc.jsonld.spi.JsonLdKeywords.TYPE;
 
-public class JsonObjectFromCredentialRequestMessageTransformer extends AbstractNamespaceAwareJsonLdTransformer<CredentialRequestMessage, JsonObject> {
+public class JsonObjectFromCredentialRequestMessageTransformer extends NamespacedJsonLdFromModelTransformer<CredentialRequestMessage, JsonObject> {
 
     private final JsonBuilderFactory factory;
     private final TypeManager typeManager;

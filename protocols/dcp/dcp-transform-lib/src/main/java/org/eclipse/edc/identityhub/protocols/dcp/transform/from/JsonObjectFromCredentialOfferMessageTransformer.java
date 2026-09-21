@@ -19,7 +19,7 @@ import jakarta.json.JsonBuilderFactory;
 import jakarta.json.JsonObject;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialOfferMessage;
 import org.eclipse.edc.jsonld.spi.JsonLdNamespace;
-import org.eclipse.edc.jsonld.spi.transformer.AbstractNamespaceAwareJsonLdTransformer;
+import org.eclipse.edc.jsonld.spi.transformer.NamespacedJsonLdFromModelTransformer;
 import org.eclipse.edc.transform.spi.TransformerContext;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -28,7 +28,7 @@ import static jakarta.json.stream.JsonCollectors.toJsonArray;
 import static org.eclipse.edc.identityhub.protocols.dcp.spi.DcpConstants.CREDENTIALS_NAMESPACE_W3C;
 import static org.eclipse.edc.jsonld.spi.JsonLdKeywords.TYPE;
 
-public class JsonObjectFromCredentialOfferMessageTransformer extends AbstractNamespaceAwareJsonLdTransformer<CredentialOfferMessage, JsonObject> {
+public class JsonObjectFromCredentialOfferMessageTransformer extends NamespacedJsonLdFromModelTransformer<CredentialOfferMessage, JsonObject> {
 
     private final JsonBuilderFactory factory;
 
