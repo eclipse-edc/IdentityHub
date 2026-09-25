@@ -45,7 +45,7 @@ public class JsonObjectToCredentialObjectTransformerTest {
     private final ObjectMapper mapper = JacksonJsonLd.createObjectMapper();
     private final TypeManager typeManager = mock();
     private final JsonObjectToCredentialObjectTransformer transformer = new JsonObjectToCredentialObjectTransformer(typeManager, "test", DSPACE_DCP_NAMESPACE_V_1_0);
-    private final TypeTransformerRegistry trr = new TypeTransformerRegistryImpl();
+    private final TypeTransformerRegistry trr = new TypeTransformerRegistryImpl(mock());
     private final TransformerContext context = new TransformerContextImpl(trr);
 
     @BeforeEach
