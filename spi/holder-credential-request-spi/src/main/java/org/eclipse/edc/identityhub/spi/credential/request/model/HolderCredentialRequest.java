@@ -49,31 +49,38 @@ public class HolderCredentialRequest extends StatefulEntity<HolderCredentialRequ
     }
 
     public void transitionCreated() {
-        state = CREATED.code();
-        updateStateTimestamp();
+        transitionTo(CREATED.code());
     }
 
     public void transitionRequesting() {
-        state = REQUESTING.code();
-        updateStateTimestamp();
+        transitionTo(REQUESTING.code());
     }
 
     public void transitionRequested(String issuerPid) {
-        state = REQUESTED.code();
+        transitionTo(REQUESTED.code());
         this.issuerPid = issuerPid;
-        updateStateTimestamp();
     }
 
     public void transitionIssued(String issuerPid) {
-        state = ISSUED.code();
+        transitionTo(ISSUED.code());
         this.issuerPid = issuerPid;
-        updateStateTimestamp();
     }
 
     public void transitionError(String detail) {
-        state = ERROR.code();
+        transitionTo(ERROR.code());
         errorDetail = detail;
-        updateStateTimestamp();
+    }
+
+    /**
+     * Re-enters the current state, so that the state machine counts another attempt and applies its backoff before the
+     * next one. Used when an attempt failed in a way that may resolve itself.
+     * <p>
+     * The state is deliberately kept: whether the DCP message may already have reached the Issuer is exactly what
+     * {@link HolderRequestState#CREATED} and {@link HolderRequestState#REQUESTING} distinguish, and a failed attempt
+     * does not change that.
+     */
+    public void transitionRetry() {
+        transitionTo(state);
     }
 
     public String getParticipantContextId() {

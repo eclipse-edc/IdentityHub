@@ -86,6 +86,11 @@ enum VcStatus {
 }
 ```
 
+On the holder side, `REQUESTED` marks a credential whose automatic renewal is under way: the credential watchdog parks
+it there and links it, via the `renewalRequestId` metadata entry, to the `HolderCredentialRequest` that renews it. A
+renewal that fails releases the credential again, recording the reason under `renewalError`, so that it is tracked as
+before and renewed anew on a later run.
+
 There are three areas in which a `VerifiableCredentialResource` will be used:
 
 1. _on the holder side_: the older manages credentials and uses them in verifiable presentations
