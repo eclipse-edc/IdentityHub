@@ -69,6 +69,7 @@ import org.eclipse.edc.spi.security.Vault;
 import org.eclipse.edc.spi.system.ServiceExtension;
 import org.eclipse.edc.spi.system.ServiceExtensionContext;
 import org.eclipse.edc.spi.types.TypeManager;
+import org.eclipse.edc.statemachine.StateMachineConfiguration;
 import org.eclipse.edc.token.JwtGenerationService;
 import org.eclipse.edc.token.spi.TokenValidationRulesRegistry;
 import org.eclipse.edc.token.spi.TokenValidationService;
@@ -92,6 +93,9 @@ public class CoreServicesExtension implements ServiceExtension {
 
     @Configuration
     private CredentialRequestConfiguration credentialRequestConfiguration;
+
+    @Configuration(context = "edc.iam.credential.request")
+    private StateMachineConfiguration credentialRequestStateMachineConfiguration;
 
     @Inject
     private DidPublicKeyResolver publicKeyResolver;
@@ -236,6 +240,9 @@ public class CoreServicesExtension implements ServiceExtension {
                     .participantContextService(participantContextService)
                     .monitor(context.getMonitor())
                     .configuration(credentialRequestConfiguration)
+                    .batchSize(credentialRequestStateMachineConfiguration.batchSize())
+                    .waitStrategy(credentialRequestStateMachineConfiguration.iterationWaitExponentialWaitStrategy())
+                    .entityRetryProcessConfiguration(credentialRequestStateMachineConfiguration.entityRetryProcessConfiguration())
                     .build();
         }
         return credentialRequestService;

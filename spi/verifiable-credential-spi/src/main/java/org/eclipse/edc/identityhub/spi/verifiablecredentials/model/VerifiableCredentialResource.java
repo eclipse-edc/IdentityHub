@@ -46,6 +46,19 @@ public class VerifiableCredentialResource extends IdentityResource {
      */
     public static final String METADATA_SUPERSEDED_BY = "supersededBy";
 
+    /**
+     * Metadata key holding the ID of the {@code HolderCredentialRequest} that is currently renewing this credential.
+     * Links a credential parked in {@link VcStatus#REQUESTED} to the request it waits for, so that a renewal which never
+     * completes can be told apart from one that is still under way.
+     */
+    public static final String METADATA_RENEWAL_REQUEST_ID = "renewalRequestId";
+
+    /**
+     * Metadata key holding why the last renewal of this credential did not complete. Set when a renewal request ends
+     * without delivering a replacement, and cleared when a new renewal is started.
+     */
+    public static final String METADATA_RENEWAL_ERROR = "renewalError";
+
     private Map<String, Object> metadata = new HashMap<>();
     private int state;
     private Instant timeOfLastStatusUpdate;

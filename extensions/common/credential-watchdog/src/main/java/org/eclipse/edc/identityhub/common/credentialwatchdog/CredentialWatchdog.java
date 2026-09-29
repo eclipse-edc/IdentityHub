@@ -14,6 +14,7 @@
 
 package org.eclipse.edc.identityhub.common.credentialwatchdog;
 
+import org.eclipse.edc.identityhub.spi.credential.request.model.HolderRequestState;
 import org.eclipse.edc.identityhub.spi.credential.request.model.RequestedCredential;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.CredentialRequestManager;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.CredentialStatusCheckService;
@@ -37,6 +38,7 @@ import static java.util.Optional.ofNullable;
 import static org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStatus.EXPIRED;
 import static org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStatus.ISSUED;
 import static org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStatus.NOT_YET_VALID;
+import static org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStatus.REQUESTED;
 import static org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStatus.SUSPENDED;
 
 /**
@@ -45,14 +47,17 @@ import static org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStat
  * <p>
  * Note that this will materialize <strong>all</strong> credentials into memory at once, as the general assumption is that typically, wallets don't
  * store an enormous amount of credentials. To mitigate this, the watchdog only considers credentials in states {@link VcStatus#EXPIRED}, {@link VcStatus#ISSUED},
- * {@link VcStatus#SUSPENDED} and {@link VcStatus#NOT_YET_VALID}, c.f. {@link CredentialWatchdog#ALLOWED_STATES}.
+ * {@link VcStatus#SUSPENDED}, {@link VcStatus#NOT_YET_VALID} and {@link VcStatus#REQUESTED}, c.f. {@link CredentialWatchdog#ALLOWED_STATES}.
  *
  * <p>
  * Note also, that a credentials status will only be updated if it did in fact change, to avoid unnecessary database interactions.
  */
 public class CredentialWatchdog implements Runnable {
     //todo: add more states once we have to check issuance status
-    public static final List<Integer> ALLOWED_STATES = List.of(ISSUED.code(), NOT_YET_VALID.code(), SUSPENDED.code(), EXPIRED.code());
+    // REQUESTED marks a credential whose renewal is in flight. It is fetched so that a renewal which ended without
+    // delivering a replacement can be noticed and the credential released again, c.f. #reconcileRenewal
+    public static final List<Integer> ALLOWED_STATES = List.of(ISSUED.code(), NOT_YET_VALID.code(), SUSPENDED.code(), EXPIRED.code(), REQUESTED.code());
+    private static final List<HolderRequestState> PENDING_REQUEST_STATES = List.of(HolderRequestState.CREATED, HolderRequestState.REQUESTING, HolderRequestState.REQUESTED);
     private final CredentialStore credentialStore;
     private final CredentialStatusCheckService credentialStatusCheckService;
     private final Monitor monitor;
@@ -83,8 +88,12 @@ public class CredentialWatchdog implements Runnable {
 
             monitor.debug("checking %d credentials".formatted(allCredentials.size()));
 
+            // credentials waiting on a renewal are held back: their REQUESTED state records that fact, and the status
+            // check below would overwrite it. Those whose renewal came to nothing are released here and treated normally.
+            var credentials = allCredentials.stream().filter(this::reconcileRenewal).toList();
+
             // check status
-            allCredentials.forEach(credential -> {
+            credentials.forEach(credential -> {
                 var newStatus = credentialStatusCheckService.checkStatus(credential)
                         .orElse(f -> {
                             monitor.warning("Error determining status for credential '%s': %s. Will move to the ERROR state.".formatted(credential.getId(), f.getFailureDetail()));
@@ -102,11 +111,58 @@ public class CredentialWatchdog implements Runnable {
             // was already issued: the state alone cannot express that distinction, because EXPIRED covers both a
             // superseded credential and one that ran out without a replacement. The latter must still be renewed, while
             // renewing a superseded one would loop forever, as every delivery expires its predecessor.
-            allCredentials.stream()
+            credentials.stream()
                     .filter(cred -> !cred.isSuperseded())
                     .filter(cred -> Instant.now().isAfter(cred.getVerifiableCredential().credential().getExpirationDate().minusSeconds(expiryGracePeriod.toSeconds())))
                     .forEach(this::startReissuance);
         });
+    }
+
+    /**
+     * Decides whether a credential may be acted upon in this run, and recovers those whose renewal led nowhere.
+     * <p>
+     * A credential in {@link VcStatus#REQUESTED} is waiting for the renewal request it is linked to via
+     * {@link VerifiableCredentialResource#METADATA_RENEWAL_REQUEST_ID}. While that request is still under way the
+     * credential is left exactly as it is. Once the request is done without a replacement having been delivered - it
+     * failed, or it is no longer on record - the credential is released: staying in {@link VcStatus#REQUESTED} would keep
+     * it out of {@link CredentialWatchdog#ALLOWED_STATES} forever, so neither its status nor its expiry would ever be
+     * looked at again. The reason is recorded on the credential, and a later run may renew it anew.
+     *
+     * @return true if the credential is not waiting on a renewal, i.e. its status and expiry may be acted upon
+     */
+    private boolean reconcileRenewal(VerifiableCredentialResource credential) {
+        if (credential.getStateAsEnum() != VcStatus.REQUESTED) {
+            return true;
+        }
+
+        var requestId = ofNullable(credential.getMetadata().get(VerifiableCredentialResource.METADATA_RENEWAL_REQUEST_ID))
+                .map(Object::toString)
+                .orElse(null);
+        var request = requestId == null ? null : credentialRequestManager.findById(requestId);
+
+        if (request != null && PENDING_REQUEST_STATES.contains(request.stateAsEnum())) {
+            monitor.debug("Credential '%s' is waiting for renewal request '%s', which is in state '%s'"
+                    .formatted(credential.getId(), requestId, request.stateAsString()));
+            return false;
+        }
+
+        if (request == null) {
+            var reason = "the renewal request '%s' is no longer on record".formatted(requestId);
+            credential.getMetadata().put(VerifiableCredentialResource.METADATA_RENEWAL_ERROR, reason);
+            monitor.warning("Renewal of credential '%s' cannot be tracked, because %s. Releasing it for another attempt."
+                    .formatted(credential.getId(), reason));
+        } else if (request.stateAsEnum() == HolderRequestState.ERROR) {
+            credential.getMetadata().put(VerifiableCredentialResource.METADATA_RENEWAL_ERROR, request.getErrorDetail());
+            monitor.warning("Renewal of credential '%s' failed: %s. Releasing it for another attempt."
+                    .formatted(credential.getId(), request.getErrorDetail()));
+        } else {
+            // the request was fulfilled, but this credential was not superseded by what arrived, so it is simply released
+            credential.getMetadata().remove(VerifiableCredentialResource.METADATA_RENEWAL_ERROR);
+        }
+
+        credential.getMetadata().remove(VerifiableCredentialResource.METADATA_RENEWAL_REQUEST_ID);
+        credentialStore.update(credential);
+        return true;
     }
 
     private void startReissuance(VerifiableCredentialResource expiringCredential) {
@@ -126,13 +182,19 @@ public class CredentialWatchdog implements Runnable {
         }
 
         var requestedCredential = new RequestedCredential(credentialObjectId.get(), type, formatString);
-        expiringCredential.setCredentialStatus(VcStatus.REQUESTED);
 
         credentialRequestManager.initiateRequest(expiringCredential.getParticipantContextId(),
                         expiringCredential.getIssuerId(),
                         UUID.randomUUID().toString(),
                         List.of(requestedCredential))
-                .compose(holderRequestId -> ServiceResult.from(credentialStore.update(expiringCredential)))
+                .compose(holderRequestId -> {
+                    // the credential is parked in REQUESTED for as long as that request runs, and linked to it, so that
+                    // a renewal which never delivers a replacement can be recognized on a later run
+                    expiringCredential.getMetadata().put(VerifiableCredentialResource.METADATA_RENEWAL_REQUEST_ID, holderRequestId);
+                    expiringCredential.getMetadata().remove(VerifiableCredentialResource.METADATA_RENEWAL_ERROR);
+                    expiringCredential.setCredentialStatus(VcStatus.REQUESTED);
+                    return ServiceResult.from(credentialStore.update(expiringCredential));
+                })
                 .onFailure(f -> monitor.warning("Error sending re-issuance request: %s".formatted(f.getFailureDetail())));
     }
 

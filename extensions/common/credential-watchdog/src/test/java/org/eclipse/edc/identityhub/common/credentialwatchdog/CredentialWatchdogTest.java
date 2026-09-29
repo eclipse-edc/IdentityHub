@@ -18,6 +18,8 @@ import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialSubject;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.Issuer;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredential;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredentialContainer;
+import org.eclipse.edc.identityhub.spi.credential.request.model.HolderCredentialRequest;
+import org.eclipse.edc.identityhub.spi.credential.request.model.HolderRequestState;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.CredentialRequestManager;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.CredentialStatusCheckService;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStatus;
@@ -39,17 +41,21 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat.VC1_0_JWT;
 import static org.eclipse.edc.identityhub.common.credentialwatchdog.CredentialWatchdog.ALLOWED_STATES;
 import static org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStatus.ISSUED;
 import static org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStatus.REQUESTED;
 import static org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStatus.REVOKED;
+import static org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialResource.METADATA_RENEWAL_ERROR;
+import static org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialResource.METADATA_RENEWAL_REQUEST_ID;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -71,7 +77,7 @@ class CredentialWatchdogTest {
     @BeforeEach
     void setUp() {
         when(credentialStatusCheckService.checkStatus(any())).thenReturn(Result.success(VcStatus.ISSUED));
-        when(credentialRequestManager.initiateRequest(anyString(), anyString(), anyString(), anyList())).thenReturn(ServiceResult.success());
+        when(credentialRequestManager.initiateRequest(anyString(), anyString(), anyString(), anyList())).thenAnswer(i -> ServiceResult.success(i.getArgument(2)));
     }
 
     @Test
@@ -157,7 +163,7 @@ class CredentialWatchdogTest {
                                 list.get(0).credentialType().equalsIgnoreCase("DemoCredential") &&
                                 list.get(0).format().equals(VC1_0_JWT.name())));
 
-        verify(credentialStore).update(argThat(vc -> vc.getStateAsEnum() == REQUESTED));
+        verify(credentialStore).update(argThat(vc -> vc.getStateAsEnum() == REQUESTED && vc.getMetadata().get(METADATA_RENEWAL_REQUEST_ID) != null));
     }
 
 
@@ -226,7 +232,7 @@ class CredentialWatchdogTest {
 
         verify(credentialRequestManager).initiateRequest(eq(cred.getParticipantContextId()), eq(cred.getIssuerId()), anyString(), argThat(list ->
                 list.size() == 1 && list.get(0).id().equals("cred-object-id")));
-        verify(credentialStore).update(argThat(vc -> vc.getStateAsEnum() == REQUESTED));
+        verify(credentialStore).update(argThat(vc -> vc.getStateAsEnum() == REQUESTED && vc.getMetadata().get(METADATA_RENEWAL_REQUEST_ID) != null));
     }
 
     @Test
@@ -252,6 +258,113 @@ class CredentialWatchdogTest {
                 .initiateRequest(anyString(), anyString(), anyString(), anyList());
 
         verify(monitor).warning(contains("No CredentialObjectId found"));
+    }
+
+    @Test
+    void run_whenRenewalInFlight_shouldLeaveCredentialUntouched() {
+        var cred = createCredentialBuilder()
+                .state(REQUESTED)
+                .metadata(METADATA_RENEWAL_REQUEST_ID, "renewal-request")
+                .build();
+        when(credentialStore.query(any())).thenReturn(StoreResult.success(List.of(cred)));
+        when(credentialRequestManager.findById("renewal-request")).thenReturn(renewalRequest(HolderRequestState.REQUESTING, null));
+
+        watchdog.run();
+
+        verify(credentialStore, never()).update(any());
+        verifyNoInteractions(credentialStatusCheckService);
+        verify(credentialRequestManager, never()).initiateRequest(anyString(), anyString(), anyString(), anyList());
+    }
+
+    @Test
+    void run_whenRenewalFailed_shouldReleaseCredential() {
+        var cred = createCredentialBuilder()
+                .state(REQUESTED)
+                .metadata(METADATA_RENEWAL_REQUEST_ID, "renewal-request")
+                .build();
+        when(credentialStore.query(any())).thenReturn(StoreResult.success(List.of(cred)));
+        when(credentialRequestManager.findById("renewal-request")).thenReturn(renewalRequest(HolderRequestState.ERROR, "issuer unreachable"));
+
+        watchdog.run();
+
+        // the credential is tracked again: its status is what its own validity implies, and the failure is on record
+        verify(credentialStatusCheckService).checkStatus(cred);
+        verify(credentialStore, atLeastOnce()).update(cred);
+        assertThat(cred.getStateAsEnum()).isEqualTo(ISSUED);
+        assertThat(cred.getMetadata())
+                .doesNotContainKey(METADATA_RENEWAL_REQUEST_ID)
+                .containsEntry(METADATA_RENEWAL_ERROR, "issuer unreachable");
+        // it is not near expiry, so no new renewal is due yet
+        verify(credentialRequestManager, never()).initiateRequest(anyString(), anyString(), anyString(), anyList());
+    }
+
+    @Test
+    void run_whenRenewalRequestUnknown_shouldReleaseCredential() {
+        var cred = createCredentialBuilder()
+                .state(REQUESTED)
+                .metadata(METADATA_RENEWAL_REQUEST_ID, "renewal-request")
+                .build();
+        when(credentialStore.query(any())).thenReturn(StoreResult.success(List.of(cred)));
+        when(credentialRequestManager.findById("renewal-request")).thenReturn(null);
+
+        watchdog.run();
+
+        assertThat(cred.getStateAsEnum()).isEqualTo(ISSUED);
+        assertThat(cred.getMetadata()).doesNotContainKey(METADATA_RENEWAL_REQUEST_ID);
+        assertThat(cred.getMetadata().get(METADATA_RENEWAL_ERROR)).asString().contains("renewal-request");
+    }
+
+    @Test
+    void run_whenRenewalDeliveredButNotSuperseded_shouldReleaseCredentialWithoutError() {
+        var cred = createCredentialBuilder()
+                .state(REQUESTED)
+                .metadata(METADATA_RENEWAL_REQUEST_ID, "renewal-request")
+                .metadata(METADATA_RENEWAL_ERROR, "an earlier failure")
+                .build();
+        when(credentialStore.query(any())).thenReturn(StoreResult.success(List.of(cred)));
+        when(credentialRequestManager.findById("renewal-request")).thenReturn(renewalRequest(HolderRequestState.ISSUED, null));
+
+        watchdog.run();
+
+        assertThat(cred.getStateAsEnum()).isEqualTo(ISSUED);
+        assertThat(cred.getMetadata())
+                .doesNotContainKey(METADATA_RENEWAL_REQUEST_ID)
+                .doesNotContainKey(METADATA_RENEWAL_ERROR);
+    }
+
+    @Test
+    void run_whenReleasedCredentialIsExpiring_shouldRenewAgain() {
+        var cred = createCredentialBuilder()
+                .state(REQUESTED)
+                .metadata(METADATA_RENEWAL_REQUEST_ID, "renewal-request")
+                .metadata(VerifiableCredentialResource.METADATA_CREDENTIAL_OBJECT_ID, "credential-object-id")
+                .credential(new VerifiableCredentialContainer("raw-vc-content", VC1_0_JWT, createVerifiableCredential()
+                        .expirationDate(Instant.now().plusSeconds(GRACE_PERIOD / 2))
+                        .build()))
+                .build();
+        when(credentialStore.query(any())).thenReturn(StoreResult.success(List.of(cred)));
+        when(credentialStore.update(any())).thenReturn(StoreResult.success());
+        when(credentialRequestManager.findById("renewal-request")).thenReturn(renewalRequest(HolderRequestState.ERROR, "issuer unreachable"));
+
+        watchdog.run();
+
+        // released in this run, and renewed anew in the same run, since it is still about to expire
+        verify(credentialRequestManager).initiateRequest(eq(cred.getParticipantContextId()), eq(cred.getIssuerId()), anyString(), anyList());
+        assertThat(cred.getStateAsEnum()).isEqualTo(REQUESTED);
+        assertThat(cred.getMetadata())
+                .doesNotContainKey(METADATA_RENEWAL_ERROR)
+                .hasEntrySatisfying(METADATA_RENEWAL_REQUEST_ID, id -> assertThat(id).isNotEqualTo("renewal-request"));
+    }
+
+    private HolderCredentialRequest renewalRequest(HolderRequestState state, String errorDetail) {
+        return HolderCredentialRequest.Builder.newInstance()
+                .id("renewal-request")
+                .issuerDid("test-issuer")
+                .participantContextId("participant-id")
+                .requestedCredential("credential-object-id", "DemoCredential", VC1_0_JWT.toString())
+                .state(state.code())
+                .errorDetail(errorDetail)
+                .build();
     }
 
     private VerifiableCredentialResource.Builder createCredentialBuilder() {

@@ -51,6 +51,7 @@ import org.eclipse.edc.statemachine.AbstractStateEntityManager;
 import org.eclipse.edc.statemachine.Processor;
 import org.eclipse.edc.statemachine.ProcessorImpl;
 import org.eclipse.edc.statemachine.StateMachineManager;
+import org.eclipse.edc.statemachine.retry.processor.Process;
 import org.eclipse.edc.transaction.spi.TransactionContext;
 import org.eclipse.edc.transform.spi.TypeTransformerRegistry;
 import org.jetbrains.annotations.NotNull;
@@ -81,8 +82,9 @@ import static org.eclipse.edc.jwt.spi.JwtRegisteredClaimNames.ISSUER;
 import static org.eclipse.edc.jwt.spi.JwtRegisteredClaimNames.SUBJECT;
 import static org.eclipse.edc.spi.persistence.StateEntityStore.hasState;
 import static org.eclipse.edc.spi.persistence.StateEntityStore.isNotPending;
+import static org.eclipse.edc.spi.response.ResponseStatus.ERROR_RETRY;
+import static org.eclipse.edc.spi.response.ResponseStatus.FATAL_ERROR;
 import static org.eclipse.edc.spi.result.Result.failure;
-import static org.eclipse.edc.spi.result.Result.success;
 
 public class CredentialRequestManagerImpl extends AbstractStateEntityManager<HolderCredentialRequest, HolderCredentialRequestStore>
         implements CredentialRequestManager {
@@ -173,14 +175,12 @@ public class CredentialRequestManagerImpl extends AbstractStateEntityManager<Hol
      * @param issuerPid  the issuance process ID as reported by the Issuer, or {@link #UNKNOWN_ISSUER_PID} if it did not
      *                   report one
      * @param newRequest the request that was sent to the Issuer
-     * @return a Result containing the issuance process ID that was actually recorded on the request
      */
-    private @NotNull Result<String> handleCredentialResponse(String issuerPid, HolderCredentialRequest newRequest) {
+    private void handleCredentialResponse(String issuerPid, HolderCredentialRequest newRequest) {
         var effectiveIssuerPid = UNKNOWN_ISSUER_PID.equals(issuerPid) && newRequest.getIssuerPid() != null
                 ? newRequest.getIssuerPid()
                 : issuerPid;
         transitionRequested(newRequest, effectiveIssuerPid);
-        return success(effectiveIssuerPid);
     }
 
     /**
@@ -188,34 +188,60 @@ public class CredentialRequestManagerImpl extends AbstractStateEntityManager<Hol
      * with a freshly created Self-Issued ID token.
      * <p>
      * The request is transitioned to {@link HolderRequestState#REQUESTING} and persisted before the message goes out, so
-     * that an interruption cannot lose the fact that the Issuer may already have received it. Recovery re-enters this
-     * method with the same {@code holderPid}, which lets the Issuer recognize the duplicate - see
-     * {@link #mapResponseAsIssuerPid(Response)} for how that answer is interpreted.
+     * that an interruption cannot lose the fact that the Issuer may already have received it. Recovery, like a retry,
+     * re-enters this method with the same {@code holderPid}, which lets the Issuer recognize the duplicate - see
+     * {@link #mapResponseAsIssuerPid(Response)} for how that answer is interpreted. A request that is already in
+     * {@link HolderRequestState#REQUESTING} is left as it is, so that its attempt count carries over.
      *
      * @param request  the request to send, in state {@link HolderRequestState#CREATED} or
      *                 {@link HolderRequestState#REQUESTING}
      * @param endpoint the base URL of the Issuer's Issuer Service, as resolved from its DID document
-     * @return a Result containing the Issuer-assigned issuance process ID, or {@link #UNKNOWN_ISSUER_PID} if the Issuer
-     *         accepted the request without reporting one. This can happen if an issuance request already exists on the
-     *         issuer side and HTTP 409 is returned. Fails if the token, the message or the HTTP exchange failed.
+     * @return a StatusResult containing the Issuer-assigned issuance process ID, or {@link #UNKNOWN_ISSUER_PID} if the
+     *         Issuer accepted the request without reporting one. This can happen if an issuance request already exists on
+     *         the issuer side and HTTP 409 is returned. Fails if the token, the message or the HTTP exchange failed, with
+     *         {@link ResponseStatus#ERROR_RETRY} if another attempt may succeed.
      */
-    private Result<String> sendCredentialRequest(HolderCredentialRequest request, String endpoint) {
+    private StatusResult<String> sendCredentialRequest(HolderCredentialRequest request, String endpoint) {
         var issuerDid = request.getIssuerDid();
         var holderPid = request.getId();
         var requestedCredentials = request.getIdsAndFormats();
 
         return transactionContext.execute(() -> {
-            request.transitionRequesting();
-            updateRequest(request);
-            return getAuthToken(request.getParticipantContextId(), issuerDid)
-                    .compose(token -> createCredentialsRequest(token, endpoint, holderPid, requestedCredentials))
-                    .compose(httpRequest -> httpClient.execute(httpRequest, this::mapResponseAsIssuerPid));
+            if (request.stateAsEnum() != REQUESTING) {
+                request.transitionRequesting();
+                updateRequest(request);
+            }
+            // failing to mint the token or to assemble the message is a configuration problem, which another attempt
+            // would run into just the same
+            var httpRequest = getAuthToken(request.getParticipantContextId(), issuerDid)
+                    .compose(token -> createCredentialsRequest(token, endpoint, holderPid, requestedCredentials));
+            if (httpRequest.failed()) {
+                return StatusResult.failure(FATAL_ERROR, httpRequest.getFailureDetail());
+            }
+            return executeCredentialRequest(httpRequest.getContent());
         });
+    }
+
+    /**
+     * Performs the HTTP exchange with the Issuer's Credential Request API. An Issuer that cannot be reached at all is
+     * reported as retryable, because that is precisely the temporary outage another attempt is meant to ride out.
+     */
+    private StatusResult<String> executeCredentialRequest(Request httpRequest) {
+        try (var response = httpClient.execute(httpRequest)) {
+            return mapResponseAsIssuerPid(response);
+        } catch (IOException e) {
+            return StatusResult.failure(ERROR_RETRY, "Error sending DCP Credential Request: %s".formatted(e.getMessage()));
+        }
     }
 
     private void transitionRequested(HolderCredentialRequest req, String issuerPid) {
         req.transitionRequested(issuerPid);
         updateRequest(req);
+    }
+
+    private void transitionRetry(HolderCredentialRequest request) {
+        request.transitionRetry();
+        updateRequest(request);
     }
 
     private void transitionError(HolderCredentialRequest request, String failureDetail) {
@@ -243,22 +269,23 @@ public class CredentialRequestManagerImpl extends AbstractStateEntityManager<Hol
     /**
      * processes all requests that are in {@link HolderRequestState#CREATED} or {@link HolderRequestState#REQUESTING} state. Credential requests that were
      * interrupted before receiving the Issuer's response are in this state.
+     * <p>
+     * A failure that may resolve itself - an Issuer that is unreachable or answering 5xx - leaves the request in its
+     * current state, so that the state machine attempts it again with a growing delay. Only a failure the Issuer would
+     * repeat, or one that outlives the retry limit, moves the request to {@link HolderRequestState#ERROR}.
      *
      * @return a CompletableFuture containing the result of processing the request.
      */
     private CompletableFuture<StatusResult<Void>> processInitial(HolderCredentialRequest holderCredentialRequest) {
         monitor.debug("Processing '%s' request '%s'".formatted(holderCredentialRequest.stateAsString(), holderCredentialRequest.getHolderPid()));
 
-        return telemetry.contextPropagationMiddleware(() -> {
-            var result = getCredentialRequestEndpoint(holderCredentialRequest)
-                    .compose(endpoint -> sendCredentialRequest(holderCredentialRequest, endpoint))
-                    .compose(issuerPid -> handleCredentialResponse(issuerPid, holderCredentialRequest))
-                    .onFailure(failure -> transactionContext.execute(() -> transitionError(holderCredentialRequest, failure.getFailureDetail())));
-
-            StatusResult<Void> statusResult = result.succeeded() ? StatusResult.success() : StatusResult.failure(ResponseStatus.FATAL_ERROR, result.getFailureDetail());
-            return CompletableFuture.completedFuture(statusResult);
-        }, holderCredentialRequest).get();
-
+        return telemetry.contextPropagationMiddleware(() -> entityRetryProcessFactory.<HolderCredentialRequest, Void>retryProcessor(holderCredentialRequest)
+                .doProcess(Process.result("Resolve the Issuer's CredentialRequest endpoint", (request, unused) -> getCredentialRequestEndpoint(request)))
+                .doProcess(Process.result("Send the DCP CredentialRequestMessage", this::sendCredentialRequest))
+                .onSuccess((request, issuerPid) -> transactionContext.execute(() -> handleCredentialResponse(issuerPid, request)))
+                .onFailure((request, throwable) -> transactionContext.execute(() -> transitionRetry(request)))
+                .onFinalFailure((request, throwable) -> transactionContext.execute(() -> transitionError(request, throwable.getMessage())))
+                .execute(), holderCredentialRequest).get();
     }
 
     /**
@@ -309,11 +336,14 @@ public class CredentialRequestManagerImpl extends AbstractStateEntityManager<Hol
     }
 
     private void pollStatus(HolderCredentialRequest request) {
-        getCredentialRequestEndpoint(request)
-                .compose(endpoint -> getAuthToken(request.getParticipantContextId(), request.getIssuerDid())
-                        .map(token -> createStatusRequest(request, endpoint, token))
-                        .compose(httpRequest -> httpClient.execute(httpRequest, this::mapResponseAsStatus))
-                )
+        var endpoint = getCredentialRequestEndpoint(request);
+        if (endpoint.failed()) {
+            monitor.debug("Could not read the status of credential request '%s': %s".formatted(request.getId(), endpoint.getFailureDetail()));
+            return;
+        }
+        getAuthToken(request.getParticipantContextId(), request.getIssuerDid())
+                .map(token -> createStatusRequest(request, endpoint.getContent(), token))
+                .compose(httpRequest -> httpClient.execute(httpRequest, this::mapResponseAsStatus))
                 .onSuccess(status -> handleStatusResponse(status, request))
                 .onFailure(f -> monitor.debug("Could not read the status of credential request '%s': %s".formatted(request.getId(), f.getFailureDetail())));
     }
@@ -373,28 +403,31 @@ public class CredentialRequestManagerImpl extends AbstractStateEntityManager<Hol
      * the {@code Location} header, which points at the request-status resource, i.e. its last path segment is the ID.
      * Falls back to the response body for Issuers that return the ID there.
      */
-    private Result<String> mapResponseAsIssuerPid(Response response) {
+    private StatusResult<String> mapResponseAsIssuerPid(Response response) {
         try (var body = response.body()) {
             if (response.code() == HTTP_CONFLICT) {
                 // The Issuer already tracks an issuance process for this holderPid, which happens when a request is re-sent
                 // after having been interrupted, e.g. by a restart. It was accepted earlier, so this is not a failure. The
                 // Issuer-assigned ID is not disclosed here, it gets recorded once the credentials are delivered.
                 monitor.debug("Issuer reports an already existing issuance process, treating the re-sent request as accepted");
-                return Result.success(UNKNOWN_ISSUER_PID);
+                return StatusResult.success(UNKNOWN_ISSUER_PID);
             }
             if (response.isSuccessful()) {
                 var location = response.header("Location");
                 if (location != null && !location.isBlank()) {
                     var segments = location.split("/");
-                    return Result.success(segments[segments.length - 1]);
+                    return StatusResult.success(segments[segments.length - 1]);
                 }
-                return Result.success(body.string());
+                return StatusResult.success(body.string());
             } else {
-                return failure("Error sending DCP Credential Request: code: '%s', message: '%s', body: '%s'"
+                // an Issuer that refuses the request as it stands would refuse the identical retry just the same, whereas
+                // a server-side error says nothing about the request and may well be gone by the next attempt
+                var status = response.code() >= 400 && response.code() < 500 ? FATAL_ERROR : ERROR_RETRY;
+                return StatusResult.failure(status, "Error sending DCP Credential Request: code: '%s', message: '%s', body: '%s'"
                         .formatted(response.code(), response.message(), body.string()));
             }
         } catch (IOException e) {
-            return failure("Error sending DCP Credential Request: code: '%s', message: '%s'"
+            return StatusResult.failure(ERROR_RETRY, "Error sending DCP Credential Request: code: '%s', message: '%s'"
                     .formatted(response.code(), response.message()));
         }
     }
@@ -429,18 +462,24 @@ public class CredentialRequestManagerImpl extends AbstractStateEntityManager<Hol
     }
 
     /**
-     * Extracts the {@code CredentialRequest} service endpoint from the DID document
+     * Extracts the {@code CredentialRequest} service endpoint from the DID document.
      *
-     * @param request The Issuer's DID document
-     * @return A result containing the service entry
+     * @param request The request whose Issuer's DID document is resolved
+     * @return A result containing the service endpoint. An unresolvable DID and a document without such an endpoint are
+     *         both terminal: the resolver does not tell a DID that does not exist from one that is momentarily
+     *         unavailable, and a request whose Issuer cannot be found is not going to succeed by being repeated.
      */
-    private Result<String> getCredentialRequestEndpoint(HolderCredentialRequest request) {
-        return didResolverRegistry.resolve(request.getIssuerDid())
-                .compose(didDocument -> {
-                    var service = didDocument.getService().stream().filter(s -> s.getType().equalsIgnoreCase(ISSUER_SERVICE_ENDPOINT_TYPE)).findAny();
-                    return service.map(s -> success((s.getServiceEndpoint())))
-                            .orElseGet(() -> failure("The Issuer's DID Document does not contain any '%s' endpoint".formatted(ISSUER_SERVICE_ENDPOINT_TYPE)));
-                });
+    private StatusResult<String> getCredentialRequestEndpoint(HolderCredentialRequest request) {
+        var didDocument = didResolverRegistry.resolve(request.getIssuerDid());
+        if (didDocument.failed()) {
+            return StatusResult.failure(FATAL_ERROR, didDocument.getFailureDetail());
+        }
+        var service = didDocument.getContent().getService().stream()
+                .filter(s -> s.getType().equalsIgnoreCase(ISSUER_SERVICE_ENDPOINT_TYPE))
+                .findAny();
+        return service.map(s -> StatusResult.success(s.getServiceEndpoint()))
+                .orElseGet(() -> StatusResult.failure(FATAL_ERROR,
+                        "The Issuer's DID Document does not contain any '%s' endpoint".formatted(ISSUER_SERVICE_ENDPOINT_TYPE)));
     }
 
     public static class Builder

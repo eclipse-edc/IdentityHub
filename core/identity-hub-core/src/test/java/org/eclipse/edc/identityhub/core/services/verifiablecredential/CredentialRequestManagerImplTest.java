@@ -54,6 +54,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentMatchers;
 
+import java.io.IOException;
 import java.time.Duration;
 import java.util.List;
 import java.util.UUID;
@@ -67,7 +68,6 @@ import static org.eclipse.edc.identityhub.spi.credential.request.model.HolderReq
 import static org.eclipse.edc.junit.assertions.AbstractResultAssert.assertThat;
 import static org.eclipse.edc.spi.persistence.StateEntityStore.hasState;
 import static org.eclipse.edc.spi.persistence.StateEntityStore.isNotPending;
-import static org.eclipse.edc.spi.result.Result.failure;
 import static org.eclipse.edc.spi.result.Result.success;
 import static org.mockito.AdditionalMatchers.aryEq;
 import static org.mockito.ArgumentMatchers.any;
@@ -186,11 +186,10 @@ class CredentialRequestManagerImplTest {
         @ParameterizedTest(name = "state = {0}")
         @DisplayName("CS-REQ-01 / CS-REQ-02 / CS-REQ-03: the CredentialRequestMessage, its SI token and the discovered endpoint are formed as the spec requires")
         @ValueSource(strings = { "CREATED", "REQUESTING" })
-        void processInitial_shouldSendRequest(String stateString) {
+        void processInitial_shouldSendRequest(String stateString) throws IOException {
             var state = HolderRequestState.valueOf(stateString);
             when(resolver.resolve(eq(ISSUER_DID))).thenReturn(success(didDocument()));
-            when(httpClient.execute(any(), (Function<Response, Result<String>>) any()))
-                    .thenReturn(success("test-issuance-process-id"));
+            when(httpClient.execute(any(Request.class))).thenReturn(response(201, "Created", "test-issuance-process-id"));
             when(configuration.bearerAccessScope()).thenReturn(null);
 
             var rq = createRequest()
@@ -207,7 +206,7 @@ class CredentialRequestManagerImplTest {
                 inOrder.verify(store).save(argThat(r -> r.getState() == REQUESTING.code()));
                 inOrder.verify(sts).createToken(anyString(), anyMap(), isNull());
                 inOrder.verify(jsonLd).compact(any(), eq(DCP_SCOPE_V_1_0));
-                inOrder.verify(httpClient).execute(any(), (Function<Response, Result<String>>) any());
+                inOrder.verify(httpClient).execute(any(Request.class));
                 inOrder.verify(store).save(argThat(r -> r.getState() == REQUESTED.code() && r.getIssuerPid() != null));
             });
         }
@@ -216,11 +215,10 @@ class CredentialRequestManagerImplTest {
         @ParameterizedTest(name = "state = {0}")
         @DisplayName("CS-REQ-01 / CS-REQ-02 / CS-REQ-03: the CredentialRequestMessage, its SI token and the discovered endpoint are formed as the spec requires with bearer access scope")
         @ValueSource(strings = { "CREATED", "REQUESTING" })
-        void shouldSendRequest_whenAccessBearerScopeSet(String stateString) {
+        void shouldSendRequest_whenAccessBearerScopeSet(String stateString) throws IOException {
             var state = HolderRequestState.valueOf(stateString);
             when(resolver.resolve(eq(ISSUER_DID))).thenReturn(success(didDocument()));
-            when(httpClient.execute(any(), (Function<Response, Result<String>>) any()))
-                    .thenReturn(success("test-issuance-process-id"));
+            when(httpClient.execute(any(Request.class))).thenReturn(response(201, "Created", "test-issuance-process-id"));
             when(configuration.bearerAccessScope()).thenReturn("bearer_access_scope");
 
             var rq = createRequest()
@@ -237,7 +235,7 @@ class CredentialRequestManagerImplTest {
                 inOrder.verify(store).save(argThat(r -> r.getState() == REQUESTING.code()));
                 inOrder.verify(sts).createToken(anyString(), anyMap(), eq("bearer_access_scope"));
                 inOrder.verify(jsonLd).compact(any(), eq(DCP_SCOPE_V_1_0));
-                inOrder.verify(httpClient).execute(any(), (Function<Response, Result<String>>) any());
+                inOrder.verify(httpClient).execute(any(Request.class));
                 inOrder.verify(store).save(argThat(r -> r.getState() == REQUESTED.code() && r.getIssuerPid() != null));
             });
         }
@@ -247,7 +245,6 @@ class CredentialRequestManagerImplTest {
         @ValueSource(strings = { "CREATED", "REQUESTING" })
         void processInitial_whenDidNotResolvable_shouldTransitionToError(String stateString) {
             var state = HolderRequestState.valueOf(stateString);
-
             when(resolver.resolve(eq(ISSUER_DID))).thenReturn(Result.failure("foobar"));
             var rq = createRequest()
                     .state(state.code())
@@ -320,12 +317,12 @@ class CredentialRequestManagerImplTest {
         }
 
         @ParameterizedTest(name = "state = {0}")
-        @DisplayName("CS-REQ-06: a synchronous error from the issuer moves the request to ERROR instead of retrying forever")
+        @DisplayName("CS-REQ-06: a client error from the issuer moves the request to ERROR at once, as the identical retry would be refused again")
         @ValueSource(strings = { "CREATED", "REQUESTING" })
-        void processInitial_whenIssuerReturnsError_shouldTransitionToError(String stateString) {
+        void processInitial_whenIssuerReturnsError_shouldTransitionToError(String stateString) throws IOException {
             var state = HolderRequestState.valueOf(stateString);
             when(resolver.resolve(eq(ISSUER_DID))).thenReturn(success(didDocument()));
-            when(httpClient.execute(any(), (Function<Response, Result<String>>) any())).thenReturn(failure("issuer failure bad request"));
+            when(httpClient.execute(any(Request.class))).thenReturn(response(400, "Bad Request", "issuer failure bad request"));
 
             var rq = createRequest()
                     .state(state.code())
@@ -340,20 +337,19 @@ class CredentialRequestManagerImplTest {
                 var inOrder = inOrder(resolver, store, httpClient, sts);
                 inOrder.verify(resolver).resolve(eq(ISSUER_DID));
                 inOrder.verify(sts).createToken(anyString(), anyMap(), ArgumentMatchers.isNull());
-                inOrder.verify(httpClient).execute(any(), (Function<Response, Result<String>>) any());
-                inOrder.verify(store, times(1)).save(argThat(r -> r.getState() == ERROR.code() && r.getErrorDetail().equals("issuer failure bad request")));
+                inOrder.verify(httpClient).execute(any(Request.class));
+                inOrder.verify(store, times(1)).save(argThat(r -> r.getState() == ERROR.code() && r.getErrorDetail().contains("issuer failure bad request")));
             });
         }
 
         // CS-REQ-05: re-processing a request in REQUESTING (after crash/restart) re-sends the DCP request idempotently: same holderPid reused, an issuer 409/duplicate response must not transition the request to ERROR
         @Test
         @DisplayName("CS-REQ-05: a re-sent request keeps its holderPid, and the issuer's duplicate response counts as acceptance")
-        void processRequesting_whenIssuerReportsDuplicate_shouldNotTransitionToError() {
+        void processRequesting_whenIssuerReportsDuplicate_shouldNotTransitionToError() throws IOException {
             // a request that was already sent once (state REQUESTING); the issuer answers with 409/duplicate
             when(resolver.resolve(eq(ISSUER_DID))).thenReturn(success(didDocument()));
-            when(httpClient.execute(any(), (Function<Response, Result<String>>) any()))
-                    .thenAnswer(i -> i.getArgument(1, Function.class).apply(response(409, "Conflict",
-                            "[{\"message\":\"An issuance process with holderPid 'test-request' already exists\"}]")));
+            when(httpClient.execute(any(Request.class))).thenReturn(response(409, "Conflict",
+                    "[{\"message\":\"An issuance process with holderPid 'test-request' already exists\"}]"));
 
             var rq = createRequest()
                     .state(REQUESTING.code())
