@@ -221,15 +221,17 @@ public class DidDocumentServiceImpl implements DidDocumentService, EventSubscrib
             if (didResource == null) {
                 return ServiceResult.notFound("DID '%s' not found.".formatted(did));
             }
+
             var services = didResource.getDocument().getService();
-            if (services.stream().noneMatch(s -> s.getId().equals(service.getId()))) {
+            var toBeReplaced = services.stream().filter(s -> s.getId().equals(service.getId())).findAny();
+            if (toBeReplaced.isEmpty()) {
                 return ServiceResult.badRequest("DID '%s' does not contain a service endpoint with ID '%s'.".formatted(did, service.getId()));
             }
+
+            services.remove(toBeReplaced.get());
             services.add(service);
-            var updateResult = didResourceStore.update(didResource);
-            return updateResult.succeeded() ?
-                    success() :
-                    ServiceResult.fromFailure(updateResult);
+
+            return didResourceStore.update(didResource).flatMap(ServiceResult::from);
         });
     }
 
