@@ -48,7 +48,9 @@ import org.eclipse.edc.spi.telemetry.Telemetry;
 import org.eclipse.edc.transaction.spi.NoopTransactionContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 import java.net.URI;
 import java.security.KeyPairGenerator;
@@ -60,6 +62,7 @@ import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.InstanceOfAssertFactories.list;
 import static org.eclipse.edc.iam.did.spi.document.DidConstants.JSON_WEB_KEY_2020;
 import static org.eclipse.edc.identityhub.spi.participantcontext.model.IdentityHubParticipantContext.API_TOKEN_ALIAS;
 import static org.eclipse.edc.junit.assertions.AbstractResultAssert.assertThat;
@@ -350,50 +353,62 @@ class DidDocumentServiceImplTest {
         verifyNoMoreInteractions(didResourceStoreMock, publisherMock);
     }
 
-    @Test
-    void replaceEndpoint() {
-        var toReplace = new Service("new-id", "test-type", "https://test.com");
-        var doc = createDidDocument().service(List.of(toReplace)).build();
-        var did = doc.getId();
-        when(didResourceStoreMock.findById(eq(did))).thenReturn(DidResource.Builder.newInstance().did(did).document(doc).build());
-        when(didResourceStoreMock.update(any())).thenReturn(StoreResult.success());
+    @Nested
+    class Replace {
 
-        var res = service.replaceService(did, toReplace);
-        assertThat(res).isSucceeded();
+        @Test
+        void shouldReplaceService() {
+            var doc = DidDocument.Builder.newInstance().id(UUID.randomUUID().toString())
+                    .service(List.of(new Service("service-id", "test-type", "https://test.com")))
+                    .build();
+            var did = doc.getId();
+            when(didResourceStoreMock.findById(any())).thenReturn(DidResource.Builder.newInstance().did(did).document(doc).build());
+            when(didResourceStoreMock.update(any())).thenReturn(StoreResult.success());
+            var updatedService = new Service("service-id", "new-type", "https://new.com");
 
-        verify(didResourceStoreMock).findById(eq(did));
-        verify(didResourceStoreMock).update(any());
-        verifyNoMoreInteractions(didResourceStoreMock, publisherMock);
-    }
+            var res = service.replaceService(did, updatedService);
 
-    @Test
-    void replaceEndpoint_doesNotExist() {
-        var replace = new Service("new-id", "test-type", "https://test.com");
-        var doc = createDidDocument().build();
-        var did = doc.getId();
-        when(didResourceStoreMock.findById(eq(did))).thenReturn(DidResource.Builder.newInstance().did(did).document(doc).build());
+            assertThat(res).isSucceeded();
 
-        var res = service.replaceService(did, replace);
-        assertThat(res).isFailed()
-                .detail()
-                .isEqualTo("DID 'did:web:testdid' does not contain a service endpoint with ID 'new-id'.");
+            verify(didResourceStoreMock).findById(eq(did));
+            var captor = ArgumentCaptor.forClass(DidResource.class);
+            verify(didResourceStoreMock).update(captor.capture());
+            assertThat(captor.getValue()).extracting(DidResource::getDocument).extracting(DidDocument::getService)
+                    .asInstanceOf(list(Service.class)).hasSize(1)
+                    .first().usingRecursiveComparison().isEqualTo(updatedService);
+            verifyNoMoreInteractions(didResourceStoreMock, publisherMock);
+        }
 
-        verify(didResourceStoreMock).findById(eq(did));
-        verifyNoMoreInteractions(didResourceStoreMock, publisherMock);
-    }
+        @Test
+        void shouldFail_whenServiceDoesNotExist() {
+            var replace = new Service("new-id", "test-type", "https://test.com");
+            var doc = createDidDocument().build();
+            var did = doc.getId();
+            when(didResourceStoreMock.findById(eq(did))).thenReturn(DidResource.Builder.newInstance().did(did).document(doc).build());
 
-    @Test
-    void replaceEndpoint_didNotFound() {
-        var doc = createDidDocument().build();
-        var did = doc.getId();
-        when(didResourceStoreMock.findById(eq(did))).thenReturn(null);
-        var res = service.replaceService(did, new Service("test-id", "test-type", "https://test.com"));
-        assertThat(res).isFailed()
-                .detail()
-                .isEqualTo("DID 'did:web:testdid' not found.");
+            var res = service.replaceService(did, replace);
 
-        verify(didResourceStoreMock).findById(eq(did));
-        verifyNoMoreInteractions(didResourceStoreMock, publisherMock);
+            assertThat(res).isFailed()
+                    .detail()
+                    .isEqualTo("DID 'did:web:testdid' does not contain a service endpoint with ID 'new-id'.");
+            verify(didResourceStoreMock).findById(eq(did));
+            verifyNoMoreInteractions(didResourceStoreMock, publisherMock);
+        }
+
+        @Test
+        void shouldFail_whenDocumentNotFound() {
+            var doc = createDidDocument().build();
+            var did = doc.getId();
+            when(didResourceStoreMock.findById(eq(did))).thenReturn(null);
+
+            var result = service.replaceService(did, new Service("test-id", "test-type", "https://test.com"));
+
+            assertThat(result).isFailed()
+                    .detail()
+                    .isEqualTo("DID 'did:web:testdid' not found.");
+            verify(didResourceStoreMock).findById(eq(did));
+            verifyNoMoreInteractions(didResourceStoreMock, publisherMock);
+        }
     }
 
     @Test
