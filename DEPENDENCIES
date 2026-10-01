@@ -91,11 +91,11 @@ maven/mavencentral/io.opentelemetry.instrumentation/opentelemetry-instrumentatio
 maven/mavencentral/io.opentelemetry.instrumentation/opentelemetry-instrumentation-annotations/2.31.1, Apache-2.0, approved, #30574
 maven/mavencentral/io.opentelemetry/opentelemetry-api/1.60.1, Apache-2.0, approved, #29017
 maven/mavencentral/io.opentelemetry/opentelemetry-api/1.65.0, Apache-2.0, approved, #30119
-maven/mavencentral/io.opentelemetry/opentelemetry-api/1.66.0, , restricted, clearlydefined
+maven/mavencentral/io.opentelemetry/opentelemetry-api/1.66.0, Apache-2.0, approved, #32021
 maven/mavencentral/io.opentelemetry/opentelemetry-common/1.60.1, Apache-2.0, approved, #29022
-maven/mavencentral/io.opentelemetry/opentelemetry-common/1.66.0, , restricted, clearlydefined
+maven/mavencentral/io.opentelemetry/opentelemetry-common/1.66.0, Apache-2.0, approved, #32019
 maven/mavencentral/io.opentelemetry/opentelemetry-context/1.60.1, Apache-2.0, approved, #29016
-maven/mavencentral/io.opentelemetry/opentelemetry-context/1.66.0, , restricted, clearlydefined
+maven/mavencentral/io.opentelemetry/opentelemetry-context/1.66.0, Apache-2.0, approved, #32020
 maven/mavencentral/io.rest-assured/json-path/6.0.1, Apache-2.0, approved, #29909
 maven/mavencentral/io.rest-assured/rest-assured-common/6.0.1, Apache-2.0, approved, #29910
 maven/mavencentral/io.rest-assured/rest-assured/6.0.1, Apache-2.0, approved, #29907
