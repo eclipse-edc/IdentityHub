@@ -17,11 +17,14 @@ package org.eclipse.edc.issuerservice.api.admin.credentials.v1.unstable.model;
 import java.util.Map;
 
 import static java.util.Objects.requireNonNull;
+import static java.util.Objects.requireNonNullElseGet;
 
-public record AttestationDefinitionRequest(String id, String attestationType, Map<String, Object> configuration) {
+public record AttestationDefinitionRequest(String id, String attestationType, Map<String, Object> configuration,
+                                           Map<String, Object> privateProperties) {
     public AttestationDefinitionRequest {
         requireNonNull(id, "id is required");
         requireNonNull(attestationType, "attestationType is required");
         requireNonNull(configuration, "configuration is required");
+        privateProperties = requireNonNullElseGet(privateProperties, Map::of);
     }
 }

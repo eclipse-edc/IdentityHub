@@ -14,8 +14,8 @@
 
 package org.eclipse.edc.issuerservice.store.sql.credentialdefinition;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.type.MapType;
 import org.eclipse.edc.issuerservice.spi.issuance.credentialdefinition.store.CredentialDefinitionStore;
 import org.eclipse.edc.issuerservice.spi.issuance.model.CredentialDefinition;
 import org.eclipse.edc.issuerservice.spi.issuance.model.CredentialRuleDefinition;
@@ -33,9 +33,10 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.Clock;
 import java.util.Collection;
-import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
+import static com.fasterxml.jackson.databind.type.TypeFactory.defaultInstance;
 import static java.util.Optional.ofNullable;
 import static org.eclipse.edc.spi.result.StoreResult.alreadyExists;
 import static org.eclipse.edc.spi.result.StoreResult.success;
@@ -45,15 +46,6 @@ import static org.eclipse.edc.spi.result.StoreResult.success;
  * SQL-based {@link CredentialDefinition} store intended for use with PostgreSQL
  */
 public class SqlCredentialDefinitionStore extends AbstractSqlStore implements CredentialDefinitionStore {
-
-    private static final TypeReference<List<String>> STRING_LIST_REF = new TypeReference<>() {
-    };
-
-    private static final TypeReference<List<CredentialRuleDefinition>> RULES_LIST_REF = new TypeReference<>() {
-    };
-
-    private static final TypeReference<List<MappingDefinition>> MAPPINGS_LIST_REF = new TypeReference<>() {
-    };
 
     private final CredentialDefinitionStoreStatements statements;
     private final Clock clock;
@@ -102,6 +94,7 @@ public class SqlCredentialDefinitionStore extends AbstractSqlStore implements Cr
                         toJson(credentialDefinition.getMappings()),
                         toJson(credentialDefinition.getJsonSchema()),
                         toJson(credentialDefinition.getAdditionalContext()),
+                        toJson(credentialDefinition.getPrivateProperties()),
                         credentialDefinition.getJsonSchemaUrl(),
                         credentialDefinition.getValidity(),
                         credentialDefinition.getFormat(),
@@ -136,6 +129,7 @@ public class SqlCredentialDefinitionStore extends AbstractSqlStore implements Cr
                         toJson(credentialDefinition.getMappings()),
                         toJson(credentialDefinition.getJsonSchema()),
                         toJson(credentialDefinition.getAdditionalContext()),
+                        toJson(credentialDefinition.getPrivateProperties()),
                         credentialDefinition.getJsonSchemaUrl(),
                         credentialDefinition.getValidity(),
                         credentialDefinition.getFormat(),
@@ -192,15 +186,20 @@ public class SqlCredentialDefinitionStore extends AbstractSqlStore implements Cr
                 .id(resultSet.getString(statements.getIdColumn()))
                 .participantContextId(resultSet.getString(statements.getParticipantContextIdColumn()))
                 .credentialType(resultSet.getString(statements.getCredentialTypeColumn()))
-                .attestations(fromJson(resultSet.getString(statements.getAttestationsColumn()), STRING_LIST_REF))
-                .rules(fromJson(resultSet.getString(statements.getRulesColumn()), RULES_LIST_REF))
-                .mappings(fromJson(resultSet.getString(statements.getMappingsColumn()), MAPPINGS_LIST_REF))
-                .additionalContext(fromJson(resultSet.getString(statements.getAdditionalContextColumn()), STRING_LIST_REF))
+                .attestations(fromJson(resultSet.getString(statements.getAttestationsColumn()), listOf(String.class)))
+                .rules(fromJson(resultSet.getString(statements.getRulesColumn()), listOf(CredentialRuleDefinition.class)))
+                .mappings(fromJson(resultSet.getString(statements.getMappingsColumn()), listOf(MappingDefinition.class)))
+                .additionalContext(fromJson(resultSet.getString(statements.getAdditionalContextColumn()), listOf(String.class)))
+                .privateProperties(fromJson(resultSet.getString(statements.getPrivatePropertiesColumn()), map()))
                 .jsonSchema(resultSet.getString(statements.getJsonSchemaColumn()))
                 .jsonSchemaUrl(resultSet.getString(statements.getJsonSchemaUrlColumn()))
                 .validity(resultSet.getLong(statements.getValidityColumn()))
                 .format(resultSet.getString(statements.getFormatsColumn()))
                 .createdAt(resultSet.getLong(statements.getCreateTimestampColumn()))
                 .build();
+    }
+
+    private MapType map() {
+        return defaultInstance().constructMapType(Map.class, String.class, Object.class);
     }
 }

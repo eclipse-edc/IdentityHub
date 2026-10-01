@@ -28,35 +28,20 @@ import static org.eclipse.edc.issuerservice.store.sql.credentialdefinition.schem
  */
 public class CredentialDefinitionMapping extends TranslationMapping {
 
-    public static final String FIELD_ID = "id";
-    public static final String FIELD_PARTICIPANT_CONTEXT_ID = "participantContextId";
-    public static final String FIELD_CREDENTIAL_TYPE = "credentialType";
-    public static final String FIELD_CREATE_TIMESTAMP = "createdAt";
-    public static final String FIELD_LASTMODIFIED_TIMESTAMP = "lastModified";
-    public static final String FIELD_JSON_SCHEMA = "jsonSchema";
-    public static final String FIELD_JSON_SCHEMA_URL = "jsonSchemaUrl";
-    public static final String FIELD_VALIDITY = "validity";
-    public static final String FIELD_FORMAT = "format";
-    public static final String FIELD_ATTESTATIONS = "attestations";
-    public static final String FIELD_ADDITIONAL_CONTEXT = "additionalContext";
-    public static final String FIELD_RULES = "rules";
-    public static final String FIELD_MAPPINGS = "mappings";
-
-
     public CredentialDefinitionMapping(CredentialDefinitionStoreStatements statements) {
-        add(FIELD_ID, statements.getIdColumn());
-        add(FIELD_PARTICIPANT_CONTEXT_ID, statements.getParticipantContextIdColumn());
-        add(FIELD_CREDENTIAL_TYPE, statements.getCredentialTypeColumn());
-        add(FIELD_CREATE_TIMESTAMP, statements.getCreateTimestampColumn());
-        add(FIELD_LASTMODIFIED_TIMESTAMP, statements.getLastModifiedTimestampColumn());
-        add(FIELD_JSON_SCHEMA, new JsonFieldTranslator(statements.getJsonSchemaColumn()));
-        add(FIELD_JSON_SCHEMA_URL, statements.getJsonSchemaUrlColumn());
-        add(FIELD_VALIDITY, statements.getValidityColumn());
-        add(FIELD_FORMAT, statements.getFormatsColumn());
-        add(FIELD_ATTESTATIONS, new JsonArrayTranslator(statements.getAttestationsColumn()));
-        add(FIELD_RULES, new JsonFieldTranslator(RULES_ALIAS));
-        add(FIELD_MAPPINGS, new JsonFieldTranslator(MAPPING_ALIAS));
-        add(FIELD_ADDITIONAL_CONTEXT, new JsonArrayTranslator(statements.getAdditionalContextColumn()));
-
+        add("id", statements.getIdColumn());
+        add("participantContextId", statements.getParticipantContextIdColumn());
+        add("credentialType", statements.getCredentialTypeColumn());
+        add("createdAt", statements.getCreateTimestampColumn());
+        add("lastModified", statements.getLastModifiedTimestampColumn());
+        add("jsonSchema", new JsonFieldTranslator(statements.getJsonSchemaColumn()));
+        add("jsonSchemaUrl", statements.getJsonSchemaUrlColumn());
+        add("validity", statements.getValidityColumn());
+        add("format", statements.getFormatsColumn());
+        add("attestations", new JsonArrayTranslator(statements.getAttestationsColumn()));
+        add("rules", new JsonFieldTranslator(RULES_ALIAS));
+        add("mappings", new JsonFieldTranslator(MAPPING_ALIAS));
+        add("additionalContext", new JsonArrayTranslator(statements.getAdditionalContextColumn()));
+        add("privateProperties", new JsonFieldTranslator(statements.getPrivatePropertiesColumn()));
     }
 }

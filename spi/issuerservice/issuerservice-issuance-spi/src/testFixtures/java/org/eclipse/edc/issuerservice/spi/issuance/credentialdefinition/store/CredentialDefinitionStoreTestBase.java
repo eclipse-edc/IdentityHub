@@ -321,6 +321,31 @@ public abstract class CredentialDefinitionStoreTestBase {
                     .usingRecursiveFieldByFieldElementComparator()
                     .containsExactlyInAnyOrder(def1, def2);
         }
+
+        @Test
+        void byPrivateProperties() {
+            var def1 = createCredentialDefinitionBuilder("id1", "Membership")
+                    .privateProperty("key1", "value1")
+                    .build();
+            var def2 = createCredentialDefinitionBuilder("id2", "Iso9001Cert")
+                    .privateProperty("key1", "value2")
+                    .build();
+
+            var r = getStore().create(def1).compose(v -> getStore().create(def2));
+            assertThat(r).isSucceeded();
+
+            var query = QuerySpec.Builder.newInstance()
+                    .filter(new Criterion("privateProperties.key1", "=", "value1"))
+                    .build();
+
+            var result = getStore().query(query);
+            assertThat(result).isSucceeded();
+
+            assertThat(result.getContent())
+                    .hasSize(1)
+                    .usingRecursiveFieldByFieldElementComparator()
+                    .containsExactlyInAnyOrder(def1);
+        }
     }
 
 }

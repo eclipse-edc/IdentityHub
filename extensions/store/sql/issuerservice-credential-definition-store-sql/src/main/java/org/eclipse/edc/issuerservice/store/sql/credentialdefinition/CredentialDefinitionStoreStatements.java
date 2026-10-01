@@ -64,6 +64,10 @@ public interface CredentialDefinitionStoreStatements extends SqlStatements {
         return "additional_context";
     }
 
+    default String getPrivatePropertiesColumn() {
+        return "private_properties";
+    }
+
     default String getValidityColumn() {
         return "validity";
     }

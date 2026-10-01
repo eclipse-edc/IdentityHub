@@ -29,6 +29,7 @@ public class BaseSqlDialectStatements implements AttestationDefinitionStoreState
                 .column(getParticipantContextIdColumn())
                 .column(getAttestationTypeColumn())
                 .jsonColumn(getConfigurationColumn())
+                .jsonColumn(getPrivatePropertiesColumn())
                 .column(getCreateTimestampColumn())
                 .column(getLastModifiedTimestampColumn())
                 .insertInto(getAttestationDefinitionTable());
@@ -39,6 +40,7 @@ public class BaseSqlDialectStatements implements AttestationDefinitionStoreState
         return executeStatement()
                 .column(getAttestationTypeColumn())
                 .jsonColumn(getConfigurationColumn())
+                .jsonColumn(getPrivatePropertiesColumn())
                 .column(getLastModifiedTimestampColumn())
                 .update(getAttestationDefinitionTable(), getIdColumn());
     }

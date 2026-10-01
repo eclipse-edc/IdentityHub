@@ -19,6 +19,7 @@ CREATE TABLE IF NOT EXISTS attestation_definitions
     participant_context_id       VARCHAR    NOT NULL        ,
     attestation_type             VARCHAR    NOT NULL        ,
     configuration                JSON       DEFAULT '{}'    ,
+    private_properties           JSON       DEFAULT '{}'    ,
     created_date                 BIGINT     NOT NULL        ,
     last_modified_date           BIGINT     NOT NULL        ,
     PRIMARY KEY (id)

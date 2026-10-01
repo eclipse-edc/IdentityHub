@@ -44,6 +44,10 @@ public interface AttestationDefinitionStoreStatements extends SqlStatements {
         return "configuration";
     }
 
+    default String getPrivatePropertiesColumn() {
+        return "private_properties";
+    }
+
     default String getCreateTimestampColumn() {
         return "created_date";
     }

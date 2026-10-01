@@ -14,8 +14,8 @@
 
 package org.eclipse.edc.issuerservice.store.sql.attestationdefinition;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.type.MapType;
 import org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationDefinitionStore;
 import org.eclipse.edc.issuerservice.spi.issuance.model.AttestationDefinition;
 import org.eclipse.edc.issuerservice.spi.issuance.model.CredentialDefinition;
@@ -35,6 +35,7 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Objects;
 
+import static com.fasterxml.jackson.databind.type.TypeFactory.defaultInstance;
 import static org.eclipse.edc.spi.result.StoreResult.alreadyExists;
 import static org.eclipse.edc.spi.result.StoreResult.success;
 
@@ -43,9 +44,6 @@ import static org.eclipse.edc.spi.result.StoreResult.success;
  * SQL-based {@link CredentialDefinition} store intended for use with PostgreSQL
  */
 public class SqlAttestationDefinitionStore extends AbstractSqlStore implements AttestationDefinitionStore {
-
-    private static final TypeReference<Map<String, Object>> CONFIG_REF = new TypeReference<>() {
-    };
 
     private final AttestationDefinitionStoreStatements statements;
 
@@ -85,6 +83,7 @@ public class SqlAttestationDefinitionStore extends AbstractSqlStore implements A
                         attestationDefinition.getParticipantContextId(),
                         attestationDefinition.getAttestationType(),
                         toJson(attestationDefinition.getConfiguration()),
+                        toJson(attestationDefinition.getPrivateProperties()),
                         attestationDefinition.getCreatedAt(),
                         attestationDefinition.getLastModifiedAt()
                 );
@@ -110,6 +109,7 @@ public class SqlAttestationDefinitionStore extends AbstractSqlStore implements A
                             statements.getUpdateTemplate(),
                             attestationDefinition.getAttestationType(),
                             toJson(attestationDefinition.getConfiguration()),
+                            toJson(attestationDefinition.getPrivateProperties()),
                             attestationDefinition.getLastModifiedAt(),
                             id
                     );
@@ -164,15 +164,21 @@ public class SqlAttestationDefinitionStore extends AbstractSqlStore implements A
         var participantContextId = resultSet.getString(statements.getParticipantContextIdColumn());
         var type = resultSet.getString(statements.getAttestationTypeColumn());
         var config = resultSet.getString(statements.getConfigurationColumn());
+        var privateProperties = resultSet.getString(statements.getPrivatePropertiesColumn());
         var createdAt = resultSet.getLong(statements.getCreateTimestampColumn());
         var lastModifiedAt = resultSet.getLong(statements.getLastModifiedTimestampColumn());
         return AttestationDefinition.Builder.newInstance()
                 .id(id)
                 .participantContextId(participantContextId)
                 .attestationType(type)
-                .configuration(fromJson(config, CONFIG_REF))
+                .configuration(fromJson(config, map()))
+                .privateProperties(fromJson(privateProperties, map()))
                 .createdAt(createdAt)
                 .lastModifiedAt(lastModifiedAt)
                 .build();
+    }
+
+    private MapType map() {
+        return defaultInstance().constructMapType(Map.class, String.class, Object.class);
     }
 }

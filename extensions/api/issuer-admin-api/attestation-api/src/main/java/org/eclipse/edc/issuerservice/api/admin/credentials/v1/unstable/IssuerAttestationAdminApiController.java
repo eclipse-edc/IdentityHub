@@ -97,6 +97,7 @@ public class IssuerAttestationAdminApiController implements IssuerAttestationAdm
                 .attestationType(attestationRequest.attestationType())
                 .id(attestationRequest.id())
                 .configuration(attestationRequest.configuration())
+                .privateProperties(attestationRequest.privateProperties())
                 .build();
     }
 }

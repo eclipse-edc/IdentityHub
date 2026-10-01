@@ -22,6 +22,7 @@ CREATE TABLE IF NOT EXISTS credential_definitions
     rules                  JSON    NOT NULL DEFAULT '[]',
     mappings               JSON    NOT NULL DEFAULT '[]',
     additional_context     JSON    NOT NULL DEFAULT '[]',
+    private_properties     JSON    NOT NULL DEFAULT '{}',
     json_schema            JSON,
     json_schema_url        VARCHAR,
     validity               BIGINT  NOT NULL,

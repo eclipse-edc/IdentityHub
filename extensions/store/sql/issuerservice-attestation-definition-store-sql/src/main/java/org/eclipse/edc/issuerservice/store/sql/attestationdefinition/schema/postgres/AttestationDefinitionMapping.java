@@ -24,20 +24,13 @@ import org.eclipse.edc.sql.translation.TranslationMapping;
  */
 public class AttestationDefinitionMapping extends TranslationMapping {
 
-    public static final String FIELD_ID = "id";
-    public static final String FIELD_CREDENTIAL_TYPE = "attestationType";
-    public static final String FIELD_PARTICIPANT_CONTEXT_ID = "participantContextId";
-    public static final String FIELD_CREATE_TIMESTAMP = "createdAt";
-    public static final String FIELD_LASTMODIFIED_TIMESTAMP = "lastModified";
-    public static final String FIELD_CONFIGURATION = "configuration";
-
-
     public AttestationDefinitionMapping(AttestationDefinitionStoreStatements statements) {
-        add(FIELD_ID, statements.getIdColumn());
-        add(FIELD_PARTICIPANT_CONTEXT_ID, statements.getParticipantContextIdColumn());
-        add(FIELD_CREDENTIAL_TYPE, statements.getAttestationTypeColumn());
-        add(FIELD_CONFIGURATION, new JsonFieldTranslator(statements.getConfigurationColumn()));
-        add(FIELD_CREATE_TIMESTAMP, statements.getCreateTimestampColumn());
-        add(FIELD_LASTMODIFIED_TIMESTAMP, statements.getLastModifiedTimestampColumn());
+        add("id", statements.getIdColumn());
+        add("participantContextId", statements.getParticipantContextIdColumn());
+        add("attestationType", statements.getAttestationTypeColumn());
+        add("configuration", new JsonFieldTranslator(statements.getConfigurationColumn()));
+        add("privateProperties", new JsonFieldTranslator(statements.getPrivatePropertiesColumn()));
+        add("createdAt", statements.getCreateTimestampColumn());
+        add("lastModified", statements.getLastModifiedTimestampColumn());
     }
 }
