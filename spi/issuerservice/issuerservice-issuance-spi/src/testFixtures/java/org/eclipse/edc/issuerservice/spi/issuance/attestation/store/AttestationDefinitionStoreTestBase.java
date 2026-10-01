@@ -157,11 +157,41 @@ public abstract class AttestationDefinitionStoreTestBase {
                 .satisfies(list -> assertThat(list).isEmpty());
     }
 
+    @Test
+    void query_byPrivateProperties() {
+        var att = createAttestationDefinition("test-id", "test-type", Map.of("foo", "bar"), Map.of("key1", "value1"));
+        getStore().create(att);
+
+        var query = QuerySpec.Builder.newInstance().filter(new Criterion("privateProperties.key1", "=", "value1")).build();
+
+        assertThat(getStore().query(query)).isSucceeded()
+                .satisfies(list -> assertThat(list)
+                        .hasSize(1)
+                        .usingRecursiveFieldByFieldElementComparator()
+                        .containsExactly(att));
+    }
+
+    @Test
+    void query_byPrivateProperties_whenInvalidField_expectFailure() {
+        var att = createAttestationDefinition("test-id", "test-type", Map.of("foo", "bar"), Map.of("key1", "value1"));
+        getStore().create(att);
+
+        var query = QuerySpec.Builder.newInstance().filter(new Criterion("privateProperties.notexist", "=", "notexist")).build();
+
+        assertThat(getStore().query(query)).isSucceeded()
+                .satisfies(list -> assertThat(list).isEmpty());
+    }
+
     private AttestationDefinition createAttestationDefinition(String id, String type, Map<String, Object> configuration) {
+        return createAttestationDefinition(id, type, configuration, Map.of());
+    }
+
+    private AttestationDefinition createAttestationDefinition(String id, String type, Map<String, Object> configuration, Map<String, Object> privateProperties) {
         return AttestationDefinition.Builder.newInstance()
                 .id(id)
                 .attestationType(type)
                 .configuration(configuration)
+                .privateProperties(privateProperties)
                 .participantContextId(UUID.randomUUID().toString())
                 .build();
     }

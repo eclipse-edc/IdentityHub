@@ -28,6 +28,7 @@ public class AttestationDefinition extends AbstractParticipantResource {
 
     private String attestationType;
     private Map<String, Object> configuration = new HashMap<>();
+    private Map<String, Object> privateProperties = new HashMap<>();
     private long lastModifiedAt;
 
     private AttestationDefinition() {
@@ -39,6 +40,10 @@ public class AttestationDefinition extends AbstractParticipantResource {
 
     public Map<String, Object> getConfiguration() {
         return configuration;
+    }
+
+    public Map<String, Object> getPrivateProperties() {
+        return privateProperties;
     }
 
     public long getLastModifiedAt() {
@@ -70,6 +75,16 @@ public class AttestationDefinition extends AbstractParticipantResource {
             return this;
         }
 
+        public Builder privateProperties(Map<String, Object> privateProperties) {
+            this.entity.privateProperties = privateProperties;
+            return this;
+        }
+
+        public Builder privateProperty(String key, Object value) {
+            this.entity.privateProperties.put(key, value);
+            return this;
+        }
+
         @Override
         public Builder self() {
             return this;
@@ -81,6 +96,7 @@ public class AttestationDefinition extends AbstractParticipantResource {
             Objects.requireNonNull(entity.id, "Must have an ID");
             Objects.requireNonNull(entity.attestationType, "Must have an attestation type");
             Objects.requireNonNull(entity.configuration, "Must have an configuration");
+            Objects.requireNonNull(entity.privateProperties, "Must have privateProperties");
             Objects.requireNonNull(entity.participantContextId, "Must have an participantContextId");
             if (entity.getLastModifiedAt() == 0L) {
                 entity.lastModifiedAt = entity.clock.millis();

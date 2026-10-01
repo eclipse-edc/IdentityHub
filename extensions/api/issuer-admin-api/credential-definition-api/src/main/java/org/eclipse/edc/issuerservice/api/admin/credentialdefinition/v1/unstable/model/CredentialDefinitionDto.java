@@ -25,7 +25,9 @@ import org.eclipse.edc.issuerservice.spi.issuance.model.MappingDefinition;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static java.util.Objects.requireNonNull;
 
@@ -40,6 +42,7 @@ public class CredentialDefinitionDto {
     private final List<CredentialRuleDefinition> rules = new ArrayList<>();
     private final List<MappingDefinition> mappings = new ArrayList<>();
     private final List<String> additionalContext = new ArrayList<>();
+    private final Map<String, Object> privateProperties = new HashMap<>();
     private String format;
     private String credentialType;
     private String jsonSchema;
@@ -90,6 +93,10 @@ public class CredentialDefinitionDto {
         return mappings;
     }
 
+    public Map<String, Object> getPrivateProperties() {
+        return privateProperties;
+    }
+
     public CredentialDefinition toCredentialDefinition(String participantContextId) {
         return CredentialDefinition.Builder.newInstance()
                 .id(id)
@@ -102,6 +109,7 @@ public class CredentialDefinitionDto {
                 .rules(rules)
                 .mappings(mappings)
                 .additionalContext(additionalContext)
+                .privateProperties(privateProperties)
                 .participantContextId(participantContextId)
                 .build();
     }
@@ -185,6 +193,11 @@ public class CredentialDefinitionDto {
 
         public Builder additionalContext(List<String> additionalContexts) {
             this.entity.additionalContext.addAll(additionalContexts);
+            return this;
+        }
+
+        public Builder privateProperties(Map<String, Object> privateProperties) {
+            this.entity.privateProperties.putAll(privateProperties);
             return this;
         }
 

@@ -23,7 +23,9 @@ import org.eclipse.edc.participantcontext.spi.types.AbstractParticipantResource;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -40,6 +42,7 @@ public class CredentialDefinition extends AbstractParticipantResource {
     private final List<String> additionalContext = new ArrayList<>();
     private final List<CredentialRuleDefinition> rules = new ArrayList<>();
     private final List<MappingDefinition> mappings = new ArrayList<>();
+    private final Map<String, Object> privateProperties = new HashMap<>();
     private String format;
     private String credentialType;
     private String jsonSchema;
@@ -88,6 +91,10 @@ public class CredentialDefinition extends AbstractParticipantResource {
 
     public List<MappingDefinition> getMappings() {
         return mappings;
+    }
+
+    public Map<String, Object> getPrivateProperties() {
+        return privateProperties;
     }
 
 
@@ -169,6 +176,17 @@ public class CredentialDefinition extends AbstractParticipantResource {
         @JsonIgnore
         public Builder mapping(MappingDefinition mapping) {
             this.entity.mappings.add(mapping);
+            return this;
+        }
+
+        public Builder privateProperties(Map<String, Object> privateProperties) {
+            this.entity.privateProperties.putAll(privateProperties);
+            return this;
+        }
+
+        @JsonIgnore
+        public Builder privateProperty(String key, Object value) {
+            this.entity.privateProperties.put(key, value);
             return this;
         }
 
