@@ -165,7 +165,6 @@ public class IssuerCredentialOfferServiceImpl implements IssuerCredentialOfferSe
      * @return a ServiceResult containing the response body as a string
      */
     private ServiceResult<String> sendRequest(Request request) {
-        monitor.warning("Sending CredentialOffers is currently not implemented. This method will return without any network interaction.");
         return ServiceResult.from(httpClient.execute(request, this::mapResponse));
     }
 
