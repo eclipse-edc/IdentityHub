@@ -36,6 +36,7 @@ import org.junit.jupiter.api.Test;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -137,6 +138,53 @@ class CredentialWatchdogTest {
         verify(credentialStore).update(argThat(vcr -> vcr.getStateAsEnum() == VcStatus.ERROR));
         verifyNoMoreInteractions(credentialStore);
         verify(credentialStatusCheckService, times(2)).checkStatus(any());
+    }
+
+    @Test
+    void run_whenCredentialInError_andCheckSucceeds_shouldRecover() {
+        var cred = createCredentialBuilder().state(VcStatus.ERROR).build();
+        when(credentialStore.query(any())).thenReturn(StoreResult.success(List.of(cred)));
+
+        watchdog.run();
+
+        verify(credentialStore).query(argThat(querySpec ->
+                querySpec.getFilterExpression().get(0).getOperandRight() instanceof Collection<?> states && states.contains(VcStatus.ERROR.code())));
+        verify(credentialStatusCheckService).checkStatus(cred);
+        verify(credentialStore).update(argThat(vcr -> vcr.getId().equals(cred.getId()) && vcr.getStateAsEnum() == ISSUED));
+    }
+
+    @Test
+    void run_whenCredentialInError_andCheckFailsAgain_shouldNotUpdate() {
+        var cred = createCredentialBuilder().state(VcStatus.ERROR).build();
+        when(credentialStore.query(any())).thenReturn(StoreResult.success(List.of(cred)));
+        when(credentialStatusCheckService.checkStatus(any())).thenReturn(Result.failure("status list unreachable"));
+
+        watchdog.run();
+
+        verify(credentialStatusCheckService).checkStatus(cred);
+        verify(credentialStore, never()).update(any());
+        assertThat(cred.getStateAsEnum()).isEqualTo(VcStatus.ERROR);
+    }
+
+    @Test
+    void run_whenCredentialInErrorIsExpiring_shouldInitiateRenewal() {
+        var cred = createCredentialBuilder()
+                .state(VcStatus.ERROR)
+                .metadata(VerifiableCredentialResource.METADATA_CREDENTIAL_OBJECT_ID, "cred-object-id")
+                .credential(new VerifiableCredentialContainer("raw-vc-content", VC1_0_JWT, createVerifiableCredential()
+                        .expirationDate(Instant.now().plusSeconds(GRACE_PERIOD / 2))
+                        .build()))
+                .build();
+        when(credentialStore.query(any())).thenReturn(StoreResult.success(List.of(cred)));
+        when(credentialStore.update(any())).thenReturn(StoreResult.success());
+        when(credentialStatusCheckService.checkStatus(any())).thenReturn(Result.failure("status list unreachable"));
+
+        watchdog.run();
+
+        // the status is still unknown, but the credential is about to expire, so it is renewed nonetheless
+        verify(credentialRequestManager).initiateRequest(eq(cred.getParticipantContextId()), eq(cred.getIssuerId()), anyString(), argThat(list ->
+                list.size() == 1 && list.get(0).id().equals("cred-object-id")));
+        verify(credentialStore).update(argThat(vc -> vc.getStateAsEnum() == REQUESTED && vc.getMetadata().get(METADATA_RENEWAL_REQUEST_ID) != null));
     }
 
     @Test
