@@ -94,6 +94,7 @@ class CredentialStatusServiceImplTest {
     private final Monitor monitor = mock();
     private final TestStatusListInfo statusListInfo = spy(new TestStatusListInfo());
     private final CredentialGeneratorRegistry credentialGeneratorRegistry = mock();
+    private final StatusListInfoFactoryRegistryImpl statusListInfoFactoryRegistry = new StatusListInfoFactoryRegistryImpl();
     private CredentialStatusServiceImpl revocationService;
 
     @BeforeEach
@@ -103,7 +104,6 @@ class CredentialStatusServiceImplTest {
             CredentialFormat format = i.getArgument(2);
             return Result.success(new VerifiableCredentialContainer("rawVc", format, credential));
         });
-        var statusListInfoFactoryRegistry = new StatusListInfoFactoryRegistryImpl();
         statusListInfoFactoryRegistry.register("BitstringStatusListEntry", bitstringStatusListFactory);
         when(bitstringStatusListFactory.create(any())).thenReturn(ServiceResult.success(statusListInfo));
 
@@ -126,6 +126,32 @@ class CredentialStatusServiceImplTest {
             assertThat(result).isSucceeded();
             verify(credentialGeneratorRegistry).signCredential(anyString(), any(), any());
             verify(credentialStore, times(2)).update(any());
+        }
+
+        @Test
+        void revokeCredential_readsAndWritesStatusListWithinOneTransaction() {
+            var transactionContext = new TrackingTransactionContext();
+            var statusService = new CredentialStatusServiceImpl(credentialStore, transactionContext, monitor,
+                    statusListInfoFactoryRegistry, mock(), credentialGeneratorRegistry);
+            var transactionsOfCalls = new ArrayList<Integer>();
+            when(bitstringStatusListFactory.create(any())).thenAnswer(i -> {
+                transactionsOfCalls.add(transactionContext.currentTransaction());
+                return ServiceResult.success(statusListInfo);
+            });
+            when(credentialStore.update(any())).thenAnswer(i -> {
+                transactionsOfCalls.add(transactionContext.currentTransaction());
+                return success();
+            });
+            when(statusListInfo.getStatus()).thenReturn(Result.success("any"));
+            when(statusListInfo.statusListCredential()).thenReturn(createCredential(EXAMPLE_CREDENTIAL, EXAMPLE_CREDENTIAL_JWT.replace("\n", "")));
+            when(credentialStore.findById(eq(CREDENTIAL_ID))).thenReturn(success(createCredential(EXAMPLE_CREDENTIAL, EXAMPLE_CREDENTIAL_JWT.replace("\n", ""))));
+
+            var result = statusService.revokeCredential(CREDENTIAL_ID);
+
+            assertThat(result).isSucceeded();
+            // the status list credential stays locked from being read until its transaction completes, so it has to be
+            // written back, together with the revoked credential, within that same transaction
+            assertThat(transactionsOfCalls).containsExactly(1, 1, 1);
         }
 
         @Test

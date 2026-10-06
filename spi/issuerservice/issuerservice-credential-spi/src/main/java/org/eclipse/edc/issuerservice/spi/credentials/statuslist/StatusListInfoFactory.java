@@ -25,6 +25,10 @@ public interface StatusListInfoFactory {
     /**
      * Creates a {@link StatusListInfo} object based on the credential status of the holder credential. Holder credential
      * may have multiple status objects, and one {@link StatusListInfo} must be created each.
+     * <p>
+     * The status list credential is locked until the surrounding transaction completes. A status change, i.e. changing the
+     * status list credential and writing it back, must therefore happen within the same transaction, so that it cannot
+     * overwrite a change that another caller, possibly in another runtime, made in the meantime.
      *
      * @param credentialStatus The credential status
      */

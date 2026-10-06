@@ -57,7 +57,9 @@ public class BitstringStatusListFactory implements StatusListInfoFactory {
 
         var query = QuerySpec.Builder.newInstance().filter(criterion("verifiableCredential.credential.id", "=", credentialId)).build();
 
-        return credentialStore.query(query).flatMap(ServiceResult::from)
+        // the status list credential stays locked until the surrounding transaction completes, so that a status change can be
+        // written back without overwriting one that another runtime made in the meantime, c.f. StatusListInfoFactory
+        return credentialStore.queryForUpdate(query).flatMap(ServiceResult::from)
                 .compose(resources -> resources.size() == 1
                         ? ServiceResult.success(resources.iterator().next())
                         : ServiceResult.notFound("Cannot find the StatusList credential with id " + credentialId))
