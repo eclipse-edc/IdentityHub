@@ -35,6 +35,7 @@ import java.util.List;
 import java.util.UUID;
 
 import static java.util.Optional.ofNullable;
+import static org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStatus.ERROR;
 import static org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStatus.EXPIRED;
 import static org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStatus.ISSUED;
 import static org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStatus.NOT_YET_VALID;
@@ -47,7 +48,7 @@ import static org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStat
  * <p>
  * Note that this will materialize <strong>all</strong> credentials into memory at once, as the general assumption is that typically, wallets don't
  * store an enormous amount of credentials. To mitigate this, the watchdog only considers credentials in states {@link VcStatus#EXPIRED}, {@link VcStatus#ISSUED},
- * {@link VcStatus#SUSPENDED}, {@link VcStatus#NOT_YET_VALID} and {@link VcStatus#REQUESTED}, c.f. {@link CredentialWatchdog#ALLOWED_STATES}.
+ * {@link VcStatus#SUSPENDED}, {@link VcStatus#NOT_YET_VALID}, {@link VcStatus#REQUESTED} and {@link VcStatus#ERROR}, c.f. {@link CredentialWatchdog#ALLOWED_STATES}.
  *
  * <p>
  * Note also, that a credentials status will only be updated if it did in fact change, to avoid unnecessary database interactions.
@@ -56,7 +57,9 @@ public class CredentialWatchdog implements Runnable {
     //todo: add more states once we have to check issuance status
     // REQUESTED marks a credential whose renewal is in flight. It is fetched so that a renewal which ended without
     // delivering a replacement can be noticed and the credential released again, c.f. #reconcileRenewal
-    public static final List<Integer> ALLOWED_STATES = List.of(ISSUED.code(), NOT_YET_VALID.code(), SUSPENDED.code(), EXPIRED.code(), REQUESTED.code());
+    // ERROR marks a credential whose status could not be determined, e.g. because its status list was unreachable. It is
+    // fetched so that it is checked again, and recovers once the check succeeds, instead of never being looked at again.
+    public static final List<Integer> ALLOWED_STATES = List.of(ISSUED.code(), NOT_YET_VALID.code(), SUSPENDED.code(), EXPIRED.code(), REQUESTED.code(), ERROR.code());
     private static final List<HolderRequestState> PENDING_REQUEST_STATES = List.of(HolderRequestState.CREATED, HolderRequestState.REQUESTING, HolderRequestState.REQUESTED);
     private final CredentialStore credentialStore;
     private final CredentialStatusCheckService credentialStatusCheckService;

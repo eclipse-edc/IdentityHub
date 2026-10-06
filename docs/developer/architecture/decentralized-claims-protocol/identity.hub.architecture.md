@@ -91,6 +91,10 @@ it there and links it, via the `renewalRequestId` metadata entry, to the `Holder
 renewal that fails releases the credential again, recording the reason under `renewalError`, so that it is tracked as
 before and renewed anew on a later run.
 
+`ERROR` marks a credential whose status the credential watchdog could not determine, for example because its status
+list credential could not be downloaded. The watchdog keeps checking such a credential, so it returns to the state its
+status list and validity dates imply as soon as a check succeeds again.
+
 There are three areas in which a `VerifiableCredentialResource` will be used:
 
 1. _on the holder side_: the older manages credentials and uses them in verifiable presentations
