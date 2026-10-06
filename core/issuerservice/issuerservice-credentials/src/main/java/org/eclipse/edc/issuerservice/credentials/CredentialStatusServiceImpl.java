@@ -23,14 +23,13 @@ import org.eclipse.edc.issuerservice.spi.credentials.statuslist.StatusListInfo;
 import org.eclipse.edc.issuerservice.spi.credentials.statuslist.StatusListInfoFactoryRegistry;
 import org.eclipse.edc.issuerservice.spi.credentials.statuslist.StatusListManager;
 import org.eclipse.edc.issuerservice.spi.issuance.generator.CredentialGeneratorRegistry;
+import org.eclipse.edc.spi.EdcException;
 import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.ServiceResult;
-import org.eclipse.edc.spi.result.StoreResult;
 import org.eclipse.edc.transaction.spi.TransactionContext;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Arrays;
 import java.util.Collection;
 
 import static java.util.Optional.ofNullable;
@@ -79,37 +78,41 @@ public class CredentialStatusServiceImpl implements CredentialStatusService {
 
     @Override
     public ServiceResult<Void> revokeCredential(String holderCredentialId) {
-        return transactionContext.execute(() -> {
+        try {
+            return transactionContext.execute(() -> {
 
-            var result = getCredential(holderCredentialId)
-                    .compose(this::getRevocationInfo);
+                var result = getCredential(holderCredentialId)
+                        .compose(this::getRevocationInfo);
 
-            if (result.failed()) {
-                return result.mapFailure();
-            }
-            var revocationInfo = result.getContent();
+                if (result.failed()) {
+                    return result.mapFailure();
+                }
+                var revocationInfo = result.getContent();
 
-            var status = revocationInfo.getStatus();
-            if (status.failed()) {
-                return result.mapFailure();
-            }
+                var status = revocationInfo.getStatus();
+                if (status.failed()) {
+                    return unexpected(status.getFailureDetail());
+                }
 
-            if (BitstringConstants.REVOCATION.equalsIgnoreCase(status.getContent())) {
-                monitor.info("Revocation not necessary, credential is already revoked.");
-                return success();
-            }
+                if (BitstringConstants.REVOCATION.equalsIgnoreCase(status.getContent())) {
+                    monitor.info("Revocation not necessary, credential is already revoked.");
+                    return success();
+                }
 
-            var setStatusResult = revocationInfo.setStatus(true);
-            if (setStatusResult.failed()) {
-                return unexpected(setStatusResult.getFailureDetail());
-            }
+                var setStatusResult = revocationInfo.setStatus(true);
+                if (setStatusResult.failed()) {
+                    return unexpected(setStatusResult.getFailureDetail());
+                }
 
-            return updateStatusCredential(revocationInfo.statusListCredential())
-                    .compose(updatedStatusListCredential -> getCredential(holderCredentialId)
-                            .onSuccess(VerifiableCredentialResource::revoke)
-                            .compose(userCredential -> update(updatedStatusListCredential, userCredential))
-                    );
-        });
+                return updateStatusCredential(revocationInfo.statusListCredential())
+                        .compose(updatedStatusListCredential -> getCredential(holderCredentialId)
+                                .onSuccess(VerifiableCredentialResource::revoke)
+                                .compose(userCredential -> update(updatedStatusListCredential, userCredential))
+                        );
+            });
+        } catch (UpdateFailedException e) {
+            return e.failure();
+        }
     }
 
     @Override
@@ -139,10 +142,20 @@ public class CredentialStatusServiceImpl implements CredentialStatusService {
         return getCredential(credentialId);
     }
 
+    /**
+     * Writes the given credentials, which together make up one status change. If one of them cannot be written, the ones
+     * written before must not be committed on their own: otherwise e.g. the status list could report a credential as
+     * revoked while the issuer's record of it does not. The surrounding transaction only rolls back when an exception is
+     * thrown, so this throws an {@link UpdateFailedException} instead of returning a failure.
+     */
     private ServiceResult<Void> update(VerifiableCredentialResource... credentials) {
-        return Arrays.stream(credentials).map(credentialStore::update)
-                .reduce(StoreResult.success(), (a, b) -> a.compose(i -> b))
-                .flatMap(ServiceResult::from);
+        for (var credential : credentials) {
+            var result = credentialStore.update(credential);
+            if (result.failed()) {
+                throw new UpdateFailedException(ServiceResult.from(result));
+            }
+        }
+        return success();
     }
 
     private ServiceResult<VerifiableCredentialResource> getCredential(String credentialId) {
@@ -181,4 +194,19 @@ public class CredentialStatusServiceImpl implements CredentialStatusService {
                 .orElseGet(() -> badRequest("No StatusList implementation for type '%s' found.".formatted(status.type())));
     }
 
+    /**
+     * Rolls back a status change that could not be written completely, and carries its failure out of the transaction.
+     */
+    private static class UpdateFailedException extends EdcException {
+        private final ServiceResult<Void> failure;
+
+        UpdateFailedException(ServiceResult<Void> failure) {
+            super(failure.getFailureDetail());
+            this.failure = failure;
+        }
+
+        ServiceResult<Void> failure() {
+            return failure;
+        }
+    }
 }

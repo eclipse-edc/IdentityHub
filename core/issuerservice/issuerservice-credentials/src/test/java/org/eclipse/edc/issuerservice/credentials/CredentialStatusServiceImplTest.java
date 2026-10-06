@@ -43,6 +43,7 @@ import org.eclipse.edc.json.JacksonTypeManager;
 import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.spi.result.ServiceResult;
+import org.eclipse.edc.spi.result.StoreResult;
 import org.eclipse.edc.token.spi.TokenGenerationService;
 import org.eclipse.edc.transaction.spi.NoopTransactionContext;
 import org.eclipse.edc.transaction.spi.TransactionContext.ResultTransactionBlock;
@@ -69,6 +70,7 @@ import static org.eclipse.edc.spi.result.ServiceFailure.Reason.NOT_FOUND;
 import static org.eclipse.edc.spi.result.StoreResult.notFound;
 import static org.eclipse.edc.spi.result.StoreResult.success;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -94,6 +96,7 @@ class CredentialStatusServiceImplTest {
     private final Monitor monitor = mock();
     private final TestStatusListInfo statusListInfo = spy(new TestStatusListInfo());
     private final CredentialGeneratorRegistry credentialGeneratorRegistry = mock();
+    private final StatusListInfoFactoryRegistryImpl statusListInfoFactoryRegistry = new StatusListInfoFactoryRegistryImpl();
     private CredentialStatusServiceImpl revocationService;
 
     @BeforeEach
@@ -103,7 +106,6 @@ class CredentialStatusServiceImplTest {
             CredentialFormat format = i.getArgument(2);
             return Result.success(new VerifiableCredentialContainer("rawVc", format, credential));
         });
-        var statusListInfoFactoryRegistry = new StatusListInfoFactoryRegistryImpl();
         statusListInfoFactoryRegistry.register("BitstringStatusListEntry", bitstringStatusListFactory);
         when(bitstringStatusListFactory.create(any())).thenReturn(ServiceResult.success(statusListInfo));
 
@@ -126,6 +128,84 @@ class CredentialStatusServiceImplTest {
             assertThat(result).isSucceeded();
             verify(credentialGeneratorRegistry).signCredential(anyString(), any(), any());
             verify(credentialStore, times(2)).update(any());
+        }
+
+        @Test
+        void revokeCredential_readsAndWritesStatusListWithinOneTransaction() {
+            var transactionContext = new TrackingTransactionContext();
+            var statusService = new CredentialStatusServiceImpl(credentialStore, transactionContext, monitor,
+                    statusListInfoFactoryRegistry, mock(), credentialGeneratorRegistry);
+            var transactionsOfCalls = new ArrayList<Integer>();
+            when(bitstringStatusListFactory.create(any())).thenAnswer(i -> {
+                transactionsOfCalls.add(transactionContext.currentTransaction());
+                return ServiceResult.success(statusListInfo);
+            });
+            when(credentialStore.update(any())).thenAnswer(i -> {
+                transactionsOfCalls.add(transactionContext.currentTransaction());
+                return success();
+            });
+            when(statusListInfo.getStatus()).thenReturn(Result.success("any"));
+            when(statusListInfo.statusListCredential()).thenReturn(createCredential(EXAMPLE_CREDENTIAL, EXAMPLE_CREDENTIAL_JWT.replace("\n", "")));
+            when(credentialStore.findById(eq(CREDENTIAL_ID))).thenReturn(success(createCredential(EXAMPLE_CREDENTIAL, EXAMPLE_CREDENTIAL_JWT.replace("\n", ""))));
+
+            var result = statusService.revokeCredential(CREDENTIAL_ID);
+
+            assertThat(result).isSucceeded();
+            // the status list credential stays locked from being read until its transaction completes, so it has to be
+            // written back, together with the revoked credential, within that same transaction
+            assertThat(transactionsOfCalls).containsExactly(1, 1, 1);
+        }
+
+        @Test
+        void revokeCredential_whenStatusCannotBeRead_shouldFail() {
+            when(statusListInfo.getStatus()).thenReturn(Result.failure("cannot decode the bitstring"));
+            when(credentialStore.findById(eq(CREDENTIAL_ID))).thenReturn(success(createCredential(EXAMPLE_CREDENTIAL, EXAMPLE_CREDENTIAL_JWT.replace("\n", ""))));
+
+            var result = revocationService.revokeCredential(CREDENTIAL_ID);
+
+            assertThat(result).isFailed().detail().isEqualTo("cannot decode the bitstring");
+            verify(statusListInfo, never()).setStatus(anyBoolean());
+            verify(credentialGeneratorRegistry, never()).signCredential(any(), any(), any());
+            verify(credentialStore, never()).update(any());
+        }
+
+        @Test
+        void revokeCredential_whenRevokedCredentialCannotBeWritten_shouldRollBack() {
+            var transactionContext = new TrackingTransactionContext();
+            var statusService = new CredentialStatusServiceImpl(credentialStore, transactionContext, monitor,
+                    statusListInfoFactoryRegistry, mock(), credentialGeneratorRegistry);
+            when(statusListInfo.getStatus()).thenReturn(Result.success("any"));
+            when(statusListInfo.statusListCredential()).thenReturn(createCredential(EXAMPLE_CREDENTIAL, EXAMPLE_CREDENTIAL_JWT.replace("\n", "")));
+            when(credentialStore.findById(eq(CREDENTIAL_ID))).thenReturn(success(createCredential(EXAMPLE_CREDENTIAL, EXAMPLE_CREDENTIAL_JWT.replace("\n", ""))));
+            when(credentialStore.update(any()))
+                    .thenReturn(success())
+                    .thenReturn(StoreResult.generalError("cannot write"));
+
+            var result = statusService.revokeCredential(CREDENTIAL_ID);
+
+            assertThat(result).isFailed().detail().isEqualTo("cannot write");
+            // the status list credential has already been written at that point, and must not be committed on its own
+            assertThat(transactionContext.rolledBack()).isTrue();
+            verify(credentialStore, times(2)).update(any());
+        }
+
+        @Test
+        void revokeCredential_whenStatusListCannotBeWritten_shouldRollBack() {
+            var transactionContext = new TrackingTransactionContext();
+            var statusService = new CredentialStatusServiceImpl(credentialStore, transactionContext, monitor,
+                    statusListInfoFactoryRegistry, mock(), credentialGeneratorRegistry);
+            when(statusListInfo.getStatus()).thenReturn(Result.success("any"));
+            when(statusListInfo.statusListCredential()).thenReturn(createCredential(EXAMPLE_CREDENTIAL, EXAMPLE_CREDENTIAL_JWT.replace("\n", "")));
+            when(credentialStore.findById(eq(CREDENTIAL_ID))).thenReturn(success(createCredential(EXAMPLE_CREDENTIAL, EXAMPLE_CREDENTIAL_JWT.replace("\n", ""))));
+            when(credentialStore.update(any())).thenReturn(StoreResult.notFound("no status list"));
+
+            var result = statusService.revokeCredential(CREDENTIAL_ID);
+
+            assertThat(result).isFailed().detail().isEqualTo("no status list");
+            assertThat(result.getFailure().getReason()).isEqualTo(NOT_FOUND);
+            assertThat(transactionContext.rolledBack()).isTrue();
+            // the revoked credential is not written once its status could not be recorded in the status list
+            verify(credentialStore).update(any());
         }
 
         @Test
@@ -346,11 +426,13 @@ class CredentialStatusServiceImplTest {
     }
 
     /**
-     * Numbers the transactions it runs, so that a test can tell whether two calls happened within the same one.
+     * Numbers the transactions it runs, so that a test can tell whether two calls happened within the same one, and
+     * records whether one was rolled back, i.e. whether its block threw an exception.
      */
     private static class TrackingTransactionContext extends NoopTransactionContext {
         private int transactions;
         private int depth;
+        private boolean rolledBack;
 
         @Override
         public <T> T execute(ResultTransactionBlock<T> block) {
@@ -359,9 +441,16 @@ class CredentialStatusServiceImplTest {
             }
             try {
                 return super.execute(block);
+            } catch (RuntimeException e) {
+                rolledBack = true;
+                throw e;
             } finally {
                 depth--;
             }
+        }
+
+        boolean rolledBack() {
+            return rolledBack;
         }
 
         /**

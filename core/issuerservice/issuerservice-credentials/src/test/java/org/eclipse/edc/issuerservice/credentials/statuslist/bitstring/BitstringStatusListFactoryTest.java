@@ -47,7 +47,7 @@ class BitstringStatusListFactoryTest {
                 "statusListIndex", "1234",
                 "statusListCredential", "https://example.com/credentials/status/credentialId"));
         var statusList = VerifiableCredentialResource.Builder.newStatusList().issuerId("issuer").holderId("holder").build();
-        when(credentialStore.query(any())).thenReturn(StoreResult.success(List.of(statusList)));
+        when(credentialStore.queryForUpdate(any())).thenReturn(StoreResult.success(List.of(statusList)));
 
         var result = factory.create(status);
 
@@ -55,7 +55,7 @@ class BitstringStatusListFactoryTest {
             assertThat(info.index()).isEqualTo(1234);
             assertThat(info.statusListCredential()).isSameAs(statusList);
         });
-        verify(credentialStore).query(argThat(querySpec -> querySpec.getFilterExpression()
+        verify(credentialStore).queryForUpdate(argThat(querySpec -> querySpec.getFilterExpression()
                 .contains(criterion("verifiableCredential.credential.id", "=", "credentialId"))));
     }
 
@@ -86,7 +86,7 @@ class BitstringStatusListFactoryTest {
         var status = new CredentialStatus("id", "BitstringStatusListEntry", Map.of("statusPurpose", "revocation",
                 "statusListIndex", "1234",
                 "statusListCredential", "https://example.com/credentials/status/1234"));
-        when(credentialStore.query(any())).thenReturn(StoreResult.success(emptyList()));
+        when(credentialStore.queryForUpdate(any())).thenReturn(StoreResult.success(emptyList()));
 
         var result = factory.create(status);
 
@@ -98,7 +98,7 @@ class BitstringStatusListFactoryTest {
         var status = new CredentialStatus("id", "BitstringStatusListEntry", Map.of("statusPurpose", "revocation",
                 "statusListIndex", "1234",
                 "statusListCredential", "https://example.com/credentials/status/1234"));
-        when(credentialStore.query(any())).thenReturn(StoreResult.generalError("failure"));
+        when(credentialStore.queryForUpdate(any())).thenReturn(StoreResult.generalError("failure"));
 
         var result = factory.create(status);
 
