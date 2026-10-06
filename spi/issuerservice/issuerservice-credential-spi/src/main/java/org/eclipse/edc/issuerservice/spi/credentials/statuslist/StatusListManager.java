@@ -26,6 +26,11 @@ import org.eclipse.edc.spi.result.ServiceResult;
  *   <li>Status list credential is saturated (= all bits in the bitstring are occupied)</li>
  *   <li>Creating new status list credentials should also publish them and retrieve the public URL</li>
  * </ul>
+ * <p>
+ * Reserving a status list index takes a call to {@link #getActiveCredential(String)} followed by a call to
+ * {@link #incrementIndex(StatusListCredentialEntry)}. Both must happen within the same transaction: the active status
+ * list credential is locked when it is obtained, and stays locked until that transaction completes, so that concurrent
+ * callers, possibly in other runtimes, cannot obtain the same index.
  */
 public interface StatusListManager {
     /**
@@ -43,7 +48,8 @@ public interface StatusListManager {
 
     /**
      * Obtains the currently active status list credential for a particular participant context id (=tenant). If the current
-     * status list credential is saturated, a new one is created and published transparently and then returned
+     * status list credential is saturated, a new one is created and published transparently and then returned. The status
+     * list credentials of that participant context are locked until the surrounding transaction completes.
      *
      * @param participantContextId The Issuer participant context id
      * @return the currently active, non-saturated status list credential entry

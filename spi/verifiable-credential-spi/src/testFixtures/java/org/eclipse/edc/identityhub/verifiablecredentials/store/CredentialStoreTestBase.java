@@ -25,6 +25,7 @@ import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCre
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialStore;
 import org.eclipse.edc.spi.query.Criterion;
 import org.eclipse.edc.spi.query.QuerySpec;
+import org.eclipse.edc.spi.query.SortOrder;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
 
@@ -501,6 +502,62 @@ public abstract class CredentialStoreTestBase {
         var res = getStore().query(query);
         assertThat(res).isSucceeded();
         Assertions.assertThat(res.getContent()).isNotNull().isEmpty();
+    }
+
+    @Test
+    void queryForUpdate_byParticipantIdAndJsonProperty() {
+        var creds = createCredentials();
+
+        // shaped like the lookup of an issuer's status list credentials
+        var expectedCred = createCredentialBuilder()
+                .participantContextId("another-participant")
+                .credential(new VerifiableCredentialContainer(EXAMPLE_VC, CredentialFormat.VC1_0_LD, createVerifiableCredential()
+                        .credentialSubject(CredentialSubject.Builder.newInstance()
+                                .claim("type", "BitstringStatusList")
+                                .build())
+                        .build()))
+                .build();
+        creds.add(expectedCred);
+        creds.forEach(getStore()::create);
+
+        var query = queryByParticipantContextId("another-participant")
+                .filter(new Criterion("verifiableCredential.credential.credentialSubject.type", "=", "BitstringStatusList"))
+                .build();
+
+        assertThat(getStore().queryForUpdate(query)).isSucceeded()
+                .satisfies(str -> Assertions.assertThat(str).hasSize(1)
+                        .usingRecursiveFieldByFieldElementComparator()
+                        .containsExactly(expectedCred));
+    }
+
+    @Test
+    void queryForUpdate_sortedByTimestamp() {
+        var newest = createCredentialBuilder().timestamp(3000).build();
+        var oldest = createCredentialBuilder().timestamp(1000).build();
+        var middle = createCredentialBuilder().timestamp(2000).build();
+        List.of(newest, oldest, middle).forEach(getStore()::create);
+
+        var query = QuerySpec.Builder.newInstance()
+                .sortField("timestamp")
+                .sortOrder(SortOrder.ASC)
+                .build();
+
+        assertThat(getStore().queryForUpdate(query)).isSucceeded()
+                .satisfies(str -> Assertions.assertThat(str)
+                        .extracting(VerifiableCredentialResource::getId)
+                        .containsExactly(oldest.getId(), middle.getId(), newest.getId()));
+    }
+
+    @Test
+    void queryForUpdate_whenNotFound() {
+        createCredentials().forEach(getStore()::create);
+
+        var query = QuerySpec.Builder.newInstance()
+                .filter(new Criterion("id", "=", "not-exist"))
+                .build();
+
+        assertThat(getStore().queryForUpdate(query)).isSucceeded()
+                .satisfies(str -> Assertions.assertThat(str).isEmpty());
     }
 
     @Test
