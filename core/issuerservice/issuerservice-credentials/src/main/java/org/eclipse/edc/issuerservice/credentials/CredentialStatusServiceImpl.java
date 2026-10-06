@@ -60,18 +60,21 @@ public class CredentialStatusServiceImpl implements CredentialStatusService {
 
     @Override
     public ServiceResult<VerifiableCredential> addCredential(String participantContextId, VerifiableCredential credential) {
+        // reading the index and incrementing it happen in one transaction, during which the status list credential stays
+        // locked: otherwise another runtime could hand out the same index to another credential
+        return transactionContext.execute(() -> {
+            var entryResult = statusListManager.getActiveCredential(participantContextId);
+            if (entryResult.failed()) {
+                return entryResult.mapFailure();
+            }
 
-        var entryResult = statusListManager.getActiveCredential(participantContextId);
-        if (entryResult.failed()) {
-            return entryResult.mapFailure();
-        }
-
-        var entry = entryResult.getContent();
-        var cred = credential.toBuilder()
-                .credentialStatus(entry.createCredentialStatus())
-                .build();
-        // update the status list: increment index, possible create new credential
-        return statusListManager.incrementIndex(entry).compose(v -> success(cred));
+            var entry = entryResult.getContent();
+            var cred = credential.toBuilder()
+                    .credentialStatus(entry.createCredentialStatus())
+                    .build();
+            // update the status list: increment index, possible create new credential
+            return statusListManager.incrementIndex(entry).compose(v -> success(cred));
+        });
     }
 
     @Override

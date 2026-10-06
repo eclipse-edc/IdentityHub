@@ -99,6 +99,18 @@ public class SqlCredentialStore extends AbstractSqlStore implements CredentialSt
     }
 
     @Override
+    public StoreResult<Collection<VerifiableCredentialResource>> queryForUpdate(QuerySpec querySpec) {
+        return transactionContext.execute(() -> {
+            try (var connection = getConnection()) {
+                var query = statements.createQuery(querySpec).forUpdate();
+                return success(queryExecutor.query(connection, true, this::mapResultSet, query.getQueryAsString(), query.getParameters()).toList());
+            } catch (SQLException e) {
+                throw new EdcPersistenceException(e);
+            }
+        });
+    }
+
+    @Override
     public StoreResult<Void> update(VerifiableCredentialResource credentialResource) {
         var id = credentialResource.getId();
 

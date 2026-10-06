@@ -27,6 +27,7 @@ import com.nimbusds.jose.jwk.gen.ECKeyGenerator;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat;
+import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialStatus;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredential;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredentialContainer;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStatus;
@@ -34,7 +35,9 @@ import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCre
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialStore;
 import org.eclipse.edc.issuerservice.credentials.statuslist.StatusListInfoFactoryRegistryImpl;
 import org.eclipse.edc.issuerservice.credentials.statuslist.bitstring.BitstringStatusListFactory;
+import org.eclipse.edc.issuerservice.spi.credentials.statuslist.StatusListCredentialEntry;
 import org.eclipse.edc.issuerservice.spi.credentials.statuslist.StatusListInfo;
+import org.eclipse.edc.issuerservice.spi.credentials.statuslist.StatusListManager;
 import org.eclipse.edc.issuerservice.spi.issuance.generator.CredentialGeneratorRegistry;
 import org.eclipse.edc.json.JacksonTypeManager;
 import org.eclipse.edc.spi.monitor.Monitor;
@@ -42,12 +45,14 @@ import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.spi.result.ServiceResult;
 import org.eclipse.edc.token.spi.TokenGenerationService;
 import org.eclipse.edc.transaction.spi.NoopTransactionContext;
+import org.eclipse.edc.transaction.spi.TransactionContext.ResultTransactionBlock;
 import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import java.text.ParseException;
+import java.util.ArrayList;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -189,6 +194,69 @@ class CredentialStatusServiceImplTest {
     }
 
     @Nested
+    class AddCredential {
+
+        private static final String PARTICIPANT_CONTEXT_ID = "test-participant";
+        private final StatusListManager statusListManager = mock();
+        private final TrackingTransactionContext transactionContext = new TrackingTransactionContext();
+        private final StatusListCredentialEntry entry = mock();
+        private final CredentialStatus credentialStatus = new CredentialStatus("status-id", "BitstringStatusListEntry", Map.of("statusListIndex", 42));
+        private CredentialStatusServiceImpl statusService;
+
+        @BeforeEach
+        void setUp() {
+            statusService = new CredentialStatusServiceImpl(credentialStore, transactionContext, monitor,
+                    new StatusListInfoFactoryRegistryImpl(), statusListManager, credentialGeneratorRegistry);
+            when(entry.createCredentialStatus()).thenReturn(credentialStatus);
+        }
+
+        @Test
+        void addCredential_reservesIndexWithinOneTransaction() {
+            var transactionsOfCalls = new ArrayList<Integer>();
+            when(statusListManager.getActiveCredential(PARTICIPANT_CONTEXT_ID)).thenAnswer(i -> {
+                transactionsOfCalls.add(transactionContext.currentTransaction());
+                return ServiceResult.success(entry);
+            });
+            when(statusListManager.incrementIndex(entry)).thenAnswer(i -> {
+                transactionsOfCalls.add(transactionContext.currentTransaction());
+                return ServiceResult.success();
+            });
+
+            var result = statusService.addCredential(PARTICIPANT_CONTEXT_ID, holderCredential());
+
+            assertThat(result).isSucceeded()
+                    .satisfies(credential -> assertThat(credential.getCredentialStatus()).contains(credentialStatus));
+            // the index must be read and incremented while the status list credential stays locked, i.e. in one and the
+            // same transaction
+            assertThat(transactionsOfCalls).containsExactly(1, 1);
+        }
+
+        @Test
+        void addCredential_whenNoActiveCredential_shouldFail() {
+            when(statusListManager.getActiveCredential(PARTICIPANT_CONTEXT_ID)).thenReturn(ServiceResult.notFound("no status list"));
+
+            var result = statusService.addCredential(PARTICIPANT_CONTEXT_ID, holderCredential());
+
+            assertThat(result).isFailed().detail().isEqualTo("no status list");
+            verify(statusListManager, never()).incrementIndex(any());
+        }
+
+        @Test
+        void addCredential_whenIncrementFails_shouldFail() {
+            when(statusListManager.getActiveCredential(PARTICIPANT_CONTEXT_ID)).thenReturn(ServiceResult.success(entry));
+            when(statusListManager.incrementIndex(entry)).thenReturn(ServiceResult.unexpected("update failed"));
+
+            var result = statusService.addCredential(PARTICIPANT_CONTEXT_ID, holderCredential());
+
+            assertThat(result).isFailed().detail().isEqualTo("update failed");
+        }
+
+        private VerifiableCredential holderCredential() {
+            return createCredential(EXAMPLE_CREDENTIAL, null).getVerifiableCredential().credential();
+        }
+    }
+
+    @Nested
     class Suspend {
         @Test
         void suspend() {
@@ -274,6 +342,33 @@ class CredentialStatusServiceImplTest {
                     .holderId("did:web:testholder");
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * Numbers the transactions it runs, so that a test can tell whether two calls happened within the same one.
+     */
+    private static class TrackingTransactionContext extends NoopTransactionContext {
+        private int transactions;
+        private int depth;
+
+        @Override
+        public <T> T execute(ResultTransactionBlock<T> block) {
+            if (depth++ == 0) {
+                transactions++;
+            }
+            try {
+                return super.execute(block);
+            } finally {
+                depth--;
+            }
+        }
+
+        /**
+         * The number of the transaction in progress, or 0 if there is none.
+         */
+        int currentTransaction() {
+            return depth > 0 ? transactions : 0;
         }
     }
 

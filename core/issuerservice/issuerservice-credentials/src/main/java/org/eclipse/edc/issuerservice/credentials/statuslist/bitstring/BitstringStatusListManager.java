@@ -32,6 +32,7 @@ import org.eclipse.edc.issuerservice.spi.issuance.generator.CredentialGeneratorR
 import org.eclipse.edc.spi.EdcException;
 import org.eclipse.edc.spi.query.Criterion;
 import org.eclipse.edc.spi.query.QuerySpec;
+import org.eclipse.edc.spi.query.SortOrder;
 import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.spi.result.ServiceResult;
 import org.eclipse.edc.spi.result.StoreFailure;
@@ -42,6 +43,7 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 import static java.util.Optional.ofNullable;
@@ -77,18 +79,19 @@ public class BitstringStatusListManager implements StatusListManager {
     @Override
     public ServiceResult<StatusListCredentialEntry> getActiveCredential(String participantContextId) {
         return transactionContext.execute(() -> {
-            var credentialQueryResult = store.query(whereTypeIsBitstringCredential(participantContextId));
-            if (credentialQueryResult.failed()) {
-                return ServiceResult.fromFailure(credentialQueryResult);
+            var usableCredential = findUsableStatusListCredential(participantContextId);
+            if (usableCredential.succeeded() && usableCredential.getContent().isEmpty()) {
+                // the query may have waited for the lock of another runtime, which has since filled up the status list and
+                // created a new one. A query that was already under way cannot see that new status list, but a new query can,
+                // so look again before creating yet another one
+                usableCredential = findUsableStatusListCredential(participantContextId);
+            }
+            if (usableCredential.failed()) {
+                return usableCredential.mapFailure();
             }
 
-            var bitStringCredentials = credentialQueryResult.getContent();
-
             // obtain the current index, current credential by ID and its published URL
-            return bitStringCredentials.stream()
-                    .filter(this::isActive)
-                    .filter(this::isNotFull)
-                    .findFirst()
+            return usableCredential.getContent()
                     .map(ServiceResult::success)
                     .orElseGet(() -> createNewStatusListCredential(participantContextId))
                     .map(cred -> new BitstringStatusListCredentialEntry(statusListIndex(cred), cred, publicUri(cred)));
@@ -106,6 +109,22 @@ public class BitstringStatusListManager implements StatusListManager {
 
             return upsert(updatedCredential);
         });
+    }
+
+    /**
+     * Looks up the status list credential that new holder credentials can be added to, i.e. an active one that is not full.
+     * All status list credentials of the participant context stay locked until the surrounding transaction completes, so
+     * that no other runtime can hand out the same index before this one has been incremented, c.f. {@link StatusListManager}
+     */
+    private ServiceResult<Optional<VerifiableCredentialResource>> findUsableStatusListCredential(String participantContextId) {
+        var credentialQueryResult = store.queryForUpdate(whereTypeIsBitstringCredential(participantContextId));
+        if (credentialQueryResult.failed()) {
+            return ServiceResult.fromFailure(credentialQueryResult);
+        }
+        return ServiceResult.success(credentialQueryResult.getContent().stream()
+                .filter(this::isActive)
+                .filter(this::isNotFull)
+                .findFirst());
     }
 
     /**
@@ -236,6 +255,11 @@ public class BitstringStatusListManager implements StatusListManager {
                 .filter(filterByParticipantContextId(participantContextId))
                 .filter(new Criterion("verifiableCredential.credential.credentialSubject.type", "=", BITSTRING_STATUS_LIST))
                 .filter(new Criterion("usage", "=", CredentialUsage.StatusList.toString()))
+                // oldest first: the status list credentials are locked in this order, so a runtime that waits for a lock
+                // does so on a status list that existed before, without holding the lock of a newer one. Otherwise it could
+                // deadlock with a runtime that holds the older ones and is about to use a newer one, c.f. getActiveCredential
+                .sortField("timestamp")
+                .sortOrder(SortOrder.ASC)
                 .build();
     }
 }
