@@ -30,6 +30,7 @@ import org.eclipse.edc.transaction.spi.TransactionContext;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
@@ -41,20 +42,22 @@ import static org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStat
 import static org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStatus.NOT_YET_VALID;
 import static org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStatus.REQUESTED;
 import static org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStatus.SUSPENDED;
+import static org.eclipse.edc.identityhub.store.QueryPages.forEachPage;
 
 /**
  * This is a runnable task that is intended to be executed periodically to fetch all non-expired, non-revoked credentials from storage, check for their status,
  * and update their status. Each credential is checked and updated in a transaction of its own, so that a failure only affects that
  * credential. A failed execution does not keep later executions from running.
  * <p>
- * Note that this will materialize <strong>all</strong> credentials into memory at once, as the general assumption is that typically, wallets don't
- * store an enormous amount of credentials. To mitigate this, the watchdog only considers credentials in states {@link VcStatus#EXPIRED}, {@link VcStatus#ISSUED},
+ * The credentials are fetched and checked page by page, so that all of them are checked, however many there are, without
+ * holding all of them in memory at once. The watchdog only considers credentials in states {@link VcStatus#EXPIRED}, {@link VcStatus#ISSUED},
  * {@link VcStatus#SUSPENDED}, {@link VcStatus#NOT_YET_VALID}, {@link VcStatus#REQUESTED} and {@link VcStatus#ERROR}, c.f. {@link CredentialWatchdog#ALLOWED_STATES}.
  *
  * <p>
  * Note also, that a credentials status will only be updated if it did in fact change, to avoid unnecessary database interactions.
  */
 public class CredentialWatchdog implements Runnable {
+    private static final int PAGE_SIZE = 100;
     //todo: add more states once we have to check issuance status
     // REQUESTED marks a credential whose renewal is in flight. It is fetched so that a renewal which ended without
     // delivering a replacement can be noticed and the credential released again, c.f. #reconcileRenewal
@@ -87,16 +90,19 @@ public class CredentialWatchdog implements Runnable {
     public void run() {
         // the watchdog runs on a schedule, which stops for good once a run throws an exception, so none may escape
         try {
-            var credentials = transactionContext.execute(() -> credentialStore.query(allExcludingExpiredAndRevoked()))
-                    .onFailure(f -> monitor.warning("Failed to fetch credentials from database: %s".formatted(f.getFailureDetail())))
-                    .orElse(f -> Collections.emptyList());
-
-            monitor.debug("checking %d credentials".formatted(credentials.size()));
-
-            credentials.forEach(this::check);
+            forEachPage(allExcludingExpiredAndRevoked(), PAGE_SIZE, this::fetchCredentials, VerifiableCredentialResource::getId, credentials -> {
+                monitor.debug("checking %d credentials".formatted(credentials.size()));
+                credentials.forEach(this::check);
+            });
         } catch (Exception e) {
             monitor.severe("The credential watchdog failed, it runs again in its next period", e);
         }
+    }
+
+    private Collection<VerifiableCredentialResource> fetchCredentials(QuerySpec query) {
+        return transactionContext.execute(() -> credentialStore.query(query))
+                .onFailure(f -> monitor.warning("Failed to fetch credentials from database: %s".formatted(f.getFailureDetail())))
+                .orElse(f -> Collections.emptyList());
     }
 
     /**

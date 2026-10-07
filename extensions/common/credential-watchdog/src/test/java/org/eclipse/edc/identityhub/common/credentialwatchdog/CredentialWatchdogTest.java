@@ -27,6 +27,7 @@ import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCre
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialStore;
 import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.spi.persistence.EdcPersistenceException;
+import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.spi.result.ServiceResult;
 import org.eclipse.edc.spi.result.StoreResult;
@@ -40,9 +41,11 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.IntStream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
@@ -476,6 +479,35 @@ class CredentialWatchdogTest {
         // the credentials are fetched in the first transaction, and each one is updated in one of its own: if they shared a
         // transaction, a failure on one of them would roll back the updates of all the others
         assertThat(transactionsOfUpdates).containsExactly(2, 3);
+    }
+
+    @Test
+    void run_shouldCheckCredentialsBeyondTheFirstPage() {
+        var credentials = IntStream.range(0, 250)
+                .mapToObj(i -> createCredentialBuilder().id("credential-%03d".formatted(i)).build())
+                .toList();
+        when(credentialStore.query(any())).thenAnswer(i -> StoreResult.success(page(credentials, i.getArgument(0))));
+
+        watchdog.run();
+
+        verify(credentialStatusCheckService, times(250)).checkStatus(any());
+    }
+
+    /**
+     * The page of the credentials that a store returns for the query: those matching its ID criterion, ordered by ID, up to
+     * its limit.
+     */
+    private List<VerifiableCredentialResource> page(List<VerifiableCredentialResource> credentials, QuerySpec query) {
+        var after = query.getFilterExpression().stream()
+                .filter(criterion -> criterion.getOperandLeft().equals("id") && criterion.getOperator().equals(">"))
+                .map(criterion -> criterion.getOperandRight().toString())
+                .findFirst()
+                .orElse("");
+        return credentials.stream()
+                .filter(credential -> credential.getId().compareTo(after) > 0)
+                .sorted(Comparator.comparing(VerifiableCredentialResource::getId))
+                .limit(query.getLimit())
+                .toList();
     }
 
     private HolderCredentialRequest renewalRequest(HolderRequestState state, String errorDetail) {

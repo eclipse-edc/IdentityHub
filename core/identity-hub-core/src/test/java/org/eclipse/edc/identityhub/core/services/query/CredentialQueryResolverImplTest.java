@@ -81,6 +81,17 @@ class CredentialQueryResolverImplTest {
     }
 
     @Test
+    void query_shouldQueryAllMatchingCredentials() {
+        when(storeMock.query(any())).thenAnswer(i -> success(List.of()));
+
+        resolver.query(TEST_PARTICIPANT_CONTEXT_ID,
+                createPresentationQuery("org.eclipse.dspace.dcp.vc.type:TestCredential:read"), List.of("org.eclipse.dspace.dcp.vc.type:TestCredential:read"));
+
+        // a presentation contains all matching credentials, not just the first page of the default size
+        verify(storeMock, atLeastOnce()).query(argThat(query -> query.getLimit() == Integer.MAX_VALUE));
+    }
+
+    @Test
     void query_invalidAccessTokenScope_shouldReturnEmpty() {
         when(storeMock.query(any())).thenReturn(success(Collections.emptyList()));
         var res = resolver.query(TEST_PARTICIPANT_CONTEXT_ID, createPresentationQuery(), List.of("foobar"));

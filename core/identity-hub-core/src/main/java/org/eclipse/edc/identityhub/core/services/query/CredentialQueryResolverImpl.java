@@ -187,8 +187,10 @@ public class CredentialQueryResolverImpl implements CredentialQueryResolver {
         var allCriteria = Stream.concat(criteria.stream(),
                 Stream.of(filterByParticipant, filterNotRevoked, filterNotExpired, filterUsageHolder)).toList();
 
+        // a presentation contains all matching credentials, not just the first page of the default size
         return QuerySpec.Builder.newInstance()
                 .filter(allCriteria)
+                .limit(Integer.MAX_VALUE)
                 .build();
     }
 
