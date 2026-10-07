@@ -59,6 +59,13 @@ public class VerifiableCredentialResource extends IdentityResource {
      */
     public static final String METADATA_RENEWAL_ERROR = "renewalError";
 
+    /**
+     * Metadata key holding the ID of the issuance process that issued this credential. Set on the Issuer's
+     * {@link CredentialUsage#IssuanceTracking} record, which is stored before the credential is delivered, so that a
+     * delivery that has to be repeated delivers the same credential again instead of a new one.
+     */
+    public static final String METADATA_ISSUANCE_PROCESS_ID = "issuanceProcessId";
+
     private Map<String, Object> metadata = new HashMap<>();
     private int state;
     private Instant timeOfLastStatusUpdate;

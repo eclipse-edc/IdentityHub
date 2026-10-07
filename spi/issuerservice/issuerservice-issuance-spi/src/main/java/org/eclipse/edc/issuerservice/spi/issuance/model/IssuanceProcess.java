@@ -30,6 +30,7 @@ import java.util.function.Predicate;
 import static java.lang.String.format;
 import static org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcessStates.APPROVED;
 import static org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcessStates.DELIVERED;
+import static org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcessStates.DELIVERING;
 import static org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcessStates.ERRORED;
 import static org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcessStates.from;
 
@@ -95,8 +96,16 @@ public class IssuanceProcess extends StatefulEntity<IssuanceProcess> implements 
         return new Builder(this);
     }
 
+    /**
+     * The credentials are generated and recorded by the Issuer, and are about to be delivered to the Holder. Repeated
+     * delivery attempts stay in this state.
+     */
+    public void transitionToDelivering() {
+        transition(DELIVERING, APPROVED, DELIVERING);
+    }
+
     public void transitionToDelivered() {
-        transition(DELIVERED, APPROVED);
+        transition(DELIVERED, DELIVERING);
     }
 
     public void transitionToApproved() {
@@ -104,7 +113,7 @@ public class IssuanceProcess extends StatefulEntity<IssuanceProcess> implements 
     }
 
     public void transitionToError() {
-        transition(ERRORED, APPROVED);
+        transition(ERRORED, APPROVED, DELIVERING);
     }
 
     @Override

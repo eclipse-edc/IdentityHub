@@ -34,6 +34,8 @@ import org.eclipse.edc.transform.spi.TypeTransformerRegistry;
 import org.eclipse.edc.web.jersey.testfixtures.RestControllerTestBase;
 import org.eclipse.edc.web.spi.exception.AuthenticationFailedException;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 import java.sql.Date;
 import java.time.Instant;
@@ -79,7 +81,7 @@ class CredentialRequestStatusApiControllerTest extends RestControllerTestBase {
         var participant = createHolder("id", "did", "name");
         var ctx = new DcpRequestContext(participant, Map.of(), null);
         when(dcpIssuerTokenVerifier.verify(any(), any())).thenReturn(ServiceResult.success(ctx));
-        when(issuerService.search(any())).thenReturn(ServiceResult.success(List.of(createIssuanceProcess())));
+        when(issuerService.search(any())).thenReturn(ServiceResult.success(List.of(createIssuanceProcess(IssuanceProcessStates.DELIVERED))));
 
         when(typeTransformerRegistry.transform(isA(CredentialRequestStatus.class), eq(JsonObject.class))).thenReturn(Result.failure("cannot transform"));
         when(participantContextService.getParticipantContext(eq(participantContextId))).thenReturn(ServiceResult.success(createParticipantContext()));
@@ -121,7 +123,7 @@ class CredentialRequestStatusApiControllerTest extends RestControllerTestBase {
 
         var token = generateToken();
 
-        when(issuerService.search(any())).thenReturn(ServiceResult.success(List.of(createIssuanceProcess())));
+        when(issuerService.search(any())).thenReturn(ServiceResult.success(List.of(createIssuanceProcess(IssuanceProcessStates.DELIVERED))));
         when(dcpIssuerTokenVerifier.verify(any(), any())).thenReturn(ServiceResult.success(ctx));
         when(participantContextService.getParticipantContext(eq(participantContextId))).thenReturn(ServiceResult.success(createParticipantContext()));
         when(typeTransformerRegistry.transform(isA(CredentialRequestStatus.class), eq(JsonObject.class))).thenReturn(Result.success(Json.createObjectBuilder().build()));
@@ -131,6 +133,28 @@ class CredentialRequestStatusApiControllerTest extends RestControllerTestBase {
         assertThat(response).isNotNull();
 
         verify(dcpIssuerTokenVerifier).verify(any(), argThat(tr -> token.contains(tr.getToken())));
+    }
+
+    // until DELIVERED, the Holder does not have the credentials, so the request is merely received
+    @ParameterizedTest
+    @CsvSource({
+            "SUBMITTED, RECEIVED",
+            "APPROVED, RECEIVED",
+            "DELIVERING, RECEIVED",
+            "DELIVERED, ISSUED",
+            "ERRORED, REJECTED"
+    })
+    void credentialStatus_reportsStatusOfProcessState(IssuanceProcessStates processState, CredentialRequestStatus.Status expectedStatus) {
+        var ctx = new DcpRequestContext(createHolder("id", "did", "name"), Map.of(), null);
+
+        when(issuerService.search(any())).thenReturn(ServiceResult.success(List.of(createIssuanceProcess(processState))));
+        when(dcpIssuerTokenVerifier.verify(any(), any())).thenReturn(ServiceResult.success(ctx));
+        when(participantContextService.getParticipantContext(eq(participantContextId))).thenReturn(ServiceResult.success(createParticipantContext()));
+        when(typeTransformerRegistry.transform(isA(CredentialRequestStatus.class), eq(JsonObject.class))).thenReturn(Result.success(Json.createObjectBuilder().build()));
+
+        controller().credentialStatus(participantContextId, UUID.randomUUID().toString(), generateToken());
+
+        verify(typeTransformerRegistry).transform(argThat((CredentialRequestStatus status) -> status.getStatus() == expectedStatus), eq(JsonObject.class));
     }
 
     @Override
@@ -147,13 +171,13 @@ class CredentialRequestStatusApiControllerTest extends RestControllerTestBase {
                 .build();
     }
 
-    private IssuanceProcess createIssuanceProcess() {
+    private IssuanceProcess createIssuanceProcess(IssuanceProcessStates state) {
         return IssuanceProcess.Builder.newInstance()
                 .holderId("holderId")
                 .participantContextId(participantContextId)
                 .holderPid(UUID.randomUUID().toString())
                 .id(UUID.randomUUID().toString())
-                .state(IssuanceProcessStates.DELIVERED.code())
+                .state(state.code())
                 .build();
     }
 

@@ -340,7 +340,7 @@ complete successfully, an `IssuanceProcess` is created:
 ```java
 public class IssuanceProcess {
     public enum State {
-        SUBMITTED, APPROVED, DELIVERED, ERRORED
+        SUBMITTED, APPROVED, DELIVERING, DELIVERED, ERRORED
     }
 
     private final State state = State.SUBMITTED;
@@ -384,13 +384,26 @@ state.
 ##### The `APPROVED` State
 
 The `IssuanceProcessManager` will individually process `credentialDefinitions` entries by executing `mappings` against
-the persisted `claims` and feeding that data to a credential generation process. When all Verifiable Credentials have
-been generated, delivery will be attempted to the holder's CredentialService. `CredentialResource`s will be
-transacitonally saved to persistent storage as part of the delivery process. If successful, the `IssuanceProcess` will
-be transitioned to the `DELIVERED` state.
+the persisted `claims` and feeding that data to a credential generation process. Each generated Verifiable Credential is
+added to the issuer's status list. Then all of them are recorded as `CredentialResource`s (usage `IssuanceTracking`),
+transactionally and before any of them is delivered, so that the issuer keeps track of every credential a holder may
+receive. The records do not contain the signed credential. They are linked to the `IssuanceProcess` through the
+`issuanceProcessId` metadata entry. Once recorded, the `IssuanceProcess` is transitioned to the `DELIVERING` state.
 
-If delivery is not successful, the transaction will be rolled back and generation will be tried again for a configured
-time period and transitioned to `ERROR` if delivery is not successful.
+If the credentials cannot be generated or recorded, this is retried for a configured number of times, and the
+`IssuanceProcess` is transitioned to `ERRORED` if it still does not succeed. If the credentials of the `IssuanceProcess`
+are recorded already, e.g. by an earlier attempt that could not save the `IssuanceProcess`, they are not generated again.
+
+##### The `DELIVERING` State
+
+The `IssuanceProcessManager` signs the recorded credentials and delivers them to the holder's CredentialService. Their
+validity starts when they are signed and keeps its original length, so that the holder gets all of it, however long the
+issuance takes. The records are updated accordingly before the credentials are delivered. If delivery is successful,
+the `IssuanceProcess` is transitioned to the `DELIVERED` state.
+
+If delivery is not successful, it is retried for a configured number of times, always with the same credentials, and
+the `IssuanceProcess` is transitioned to `ERRORED` if it still does not succeed. Until the `IssuanceProcess` is
+`DELIVERED`, the Credential Request Status API reports the request as `RECEIVED`.
 
 ##### The `DELIVERED` State
 

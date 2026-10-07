@@ -18,6 +18,7 @@ import io.opentelemetry.instrumentation.annotations.WithSpan;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialSubject;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredential;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredentialContainer;
+import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.CredentialUsage;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStatus;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialResource;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialStore;
@@ -32,6 +33,7 @@ import org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcess;
 import org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcessStates;
 import org.eclipse.edc.issuerservice.spi.issuance.process.IssuanceProcessManager;
 import org.eclipse.edc.issuerservice.spi.issuance.process.store.IssuanceProcessStore;
+import org.eclipse.edc.spi.EdcException;
 import org.eclipse.edc.spi.query.Criterion;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.response.ResponseStatus;
@@ -42,13 +44,17 @@ import org.eclipse.edc.statemachine.AbstractStateEntityManager;
 import org.eclipse.edc.statemachine.Processor;
 import org.eclipse.edc.statemachine.ProcessorImpl;
 import org.eclipse.edc.statemachine.StateMachineManager;
+import org.eclipse.edc.transaction.spi.TransactionContext;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 
+import static org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialResource.METADATA_ISSUANCE_PROCESS_ID;
+import static org.eclipse.edc.participantcontext.spi.types.ParticipantResource.filterByParticipantContextId;
 import static org.eclipse.edc.spi.persistence.StateEntityStore.hasState;
 import static org.eclipse.edc.spi.persistence.StateEntityStore.isNotPending;
 import static org.eclipse.edc.statemachine.retry.processor.Process.result;
@@ -62,6 +68,7 @@ public class IssuanceProcessManagerImpl extends AbstractStateEntityManager<Issua
     private CredentialStore credentialStore;
     private CredentialStorageClient credentialStorageClient;
     private CredentialStatusService credentialStatusService;
+    private TransactionContext transactionContext;
 
     private IssuanceProcessManagerImpl() {
     }
@@ -69,29 +76,149 @@ public class IssuanceProcessManagerImpl extends AbstractStateEntityManager<Issua
     @Override
     protected StateMachineManager.Builder configureStateMachineManager(StateMachineManager.Builder builder) {
         return builder
-                .processor(processIssuanceInState(IssuanceProcessStates.APPROVED, this::processApproved));
+                .processor(processIssuanceInState(IssuanceProcessStates.APPROVED, this::processApproved))
+                .processor(processIssuanceInState(IssuanceProcessStates.DELIVERING, this::processDelivering));
     }
 
     /**
-     * Process APPROVED issuance process
+     * Process APPROVED issuance process: generates the credentials and records them, before any of them is delivered, so
+     * that the Issuer keeps track of every credential a Holder may receive, even if the outcome of a delivery is unknown.
      */
     @WithSpan(value = "issuance.approved")
     private CompletableFuture<StatusResult<Void>> processApproved(IssuanceProcess process) {
         observable.invokeForEach(l -> l.approved(process));
         return entityRetryProcessFactory.retryProcessor(process)
-                .doProcess(result("Generate Credentials", (p, result) -> generateCredential(p)))
-                .doProcess(result("Add Credentials to StatusList", this::addCredentialsToStatusList))
-                .doProcess(result("Deliver Credentials", this::deliverCredentials))
-                .doProcess(result("Store Credentials", this::storeCredential))
-                .onSuccess((t, credentials) -> {
-                    transitionToDelivered(t);
-                    observable.invokeForEach(l -> l.delivered(process, credentials));
-                })
+                .doProcess(result("Record Credentials", (p, result) -> recordCredentialsOnce(p)))
+                .onSuccess((t, unused) -> transitionToDelivering(t))
                 .onFailure((t, throwable) -> transitionToApproved(t))
                 .onFinalFailure(this::transitionToError)
                 .execute();
     }
 
+    /**
+     * Process DELIVERING issuance process: delivers the recorded credentials to the Holder. Every attempt delivers the same
+     * credentials.
+     */
+    @WithSpan(value = "issuance.delivering")
+    private CompletableFuture<StatusResult<Void>> processDelivering(IssuanceProcess process) {
+        return entityRetryProcessFactory.retryProcessor(process)
+                .doProcess(result("Sign Credentials", (p, result) -> signRecordedCredentials(p)))
+                .doProcess(result("Deliver Credentials", this::deliverCredentials))
+                .onSuccess((t, credentials) -> {
+                    transitionToDelivered(t);
+                    observable.invokeForEach(l -> l.delivered(process, credentials));
+                })
+                .onFailure((t, throwable) -> transitionToDelivering(t))
+                .onFinalFailure(this::transitionToError)
+                .execute();
+    }
+
+    /**
+     * Generates and records the credentials of the process, unless they are recorded already, e.g. by an attempt that was
+     * interrupted before the process was saved, or by another runtime that held the process before.
+     */
+    private StatusResult<Void> recordCredentialsOnce(IssuanceProcess process) {
+        var recordedCredentials = findRecordedCredentials(process);
+        if (recordedCredentials.failed()) {
+            return StatusResult.failure(ResponseStatus.ERROR_RETRY, "Failed to look up the credentials recorded for issuance process '%s': %s"
+                    .formatted(process.getId(), recordedCredentials.getFailureDetail()));
+        }
+        if (!recordedCredentials.getContent().isEmpty()) {
+            return StatusResult.success();
+        }
+        return generateCredential(process)
+                .compose(credentials -> addCredentialsToStatusList(process, credentials))
+                .compose(credentials -> writeResources(process, credentials.stream().map(credential -> toResource(process, credential)).toList(), credentialStore::create));
+    }
+
+    /**
+     * Prepares the recorded credentials of the process for delivery. The Issuer does not keep signed credentials, so they
+     * are signed for every delivery attempt. Their validity starts when they are signed and keeps its original length, so
+     * that the Holder gets all of it, however long the delivery takes. The records are updated accordingly before the
+     * credentials are delivered.
+     */
+    private StatusResult<Collection<VerifiableCredentialContainer>> signRecordedCredentials(IssuanceProcess process) {
+        var recordedCredentials = findRecordedCredentials(process);
+        if (recordedCredentials.failed()) {
+            return StatusResult.failure(ResponseStatus.ERROR_RETRY, "Failed to look up the credentials recorded for issuance process '%s': %s"
+                    .formatted(process.getId(), recordedCredentials.getFailureDetail()));
+        }
+        if (recordedCredentials.getContent().isEmpty()) {
+            return StatusResult.failure(ResponseStatus.FATAL_ERROR, "No credentials are recorded for issuance process '%s'".formatted(process.getId()));
+        }
+
+        var records = recordedCredentials.getContent().stream().map(this::validFromNow).toList();
+        var updateResult = writeResources(process, records, credentialStore::update);
+        if (updateResult.failed()) {
+            return updateResult.mapFailure();
+        }
+
+        var signedCredentials = new ArrayList<VerifiableCredentialContainer>();
+        for (var record : records) {
+            var container = record.getVerifiableCredential();
+            var signedCredential = credentialGenerator.signCredential(process.getParticipantContextId(), container.credential(), container.format());
+            if (signedCredential.failed()) {
+                return StatusResult.failure(ResponseStatus.FATAL_ERROR, "Error signing the recorded credential '%s': %s"
+                        .formatted(record.getId(), signedCredential.getFailureDetail()));
+            }
+            signedCredentials.add(signedCredential.getContent());
+        }
+        return StatusResult.success(signedCredentials);
+    }
+
+    private StoreResult<Collection<VerifiableCredentialResource>> findRecordedCredentials(IssuanceProcess process) {
+        var query = QuerySpec.Builder.newInstance()
+                .filter(filterByParticipantContextId(process.getParticipantContextId()))
+                .filter(Criterion.criterion("usage", "=", CredentialUsage.IssuanceTracking.toString()))
+                .filter(Criterion.criterion("metadata." + METADATA_ISSUANCE_PROCESS_ID, "=", process.getId()))
+                .build();
+        return credentialStore.query(query);
+    }
+
+    /**
+     * Moves the validity of a recorded credential, so that it starts now and keeps its original length.
+     */
+    private VerifiableCredentialResource validFromNow(VerifiableCredentialResource resource) {
+        var container = resource.getVerifiableCredential();
+        var credential = container.credential();
+        var validity = credential.getExpirationDate() == null ? null : Duration.between(credential.getIssuanceDate(), credential.getExpirationDate());
+        var now = clock.instant();
+        var validFromNow = credential.toBuilder()
+                .issuanceDate(now)
+                .expirationDate(validity == null ? null : now.plus(validity))
+                .build();
+        return resource.toBuilder()
+                .credential(new VerifiableCredentialContainer(null, container.format(), validFromNow))
+                .build();
+    }
+
+    /**
+     * Writes all given resources, or none of them: they are written in one transaction, which is rolled back if one of them
+     * cannot be written. The credentials are not delivered unless their resources are written, so a failure is retried.
+     */
+    private StatusResult<Void> writeResources(IssuanceProcess process, Collection<VerifiableCredentialResource> resources,
+                                              Function<VerifiableCredentialResource, StoreResult<Void>> write) {
+        try {
+            transactionContext.execute(() -> {
+                for (var res : resources) {
+                    var result = write.apply(res);
+                    if (result.failed()) {
+                        // the transaction only rolls back the resources written before if an exception is thrown
+                        throw new EdcException(result.getFailureDetail());
+                    }
+                }
+            });
+            return StatusResult.success();
+        } catch (EdcException e) {
+            return StatusResult.failure(ResponseStatus.ERROR_RETRY, "Failed to write the credential resources of issuance process '%s': %s"
+                    .formatted(process.getId(), e.getMessage()));
+        }
+    }
+
+    /**
+     * Adds a status list entry to each credential. The credentials are not signed again here, but each time they are
+     * delivered.
+     */
     @WithSpan(value = "issuance.add-credentials-to-status-list")
     private StatusResult<Collection<VerifiableCredentialContainer>> addCredentialsToStatusList(IssuanceProcess issuanceProcess, Collection<VerifiableCredentialContainer> newCredentials) {
 
@@ -101,14 +228,7 @@ public class IssuanceProcessManagerImpl extends AbstractStateEntityManager<Issua
             if (result.failed()) {
                 return StatusResult.failure(ResponseStatus.FATAL_ERROR, "Failed to add credential to status list: %s".formatted(result.getFailureDetail()));
             }
-            var updatedHolderCredential = result.getContent();
-            var signedCredential = credentialGenerator.signCredential(issuanceProcess.getParticipantContextId(), updatedHolderCredential, cred.format());
-
-            if (signedCredential.failed()) {
-                return StatusResult.failure(ResponseStatus.FATAL_ERROR, "Error regenerating the user credential: %s".formatted(signedCredential.getFailureDetail()));
-            }
-
-            updatedCredentials.add(signedCredential.getContent());
+            updatedCredentials.add(new VerifiableCredentialContainer(null, cred.format(), result.getContent()));
         }
         return StatusResult.success(updatedCredentials);
     }
@@ -141,23 +261,13 @@ public class IssuanceProcessManagerImpl extends AbstractStateEntityManager<Issua
         return credentialDefinitionStore.query(query);
     }
 
-    private StatusResult<Collection<VerifiableCredentialContainer>> storeCredential(IssuanceProcess process, Collection<VerifiableCredentialContainer> credentials) {
-        for (var credential : credentials) {
-            var resource = toResource(process, credential);
-            var result = credentialStore.create(resource);
-            if (result.failed()) {
-                return StatusResult.failure(ResponseStatus.ERROR_RETRY, result.getFailureDetail());
-            }
-        }
-        return StatusResult.success(credentials);
-    }
-
     private VerifiableCredentialResource toResource(IssuanceProcess process, VerifiableCredentialContainer credentialContainer) {
         return VerifiableCredentialResource.Builder.newIssuanceTracker()
                 .issuerId(credentialContainer.credential().getIssuer().id())
                 .holderId(extractHolder(credentialContainer.credential()))
                 .participantContextId(process.getParticipantContextId())
                 .state(VcStatus.ISSUED)
+                .metadata(METADATA_ISSUANCE_PROCESS_ID, process.getId())
                 .credential(new VerifiableCredentialContainer(null, credentialContainer.format(), credentialContainer.credential())).build();
     }
 
@@ -175,12 +285,20 @@ public class IssuanceProcessManagerImpl extends AbstractStateEntityManager<Issua
 
     private void transitionToDelivered(IssuanceProcess process) {
         process.transitionToDelivered();
-        update(process);
-        discardHolderAccessToken(process);
+        update(process)
+                .onSuccess(v -> discardHolderAccessToken(process))
+                // the process is delivered again, e.g. by the runtime that holds its lease, which needs the access token for that
+                .onFailure(f -> monitor.warning("Issuance process '%s' was delivered, but could not be saved as such: %s"
+                        .formatted(process.getId(), f.getFailureDetail())));
     }
 
     private void transitionToApproved(IssuanceProcess process) {
         process.transitionToApproved();
+        update(process);
+    }
+
+    private void transitionToDelivering(IssuanceProcess process) {
+        process.transitionToDelivering();
         update(process);
     }
 
@@ -286,6 +404,11 @@ public class IssuanceProcessManagerImpl extends AbstractStateEntityManager<Issua
             return this;
         }
 
+        public Builder transactionContext(TransactionContext transactionContext) {
+            manager.transactionContext = transactionContext;
+            return this;
+        }
+
         public Builder observable(IssuanceObservable observable) {
             manager.observable = observable;
             return this;
@@ -305,6 +428,7 @@ public class IssuanceProcessManagerImpl extends AbstractStateEntityManager<Issua
             Objects.requireNonNull(this.manager.credentialStorageClient, "Credential service client");
             Objects.requireNonNull(this.manager.credentialStatusService, "Credential status service");
             Objects.requireNonNull(this.manager.observable, "IssuanceObservable");
+            Objects.requireNonNull(this.manager.transactionContext, "TransactionContext");
             return manager;
         }
     }

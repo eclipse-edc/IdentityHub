@@ -242,6 +242,31 @@ class JoseVcdm20CredentialGeneratorTest {
     }
 
     @Test
+    void signCredential_includesSubjectId_whenNotAmongClaims() {
+        // e.g. a credential read back from a store, which keeps the subject's ID only as the subject's own property
+        var now = Instant.now();
+        var credential = VerifiableCredential.Builder.newInstance()
+                .type("TestCredential")
+                .id(UUID.randomUUID().toString())
+                .issuer(new Issuer("did:web:issuer"))
+                .issuanceDate(now)
+                .expirationDate(now.plusSeconds(3600))
+                .credentialSubject(CredentialSubject.Builder.newInstance()
+                        .id("did:web:holder")
+                        .claim("foo", "bar")
+                        .build())
+                .build();
+
+        var res = jwtCredentialGenerator.signCredential(TEST_PARTICIPANT, credential, PRIVATE_KEY_ALIAS, PUBLIC_KEY_ID);
+
+        assertThat(res).isSucceeded().satisfies(jwt -> assertThat(extractJwtClaims(jwt).getListClaim(CREDENTIAL_SUBJECT))
+                .singleElement()
+                .isInstanceOfSatisfying(Map.class, subject -> assertThat((Map) subject)
+                        .containsEntry("id", "did:web:holder")
+                        .containsEntry("foo", "bar")));
+    }
+
+    @Test
     void signCredential_whenNoStatus() {
         var now = Instant.now();
         var credential = VerifiableCredential.Builder.newInstance()

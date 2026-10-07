@@ -22,15 +22,63 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class IssuanceProcessTest {
 
-    // B3.6: legal transition APPROVED -> DELIVERED succeeds
-    @DisplayName("B3.6: APPROVED -> DELIVERED is a legal transition")
+    @DisplayName("B3.6: APPROVED -> DELIVERING is a legal transition")
     @Test
-    void transitionToDelivered_fromApproved_succeeds() {
+    void transitionToDelivering_fromApproved_succeeds() {
         var process = createProcess(IssuanceProcessStates.APPROVED);
+
+        process.transitionToDelivering();
+
+        assertThat(process.getState()).isEqualTo(IssuanceProcessStates.DELIVERING.code());
+    }
+
+    @DisplayName("B3.6: DELIVERING -> DELIVERING (retry) is legal and increments the state count")
+    @Test
+    void transitionToDelivering_fromDelivering_succeeds() {
+        var process = createProcess(IssuanceProcessStates.DELIVERING);
+        var stateCountBefore = process.getStateCount();
+
+        process.transitionToDelivering();
+
+        assertThat(process.getState()).isEqualTo(IssuanceProcessStates.DELIVERING.code());
+        assertThat(process.getStateCount()).isEqualTo(stateCountBefore + 1);
+    }
+
+    @DisplayName("B3.6: DELIVERING -> DELIVERED is a legal transition")
+    @Test
+    void transitionToDelivered_fromDelivering_succeeds() {
+        var process = createProcess(IssuanceProcessStates.DELIVERING);
 
         process.transitionToDelivered();
 
         assertThat(process.getState()).isEqualTo(IssuanceProcessStates.DELIVERED.code());
+    }
+
+    @DisplayName("B3.6: DELIVERING -> ERRORED is a legal transition")
+    @Test
+    void transitionToError_fromDelivering_succeeds() {
+        var process = createProcess(IssuanceProcessStates.DELIVERING);
+
+        process.transitionToError();
+
+        assertThat(process.getState()).isEqualTo(IssuanceProcessStates.ERRORED.code());
+    }
+
+    // credentials are only delivered once they are recorded, which happens on the way to DELIVERING
+    @DisplayName("B3.6: APPROVED -> DELIVERED throws IllegalStateException")
+    @Test
+    void transitionToDelivered_fromApproved_throwsIllegalStateException() {
+        var process = createProcess(IssuanceProcessStates.APPROVED);
+
+        assertThatThrownBy(process::transitionToDelivered).isInstanceOf(IllegalStateException.class);
+    }
+
+    @DisplayName("B3.6: DELIVERING -> APPROVED throws IllegalStateException")
+    @Test
+    void transitionToApproved_fromDelivering_throwsIllegalStateException() {
+        var process = createProcess(IssuanceProcessStates.DELIVERING);
+
+        assertThatThrownBy(process::transitionToApproved).isInstanceOf(IllegalStateException.class);
     }
 
     // B3.6: legal transition APPROVED -> APPROVED (retry) succeeds

@@ -116,6 +116,7 @@ public class IssuanceCoreExtension implements ServiceExtension {
                     .entityRetryProcessConfiguration(stateMachineConfiguration.entityRetryProcessConfiguration())
                     .observable(issuanceObservable)
                     .vault(vault)
+                    .transactionContext(transactionContext)
                     .build();
         }
         return issuanceProcessManager;

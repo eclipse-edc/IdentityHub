@@ -240,9 +240,9 @@ public class DcpCredentialOfferApiEndToEndTest {
                             .hasSize(1)
                             .allSatisfy(process -> {
                                 assertThat(process.getHolderId()).isEqualTo(participantDid);
-                                // actual delivery will not work, because we are using a mock did resolver, and that does
-                                // not resolve the participant's DID
-                                assertThat(process.getState()).isEqualTo(IssuanceProcessStates.APPROVED.code());
+                                // the credentials are generated and recorded, but actual delivery will not work, because we
+                                // are using a mock did resolver, and that does not resolve the participant's DID
+                                assertThat(process.getState()).isEqualTo(IssuanceProcessStates.DELIVERING.code());
                                 assertThat(process.getCredentialDefinitions()).containsExactly(credentialObjectId);
                             }));
 

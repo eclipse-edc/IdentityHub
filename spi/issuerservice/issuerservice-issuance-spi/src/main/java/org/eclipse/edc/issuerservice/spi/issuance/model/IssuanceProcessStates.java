@@ -19,6 +19,7 @@ import java.util.Arrays;
 public enum IssuanceProcessStates {
     SUBMITTED(50),
     APPROVED(100),
+    DELIVERING(150),
     DELIVERED(200),
     ERRORED(300);
 
