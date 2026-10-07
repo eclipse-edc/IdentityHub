@@ -51,6 +51,7 @@ import org.eclipse.edc.junit.annotations.EndToEndTest;
 import org.eclipse.edc.junit.annotations.PostgresqlIntegrationTest;
 import org.eclipse.edc.junit.extensions.ComponentRuntimeExtension;
 import org.eclipse.edc.junit.extensions.RuntimeExtension;
+import org.eclipse.edc.spi.event.EventEnvelope;
 import org.eclipse.edc.spi.event.EventSubscriber;
 import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.sql.testfixtures.PostgresqlEndToEndExtension;
@@ -103,6 +104,10 @@ public class DcpIssuanceFlowEndToEndTest {
     protected static final Duration INTERVAL = Duration.ofSeconds(1);
     private static final String ISSUER = "issuer";
     private static final String IDENTITY_HUB = "identityhub";
+
+    private static boolean isEventOf(EventEnvelope<?> envelope, Class<? extends IssuanceEvent> type, String holderPid) {
+        return type.isInstance(envelope.getPayload()) && holderPid.equals(((IssuanceEvent) envelope.getPayload()).getHolderProcessId());
+    }
 
     abstract static class Tests {
 
@@ -240,11 +245,13 @@ public class DcpIssuanceFlowEndToEndTest {
                     });
 
 
+            // only the events of this request count: issuance processes left over by other tests, e.g. ones that can never
+            // be delivered, are still retried in the same runtime and publish events of their own
             var inOrder = inOrder(subscriber);
-            inOrder.verify(subscriber).on(argThat(env -> env.getPayload() instanceof IssuanceRequested));
-            inOrder.verify(subscriber).on(argThat(env -> env.getPayload() instanceof IssuanceApproved));
-            inOrder.verify(subscriber).on(argThat(env -> env.getPayload() instanceof CredentialGenerated));
-            inOrder.verify(subscriber).on(argThat(env -> env.getPayload() instanceof CredentialDelivered));
+            inOrder.verify(subscriber).on(argThat(env -> isEventOf(env, IssuanceRequested.class, requestId)));
+            inOrder.verify(subscriber).on(argThat(env -> isEventOf(env, IssuanceApproved.class, requestId)));
+            inOrder.verify(subscriber).on(argThat(env -> isEventOf(env, CredentialGenerated.class, requestId)));
+            inOrder.verify(subscriber).on(argThat(env -> isEventOf(env, CredentialDelivered.class, requestId)));
         }
 
         @Test

@@ -320,6 +320,7 @@ public abstract class IssuanceProcessStoreTestBase {
             var issuanceProcess = createIssuanceProcess();
             getStore().save(issuanceProcess);
 
+            issuanceProcess.transitionToDelivering();
             issuanceProcess.transitionToDelivered();
 
             getStore().save(issuanceProcess);

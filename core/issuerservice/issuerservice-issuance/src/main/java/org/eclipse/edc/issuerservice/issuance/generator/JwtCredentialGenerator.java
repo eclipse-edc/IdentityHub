@@ -197,7 +197,7 @@ public class JwtCredentialGenerator implements CredentialGenerator {
 
     private Map<String, Object> credentialSubjectClaims(VerifiableCredential verifiableCredential) {
         if (verifiableCredential.getCredentialSubject().size() == 1) {
-            return verifiableCredential.getCredentialSubject().get(0).getClaims();
+            return CredentialSubjectClaims.of(verifiableCredential.getCredentialSubject().get(0));
         } else {
             throw new UnsupportedOperationException("Only one credential subject is supported");
         }

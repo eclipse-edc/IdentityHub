@@ -16,7 +16,9 @@ package org.eclipse.edc.identityhub.verifiablecredentials.store;
 
 import org.assertj.core.api.Assertions;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat;
+import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialStatus;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialSubject;
+import org.eclipse.edc.iam.verifiablecredentials.spi.model.DataModelVersion;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.Issuer;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredential;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredentialContainer;
@@ -115,6 +117,38 @@ public abstract class CredentialStoreTestBase {
         var result2 = getStore().create(credential);
 
         assertThat(result2).isFailed().detail().contains("already exists");
+    }
+
+    @Test
+    void findById_returnsCredentialUnchanged() {
+        // shaped like a credential the IssuerService issues: it keeps no signed credential, and signs the stored one again
+        // when a delivery has to be repeated, so nothing about it may get lost in the store
+        var credential = VerifiableCredential.Builder.newInstance()
+                .id(UUID.randomUUID().toString())
+                .contexts(List.of("https://www.w3.org/2018/credentials/v1", "https://w3id.org/example/v1"))
+                .types(List.of("VerifiableCredential", "MembershipCredential"))
+                .issuer(new Issuer("did:web:issuer"))
+                .dataModelVersion(DataModelVersion.V_1_1)
+                .issuanceDate(Instant.parse("2026-01-01T10:00:00Z"))
+                .expirationDate(Instant.parse("2027-01-01T10:00:00Z"))
+                .credentialSubject(CredentialSubject.Builder.newInstance()
+                        .id("did:web:holder")
+                        .claim("membership", Map.of("since", "2023-01-01", "level", "gold"))
+                        .build())
+                .credentialStatus(new CredentialStatus("https://issuer.example/status/1#42", "BitstringStatusListEntry", Map.of(
+                        "statusPurpose", "revocation",
+                        "statusListIndex", 42,
+                        "statusListCredential", "https://issuer.example/status/1")))
+                .build();
+        var resource = createCredentialBuilder()
+                .credential(new VerifiableCredentialContainer(null, CredentialFormat.VC1_0_JWT, credential))
+                .build();
+        getStore().create(resource);
+
+        assertThat(getStore().findById(resource.getId())).isSucceeded()
+                .satisfies(found -> Assertions.assertThat(found.getVerifiableCredential().credential())
+                        .usingRecursiveComparison()
+                        .isEqualTo(credential));
     }
 
     @Test

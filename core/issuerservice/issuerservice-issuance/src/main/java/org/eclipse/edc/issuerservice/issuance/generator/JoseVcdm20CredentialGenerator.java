@@ -165,7 +165,7 @@ public class JoseVcdm20CredentialGenerator implements CredentialGenerator {
     }
 
     private List<Map<String, Object>> credentialSubjectClaims(VerifiableCredential verifiableCredential) {
-        return verifiableCredential.getCredentialSubject().stream().map(CredentialSubject::getClaims).toList();
+        return verifiableCredential.getCredentialSubject().stream().map(CredentialSubjectClaims::of).toList();
     }
 
     @SuppressWarnings("unchecked")
