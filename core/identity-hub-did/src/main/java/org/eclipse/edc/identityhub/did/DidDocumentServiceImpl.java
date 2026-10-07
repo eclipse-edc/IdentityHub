@@ -305,6 +305,11 @@ public class DidDocumentServiceImpl implements DidDocumentService, EventSubscrib
 
             var errors = didResources.stream()
                     .map(dd -> {
+                        // verifiers reject a DID document whose verification methods do not have unique IDs, which would
+                        // make all of the participant's keys unusable. A key pair that is activated (again) under an ID
+                        // that is already present therefore replaces the verification method, instead of adding a second one.
+                        // Adding a key pair with the same ID twice will effectively silently revoke the first one!
+                        dd.getDocument().getVerificationMethod().removeIf(vm -> event.getKeyId().equals(vm.getId()));
                         dd.getDocument().getVerificationMethod().add(VerificationMethod.Builder.newInstance()
                                 .id(event.getKeyId())
                                 .publicKeyJwk(jwkResult.getContent().toJSONObject())

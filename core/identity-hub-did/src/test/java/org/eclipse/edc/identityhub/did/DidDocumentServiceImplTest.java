@@ -602,6 +602,51 @@ class DidDocumentServiceImplTest {
 
     @SuppressWarnings("unchecked")
     @Test
+    void onKeyPairActivated_whenVerificationMethodWithSameIdExists_shouldReplaceIt() throws JOSEException {
+        var keyId = "key-id";
+        var previousKey = new ECKeyGenerator(Curve.P_256).keyID(keyId).generate();
+        var key = new ECKeyGenerator(Curve.P_256).keyID(keyId).generate();
+        var doc = createDidDocument().build();
+        var did = doc.getId();
+        // e.g. added by an earlier activation of the same key pair
+        doc.getVerificationMethod().add(VerificationMethod.Builder.newInstance()
+                .id(keyId)
+                .publicKeyJwk(previousKey.toPublicJWK().toJSONObject())
+                .controller(did)
+                .type(JSON_WEB_KEY_2020)
+                .build());
+        var didResource = DidResource.Builder.newInstance().did(did).state(DidState.GENERATED).document(doc).build();
+
+        when(didResourceStoreMock.query(any(QuerySpec.class))).thenReturn(List.of(didResource));
+        when(didResourceStoreMock.update(any())).thenReturn(StoreResult.success());
+        when(didResourceStoreMock.findById(eq(did))).thenReturn(didResource);
+        when(publisherMock.publish(did)).thenReturn(Result.success());
+
+        var event = EventEnvelope.Builder.newInstance()
+                .at(System.currentTimeMillis())
+                .id(UUID.randomUUID().toString())
+                .payload(KeyPairActivated.Builder.newInstance()
+                        .keyId(keyId)
+                        .keyPairResource(KeyPairResource.Builder.newPresentationSigning().id(UUID.randomUUID().toString()).build())
+                        .participantContextId("test-participant")
+                        .publicKey(key.toPublicJWK().toJSONString(), JSON_WEB_KEY_2020)
+                        .build())
+                .build();
+
+        service.on(event);
+
+        // verifiers reject a DID document whose verification methods do not have unique IDs
+        assertThat(doc.getVerificationMethod()).filteredOn(vm -> vm.getId().equals(keyId))
+                .singleElement()
+                .satisfies(vm -> assertThat(vm.getPublicKeyJwk()).isEqualTo(key.toPublicJWK().toJSONObject()));
+        assertThat(doc.getAuthentication()).containsExactly(keyId);
+        assertThat(doc.getCapabilityInvocation()).containsExactly(keyId);
+        verify(didResourceStoreMock).update(any());
+        verify(publisherMock).publish(eq(did));
+    }
+
+    @SuppressWarnings("unchecked")
+    @Test
     void onKeyPairActivated_withRsaKey() throws NoSuchAlgorithmException {
         var keyId = "key-id";
         var keyPairGenerator = KeyPairGenerator.getInstance("RSA");

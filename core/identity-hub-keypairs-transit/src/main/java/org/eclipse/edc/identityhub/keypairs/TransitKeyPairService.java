@@ -101,6 +101,11 @@ public class TransitKeyPairService implements KeyPairService, EventSubscriber {
                 return result.mapEmpty();
             }
 
+            var keyIdResult = checkKeyIdAvailable(participantContextId, keyDescriptor.getKeyId(), null);
+            if (keyIdResult.failed()) {
+                return keyIdResult;
+            }
+
             // generate key using Hashicorp Transit
             var type = ofNullable(keyDescriptor.getKeyGeneratorParams())
                     .orElse(Map.of())
@@ -155,6 +160,16 @@ public class TransitKeyPairService implements KeyPairService, EventSubscriber {
             }
 
             var participantContextId = oldKey.getParticipantContextId();
+
+            if (newKeyDesc != null) {
+                // a rotated key stays in the DID document, so its successor cannot have the same key ID. This is checked
+                // before anything is changed, so that a rejected successor does not leave the old key rotated. Without a
+                // successor descriptor, the successor deliberately keeps the old key ID, c.f. DidDocumentService
+                var keyIdResult = checkKeyIdAvailable(participantContextId, newKeyDesc.getKeyId(), null);
+                if (keyIdResult.failed()) {
+                    return keyIdResult;
+                }
+            }
 
             // deactivate the old key
             oldKey.rotate(duration);
@@ -211,6 +226,15 @@ public class TransitKeyPairService implements KeyPairService, EventSubscriber {
 
             var participantContextId = oldKey.getParticipantContextId();
 
+            if (newKeyDesc != null) {
+                // a revoked key is removed from the DID document, so its successor may reuse its key ID. This is checked
+                // before anything is changed, so that a rejected successor does not leave the old key revoked
+                var keyIdResult = checkKeyIdAvailable(participantContextId, newKeyDesc.getKeyId(), oldKey.getId());
+                if (keyIdResult.failed()) {
+                    return keyIdResult;
+                }
+            }
+
             // mark the old key as "revoked"
             oldKey.revoke();
             var res = keyPairResourceStore.update(oldKey);
@@ -264,6 +288,10 @@ public class TransitKeyPairService implements KeyPairService, EventSubscriber {
             var existingKeyPair = findById(keyPairResourceId);
             if (existingKeyPair == null) {
                 return ServiceResult.notFound("A KeyPairResource with ID '%s' does not exist.".formatted(keyPairResourceId));
+            }
+            if (existingKeyPair.getState() == KeyPairState.ACTIVATED.code()) {
+                // the key pair is in the DID document already, activating it again must not add it a second time
+                return success();
             }
             return activateKeyPair(existingKeyPair);
         });
@@ -381,6 +409,29 @@ public class TransitKeyPairService implements KeyPairService, EventSubscriber {
                     })
                     .onFailure(f -> monitor.warning("Removing key pairs from a deleted ParticipantContext failed: %s".formatted(f.getFailureDetail())));
         });
+    }
+
+    /**
+     * A key ID identifies the verification method of its key pair in the DID document, so it must not be shared with another
+     * key pair of the participant context that is, or may become, part of the DID document, i.e. one that is not revoked.
+     *
+     * @param exceptKeyPairId the ID of a key pair that is about to be revoked, so that its key ID may be reused, or null
+     * @return A successful result if the key ID is available, or an error result otherwise
+     */
+    private ServiceResult<Void> checkKeyIdAvailable(String participantContextId, String keyId, @Nullable String exceptKeyPairId) {
+        var query = queryByParticipantContextId(participantContextId)
+                .filter(new Criterion("keyId", "=", keyId))
+                .build();
+        var existingKeyPairs = keyPairResourceStore.query(query);
+        if (existingKeyPairs.failed()) {
+            return ServiceResult.fromFailure(existingKeyPairs);
+        }
+        var inUse = existingKeyPairs.getContent().stream()
+                .filter(keyPair -> !keyPair.getId().equals(exceptKeyPairId))
+                .anyMatch(keyPair -> keyPair.getState() != KeyPairState.REVOKED.code());
+        return inUse
+                ? ServiceResult.conflict("A key pair with key ID '%s' already exists for participant context '%s'.".formatted(keyId, participantContextId))
+                : success();
     }
 
     private KeyPairResource findById(String oldId) {

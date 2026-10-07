@@ -31,7 +31,10 @@ import org.eclipse.edc.participantcontext.spi.store.ParticipantContextStore;
 import org.eclipse.edc.participantcontext.spi.types.ParticipantContext;
 import org.eclipse.edc.participantcontext.spi.types.ParticipantContextState;
 import org.eclipse.edc.spi.event.EventEnvelope;
+import org.eclipse.edc.spi.query.Criterion;
+import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.Result;
+import org.eclipse.edc.spi.result.ServiceFailure;
 import org.eclipse.edc.spi.result.StoreResult;
 import org.eclipse.edc.spi.security.Vault;
 import org.eclipse.edc.transaction.spi.NoopTransactionContext;
@@ -41,6 +44,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.mockito.ArgumentMatcher;
 
 import java.time.Duration;
 import java.util.Arrays;
@@ -62,6 +66,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -72,6 +77,7 @@ import static org.mockito.Mockito.when;
 class TransitKeyPairServiceTest {
 
     public static final String PARTICIPANT_ID = "test-participant";
+    private static final String NEW_KEY_ID = "test-kid";
     private final KeyPairResourceStore keyPairResourceStore = mock(i -> StoreResult.success());
     private final Vault vault = mock();
     private final KeyPairObservable observableMock = mock();
@@ -82,6 +88,7 @@ class TransitKeyPairServiceTest {
 
     @BeforeEach
     void setup() {
+        when(keyPairResourceStore.query(any())).thenReturn(success(List.of()));
         when(participantContextServiceMock.findById(anyString()))
                 .thenReturn(StoreResult.success(ParticipantContext.Builder.newInstance()
                         .participantContextId(PARTICIPANT_ID)
@@ -127,6 +134,10 @@ class TransitKeyPairServiceTest {
         }
     }
 
+    private ArgumentMatcher<QuerySpec> isKeyIdQuery(String keyId) {
+        return query -> query != null && query.getFilterExpression().contains(new Criterion("keyId", "=", keyId));
+    }
+
     private KeyPairResource.Builder createKeyPairResource() {
         return KeyPairResource.Builder.newTokenSigning()
                 .id(UUID.randomUUID().toString())
@@ -140,7 +151,7 @@ class TransitKeyPairServiceTest {
     @NotNull
     private KeyDescriptor.Builder createKey() {
         return KeyDescriptor.Builder.newInstance()
-                .keyId("test-kid")
+                .keyId(NEW_KEY_ID)
                 .usage(Set.of(PRESENTATION_SIGNING))
                 .privateKeyAlias("private-alias")
                 .publicKeyJwk(null)
@@ -288,6 +299,18 @@ class TransitKeyPairServiceTest {
                     .isFailed()
                     .detail()
                     .isEqualTo("The key pair resource is expected to be in [200, 100], but was %s".formatted(validState));
+        }
+
+        @Test
+        void activate_whenAlreadyActive_shouldNotActivateAgain() {
+            var keyPair = createKeyPairResource().state(KeyPairState.ACTIVATED).build();
+            when(keyPairResourceStore.query(any())).thenReturn(success(List.of(keyPair)));
+
+            // e.g. a client retrying the request: the key pair must not be added to the DID document a second time
+            assertThat(keyPairService.activate(keyPair.getId())).isSucceeded();
+
+            verify(keyPairResourceStore, never()).update(any());
+            verifyNoInteractions(observableMock);
         }
 
         @Test
@@ -459,6 +482,8 @@ class TransitKeyPairServiceTest {
                     null))
                     .allSatisfy(kd -> {
                         when(keyPairResourceStore.query(any())).thenReturn(success(List.of(oldKey)));
+                        // no other key pair uses the key ID of the successor
+                        when(keyPairResourceStore.query(argThat(isKeyIdQuery(NEW_KEY_ID)))).thenReturn(success(List.of()));
                         when(keyPairResourceStore.create(any())).thenReturn(success());
                         when(transitEngine.rotateKey(anyString())).thenReturn(Result.success());
                         when(transitEngine.getKey(anyString())).thenReturn(Result.success(transitKeyDescriptor()));
@@ -466,7 +491,8 @@ class TransitKeyPairServiceTest {
 
                         assertThat(keyPairService.rotateKeyPair(oldId, kd, Duration.ofDays(100).toMillis())).isSucceeded();
 
-                        verify(keyPairResourceStore).query(any());
+                        // the old key is looked up, and the key ID of a successor described by the caller is checked
+                        verify(keyPairResourceStore, times(kd == null ? 1 : 2)).query(any());
                         verify(keyPairResourceStore).update(argThat(kpr -> kpr.getId().equals(oldId)));
                         verify(keyPairResourceStore).create(any());
                         verify(transitEngine).rotateKey(anyString());
@@ -476,6 +502,20 @@ class TransitKeyPairServiceTest {
                         verifyNoMoreInteractions(keyPairResourceStore, observableMock, transitEngine);
                         reset(keyPairResourceStore, observableMock, transitEngine);
                     });
+        }
+
+        @Test
+        void rotateKeyPair_whenSuccessorReusesKeyId_shouldFailWithoutRotating() {
+            var oldId = "old-id";
+            var oldKey = createKeyPairResource().id(oldId).keyId(NEW_KEY_ID).state(KeyPairState.ACTIVATED).build();
+            // the store finds the old key both by its ID and by its key ID
+            when(keyPairResourceStore.query(any())).thenReturn(success(List.of(oldKey)));
+
+            // a rotated key stays in the DID document, so its successor cannot use the same key ID
+            assertThat(keyPairService.rotateKeyPair(oldId, createKey().build(), Duration.ofDays(100).toMillis())).isFailed()
+                    .extracting(ServiceFailure::getReason).isEqualTo(ServiceFailure.Reason.CONFLICT);
+            verifyNoInteractions(transitEngine, observableMock);
+            verify(keyPairResourceStore, never()).update(any());
         }
 
         @Test
@@ -579,6 +619,8 @@ class TransitKeyPairServiceTest {
             verify(keyPairResourceStore).create(argThat(kpr -> kpr.isDefaultPair() &&
                     kpr.getParticipantContextId().equals(PARTICIPANT_ID) &&
                     kpr.getState() == KeyPairState.ACTIVATED.code()));
+            // the key ID of the new key is checked to not be in use already
+            verify(keyPairResourceStore).query(argThat(isKeyIdQuery(key.getKeyId())));
             // new key is set to active - expect an update in the DB
             verify(transitEngine).generateKey(anyString(), eq(keyType));
             verify(observableMock, times(1)).invokeForEach(any());
@@ -598,6 +640,19 @@ class TransitKeyPairServiceTest {
             assertThat(keyPairService.addKeyPair(PARTICIPANT_ID, key, true)).isSucceeded();
 
             verify(keyPairResourceStore).create(argThat(kpr -> kpr.getSerializedPublicKey().contains("OKP")));
+        }
+
+        @Test
+        void addKeyPair_whenKeyIdInUse_shouldFailWithoutGeneratingKey() {
+            var key = createKey().publicKeyJwk(null).publicKeyPem(null).build();
+            var existingKey = createKeyPairResource().keyId(key.getKeyId()).state(KeyPairState.ACTIVATED).build();
+            when(keyPairResourceStore.query(any())).thenReturn(success(List.of(existingKey)));
+
+            // the key ID identifies the verification method in the DID document, which must be unique
+            assertThat(keyPairService.addKeyPair(PARTICIPANT_ID, key, true)).isFailed()
+                    .extracting(ServiceFailure::getReason).isEqualTo(ServiceFailure.Reason.CONFLICT);
+            verifyNoInteractions(transitEngine, observableMock);
+            verify(keyPairResourceStore, never()).create(any());
         }
 
         @Test
