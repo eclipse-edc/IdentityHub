@@ -106,18 +106,23 @@ public class CredentialWatchdog implements Runnable {
     }
 
     /**
-     * Checks a single credential in a transaction of its own, so that a failure only affects that credential, and the
+     * Checks a single credential in transactions of its own, so that a failure only affects that credential, and the
      * other ones are checked all the same.
+     * <p>
+     * Determining the status may download the credential's status list, so it happens outside of a transaction, in order
+     * not to hold a database connection, nor any locks, while waiting for it. The changes before and after it are made in
+     * a short transaction each.
      */
     private void check(VerifiableCredentialResource credential) {
         try {
+            // credentials waiting on a renewal are held back: their REQUESTED state records that fact, and the status
+            // check below would overwrite it. Those whose renewal came to nothing are released here and treated normally.
+            if (!transactionContext.execute(() -> reconcileRenewal(credential))) {
+                return;
+            }
+            var newStatus = determineStatus(credential);
             transactionContext.execute(() -> {
-                // credentials waiting on a renewal are held back: their REQUESTED state records that fact, and the status
-                // check below would overwrite it. Those whose renewal came to nothing are released here and treated normally.
-                if (!reconcileRenewal(credential)) {
-                    return;
-                }
-                checkStatus(credential);
+                updateStatus(credential, newStatus);
                 if (isDueForRenewal(credential)) {
                     startReissuance(credential);
                 }
@@ -127,12 +132,15 @@ public class CredentialWatchdog implements Runnable {
         }
     }
 
-    private void checkStatus(VerifiableCredentialResource credential) {
-        var newStatus = credentialStatusCheckService.checkStatus(credential)
+    private VcStatus determineStatus(VerifiableCredentialResource credential) {
+        return credentialStatusCheckService.checkStatus(credential)
                 .orElse(f -> {
                     monitor.warning("Error determining status for credential '%s': %s. Will move to the ERROR state.".formatted(credential.getId(), f.getFailureDetail()));
                     return VcStatus.ERROR;
                 });
+    }
+
+    private void updateStatus(VerifiableCredentialResource credential, VcStatus newStatus) {
         var changed = credential.getState() != newStatus.code();
         if (changed) {
             monitor.debug("Credential '%s' is now in status '%s'".formatted(credential.getId(), newStatus));

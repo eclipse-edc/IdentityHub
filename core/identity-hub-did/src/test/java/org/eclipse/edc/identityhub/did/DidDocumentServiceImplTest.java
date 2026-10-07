@@ -32,6 +32,7 @@ import org.eclipse.edc.identityhub.spi.keypair.events.KeyPairActivated;
 import org.eclipse.edc.identityhub.spi.keypair.events.KeyPairRevoked;
 import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairResource;
 import org.eclipse.edc.identityhub.spi.participantcontext.events.ParticipantContextUpdated;
+import org.eclipse.edc.identityhub.transaction.TrackingTransactionContext;
 import org.eclipse.edc.keys.KeyParserRegistryImpl;
 import org.eclipse.edc.keys.keyparsers.JwkParser;
 import org.eclipse.edc.keys.keyparsers.PemParser;
@@ -64,7 +65,6 @@ import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
 import java.util.UUID;
-import java.util.function.Supplier;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.InstanceOfAssertFactories.list;
@@ -817,11 +817,11 @@ class DidDocumentServiceImplTest {
 
         var transactions = new ArrayList<Integer>();
         when(didResourceStoreMock.queryForUpdate(any())).thenAnswer(i -> {
-            transactions.add(transactionContext.current());
+            transactions.add(transactionContext.currentTransaction());
             return List.of(didResource);
         });
         when(didResourceStoreMock.update(any())).thenAnswer(i -> {
-            transactions.add(transactionContext.current());
+            transactions.add(transactionContext.currentTransaction());
             return StoreResult.success();
         });
 
@@ -873,45 +873,5 @@ class DidDocumentServiceImplTest {
                         .id(TEST_DID + "#key-1")
                         .publicKeyMultibase("saflasjdflaskjdflasdkfj")
                         .build()));
-    }
-
-    /**
-     * Numbers the transactions, so that a test can tell whether two calls happen in the same one.
-     */
-    private static class TrackingTransactionContext extends NoopTransactionContext {
-        private int transactions;
-        private int depth;
-
-        /**
-         * The number of the current transaction, or 0 outside a transaction.
-         */
-        int current() {
-            return depth > 0 ? transactions : 0;
-        }
-
-        @Override
-        public void execute(TransactionBlock block) {
-            track(() -> {
-                super.execute(block);
-                return null;
-            });
-        }
-
-        @Override
-        public <T> T execute(ResultTransactionBlock<T> block) {
-            return track(() -> super.execute(block));
-        }
-
-        private <T> T track(Supplier<T> block) {
-            // a nested block joins the surrounding transaction
-            if (depth++ == 0) {
-                transactions++;
-            }
-            try {
-                return block.get();
-            } finally {
-                depth--;
-            }
-        }
     }
 }

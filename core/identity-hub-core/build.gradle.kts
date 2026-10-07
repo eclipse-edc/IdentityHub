@@ -32,6 +32,7 @@ dependencies {
     testImplementation(testFixtures(project(":spi:keypair-spi")))
     testImplementation(testFixtures(project(":spi:verifiable-credential-spi")))
     testImplementation(testFixtures(project(":spi:holder-credential-request-spi")))
+    testImplementation(testFixtures(project(":core:lib:common-lib")))
     testImplementation(testFixtures(libs.edc.vc.jwt)) // JWT generator
 
 }

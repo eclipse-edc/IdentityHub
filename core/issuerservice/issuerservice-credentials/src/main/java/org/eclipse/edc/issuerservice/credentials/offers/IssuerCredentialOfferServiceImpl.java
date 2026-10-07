@@ -89,29 +89,27 @@ public class IssuerCredentialOfferServiceImpl implements IssuerCredentialOfferSe
 
     @Override
     public ServiceResult<Void> sendCredentialOffer(String participantContextId, String holderId, Collection<String> credentialObjectIds, @Nullable String offerReason) {
-        return transactionContext.execute(() -> {
-            var holder = holderStore.findById(holderId);
-            if (holder.failed()) {
-                return ServiceResult.from(holder.mapFailure());
-            }
-            var holderDid = holder.getContent().getDid();
-            return participantContextService.getParticipantContext(participantContextId)
-                    .compose(participantContext -> {
+        // only the reads need a transaction. The holder's DID is resolved and the offer is sent outside of it, so that
+        // waiting for the holder does not hold a database connection
+        return transactionContext.execute(() -> prepareOffer(participantContextId, holderId, credentialObjectIds, offerReason))
+                .compose(offer -> ServiceResult.from(credentialServiceUrlResolver.resolve(offer.holderDid())
+                        .compose(url -> getAuthToken(participantContextId, offer.holderDid(), offer.issuerDid())
+                                //compose CredentialOfferMessage
+                                .compose(tokenRepresentation -> createOfferMessageRequest(url, offer.issuerDid(), offer.credentials(), tokenRepresentation.getToken())))))
+                .compose(this::sendRequest)
+                .mapEmpty();
+    }
 
-                        var requestResult =
-                                // get credential objects based on IDs
-                                getCredentialObjects(participantContext, credentialObjectIds)
-                                        .map(offered -> withOfferReason(offered, offerReason))
-                                        .compose(offeredCredentials -> credentialServiceUrlResolver.resolve(holderDid)
-                                                .compose(url -> getAuthToken(participantContextId, holderDid, participantContext.getDid())
-                                                        //compose CredentialOfferMessage
-                                                        .compose(tokenRepresentation -> createOfferMessageRequest(url, participantContext.getDid(), offeredCredentials, tokenRepresentation.getToken()))));
-
-                        return ServiceResult.from(requestResult);
-                    })
-                    .compose(this::sendRequest)
-                    .mapEmpty();
-        });
+    private ServiceResult<Offer> prepareOffer(String participantContextId, String holderId, Collection<String> credentialObjectIds, @Nullable String offerReason) {
+        var holder = holderStore.findById(holderId);
+        if (holder.failed()) {
+            return ServiceResult.from(holder.mapFailure());
+        }
+        var holderDid = holder.getContent().getDid();
+        return participantContextService.getParticipantContext(participantContextId)
+                // get credential objects based on IDs
+                .compose(participantContext -> ServiceResult.from(getCredentialObjects(participantContext, credentialObjectIds)
+                        .map(offered -> new Offer(holderDid, participantContext.getDid(), withOfferReason(offered, offerReason)))));
     }
 
     /**
@@ -232,4 +230,6 @@ public class IssuerCredentialOfferServiceImpl implements IssuerCredentialOfferSe
         return secureTokenService.createToken(participantContextId, siTokenClaims, null);
     }
 
+    private record Offer(String holderDid, String issuerDid, Collection<CredentialObject> credentials) {
+    }
 }

@@ -27,6 +27,7 @@ import org.eclipse.edc.identityhub.protocols.dcp.spi.model.IssuerMetadata;
 import org.eclipse.edc.identityhub.spi.authentication.ParticipantSecureTokenService;
 import org.eclipse.edc.identityhub.spi.participantcontext.IdentityHubParticipantContextService;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.IdentityHubParticipantContext;
+import org.eclipse.edc.identityhub.transaction.TrackingTransactionContext;
 import org.eclipse.edc.issuerservice.spi.credentials.IssuerCredentialOfferService;
 import org.eclipse.edc.issuerservice.spi.holder.model.Holder;
 import org.eclipse.edc.issuerservice.spi.holder.store.HolderStore;
@@ -35,7 +36,6 @@ import org.eclipse.edc.spi.iam.TokenRepresentation;
 import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.spi.result.ServiceResult;
 import org.eclipse.edc.spi.result.StoreResult;
-import org.eclipse.edc.transaction.spi.NoopTransactionContext;
 import org.eclipse.edc.transform.spi.TypeTransformerRegistry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -43,6 +43,8 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
 import static org.eclipse.edc.identityhub.protocols.dcp.spi.DcpConstants.DCP_SCOPE_V_1_0;
@@ -78,7 +80,8 @@ class IssuerCredentialOfferServiceImplTest {
     private final TypeTransformerRegistry typeTransformerRegistry = mock();
     private final DcpIssuerMetadataService issuerMetadataService = mock();
     private final JsonLd jsonLd = mock();
-    private final IssuerCredentialOfferService credentialOfferService = new IssuerCredentialOfferServiceImpl(new NoopTransactionContext(),
+    private final TrackingTransactionContext transactionContext = new TrackingTransactionContext();
+    private final IssuerCredentialOfferService credentialOfferService = new IssuerCredentialOfferServiceImpl(transactionContext,
             holderStore,
             credentialServiceUrlResolver,
             sts,
@@ -132,6 +135,36 @@ class IssuerCredentialOfferServiceImplTest {
         verify(typeTransformerRegistry).transform(messageCaptor.capture(), eq(JsonObject.class));
         Assertions.assertThat(messageCaptor.getValue().getCredentials())
                 .allSatisfy(co -> Assertions.assertThat(co.getOfferReason()).isEqualTo(OFFER_REASON_REISSUE));
+    }
+
+    @Test
+    void sendCredentialOffer_shouldOnlyReadWithinTransaction() {
+        Map<String, Integer> transactions = new ConcurrentHashMap<>();
+        when(holderStore.findById(HOLDER_ID)).thenAnswer(i -> {
+            transactions.put("holder", transactionContext.currentTransaction());
+            return StoreResult.success(holder());
+        });
+        when(credentialServiceUrlResolver.resolve(anyString())).thenAnswer(i -> {
+            transactions.put("resolve", transactionContext.currentTransaction());
+            return success(HOLDER_CS_ENDPOINT);
+        });
+        when(sts.createToken(anyString(), anyMap(), isNull())).thenAnswer(i -> {
+            transactions.put("token", transactionContext.currentTransaction());
+            return success(TokenRepresentation.Builder.newInstance().token("test-token").build());
+        });
+        when(httpClient.execute(any(), (Function<Response, Result<String>>) any())).thenAnswer(i -> {
+            transactions.put("send", transactionContext.currentTransaction());
+            return success("{}");
+        });
+
+        var result = credentialOfferService.sendCredentialOffer(PARTICIPANT_CONTEXT_ID, HOLDER_ID, List.of(CREDENTIAL_OBJECT_UD), null);
+
+        assertThat(result).isSucceeded();
+        // waiting for the holder must not hold a database connection
+        Assertions.assertThat(transactions).containsEntry("holder", 1)
+                .containsEntry("resolve", 0)
+                .containsEntry("token", 0)
+                .containsEntry("send", 0);
     }
 
     @Test
