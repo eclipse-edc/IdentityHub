@@ -17,6 +17,7 @@ package org.eclipse.edc.identityhub.tests;
 import io.restassured.http.Header;
 import org.eclipse.edc.api.authentication.OauthServerEndToEndExtension;
 import org.eclipse.edc.iam.decentralizedclaims.sts.spi.store.StsAccountStore;
+import org.eclipse.edc.iam.did.spi.document.VerificationMethod;
 import org.eclipse.edc.identityhub.spi.did.events.DidDocumentPublished;
 import org.eclipse.edc.identityhub.spi.did.model.DidState;
 import org.eclipse.edc.identityhub.spi.did.store.DidResourceStore;
@@ -58,6 +59,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static io.restassured.http.ContentType.JSON;
 import static java.util.stream.IntStream.range;
@@ -578,14 +580,17 @@ public class KeyPairResourceApiEndToEndTest {
             var superUserAuth = authorizeUser(SUPER_USER, identityHub);
 
             var userAuth = authorizeUser(PARTICIPANT_CONTEXT_ID, identityHub);
-
-            var keyId = identityHub.createKeyPair(PARTICIPANT_CONTEXT_ID).getResourceId();
+            var successors = new AtomicInteger();
 
             assertThat(Arrays.asList(userAuth, superUserAuth))
                     .allSatisfy(header -> {
+                        // each user revokes a key pair of its own, and adds a successor with a key ID of its own: key IDs
+                        // identify verification methods in the DID document, so they cannot be shared
+                        var keyId = identityHub.createKeyPair(PARTICIPANT_CONTEXT_ID).getResourceId();
+                        var successor = successors.incrementAndGet();
                         var keyDesc = identityHub.createKeyDescriptor(PARTICIPANT_CONTEXT_ID)
-                                .privateKeyAlias("new-alias")
-                                .keyId(newKeyId)
+                                .privateKeyAlias("new-alias-" + successor)
+                                .keyId(newKeyId + "-" + successor)
                                 .build();
 
                         identityHub.getIdentityEndpoint().baseRequest()
@@ -599,7 +604,10 @@ public class KeyPairResourceApiEndToEndTest {
                                 .body(notNullValue());
 
                         assertThat(identityHub.getDidForParticipant(PARTICIPANT_CONTEXT_ID)).hasSize(1)
-                                .allSatisfy(dd -> assertThat(dd.getVerificationMethod()).noneMatch(vm -> vm.getId().equals(keyId)));
+                                .allSatisfy(dd -> {
+                                    assertThat(dd.getVerificationMethod()).noneMatch(vm -> vm.getId().equals(keyId));
+                                    assertThat(dd.getVerificationMethod()).extracting(VerificationMethod::getId).doesNotHaveDuplicates();
+                                });
 
                     });
         }
