@@ -44,7 +44,8 @@ import static org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStat
 
 /**
  * This is a runnable task that is intended to be executed periodically to fetch all non-expired, non-revoked credentials from storage, check for their status,
- * and update their status. Every execution (fetch-all - check-each - update-each) will run in a transaction.
+ * and update their status. Each credential is checked and updated in a transaction of its own, so that a failure only affects that
+ * credential. A failed execution does not keep later executions from running.
  * <p>
  * Note that this will materialize <strong>all</strong> credentials into memory at once, as the general assumption is that typically, wallets don't
  * store an enormous amount of credentials. To mitigate this, the watchdog only considers credentials in states {@link VcStatus#EXPIRED}, {@link VcStatus#ISSUED},
@@ -84,41 +85,68 @@ public class CredentialWatchdog implements Runnable {
 
     @Override
     public void run() {
-        transactionContext.execute(() -> {
-            var allCredentials = credentialStore.query(allExcludingExpiredAndRevoked())
+        // the watchdog runs on a schedule, which stops for good once a run throws an exception, so none may escape
+        try {
+            var credentials = transactionContext.execute(() -> credentialStore.query(allExcludingExpiredAndRevoked()))
                     .onFailure(f -> monitor.warning("Failed to fetch credentials from database: %s".formatted(f.getFailureDetail())))
                     .orElse(f -> Collections.emptyList());
 
-            monitor.debug("checking %d credentials".formatted(allCredentials.size()));
+            monitor.debug("checking %d credentials".formatted(credentials.size()));
 
-            // credentials waiting on a renewal are held back: their REQUESTED state records that fact, and the status
-            // check below would overwrite it. Those whose renewal came to nothing are released here and treated normally.
-            var credentials = allCredentials.stream().filter(this::reconcileRenewal).toList();
+            credentials.forEach(this::check);
+        } catch (Exception e) {
+            monitor.severe("The credential watchdog failed, it runs again in its next period", e);
+        }
+    }
 
-            // check status
-            credentials.forEach(credential -> {
-                var newStatus = credentialStatusCheckService.checkStatus(credential)
-                        .orElse(f -> {
-                            monitor.warning("Error determining status for credential '%s': %s. Will move to the ERROR state.".formatted(credential.getId(), f.getFailureDetail()));
-                            return VcStatus.ERROR;
-                        });
-                var changed = credential.getState() != newStatus.code();
-                if (changed) {
-                    monitor.debug("Credential '%s' is now in status '%s'".formatted(credential.getId(), newStatus));
-                    credential.setCredentialStatus(newStatus);
-                    credentialStore.update(credential);
+    /**
+     * Checks a single credential in a transaction of its own, so that a failure only affects that credential, and the
+     * other ones are checked all the same.
+     */
+    private void check(VerifiableCredentialResource credential) {
+        try {
+            transactionContext.execute(() -> {
+                // credentials waiting on a renewal are held back: their REQUESTED state records that fact, and the status
+                // check below would overwrite it. Those whose renewal came to nothing are released here and treated normally.
+                if (!reconcileRenewal(credential)) {
+                    return;
+                }
+                checkStatus(credential);
+                if (isDueForRenewal(credential)) {
+                    startReissuance(credential);
                 }
             });
+        } catch (Exception e) {
+            monitor.warning("The credential watchdog failed to check credential '%s': %s".formatted(credential.getId(), e.getMessage()), e);
+        }
+    }
 
-            // initiate re-issuance for credentials that are nearing (or past) expiry, unless a replacement credential
-            // was already issued: the state alone cannot express that distinction, because EXPIRED covers both a
-            // superseded credential and one that ran out without a replacement. The latter must still be renewed, while
-            // renewing a superseded one would loop forever, as every delivery expires its predecessor.
-            credentials.stream()
-                    .filter(cred -> !cred.isSuperseded())
-                    .filter(cred -> Instant.now().isAfter(cred.getVerifiableCredential().credential().getExpirationDate().minusSeconds(expiryGracePeriod.toSeconds())))
-                    .forEach(this::startReissuance);
-        });
+    private void checkStatus(VerifiableCredentialResource credential) {
+        var newStatus = credentialStatusCheckService.checkStatus(credential)
+                .orElse(f -> {
+                    monitor.warning("Error determining status for credential '%s': %s. Will move to the ERROR state.".formatted(credential.getId(), f.getFailureDetail()));
+                    return VcStatus.ERROR;
+                });
+        var changed = credential.getState() != newStatus.code();
+        if (changed) {
+            monitor.debug("Credential '%s' is now in status '%s'".formatted(credential.getId(), newStatus));
+            credential.setCredentialStatus(newStatus);
+            credentialStore.update(credential);
+        }
+    }
+
+    /**
+     * Whether re-issuance should be initiated for the credential, because it is nearing (or past) expiry, unless a
+     * replacement credential was already issued: the state alone cannot express that distinction, because EXPIRED covers
+     * both a superseded credential and one that ran out without a replacement. The latter must still be renewed, while
+     * renewing a superseded one would loop forever, as every delivery expires its predecessor. A credential without an
+     * expiration date never needs renewal.
+     */
+    private boolean isDueForRenewal(VerifiableCredentialResource credential) {
+        var expirationDate = credential.getVerifiableCredential().credential().getExpirationDate();
+        return !credential.isSuperseded() &&
+                expirationDate != null &&
+                Instant.now().isAfter(expirationDate.minusSeconds(expiryGracePeriod.toSeconds()));
     }
 
     /**
