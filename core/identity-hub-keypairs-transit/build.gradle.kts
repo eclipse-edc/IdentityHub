@@ -28,6 +28,7 @@ dependencies {
     runtimeOnly(libs.edc.core.security)
     runtimeOnly(libs.edc.vault.hashicorp)
     testImplementation(libs.edc.junit)
+    testImplementation(testFixtures(project(":core:lib:common-lib")))
     testImplementation(libs.testcontainers.junit)
     testImplementation(libs.testcontainers.vault)
 }

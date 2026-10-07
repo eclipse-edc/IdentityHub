@@ -17,20 +17,23 @@ package org.eclipse.edc.identityhub.keypairs;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.jwk.Curve;
 import com.nimbusds.jose.jwk.gen.OctetKeyPairGenerator;
+import org.eclipse.edc.identityhub.spi.keypair.events.KeyPairEventListener;
 import org.eclipse.edc.identityhub.spi.keypair.events.KeyPairObservable;
 import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairResource;
 import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairState;
 import org.eclipse.edc.identityhub.spi.keypair.store.KeyPairResourceStore;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyDescriptor;
+import org.eclipse.edc.identityhub.transaction.TrackingTransactionContext;
 import org.eclipse.edc.participantcontext.spi.store.ParticipantContextStore;
 import org.eclipse.edc.participantcontext.spi.types.ParticipantContext;
 import org.eclipse.edc.participantcontext.spi.types.ParticipantContextState;
+import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.spi.query.Criterion;
 import org.eclipse.edc.spi.query.QuerySpec;
+import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.spi.result.ServiceFailure;
 import org.eclipse.edc.spi.result.StoreResult;
 import org.eclipse.edc.spi.security.Vault;
-import org.eclipse.edc.transaction.spi.NoopTransactionContext;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -39,11 +42,13 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentMatcher;
 
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Consumer;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.edc.identityhub.spi.participantcontext.model.IdentityHubParticipantContext.API_TOKEN_ALIAS;
@@ -55,7 +60,10 @@ import static org.eclipse.edc.spi.result.StoreResult.success;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -72,12 +80,16 @@ class KeyPairServiceImplTest {
     private final Vault vault = mock();
     private final KeyPairObservable observableMock = mock();
     private final ParticipantContextStore participantContextServiceMock = mock();
-    private final KeyPairServiceImpl keyPairService = new KeyPairServiceImpl(keyPairResourceStore, vault, mock(), observableMock, new NoopTransactionContext(), participantContextServiceMock);
+    private final Monitor monitor = mock();
+    private final TrackingTransactionContext transactionContext = new TrackingTransactionContext();
+    private final KeyPairServiceImpl keyPairService = new KeyPairServiceImpl(keyPairResourceStore, vault, monitor, observableMock, transactionContext, participantContextServiceMock);
 
 
     @BeforeEach
     void setup() {
         when(keyPairResourceStore.query(any())).thenReturn(success(List.of()));
+        when(vault.storeSecret(anyString(), anyString(), anyString())).thenReturn(Result.success());
+        when(vault.deleteSecret(anyString(), anyString())).thenReturn(Result.success());
         when(participantContextServiceMock.findById(anyString()))
                 .thenReturn(StoreResult.success(ParticipantContext.Builder.newInstance()
                         .participantContextId(PARTICIPANT_ID)
@@ -96,10 +108,10 @@ class KeyPairServiceImplTest {
 
         // the key ID of the new key is checked to not be in use already
         verify(keyPairResourceStore).query(argThat(isKeyIdQuery(key.getKeyId())));
-        verify(keyPairResourceStore).create(argThat(kpr -> kpr.isDefaultPair() == makeDefault && kpr.getParticipantContextId().equals(PARTICIPANT_ID)));
-        // new key is set to active - expect an update in the DB
-        verify(keyPairResourceStore).update(argThat(kpr -> !kpr.getId().equals(key.getKeyId()) && kpr.getState() == KeyPairState.ACTIVATED.code()));
-        verify(observableMock, times(2)).invokeForEach(any());
+        verify(keyPairResourceStore).create(argThat(kpr -> kpr.isDefaultPair() == makeDefault && kpr.getParticipantContextId().equals(PARTICIPANT_ID) &&
+                kpr.getState() == KeyPairState.ACTIVATED.code()));
+        // the key pair is written in its final state, and announced as added and activated at once
+        verify(observableMock).invokeForEach(any());
         verifyNoMoreInteractions(keyPairResourceStore, vault, observableMock);
     }
 
@@ -115,15 +127,16 @@ class KeyPairServiceImplTest {
 
         assertThat(keyPairService.addKeyPair(PARTICIPANT_ID, key, makeDefault)).isSucceeded();
 
+        // an existing secret is never overwritten
+        verify(vault).resolveSecret(PARTICIPANT_ID, key.getPrivateKeyAlias());
         verify(vault).storeSecret(anyString(), eq(key.getPrivateKeyAlias()), anyString());
         // the key ID of the new key is checked to not be in use already
         verify(keyPairResourceStore).query(argThat(isKeyIdQuery(key.getKeyId())));
         verify(keyPairResourceStore).create(argThat(kpr -> kpr.isDefaultPair() == makeDefault &&
                 kpr.getParticipantContextId().equals(PARTICIPANT_ID) &&
                 kpr.getState() == KeyPairState.ACTIVATED.code()));
-        // new key is set to active - expect an update in the DB
-        verify(keyPairResourceStore).update(argThat(kpr -> !kpr.getId().equals(key.getKeyId()) && kpr.getState() == KeyPairState.ACTIVATED.code()));
-        verify(observableMock, times(2)).invokeForEach(any());
+        // the key pair is written in its final state, and announced as added and activated at once
+        verify(observableMock).invokeForEach(any());
         verifyNoMoreInteractions(keyPairResourceStore, vault, observableMock);
     }
 
@@ -142,13 +155,14 @@ class KeyPairServiceImplTest {
 
         assertThat(keyPairService.addKeyPair(PARTICIPANT_ID, key, true)).isSucceeded();
 
+        // an existing secret is never overwritten
+        verify(vault).resolveSecret(PARTICIPANT_ID, key.getPrivateKeyAlias());
         verify(vault).storeSecret(anyString(), eq(key.getPrivateKeyAlias()), anyString());
         // only the key ID of the new key is checked, other active keys are only looked for if the new key is inactive
         verify(keyPairResourceStore).query(argThat(isKeyIdQuery(key.getKeyId())));
         verify(keyPairResourceStore).create(argThat(kpr -> kpr.isDefaultPair() && kpr.getParticipantContextId().equals(PARTICIPANT_ID) && kpr.getState() == KeyPairState.ACTIVATED.code()));
-        // new key is set to active - expect an update in the DB
-        verify(keyPairResourceStore).update(argThat(kpr -> !kpr.getId().equals(key.getKeyId()) && kpr.getState() == KeyPairState.ACTIVATED.code()));
-        verify(observableMock, times(2)).invokeForEach(any());
+        // the key pair is written in its final state, and announced as added and activated at once
+        verify(observableMock).invokeForEach(any());
         verifyNoMoreInteractions(keyPairResourceStore, vault, observableMock);
     }
 
@@ -167,6 +181,8 @@ class KeyPairServiceImplTest {
 
         assertThat(keyPairService.addKeyPair(PARTICIPANT_ID, key, true)).isSucceeded();
 
+        // an existing secret is never overwritten
+        verify(vault).resolveSecret(PARTICIPANT_ID, key.getPrivateKeyAlias());
         verify(vault).storeSecret(anyString(), eq(key.getPrivateKeyAlias()), anyString());
         // the key ID of the new key is checked, and other active keys are looked for, because the new key is inactive
         verify(keyPairResourceStore, times(2)).query(any());
@@ -215,15 +231,13 @@ class KeyPairServiceImplTest {
 
         assertThat(keyPairService.rotateKeyPair(oldId, newKey, Duration.ofDays(100).toMillis())).isSucceeded();
 
-        // the old key is looked up, and the successor's key ID is checked before the old key is changed, and when the successor is added
-        verify(keyPairResourceStore, times(3)).query(any());
-        verify(keyPairResourceStore, times(2)).query(argThat(isKeyIdQuery(newKey.getKeyId())));
-        verify(keyPairResourceStore).update(argThat(kpr -> kpr.getId().equals(oldId)));
-        verify(keyPairResourceStore).create(any());
-        // new key is set to active - expect an update in the DB
-        verify(keyPairResourceStore).update(argThat(kpr -> !kpr.getId().equals(oldId) && kpr.getState() == KeyPairState.ACTIVATED.code()));
+        // the old key is looked up, and the successor's key ID is checked before anything is changed
+        verify(keyPairResourceStore, times(2)).query(any());
+        verify(keyPairResourceStore).query(argThat(isKeyIdQuery(newKey.getKeyId())));
+        verify(keyPairResourceStore).create(argThat(kpr -> !kpr.getId().equals(oldId) && kpr.getState() == KeyPairState.ACTIVATED.code()));
+        verify(keyPairResourceStore).update(argThat(kpr -> kpr.getId().equals(oldId) && kpr.getState() == KeyPairState.ROTATED.code()));
         verify(vault).deleteSecret(anyString(), eq(oldKey.getPrivateKeyAlias())); //deletes old private key
-        verify(observableMock, times(3)).invokeForEach(any()); // 1 for rotate, 1 for add, 1 for update
+        verify(observableMock, times(2)).invokeForEach(any()); // 1 for rotate, 1 for add and activate
         verifyNoMoreInteractions(keyPairResourceStore, vault, observableMock);
     }
 
@@ -259,16 +273,15 @@ class KeyPairServiceImplTest {
 
         assertThat(keyPairService.rotateKeyPair(oldId, newKey, Duration.ofDays(100).toMillis())).isSucceeded();
 
-        // the old key is looked up, and the successor's key ID is checked before the old key is changed, and when the successor is added
-        verify(keyPairResourceStore, times(3)).query(any());
-        verify(keyPairResourceStore, times(2)).query(argThat(isKeyIdQuery(newKey.getKeyId())));
-        verify(keyPairResourceStore).update(argThat(kpr -> kpr.getId().equals(oldId)));
-        verify(keyPairResourceStore).create(any());
-        // new key is set to active - expect an update in the DB
-        verify(keyPairResourceStore).update(argThat(kpr -> !kpr.getId().equals(oldId) && kpr.getState() == KeyPairState.ACTIVATED.code()));
+        // the old key is looked up, and the successor's key ID is checked before anything is changed
+        verify(keyPairResourceStore, times(2)).query(any());
+        verify(keyPairResourceStore).query(argThat(isKeyIdQuery(newKey.getKeyId())));
+        verify(keyPairResourceStore).create(argThat(kpr -> !kpr.getId().equals(oldId) && kpr.getState() == KeyPairState.ACTIVATED.code()));
+        verify(keyPairResourceStore).update(argThat(kpr -> kpr.getId().equals(oldId) && kpr.getState() == KeyPairState.ROTATED.code()));
         verify(vault).deleteSecret(anyString(), eq(oldKey.getPrivateKeyAlias())); //deletes old private key
+        verify(vault).resolveSecret(PARTICIPANT_ID, newKey.getPrivateKeyAlias());
         verify(vault).storeSecret(anyString(), eq(newKey.getPrivateKeyAlias()), anyString());
-        verify(observableMock, times(3)).invokeForEach(any()); // 1 for rotate, 1 for add
+        verify(observableMock, times(2)).invokeForEach(any()); // 1 for rotate, 1 for add and activate
         verifyNoMoreInteractions(keyPairResourceStore, vault, observableMock);
     }
 
@@ -287,16 +300,15 @@ class KeyPairServiceImplTest {
 
         assertThat(keyPairService.rotateKeyPair(oldId, newKey, Duration.ofDays(100).toMillis())).isSucceeded();
 
-        // the old key is looked up, and the successor's key ID is checked before the old key is changed, and when the successor is added
-        verify(keyPairResourceStore, times(3)).query(any());
-        verify(keyPairResourceStore, times(2)).query(argThat(isKeyIdQuery(newKey.getKeyId())));
-        verify(keyPairResourceStore).update(argThat(kpr -> kpr.getId().equals(oldId)));
-        verify(keyPairResourceStore).create(argThat(KeyPairResource::isDefaultPair));
-        // new key is set to active - expect an update in the DB
-        verify(keyPairResourceStore).update(argThat(kpr -> !kpr.getId().equals(oldId) && kpr.getState() == KeyPairState.ACTIVATED.code()));
+        // the old key is looked up, and the successor's key ID is checked before anything is changed
+        verify(keyPairResourceStore, times(2)).query(any());
+        verify(keyPairResourceStore).query(argThat(isKeyIdQuery(newKey.getKeyId())));
+        verify(keyPairResourceStore).create(argThat(kpr -> !kpr.getId().equals(oldId) && kpr.getState() == KeyPairState.ACTIVATED.code() && kpr.isDefaultPair()));
+        verify(keyPairResourceStore).update(argThat(kpr -> kpr.getId().equals(oldId) && kpr.getState() == KeyPairState.ROTATED.code()));
         verify(vault).deleteSecret(anyString(), eq(oldKey.getPrivateKeyAlias())); //deletes old private key
+        verify(vault).resolveSecret(PARTICIPANT_ID, newKey.getPrivateKeyAlias());
         verify(vault).storeSecret(anyString(), eq(newKey.getPrivateKeyAlias()), anyString());
-        verify(observableMock, times(3)).invokeForEach(any()); //1 for revoke, 1 for add
+        verify(observableMock, times(2)).invokeForEach(any()); // 1 for rotate, 1 for add and activate
         verifyNoMoreInteractions(keyPairResourceStore, vault, observableMock);
     }
 
@@ -325,14 +337,12 @@ class KeyPairServiceImplTest {
         var newKey = createKey().build();
         assertThat(keyPairService.revokeKey(oldId, newKey)).isSucceeded();
 
-        // the old key is looked up, and the successor's key ID is checked before the old key is changed, and when the successor is added
-        verify(keyPairResourceStore, times(3)).query(any());
-        verify(keyPairResourceStore, times(2)).query(argThat(isKeyIdQuery(newKey.getKeyId())));
+        // the old key is looked up, and the successor's key ID is checked before anything is changed
+        verify(keyPairResourceStore, times(2)).query(any());
+        verify(keyPairResourceStore).query(argThat(isKeyIdQuery(newKey.getKeyId())));
+        verify(keyPairResourceStore).create(argThat(kpr -> !kpr.isDefaultPair() && kpr.getState() == KeyPairState.ACTIVATED.code()));
         verify(keyPairResourceStore).update(argThat(kpr -> kpr.getId().equals(oldId) && kpr.getState() == KeyPairState.REVOKED.code()));
         verify(vault).deleteSecret(anyString(), eq(oldKey.getPrivateKeyAlias()));
-        verify(keyPairResourceStore).create(argThat(kpr -> !kpr.isDefaultPair()));
-        // new key is set to active - expect an update in the DB
-        verify(keyPairResourceStore).update(argThat(kpr -> !kpr.getId().equals(oldId) && kpr.getState() == KeyPairState.ACTIVATED.code()));
         verifyNoMoreInteractions(vault, keyPairResourceStore);
     }
 
@@ -361,15 +371,13 @@ class KeyPairServiceImplTest {
         var newKey = createKey().build();
         assertThat(keyPairService.revokeKey(oldId, newKey)).isSucceeded();
 
-        // the old key is looked up, and the successor's key ID is checked before the old key is changed, and when the successor is added
-        verify(keyPairResourceStore, times(3)).query(any());
-        verify(keyPairResourceStore, times(2)).query(argThat(isKeyIdQuery(newKey.getKeyId())));
+        // the old key is looked up, and the successor's key ID is checked before anything is changed
+        verify(keyPairResourceStore, times(2)).query(any());
+        verify(keyPairResourceStore).query(argThat(isKeyIdQuery(newKey.getKeyId())));
+        verify(keyPairResourceStore).create(argThat(kpr -> kpr.isDefaultPair() && kpr.getState() == KeyPairState.ACTIVATED.code()));
         verify(keyPairResourceStore).update(argThat(kpr -> kpr.getId().equals(oldId) && kpr.getState() == KeyPairState.REVOKED.code()));
         verify(vault).deleteSecret(anyString(), eq(oldKey.getPrivateKeyAlias()));
-        verify(keyPairResourceStore).create(argThat(KeyPairResource::isDefaultPair));
-        // new key is set to active - expect an update in the DB
-        verify(keyPairResourceStore).update(argThat(kpr -> !kpr.getId().equals(oldId) && kpr.getState() == KeyPairState.ACTIVATED.code()));
-        verify(observableMock, times(3)).invokeForEach(any()); // 1 for revoke, 1 for add
+        verify(observableMock, times(2)).invokeForEach(any()); // 1 for revoke, 1 for add and activate
         verifyNoMoreInteractions(keyPairResourceStore, vault, observableMock);
     }
 
@@ -383,15 +391,15 @@ class KeyPairServiceImplTest {
         var newKey = createKey().active(false).build();
         assertThat(keyPairService.revokeKey(oldId, newKey)).isSucceeded();
 
-        // looks up the old key, checks the successor's key ID twice, and, because the successor is not active, looks for
-        // other active keys
-        verify(keyPairResourceStore, times(4)).query(any());
-        verify(keyPairResourceStore, times(2)).query(argThat(isKeyIdQuery(newKey.getKeyId())));
+        // looks up the old key, checks the successor's key ID, and, because the successor is not active, looks for other
+        // active keys once the old one is revoked
+        verify(keyPairResourceStore, times(3)).query(any());
+        verify(keyPairResourceStore).query(argThat(isKeyIdQuery(newKey.getKeyId())));
+        verify(keyPairResourceStore).create(argThat(kpr -> kpr.isDefaultPair() && kpr.getState() == KeyPairState.CREATED.code()));
         verify(keyPairResourceStore).update(argThat(kpr -> kpr.getId().equals(oldId) && kpr.getState() == KeyPairState.REVOKED.code()));
         verify(vault).deleteSecret(anyString(), eq(oldKey.getPrivateKeyAlias()));
-        verify(keyPairResourceStore).create(argThat(KeyPairResource::isDefaultPair));
-        // new key is set to inactive, do not expect a DB update
         verify(observableMock, times(2)).invokeForEach(any()); // 1 for revoke, 1 for add
+        verify(monitor).warning(contains("has no active key pairs"));
         verifyNoMoreInteractions(keyPairResourceStore, vault, observableMock);
     }
 
@@ -485,6 +493,161 @@ class KeyPairServiceImplTest {
         // a revoked key is removed from the DID document, so its successor may use the same key ID
         assertThat(keyPairService.revokeKey(oldId, newKey)).isSucceeded();
         verify(keyPairResourceStore).create(argThat(kpr -> kpr.getKeyId().equals(NEW_KEY_ID)));
+    }
+
+    @Test
+    void addKeyPair_whenSecretWithAliasExists_shouldFailWithoutOverwritingIt() {
+        // e.g. the private key of another key pair
+        when(vault.resolveSecret(PARTICIPANT_ID, "private-alias")).thenReturn("existing-secret");
+        var key = createKey().publicKeyJwk(null).publicKeyPem(null).keyGeneratorParams(Map.of(
+                "algorithm", "EdDSA",
+                "curve", "Ed25519"
+        )).build();
+
+        assertThat(keyPairService.addKeyPair(PARTICIPANT_ID, key, true)).isFailed()
+                .extracting(ServiceFailure::getReason).isEqualTo(ServiceFailure.Reason.CONFLICT);
+        verify(vault, never()).storeSecret(anyString(), anyString(), anyString());
+        verify(keyPairResourceStore, never()).create(any());
+        verifyNoInteractions(observableMock);
+    }
+
+    @Test
+    void addKeyPair_whenStoringPrivateKeyFails_shouldFail() {
+        when(vault.storeSecret(anyString(), anyString(), anyString())).thenReturn(Result.failure("vault unavailable"));
+        var key = createKey().publicKeyJwk(null).publicKeyPem(null).keyGeneratorParams(Map.of(
+                "algorithm", "EdDSA",
+                "curve", "Ed25519"
+        )).build();
+
+        assertThat(keyPairService.addKeyPair(PARTICIPANT_ID, key, true)).isFailed()
+                .detail().contains("vault unavailable");
+        verify(keyPairResourceStore, never()).create(any());
+        verifyNoInteractions(observableMock);
+    }
+
+    @Test
+    void addKeyPair_whenCreateFails_shouldDeletePrivateKeyWithoutRollingBack() {
+        when(keyPairResourceStore.create(any())).thenReturn(StoreResult.alreadyExists("key pair exists"));
+        var key = createKey().publicKeyJwk(null).publicKeyPem(null).keyGeneratorParams(Map.of(
+                "algorithm", "EdDSA",
+                "curve", "Ed25519"
+        )).build();
+
+        assertThat(keyPairService.addKeyPair(PARTICIPANT_ID, key, true)).isFailed()
+                .detail().isEqualTo("key pair exists");
+
+        var inOrder = inOrder(vault, keyPairResourceStore);
+        inOrder.verify(vault).storeSecret(anyString(), eq(key.getPrivateKeyAlias()), anyString());
+        inOrder.verify(keyPairResourceStore).create(any());
+        inOrder.verify(vault).deleteSecret(PARTICIPANT_ID, key.getPrivateKeyAlias());
+        verifyNoInteractions(observableMock);
+        // nothing was written, so a surrounding transaction, e.g. the one creating a participant context, must not be rolled back
+        assertThat(transactionContext.isRolledBack(1)).isFalse();
+    }
+
+    @Test
+    void revokeKey_withNewKey_shouldStoreSuccessorFirstAndDeleteOldPrivateKeyLast() {
+        var oldId = "old-id";
+        var oldKey = createKeyPairResource().id(oldId).build();
+        storeFinds(oldKey);
+        var transactionsOfDeletes = new ArrayList<Integer>();
+        when(vault.deleteSecret(anyString(), anyString())).thenAnswer(i -> {
+            transactionsOfDeletes.add(transactionContext.currentTransaction());
+            return Result.success();
+        });
+        var listener = mock(KeyPairEventListener.class);
+        doAnswer(i -> {
+            i.<Consumer<KeyPairEventListener>>getArgument(0).accept(listener);
+            return null;
+        }).when(observableMock).invokeForEach(any());
+
+        var newKey = createKey().publicKeyJwk(null).publicKeyPem(null).keyGeneratorParams(Map.of(
+                "algorithm", "EdDSA",
+                "curve", "Ed25519"
+        )).build();
+        assertThat(keyPairService.revokeKey(oldId, newKey)).isSucceeded();
+
+        // the successor's private key is stored before anything is written, and the events, which may take locks, come
+        // last. The old key pair is announced first, because its successor may have the same key ID
+        var inOrder = inOrder(vault, keyPairResourceStore, listener);
+        inOrder.verify(vault).storeSecret(anyString(), eq(newKey.getPrivateKeyAlias()), anyString());
+        inOrder.verify(keyPairResourceStore).create(argThat(kpr -> kpr.getKeyId().equals(NEW_KEY_ID)));
+        inOrder.verify(keyPairResourceStore).update(argThat(kpr -> kpr.getId().equals(oldId)));
+        inOrder.verify(listener).revoked(argThat(kpr -> kpr.getId().equals(oldId)), eq(newKey));
+        inOrder.verify(listener).added(argThat(kpr -> kpr.getKeyId().equals(NEW_KEY_ID)), any());
+        inOrder.verify(listener).activated(argThat(kpr -> kpr.getKeyId().equals(NEW_KEY_ID)), any());
+        inOrder.verify(vault).deleteSecret(PARTICIPANT_ID, oldKey.getPrivateKeyAlias());
+        // the old private key is only deleted once the transaction is completed, so that a failure leaves the old key usable
+        assertThat(transactionsOfDeletes).containsExactly(0);
+    }
+
+    @Test
+    void revokeKey_withNewKey_whenUpdatingOldKeyFails_shouldRollBack() {
+        var oldId = "old-id";
+        var oldKey = createKeyPairResource().id(oldId).build();
+        storeFinds(oldKey);
+        when(keyPairResourceStore.update(any())).thenReturn(StoreResult.generalError("update failed"));
+        var newKey = createKey().publicKeyJwk(null).publicKeyPem(null).keyGeneratorParams(Map.of(
+                "algorithm", "EdDSA",
+                "curve", "Ed25519"
+        )).build();
+
+        assertThat(keyPairService.revokeKey(oldId, newKey)).isFailed().detail().isEqualTo("update failed");
+
+        // the successor was written already, and must not stay without the old key being revoked
+        assertThat(transactionContext.isRolledBack(1)).isTrue();
+        verify(vault).deleteSecret(PARTICIPANT_ID, newKey.getPrivateKeyAlias());
+        // the old key stays usable
+        verify(vault, never()).deleteSecret(anyString(), eq(oldKey.getPrivateKeyAlias()));
+        verifyNoInteractions(observableMock);
+    }
+
+    @Test
+    void revokeKey_withNewKey_whenCreatingSuccessorFails_shouldNotRevoke() {
+        var oldId = "old-id";
+        var oldKey = createKeyPairResource().id(oldId).build();
+        storeFinds(oldKey);
+        when(keyPairResourceStore.create(any())).thenReturn(StoreResult.alreadyExists("key pair exists"));
+        var newKey = createKey().publicKeyJwk(null).publicKeyPem(null).keyGeneratorParams(Map.of(
+                "algorithm", "EdDSA",
+                "curve", "Ed25519"
+        )).build();
+
+        assertThat(keyPairService.revokeKey(oldId, newKey)).isFailed().detail().isEqualTo("key pair exists");
+
+        verify(keyPairResourceStore, never()).update(any());
+        verify(vault).deleteSecret(PARTICIPANT_ID, newKey.getPrivateKeyAlias());
+        verify(vault, never()).deleteSecret(anyString(), eq(oldKey.getPrivateKeyAlias()));
+        verifyNoInteractions(observableMock);
+    }
+
+    @Test
+    void rotateKeyPair_withNewKey_whenParticipantDeactivated_shouldFailWithoutRotating() {
+        var oldId = "old-id";
+        storeFinds(createKeyPairResource().id(oldId).build());
+        when(participantContextServiceMock.findById(anyString())).thenReturn(StoreResult.success(ParticipantContext.Builder.newInstance()
+                .participantContextId(PARTICIPANT_ID)
+                .identity("did:example:123")
+                .state(ParticipantContextState.DEACTIVATED)
+                .build()));
+
+        // the successor is checked before anything is changed, so that the old key is not left rotated without it
+        assertThat(keyPairService.rotateKeyPair(oldId, createKey().build(), Duration.ofDays(100).toMillis())).isFailed();
+        verify(keyPairResourceStore, never()).update(any());
+        verify(keyPairResourceStore, never()).create(any());
+        verifyNoInteractions(vault, observableMock);
+    }
+
+    @Test
+    void revokeKey_whenKeyWasRotated_shouldNotDeletePrivateKeyAgain() {
+        var oldId = "old-id";
+        storeFinds(createKeyPairResource().id(oldId).state(KeyPairState.ROTATED).build());
+
+        assertThat(keyPairService.revokeKey(oldId, null)).isSucceeded();
+
+        // its private key was deleted when it was rotated
+        verify(keyPairResourceStore).update(argThat(kpr -> kpr.getState() == KeyPairState.REVOKED.code()));
+        verifyNoInteractions(vault);
     }
 
     @Test
