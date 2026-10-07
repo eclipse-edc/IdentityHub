@@ -16,12 +16,12 @@ package org.eclipse.edc.issuerservice.api.admin.credentialdefinition.v1.unstable
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.CredentialProfile;
 import org.eclipse.edc.issuerservice.spi.issuance.model.CredentialDefinition;
 import org.eclipse.edc.issuerservice.spi.issuance.model.CredentialRuleDefinition;
 import org.eclipse.edc.issuerservice.spi.issuance.model.MappingDefinition;
+import tools.jackson.databind.annotation.JsonDeserialize;
+import tools.jackson.databind.annotation.JsonPOJOBuilder;
 
 import java.util.ArrayList;
 import java.util.Collection;

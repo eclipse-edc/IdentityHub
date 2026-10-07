@@ -14,7 +14,6 @@
 
 package org.eclipse.edc.identityhub.api.configuration;
 
-import com.fasterxml.jackson.databind.DeserializationFeature;
 import jakarta.ws.rs.core.SecurityContext;
 import org.eclipse.edc.api.auth.spi.AuthorizationService;
 import org.eclipse.edc.participantcontext.spi.types.ParticipantResource;
@@ -33,6 +32,7 @@ import org.eclipse.edc.spi.system.apiversion.VersionRecord;
 import org.eclipse.edc.spi.types.TypeManager;
 import org.eclipse.edc.web.spi.configuration.PortMapping;
 import org.eclipse.edc.web.spi.configuration.PortMappingRegistry;
+import tools.jackson.databind.DeserializationFeature;
 
 import java.io.IOException;
 import java.util.function.BiFunction;
@@ -80,8 +80,9 @@ public class IssuerAdminApiConfigurationExtension implements ServiceExtension {
                 throw new EdcException("Version file not found or not readable.");
             }
             Stream.of(typeManager.getMapper()
-                            .enable(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
-                            .readValue(versionContent, VersionRecord[].class))
+                            .readerFor(VersionRecord[].class)
+                            .with(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
+                            .<VersionRecord[]>readValue(versionContent))
                     .forEach(vr -> apiVersionService.addRecord("issuer-admin-api", vr));
         } catch (IOException e) {
             throw new EdcException(e);

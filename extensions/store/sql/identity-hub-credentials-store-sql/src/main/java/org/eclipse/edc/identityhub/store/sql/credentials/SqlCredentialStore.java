@@ -14,7 +14,6 @@
 
 package org.eclipse.edc.identityhub.store.sql.credentials;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredential;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredentialContainer;
@@ -30,6 +29,7 @@ import org.eclipse.edc.sql.QueryExecutor;
 import org.eclipse.edc.sql.store.AbstractSqlStore;
 import org.eclipse.edc.transaction.datasource.spi.DataSourceRegistry;
 import org.eclipse.edc.transaction.spi.TransactionContext;
+import tools.jackson.databind.ObjectMapper;
 
 import java.sql.Connection;
 import java.sql.ResultSet;

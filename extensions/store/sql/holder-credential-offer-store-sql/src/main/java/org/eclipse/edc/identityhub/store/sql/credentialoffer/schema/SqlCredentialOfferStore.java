@@ -14,8 +14,6 @@
 
 package org.eclipse.edc.identityhub.store.sql.credentialoffer.schema;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.eclipse.edc.identityhub.spi.credential.request.model.HolderCredentialRequest;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.CredentialObject;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.CredentialOffer;
@@ -30,6 +28,8 @@ import org.eclipse.edc.sql.store.AbstractSqlStore;
 import org.eclipse.edc.transaction.datasource.spi.DataSourceRegistry;
 import org.eclipse.edc.transaction.spi.TransactionContext;
 import org.jetbrains.annotations.NotNull;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.ObjectMapper;
 
 import java.sql.Connection;
 import java.sql.ResultSet;

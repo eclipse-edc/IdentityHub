@@ -14,7 +14,6 @@
 
 package org.eclipse.edc.iam.decentralizedclaims.sts.store;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.eclipse.edc.iam.decentralizedclaims.sts.spi.store.StsAccountStore;
 import org.eclipse.edc.iam.decentralizedclaims.sts.spi.store.fixtures.StsAccountStoreTestBase;
 import org.eclipse.edc.iam.decentralizedclaims.sts.store.schema.BaseSqlDialectStatements;
@@ -28,6 +27,7 @@ import org.eclipse.edc.sql.testfixtures.PostgresqlStoreSetupExtension;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
+import tools.jackson.databind.ObjectMapper;
 
 @ComponentTest
 @ExtendWith(PostgresqlStoreSetupExtension.class)

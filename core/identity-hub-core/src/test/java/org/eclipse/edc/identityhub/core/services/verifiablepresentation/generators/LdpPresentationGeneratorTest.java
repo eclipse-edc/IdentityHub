@@ -14,7 +14,6 @@
 
 package org.eclipse.edc.identityhub.core.services.verifiablepresentation.generators;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.jwk.Curve;
 import org.eclipse.edc.iam.decentralizedclaims.spi.verification.SignatureSuiteRegistry;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat;
@@ -34,6 +33,7 @@ import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.ObjectMapper;
 
 import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;

@@ -15,13 +15,13 @@
 package org.eclipse.edc.issuerservice.issuance.database;
 
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationSource;
 import org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationSourceFactory;
 import org.eclipse.edc.issuerservice.spi.issuance.model.AttestationDefinition;
 import org.eclipse.edc.sql.QueryExecutor;
 import org.eclipse.edc.transaction.datasource.spi.DataSourceRegistry;
 import org.eclipse.edc.transaction.spi.TransactionContext;
+import tools.jackson.databind.ObjectMapper;
 
 import static org.eclipse.edc.issuerservice.issuance.database.DatabaseAttestationSource.DATASOURCE_NAME;
 import static org.eclipse.edc.issuerservice.issuance.database.DatabaseAttestationSource.DEFAULT_ID_COLUMN;

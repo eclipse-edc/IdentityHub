@@ -14,10 +14,10 @@
 
 package org.eclipse.edc.identityhub.api.verifiablecredential.v1.unstable.model;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyDescriptor;
 import org.junit.jupiter.api.Test;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
 import java.util.Map;
 
@@ -28,7 +28,7 @@ class KeyDescriptorTest {
     private final ObjectMapper mapper = new ObjectMapper();
 
     @Test
-    void verify_serdes() throws JsonProcessingException {
+    void verify_serdes() throws JacksonException {
         var descriptor = KeyDescriptor.Builder.newInstance()
                 .keyId("key-id")
                 .privateKeyAlias("alias")

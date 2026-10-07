@@ -18,14 +18,14 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSetter;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.IdentityHubParticipantContext;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyPairUsage;
 import org.eclipse.edc.participantcontext.spi.types.AbstractParticipantResource;
 import org.eclipse.edc.spi.query.Criterion;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.security.Vault;
+import tools.jackson.databind.annotation.JsonDeserialize;
+import tools.jackson.databind.annotation.JsonPOJOBuilder;
 
 import java.time.Duration;
 import java.util.Objects;

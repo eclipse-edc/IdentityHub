@@ -14,7 +14,6 @@
 
 package org.eclipse.edc.iam.decentralizedclaims.sts.store;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.eclipse.edc.iam.decentralizedclaims.sts.spi.model.StsAccount;
 import org.eclipse.edc.iam.decentralizedclaims.sts.spi.store.StsAccountStore;
 import org.eclipse.edc.iam.decentralizedclaims.sts.store.schema.StsClientStatements;
@@ -26,6 +25,7 @@ import org.eclipse.edc.sql.store.AbstractSqlStore;
 import org.eclipse.edc.transaction.datasource.spi.DataSourceRegistry;
 import org.eclipse.edc.transaction.spi.TransactionContext;
 import org.jetbrains.annotations.NotNull;
+import tools.jackson.databind.ObjectMapper;
 
 import java.sql.Connection;
 import java.sql.ResultSet;

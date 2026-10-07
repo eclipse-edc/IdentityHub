@@ -14,10 +14,6 @@
 
 package org.eclipse.edc.issuerservice.credentials;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.JWSHeader;
@@ -51,6 +47,10 @@ import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.ObjectMapper;
 
 import java.text.ParseException;
 import java.util.ArrayList;
@@ -87,9 +87,10 @@ class CredentialStatusServiceImplTest {
     };
     private static final String REVOCATION_CREDENTIAL_ID = "https://example.com/credentials/status/3";
     private static final String CREDENTIAL_ID = "https://example.com/credentials/23894672394";
-    private final ObjectMapper objectMapper = new JacksonTypeManager().getMapper().copy()
+    private final ObjectMapper objectMapper = new JacksonTypeManager().getMapper().rebuild()
             .enable(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
-            .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
+            .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+            .build();
     private final CredentialStore credentialStore = mock();
     private final BitstringStatusListFactory bitstringStatusListFactory = mock();
     private final TokenGenerationService tokenGenerationService = mock(TokenGenerationService.class);
@@ -237,7 +238,7 @@ class CredentialStatusServiceImplTest {
         }
 
         @Test
-        void revokeCredential_noCredentialStatus() throws JsonProcessingException, ParseException {
+        void revokeCredential_noCredentialStatus() throws JacksonException, ParseException {
             when(credentialStore.findById(eq(REVOCATION_CREDENTIAL_ID)))
                     .thenReturn(success(createCredential(EXAMPLE_REVOCATION_CREDENTIAL, EXAMPLE_REVOCATION_CREDENTIAL_JWT.replace("\n", ""))));
 
@@ -420,7 +421,7 @@ class CredentialStatusServiceImplTest {
                     .credential(new VerifiableCredentialContainer(rawVc, CredentialFormat.VC1_0_JWT, credential))
                     .issuerId(credential.getIssuer().id())
                     .holderId("did:web:testholder");
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw new RuntimeException(e);
         }
     }

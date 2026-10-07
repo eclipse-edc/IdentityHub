@@ -65,7 +65,6 @@ import org.eclipse.edc.runtime.metamodel.annotation.Inject;
 import org.eclipse.edc.runtime.metamodel.annotation.Provider;
 import org.eclipse.edc.security.signature.jws2020.Jws2020SignatureSuite;
 import org.eclipse.edc.spi.event.EventRouter;
-import org.eclipse.edc.spi.security.Vault;
 import org.eclipse.edc.spi.system.ServiceExtension;
 import org.eclipse.edc.spi.system.ServiceExtensionContext;
 import org.eclipse.edc.spi.types.TypeManager;
@@ -117,8 +116,6 @@ public class CoreServicesExtension implements ServiceExtension {
     private TokenValidationService tokenValidationService;
     @Inject
     private TokenValidationRulesRegistry tokenValidationRulesRegistry;
-    @Inject
-    private Vault vault;
     @Inject
     private KeyParserRegistry keyParserRegistry;
     @Inject

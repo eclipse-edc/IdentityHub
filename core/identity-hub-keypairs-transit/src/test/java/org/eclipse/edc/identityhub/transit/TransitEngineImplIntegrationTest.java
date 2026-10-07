@@ -14,7 +14,6 @@
 
 package org.eclipse.edc.identityhub.transit;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.failsafe.RetryPolicy;
 import okhttp3.OkHttpClient;
 import org.eclipse.edc.http.client.EdcHttpClientImpl;
@@ -28,6 +27,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.vault.VaultContainer;
+import tools.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
 import java.util.Base64;

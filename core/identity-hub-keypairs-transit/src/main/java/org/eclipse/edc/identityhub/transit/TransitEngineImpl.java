@@ -14,8 +14,6 @@
 
 package org.eclipse.edc.identityhub.transit;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import okhttp3.MediaType;
 import okhttp3.Request;
 import okhttp3.RequestBody;
@@ -24,6 +22,8 @@ import org.eclipse.edc.http.spi.EdcHttpClient;
 import org.eclipse.edc.spi.EdcException;
 import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.vault.hashicorp.spi.auth.HashicorpVaultTokenProviderFactory;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
 import java.util.Base64;
@@ -177,7 +177,7 @@ public class TransitEngineImpl implements TransitEngine {
     private RequestBody jsonBody(Object body) {
         try {
             return RequestBody.create(objectMapper.writeValueAsString(body), MediaType.get("application/json"));
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw new EdcException(e);
         }
     }

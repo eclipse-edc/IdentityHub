@@ -15,8 +15,8 @@
 package org.eclipse.edc.identityhub.spi.verifiablecredentials.events;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
+import tools.jackson.databind.annotation.JsonDeserialize;
+import tools.jackson.databind.annotation.JsonPOJOBuilder;
 
 @JsonDeserialize(builder = CredentialOfferReceived.Builder.class)
 public class CredentialOfferReceived extends CredentialOfferEvent {

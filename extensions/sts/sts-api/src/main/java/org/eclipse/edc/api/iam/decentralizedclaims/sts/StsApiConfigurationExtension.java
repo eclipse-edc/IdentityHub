@@ -14,7 +14,6 @@
 
 package org.eclipse.edc.api.iam.decentralizedclaims.sts;
 
-import com.fasterxml.jackson.databind.DeserializationFeature;
 import org.eclipse.edc.identityhub.spi.webcontext.IdentityHubApiContext;
 import org.eclipse.edc.runtime.metamodel.annotation.Configuration;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
@@ -29,6 +28,7 @@ import org.eclipse.edc.spi.system.apiversion.VersionRecord;
 import org.eclipse.edc.spi.types.TypeManager;
 import org.eclipse.edc.web.spi.configuration.PortMapping;
 import org.eclipse.edc.web.spi.configuration.PortMappingRegistry;
+import tools.jackson.databind.DeserializationFeature;
 
 import java.io.IOException;
 import java.util.stream.Stream;
@@ -68,8 +68,9 @@ public class StsApiConfigurationExtension implements ServiceExtension {
                 throw new EdcException("Version file not found or not readable.");
             }
             Stream.of(typeManager.getMapper()
-                            .enable(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
-                            .readValue(versionContent, VersionRecord[].class))
+                            .readerFor(VersionRecord[].class)
+                            .with(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
+                            .<VersionRecord[]>readValue(versionContent))
                     .forEach(vr -> apiVersionService.addRecord(IdentityHubApiContext.STS, vr));
         } catch (IOException e) {
             throw new EdcException(e);

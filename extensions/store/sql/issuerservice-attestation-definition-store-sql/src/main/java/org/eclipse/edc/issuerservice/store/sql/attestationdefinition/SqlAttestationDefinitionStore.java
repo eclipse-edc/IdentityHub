@@ -14,8 +14,6 @@
 
 package org.eclipse.edc.issuerservice.store.sql.attestationdefinition;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.type.MapType;
 import org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationDefinitionStore;
 import org.eclipse.edc.issuerservice.spi.issuance.model.AttestationDefinition;
 import org.eclipse.edc.issuerservice.spi.issuance.model.CredentialDefinition;
@@ -27,6 +25,8 @@ import org.eclipse.edc.sql.store.AbstractSqlStore;
 import org.eclipse.edc.transaction.datasource.spi.DataSourceRegistry;
 import org.eclipse.edc.transaction.spi.TransactionContext;
 import org.jetbrains.annotations.Nullable;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.type.MapType;
 
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -35,9 +35,9 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Objects;
 
-import static com.fasterxml.jackson.databind.type.TypeFactory.defaultInstance;
 import static org.eclipse.edc.spi.result.StoreResult.alreadyExists;
 import static org.eclipse.edc.spi.result.StoreResult.success;
+import static tools.jackson.databind.type.TypeFactory.createDefaultInstance;
 
 
 /**
@@ -179,6 +179,6 @@ public class SqlAttestationDefinitionStore extends AbstractSqlStore implements A
     }
 
     private MapType map() {
-        return defaultInstance().constructMapType(Map.class, String.class, Object.class);
+        return createDefaultInstance().constructMapType(Map.class, String.class, Object.class);
     }
 }

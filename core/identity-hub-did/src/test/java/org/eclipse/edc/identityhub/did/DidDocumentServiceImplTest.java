@@ -14,7 +14,6 @@
 
 package org.eclipse.edc.identityhub.did;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.jwk.Curve;
@@ -55,6 +54,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.ArgumentMatcher;
+import tools.jackson.databind.ObjectMapper;
 
 import java.net.URI;
 import java.security.KeyPairGenerator;

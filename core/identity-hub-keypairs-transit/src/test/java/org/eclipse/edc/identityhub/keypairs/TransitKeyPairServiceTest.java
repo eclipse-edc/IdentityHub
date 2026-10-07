@@ -14,7 +14,6 @@
 
 package org.eclipse.edc.identityhub.keypairs;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.jwk.Curve;
 import com.nimbusds.jose.jwk.gen.OctetKeyPairGenerator;
@@ -45,6 +44,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentMatcher;
+import tools.jackson.databind.ObjectMapper;
 
 import java.time.Duration;
 import java.util.Arrays;
