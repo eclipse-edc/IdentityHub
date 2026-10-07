@@ -28,14 +28,15 @@ import org.eclipse.edc.identityhub.spi.verifiablecredentials.generator.Credentia
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStatus;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialResource;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialStore;
+import org.eclipse.edc.identityhub.transaction.TrackingTransactionContext;
 import org.eclipse.edc.jsonld.util.JacksonJsonLd;
 import org.eclipse.edc.keys.spi.PublicKeyResolver;
 import org.eclipse.edc.spi.iam.ClaimToken;
 import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.spi.result.Result;
+import org.eclipse.edc.spi.result.ServiceFailure;
 import org.eclipse.edc.spi.result.StoreResult;
 import org.eclipse.edc.token.spi.TokenValidationService;
-import org.eclipse.edc.transaction.spi.NoopTransactionContext;
 import org.eclipse.edc.transform.spi.TypeTransformerRegistry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -43,6 +44,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -58,6 +60,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isA;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -78,19 +81,20 @@ class CredentialWriterImplTest {
     private final TokenValidationService tokenValidationService = mock();
     private final DidPublicKeyResolver publicKeyResolver = mock();
     private final Monitor monitor = mock();
-    private final CredentialWriterImpl credentialWriter = new CredentialWriterImpl(credentialStore, credentialTransformerRegistry, new NoopTransactionContext(),
+    private final TrackingTransactionContext transactionContext = new TrackingTransactionContext();
+    private final CredentialWriterImpl credentialWriter = new CredentialWriterImpl(credentialStore, credentialTransformerRegistry, transactionContext,
             JacksonJsonLd.createObjectMapper(), holderCredentialRequestStore, tokenValidationService, publicKeyResolver, monitor);
 
     @BeforeEach
     void setUp() {
         when(tokenValidationService.validate(anyString(), any(PublicKeyResolver.class), anyList())).thenReturn(Result.success(ClaimToken.Builder.newInstance().build()));
         when(credentialStore.query(any())).thenReturn(StoreResult.success(List.of()));
-        when(holderCredentialRequestStore.findByIdAndLease(anyString())).thenReturn(StoreResult.success(HolderCredentialRequest.Builder.newInstance()
+        storeHolds(HolderCredentialRequest.Builder.newInstance()
                 .issuerDid(ISSUER_DID)
                 .requestedCredential("test-id", TEST_CREDENTIAL_TYPE, TEST_CREDENTIAL_FORMAT)
                 .state(REQUESTED.code())
                 .participantContextId(PARTICIPANT_ID)
-                .build()));
+                .build());
     }
 
     @Test
@@ -104,6 +108,59 @@ class CredentialWriterImplTest {
         var result = credentialWriter.write("holderPid", HOLDER_DID, "issuerPid", ISSUER_DID, Set.of(new CredentialWriteRequest("raw-cred", TEST_CREDENTIAL_FORMAT)), PARTICIPANT_ID);
         assertThat(result).isSucceeded();
         verify(holderCredentialRequestStore).save(argThat(request -> request.getIssuerPid() != null));
+    }
+
+    @Test
+    void write_invalidProof_shouldNotLeaseRequest() {
+        when(tokenValidationService.validate(anyString(), any(PublicKeyResolver.class), anyList())).thenReturn(Result.failure("invalid signature"));
+
+        var result = credentialWriter.write("holderPid", HOLDER_DID, "issuerPid", ISSUER_DID, Set.of(new CredentialWriteRequest("raw-cred", TEST_CREDENTIAL_FORMAT)), PARTICIPANT_ID);
+
+        assertThat(result).isFailed().detail().contains("Could not verify the credential's proof").contains("invalid signature");
+        verify(holderCredentialRequestStore, never()).findByIdAndLease(anyString());
+        verifyNoInteractions(credentialStore);
+    }
+
+    @Test
+    void write_fromDifferentIssuer_shouldNotVerifyProofs() {
+        var result = credentialWriter.write("holderPid", HOLDER_DID, "issuerPid", "did:web:another-issuer", Set.of(new CredentialWriteRequest("raw-cred", TEST_CREDENTIAL_FORMAT)), PARTICIPANT_ID);
+
+        // a delivery that may not act on the request at all is rejected before any DID is resolved for it
+        assertThat(result).isFailed().extracting(ServiceFailure::getReason).isEqualTo(ServiceFailure.Reason.UNAUTHORIZED);
+        verifyNoInteractions(tokenValidationService, credentialStore);
+        verify(holderCredentialRequestStore, never()).findByIdAndLease(anyString());
+    }
+
+    @Test
+    void write_noHolderRequest_shouldNotVerifyProofs() {
+        when(holderCredentialRequestStore.findById(anyString())).thenReturn(null);
+
+        var result = credentialWriter.write("holderPid", HOLDER_DID, "issuerPid", ISSUER_DID, Set.of(new CredentialWriteRequest("raw-cred", TEST_CREDENTIAL_FORMAT)), PARTICIPANT_ID);
+
+        assertThat(result).isFailed().extracting(ServiceFailure::getReason).isEqualTo(ServiceFailure.Reason.NOT_FOUND);
+        verifyNoInteractions(tokenValidationService, credentialStore);
+        verify(holderCredentialRequestStore, never()).findByIdAndLease(anyString());
+    }
+
+    @Test
+    void write_shouldVerifyProofsOutsideTransaction() {
+        var transactionsOfProofs = new ArrayList<Integer>();
+        when(tokenValidationService.validate(anyString(), any(PublicKeyResolver.class), anyList())).thenAnswer(i -> {
+            transactionsOfProofs.add(transactionContext.currentTransaction());
+            return Result.success(ClaimToken.Builder.newInstance().build());
+        });
+        when(credentialTransformerRegistry.transform(isA(String.class), eq(VerifiableCredential.class)))
+                .thenReturn(Result.success(createCredential().build()));
+        when(credentialStore.create(any())).thenReturn(StoreResult.success());
+
+        var result = credentialWriter.write("holderPid", HOLDER_DID, "issuerPid", ISSUER_DID, Set.of(new CredentialWriteRequest("raw-cred", TEST_CREDENTIAL_FORMAT)), PARTICIPANT_ID);
+
+        assertThat(result).isSucceeded();
+        // verifying a proof may resolve the Issuer's DID, which must neither hold a database connection nor the leased request
+        Assertions.assertThat(transactionsOfProofs).containsExactly(0);
+        var inOrder = inOrder(tokenValidationService, holderCredentialRequestStore);
+        inOrder.verify(tokenValidationService).validate(anyString(), any(PublicKeyResolver.class), anyList());
+        inOrder.verify(holderCredentialRequestStore).findByIdAndLease("holderPid");
     }
 
     @Test
@@ -247,6 +304,7 @@ class CredentialWriterImplTest {
     @Test
     @DisplayName("CS-STOR-07: a holderPid matching no pending request is rejected and nothing is stored")
     void write_noHolderRequestFound_expectFailure() {
+        // e.g. the request was deleted after its origin was checked
         when(holderCredentialRequestStore.findByIdAndLease(anyString())).thenReturn(StoreResult.notFound("foo"));
 
         var result = credentialWriter.write("holderPid", HOLDER_DID, "issuerPid", ISSUER_DID, Set.of(new CredentialWriteRequest("raw-cred", TEST_CREDENTIAL_FORMAT)), PARTICIPANT_ID);
@@ -256,12 +314,12 @@ class CredentialWriterImplTest {
 
     @Test
     void write_holderRequestInWrongState_expectFailure() {
-        when(holderCredentialRequestStore.findByIdAndLease(anyString())).thenReturn(StoreResult.success(HolderCredentialRequest.Builder.newInstance()
+        storeHolds(HolderCredentialRequest.Builder.newInstance()
                 .issuerDid(ISSUER_DID)
                 .requestedCredential("test-id", TEST_CREDENTIAL_TYPE, TEST_CREDENTIAL_FORMAT)
                 .state(REQUESTING.code())
                 .participantContextId(PARTICIPANT_ID)
-                .build()));
+                .build());
 
         var result = credentialWriter.write("holderPid", HOLDER_DID, "issuerPid", ISSUER_DID, Set.of(new CredentialWriteRequest("raw-cred", TEST_CREDENTIAL_FORMAT)), PARTICIPANT_ID);
         assertThat(result).isFailed()
@@ -288,13 +346,13 @@ class CredentialWriterImplTest {
     @DisplayName("CS-STOR-07: a message whose issuerPid differs from the one stored on the request is rejected")
     void write_issuerPidMismatch_expectFailure() {
         // the stored request already carries a different issuerPid
-        when(holderCredentialRequestStore.findByIdAndLease(anyString())).thenReturn(StoreResult.success(HolderCredentialRequest.Builder.newInstance()
+        storeHolds(HolderCredentialRequest.Builder.newInstance()
                 .issuerDid(ISSUER_DID)
                 .requestedCredential("test-id", TEST_CREDENTIAL_TYPE, TEST_CREDENTIAL_FORMAT)
                 .state(REQUESTED.code())
                 .participantContextId(PARTICIPANT_ID)
                 .issuerPid("stored-issuer-pid")
-                .build()));
+                .build());
         when(credentialTransformerRegistry.transform(isA(String.class), eq(VerifiableCredential.class)))
                 .thenReturn(Result.success(createCredential().build()));
         when(credentialStore.create(any())).thenReturn(StoreResult.success());
@@ -310,12 +368,12 @@ class CredentialWriterImplTest {
     @DisplayName("CS-STOR-07: a holderPid belonging to another participant context is rejected and nothing is stored")
     void write_holderRequestBelongsToOtherParticipantContext_expectFailure() {
         // the stored request belongs to participant B
-        when(holderCredentialRequestStore.findByIdAndLease(anyString())).thenReturn(StoreResult.success(HolderCredentialRequest.Builder.newInstance()
+        storeHolds(HolderCredentialRequest.Builder.newInstance()
                 .issuerDid(ISSUER_DID)
                 .requestedCredential("test-id", TEST_CREDENTIAL_TYPE, TEST_CREDENTIAL_FORMAT)
                 .state(REQUESTED.code())
                 .participantContextId("participant-b")
-                .build()));
+                .build());
         when(credentialTransformerRegistry.transform(isA(String.class), eq(VerifiableCredential.class)))
                 .thenReturn(Result.success(createCredential().build()));
         when(credentialStore.create(any())).thenReturn(StoreResult.success());
@@ -333,13 +391,13 @@ class CredentialWriterImplTest {
     @DisplayName("CS-STOR-13: re-delivery of the same credential to an ISSUED request is an idempotent no-op without duplicate storage")
     void write_redeliveryToIssuedRequest_expectIdempotentNoOp() {
         // the request is already in state ISSUED
-        when(holderCredentialRequestStore.findByIdAndLease(anyString())).thenReturn(StoreResult.success(HolderCredentialRequest.Builder.newInstance()
+        storeHolds(HolderCredentialRequest.Builder.newInstance()
                 .issuerDid(ISSUER_DID)
                 .requestedCredential("test-id", TEST_CREDENTIAL_TYPE, TEST_CREDENTIAL_FORMAT)
                 .state(ISSUED.code())
                 .participantContextId(PARTICIPANT_ID)
                 .issuerPid("issuerPid")
-                .build()));
+                .build());
         when(credentialTransformerRegistry.transform(isA(String.class), eq(VerifiableCredential.class)))
                 .thenReturn(Result.success(createCredential().build()));
         when(credentialStore.create(any())).thenReturn(StoreResult.success());
@@ -452,6 +510,15 @@ class CredentialWriterImplTest {
         assertThat(result).isFailed();
         Assertions.assertThat(request.stateAsEnum()).isEqualTo(REQUESTED);
         verify(holderCredentialRequestStore).breakLease(request);
+    }
+
+    /**
+     * The request is looked up twice: to check the origin of a delivery before its proofs are verified, and leased to
+     * store the credentials.
+     */
+    private void storeHolds(HolderCredentialRequest request) {
+        when(holderCredentialRequestStore.findById(anyString())).thenReturn(request);
+        when(holderCredentialRequestStore.findByIdAndLease(anyString())).thenReturn(StoreResult.success(request));
     }
 
     private VerifiableCredentialResource createResource(String id) {

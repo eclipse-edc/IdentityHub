@@ -15,5 +15,6 @@ dependencies {
 
     testImplementation(libs.edc.junit)
     testImplementation(testFixtures(project(":spi:did-spi")))
+    testImplementation(testFixtures(project(":core:lib:common-lib")))
     testRuntimeOnly(libs.edc.jsonld)
 }

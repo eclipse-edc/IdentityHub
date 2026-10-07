@@ -17,5 +17,6 @@ dependencies {
 
     implementation(libs.edc.spi.core)
     testImplementation(libs.edc.junit)
+    testImplementation(testFixtures(project(":core:lib:common-lib")))
 
 }

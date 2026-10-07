@@ -81,6 +81,20 @@ public class CredentialWriterImpl implements CredentialWriter {
 
     @Override
     public ServiceResult<Void> write(String holderPid, String holderDid, String issuerPid, String issuerDid, Collection<CredentialWriteRequest> writeRequests, String participantContextId) {
+        // a delivery that may not act on the request at all is rejected before any DID is resolved for it
+        var originResult = transactionContext.execute(() -> checkOrigin(holderPid, issuerDid, participantContextId));
+        if (originResult.failed()) {
+            return originResult;
+        }
+
+        // verifying a proof may resolve the Issuer's DID. It is therefore done before the transaction is opened and the
+        // request is leased, so that waiting for the DID document neither holds a database connection nor the request.
+        // The request may change in the meantime, so all checks are made again once it is leased.
+        var proofResult = verifyProofs(holderPid, writeRequests);
+        if (proofResult.failed()) {
+            return proofResult;
+        }
+
         return transactionContext.execute(() -> {
 
             // get holder request
@@ -153,6 +167,14 @@ public class CredentialWriterImpl implements CredentialWriter {
         return success();
     }
 
+    private ServiceResult<Void> checkOrigin(String holderPid, String issuerDid, String participantContextId) {
+        var holderRequest = holderCredentialRequestStore.findById(holderPid);
+        if (holderRequest == null) {
+            return ServiceResult.notFound("HolderCredentialRequest with ID '%s' does not exist".formatted(holderPid));
+        }
+        return checkOrigin(holderRequest, holderPid, issuerDid, participantContextId);
+    }
+
     /**
      * Establishes that an inbound message may act on this request at all: it must belong to the addressed participant
      * context, and it must come from the Issuer the request was sent to. Asking that Issuer for the credentials is what
@@ -222,13 +244,6 @@ public class CredentialWriterImpl implements CredentialWriter {
             var receivedFormat = CredentialProfile.formatForProfile(writeRequest.credentialFormat());
             if (receivedFormat.failed()) {
                 return receivedFormat.mapFailure();
-            }
-
-            // only credentials that actually carry the Issuer's signature are stored
-            var proofResult = verifyProof(writeRequest.rawCredential(), receivedFormat.getContent());
-            if (proofResult.failed()) {
-                monitor.warning("Rejecting a credential delivered for request '%s': %s".formatted(holderPid, proofResult.getFailureDetail()));
-                return ServiceResult.badRequest("Could not verify the credential's proof: %s".formatted(proofResult.getFailureDetail()));
             }
 
             // check if the list of originally requested credentials contains the received credential
@@ -311,6 +326,24 @@ public class CredentialWriterImpl implements CredentialWriter {
             }
             monitor.debug("Credential '%s' was superseded by re-issued credential '%s' and is now in state %s"
                     .formatted(superseded.getId(), newCredential.getId(), VcStatus.EXPIRED));
+        }
+        return success();
+    }
+
+    /**
+     * Verifies that the delivered credentials actually carry the Issuer's signature, because only those are stored.
+     */
+    private ServiceResult<Void> verifyProofs(String holderPid, Collection<CredentialWriteRequest> writeRequests) {
+        for (var writeRequest : writeRequests) {
+            var format = CredentialProfile.formatForProfile(writeRequest.credentialFormat());
+            if (format.failed()) {
+                return format.mapFailure();
+            }
+            var proofResult = verifyProof(writeRequest.rawCredential(), format.getContent());
+            if (proofResult.failed()) {
+                monitor.warning("Rejecting a credential delivered for request '%s': %s".formatted(holderPid, proofResult.getFailureDetail()));
+                return ServiceResult.badRequest("Could not verify the credential's proof: %s".formatted(proofResult.getFailureDetail()));
+            }
         }
         return success();
     }

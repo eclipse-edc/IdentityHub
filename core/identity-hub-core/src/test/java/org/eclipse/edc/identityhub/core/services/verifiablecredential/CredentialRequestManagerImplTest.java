@@ -32,11 +32,11 @@ import org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialRequestMess
 import org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialRequestStatus;
 import org.eclipse.edc.identityhub.spi.authentication.ParticipantSecureTokenService;
 import org.eclipse.edc.identityhub.spi.credential.request.model.HolderCredentialRequest;
-import org.eclipse.edc.identityhub.spi.credential.request.model.HolderRequestState;
 import org.eclipse.edc.identityhub.spi.credential.request.model.RequestedCredential;
 import org.eclipse.edc.identityhub.spi.credential.request.store.HolderCredentialRequestStore;
 import org.eclipse.edc.identityhub.spi.participantcontext.IdentityHubParticipantContextService;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.IdentityHubParticipantContext;
+import org.eclipse.edc.identityhub.transaction.TrackingTransactionContext;
 import org.eclipse.edc.jsonld.spi.JsonLd;
 import org.eclipse.edc.spi.iam.TokenRepresentation;
 import org.eclipse.edc.spi.persistence.EdcPersistenceException;
@@ -45,14 +45,11 @@ import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.spi.result.ServiceResult;
 import org.eclipse.edc.spi.result.StoreResult;
-import org.eclipse.edc.transaction.spi.NoopTransactionContext;
 import org.eclipse.edc.transform.spi.TypeTransformerRegistry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentMatchers;
 
 import java.io.IOException;
@@ -66,6 +63,7 @@ import java.util.stream.IntStream;
 
 import static org.awaitility.Awaitility.await;
 import static org.eclipse.edc.identityhub.protocols.dcp.spi.DcpConstants.DCP_SCOPE_V_1_0;
+import static org.eclipse.edc.identityhub.spi.credential.request.model.HolderRequestState.CREATED;
 import static org.eclipse.edc.identityhub.spi.credential.request.model.HolderRequestState.ERROR;
 import static org.eclipse.edc.identityhub.spi.credential.request.model.HolderRequestState.REQUESTED;
 import static org.eclipse.edc.identityhub.spi.credential.request.model.HolderRequestState.REQUESTING;
@@ -104,6 +102,7 @@ class CredentialRequestManagerImplTest {
     private final IdentityHubParticipantContextService participantContextService = mock();
     private final JsonLd jsonLd = mock();
     private final CredentialRequestConfiguration configuration = mock();
+    private final TrackingTransactionContext transactionContext = new TrackingTransactionContext();
     private final CredentialRequestManagerImpl credentialRequestService = CredentialRequestManagerImpl.Builder.newInstance()
             .store(store)
             .didResolverRegistry(resolver)
@@ -112,7 +111,7 @@ class CredentialRequestManagerImplTest {
             .httpClient(httpClient)
             .secureTokenService(sts)
             .participantContextService(participantContextService)
-            .transactionContext(new NoopTransactionContext())
+            .transactionContext(transactionContext)
             .monitor(mock())
             .waitStrategy(() -> 500L)
             .configuration(configuration)
@@ -187,19 +186,17 @@ class CredentialRequestManagerImplTest {
             when(sts.createToken(anyString(), anyMap(), any())).thenReturn(success(TokenRepresentation.Builder.newInstance().build()));
         }
 
-        @ParameterizedTest(name = "state = {0}")
+        @Test
         @DisplayName("CS-REQ-01 / CS-REQ-02 / CS-REQ-03: the CredentialRequestMessage, its SI token and the discovered endpoint are formed as the spec requires")
-        @ValueSource(strings = { "CREATED", "REQUESTING" })
-        void processInitial_shouldSendRequest(String stateString) throws IOException {
-            var state = HolderRequestState.valueOf(stateString);
+        void processRequesting_shouldSendRequest() throws IOException {
             when(resolver.resolve(eq(ISSUER_DID))).thenReturn(success(didDocument()));
             when(httpClient.execute(any(Request.class))).thenReturn(response(201, "Created", "test-issuance-process-id"));
             when(configuration.bearerAccessScope()).thenReturn(null);
 
             var rq = createRequest()
-                    .state(state.code())
+                    .state(REQUESTING.code())
                     .build();
-            when(store.nextNotLeased(anyInt(), stateIs(state.code())))
+            when(store.nextNotLeased(anyInt(), stateIs(REQUESTING.code())))
                     .thenReturn(List.of(rq));
 
             credentialRequestService.start();
@@ -207,7 +204,6 @@ class CredentialRequestManagerImplTest {
             await().atMost(MAX_DURATION).untilAsserted(() -> {
                 var inOrder = inOrder(resolver, store, httpClient, sts, jsonLd);
                 inOrder.verify(resolver).resolve(eq(ISSUER_DID));
-                inOrder.verify(store).save(argThat(r -> r.getState() == REQUESTING.code()));
                 inOrder.verify(sts).createToken(anyString(), anyMap(), isNull());
                 inOrder.verify(jsonLd).compact(any(), eq(DCP_SCOPE_V_1_0));
                 inOrder.verify(httpClient).execute(any(Request.class));
@@ -216,19 +212,17 @@ class CredentialRequestManagerImplTest {
         }
 
         @Deprecated(since = "1.0.0")
-        @ParameterizedTest(name = "state = {0}")
+        @Test
         @DisplayName("CS-REQ-01 / CS-REQ-02 / CS-REQ-03: the CredentialRequestMessage, its SI token and the discovered endpoint are formed as the spec requires with bearer access scope")
-        @ValueSource(strings = { "CREATED", "REQUESTING" })
-        void shouldSendRequest_whenAccessBearerScopeSet(String stateString) throws IOException {
-            var state = HolderRequestState.valueOf(stateString);
+        void processRequesting_shouldSendRequest_whenAccessBearerScopeSet() throws IOException {
             when(resolver.resolve(eq(ISSUER_DID))).thenReturn(success(didDocument()));
             when(httpClient.execute(any(Request.class))).thenReturn(response(201, "Created", "test-issuance-process-id"));
             when(configuration.bearerAccessScope()).thenReturn("bearer_access_scope");
 
             var rq = createRequest()
-                    .state(state.code())
+                    .state(REQUESTING.code())
                     .build();
-            when(store.nextNotLeased(anyInt(), stateIs(state.code())))
+            when(store.nextNotLeased(anyInt(), stateIs(REQUESTING.code())))
                     .thenReturn(List.of(rq));
 
             credentialRequestService.start();
@@ -236,7 +230,6 @@ class CredentialRequestManagerImplTest {
             await().atMost(MAX_DURATION).untilAsserted(() -> {
                 var inOrder = inOrder(resolver, store, httpClient, sts, jsonLd);
                 inOrder.verify(resolver).resolve(eq(ISSUER_DID));
-                inOrder.verify(store).save(argThat(r -> r.getState() == REQUESTING.code()));
                 inOrder.verify(sts).createToken(anyString(), anyMap(), eq("bearer_access_scope"));
                 inOrder.verify(jsonLd).compact(any(), eq(DCP_SCOPE_V_1_0));
                 inOrder.verify(httpClient).execute(any(Request.class));
@@ -244,16 +237,14 @@ class CredentialRequestManagerImplTest {
             });
         }
 
-        @ParameterizedTest(name = "state = {0}")
+        @Test
         @DisplayName("CS-REQ-08: an unresolvable issuer DID fails the request cleanly, with no message sent")
-        @ValueSource(strings = { "CREATED", "REQUESTING" })
-        void processInitial_whenDidNotResolvable_shouldTransitionToError(String stateString) {
-            var state = HolderRequestState.valueOf(stateString);
+        void processRequesting_whenDidNotResolvable_shouldTransitionToError() {
             when(resolver.resolve(eq(ISSUER_DID))).thenReturn(Result.failure("foobar"));
             var rq = createRequest()
-                    .state(state.code())
+                    .state(REQUESTING.code())
                     .build();
-            when(store.nextNotLeased(anyInt(), stateIs(state.code())))
+            when(store.nextNotLeased(anyInt(), stateIs(REQUESTING.code())))
                     .thenReturn(List.of(rq))
                     .thenReturn(List.of());
 
@@ -267,21 +258,18 @@ class CredentialRequestManagerImplTest {
             });
         }
 
-        @ParameterizedTest(name = "state = {0}")
+        @Test
         @DisplayName("CS-REQ-08: an issuer DID document without an IssuerService entry fails the request cleanly")
-        @ValueSource(strings = { "CREATED", "REQUESTING" })
-        void processInitial_whenDidDoesNotContainEndpoint_shouldTransitionToError(String stateString) {
-            var state = HolderRequestState.valueOf(stateString);
-
+        void processRequesting_whenDidDoesNotContainEndpoint_shouldTransitionToError() {
             when(resolver.resolve(eq(ISSUER_DID))).thenReturn(success(DidDocument.Builder.newInstance()
                     .id(UUID.randomUUID().toString())
                     // missing: endpoint
                     .build()));
 
             var rq = createRequest()
-                    .state(state.code())
+                    .state(REQUESTING.code())
                     .build();
-            when(store.nextNotLeased(anyInt(), stateIs(state.code())))
+            when(store.nextNotLeased(anyInt(), stateIs(REQUESTING.code())))
                     .thenReturn(List.of(rq))
                     .thenReturn(List.of());
 
@@ -295,18 +283,15 @@ class CredentialRequestManagerImplTest {
             });
         }
 
-        @ParameterizedTest(name = "state = {0}")
-        @ValueSource(strings = { "CREATED", "REQUESTING" })
-        void processInitial_whenStsFails_shouldTransitionToError(String stateString) {
-            var state = HolderRequestState.valueOf(stateString);
-
+        @Test
+        void processRequesting_whenStsFails_shouldTransitionToError() {
             when(resolver.resolve(eq(ISSUER_DID))).thenReturn(success(didDocument()));
             when(sts.createToken(anyString(), anyMap(), ArgumentMatchers.isNull())).thenReturn(Result.failure("sts-failure"));
 
             var rq = createRequest()
-                    .state(state.code())
+                    .state(REQUESTING.code())
                     .build();
-            when(store.nextNotLeased(anyInt(), stateIs(state.code())))
+            when(store.nextNotLeased(anyInt(), stateIs(REQUESTING.code())))
                     .thenReturn(List.of(rq))
                     .thenReturn(List.of());
 
@@ -320,18 +305,16 @@ class CredentialRequestManagerImplTest {
             });
         }
 
-        @ParameterizedTest(name = "state = {0}")
+        @Test
         @DisplayName("CS-REQ-06: a client error from the issuer moves the request to ERROR at once, as the identical retry would be refused again")
-        @ValueSource(strings = { "CREATED", "REQUESTING" })
-        void processInitial_whenIssuerReturnsError_shouldTransitionToError(String stateString) throws IOException {
-            var state = HolderRequestState.valueOf(stateString);
+        void processRequesting_whenIssuerReturnsError_shouldTransitionToError() throws IOException {
             when(resolver.resolve(eq(ISSUER_DID))).thenReturn(success(didDocument()));
             when(httpClient.execute(any(Request.class))).thenReturn(response(400, "Bad Request", "issuer failure bad request"));
 
             var rq = createRequest()
-                    .state(state.code())
+                    .state(REQUESTING.code())
                     .build();
-            when(store.nextNotLeased(anyInt(), stateIs(state.code())))
+            when(store.nextNotLeased(anyInt(), stateIs(REQUESTING.code())))
                     .thenReturn(List.of(rq))
                     .thenReturn(List.of());
 
@@ -344,6 +327,57 @@ class CredentialRequestManagerImplTest {
                 inOrder.verify(httpClient).execute(any(Request.class));
                 inOrder.verify(store, times(1)).save(argThat(r -> r.getState() == ERROR.code() && r.getErrorDetail().contains("issuer failure bad request")));
             });
+        }
+
+        @Test
+        void processCreated_shouldTransitionToRequestingWithoutSending() {
+            var rq = createRequest()
+                    .state(CREATED.code())
+                    .build();
+            when(store.nextNotLeased(anyInt(), stateIs(CREATED.code())))
+                    .thenReturn(List.of(rq))
+                    .thenReturn(List.of());
+
+            credentialRequestService.start();
+
+            // the message is only sent once REQUESTING is persisted, so that a crash cannot lose the fact that it may have been
+            await().atMost(MAX_DURATION).untilAsserted(() -> verify(store).save(argThat(r -> r.getState() == REQUESTING.code())));
+            verifyNoInteractions(resolver, sts, httpClient);
+        }
+
+        @Test
+        void processRequesting_shouldNotSendWithinTransaction() throws IOException {
+            var transactions = new ConcurrentHashMap<String, Integer>();
+            when(resolver.resolve(eq(ISSUER_DID))).thenAnswer(i -> {
+                transactions.put("resolve", transactionContext.currentTransaction());
+                return success(didDocument());
+            });
+            when(sts.createToken(anyString(), anyMap(), any())).thenAnswer(i -> {
+                transactions.put("token", transactionContext.currentTransaction());
+                return success(TokenRepresentation.Builder.newInstance().build());
+            });
+            when(httpClient.execute(any(Request.class))).thenAnswer(i -> {
+                transactions.put("send", transactionContext.currentTransaction());
+                return response(201, "Created", "test-issuance-process-id");
+            });
+            when(store.save(argThat(r -> r != null && r.getState() == REQUESTED.code()))).thenAnswer(i -> {
+                transactions.put("save", transactionContext.currentTransaction());
+                return StoreResult.success();
+            });
+
+            var rq = createRequest()
+                    .state(REQUESTING.code())
+                    .build();
+            when(store.nextNotLeased(anyInt(), stateIs(REQUESTING.code())))
+                    .thenReturn(List.of(rq))
+                    .thenReturn(List.of());
+
+            credentialRequestService.start();
+
+            // waiting for the Issuer must not hold a database connection, nor any locks. The lease protects the request instead.
+            await().atMost(MAX_DURATION).untilAsserted(() -> Assertions.assertThat(transactions).containsKey("save"));
+            Assertions.assertThat(transactions).containsEntry("resolve", 0).containsEntry("token", 0).containsEntry("send", 0);
+            Assertions.assertThat(transactions.get("save")).isPositive();
         }
 
         // CS-REQ-05: re-processing a request in REQUESTING (after crash/restart) re-sends the DCP request idempotently: same holderPid reused, an issuer 409/duplicate response must not transition the request to ERROR

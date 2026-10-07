@@ -162,8 +162,8 @@ public class CredentialRequestManagerImpl extends AbstractStateEntityManager<Hol
     @Override
     protected StateMachineManager.Builder configureStateMachineManager(StateMachineManager.Builder builder) {
         return builder
-                .processor(processRequestsInState(CREATED, this::processInitial))
-                .processor(processRequestsInState(REQUESTING, this::processInitial));
+                .processor(processRequestsInState(CREATED, this::processCreated))
+                .processor(processRequestsInState(REQUESTING, this::processRequesting));
     }
 
     /**
@@ -189,14 +189,15 @@ public class CredentialRequestManagerImpl extends AbstractStateEntityManager<Hol
      * Sends a {@code CredentialRequestMessage} for the given request to the Issuer's Credential Request API, authenticated
      * with a freshly created Self-Issued ID token.
      * <p>
-     * The request is transitioned to {@link HolderRequestState#REQUESTING} and persisted before the message goes out, so
-     * that an interruption cannot lose the fact that the Issuer may already have received it. Recovery, like a retry,
-     * re-enters this method with the same {@code holderPid}, which lets the Issuer recognize the duplicate - see
-     * {@link #mapResponseAsIssuerPid(Response)} for how that answer is interpreted. A request that is already in
-     * {@link HolderRequestState#REQUESTING} is left as it is, so that its attempt count carries over.
+     * The request was persisted in {@link HolderRequestState#REQUESTING} before, so that an interruption cannot lose the
+     * fact that the Issuer may already have received the message. Recovery, like a retry, re-enters this method with the
+     * same {@code holderPid}, which lets the Issuer recognize the duplicate - see {@link #mapResponseAsIssuerPid(Response)}
+     * for how that answer is interpreted.
+     * <p>
+     * No transaction is open while the message is sent, so that waiting for the Issuer does not hold a database
+     * connection, nor any locks. The lease on the request keeps other runtimes from processing it in the meantime.
      *
-     * @param request  the request to send, in state {@link HolderRequestState#CREATED} or
-     *                 {@link HolderRequestState#REQUESTING}
+     * @param request  the request to send, in state {@link HolderRequestState#REQUESTING}
      * @param endpoint the base URL of the Issuer's Issuer Service, as resolved from its DID document
      * @return a StatusResult containing the Issuer-assigned issuance process ID, or {@link #UNKNOWN_ISSUER_PID} if the
      *         Issuer accepted the request without reporting one. This can happen if an issuance request already exists on
@@ -208,20 +209,14 @@ public class CredentialRequestManagerImpl extends AbstractStateEntityManager<Hol
         var holderPid = request.getId();
         var requestedCredentials = request.getIdsAndFormats();
 
-        return transactionContext.execute(() -> {
-            if (request.stateAsEnum() != REQUESTING) {
-                request.transitionRequesting();
-                updateRequest(request);
-            }
-            // failing to mint the token or to assemble the message is a configuration problem, which another attempt
-            // would run into just the same
-            var httpRequest = getAuthToken(request.getParticipantContextId(), issuerDid)
-                    .compose(token -> createCredentialsRequest(token, endpoint, holderPid, requestedCredentials));
-            if (httpRequest.failed()) {
-                return StatusResult.failure(FATAL_ERROR, httpRequest.getFailureDetail());
-            }
-            return executeCredentialRequest(httpRequest.getContent());
-        });
+        // failing to mint the token or to assemble the message is a configuration problem, which another attempt
+        // would run into just the same
+        var httpRequest = getAuthToken(request.getParticipantContextId(), issuerDid)
+                .compose(token -> createCredentialsRequest(token, endpoint, holderPid, requestedCredentials));
+        if (httpRequest.failed()) {
+            return StatusResult.failure(FATAL_ERROR, httpRequest.getFailureDetail());
+        }
+        return executeCredentialRequest(httpRequest.getContent());
     }
 
     /**
@@ -269,8 +264,21 @@ public class CredentialRequestManagerImpl extends AbstractStateEntityManager<Hol
     }
 
     /**
-     * processes all requests that are in {@link HolderRequestState#CREATED} or {@link HolderRequestState#REQUESTING} state. Credential requests that were
-     * interrupted before receiving the Issuer's response are in this state.
+     * Processes a request in {@link HolderRequestState#CREATED} state by transitioning it to
+     * {@link HolderRequestState#REQUESTING}. The message is only sent once that is persisted, see
+     * {@link #processRequesting(HolderCredentialRequest)}.
+     *
+     * @return a CompletableFuture containing the result of processing the request.
+     */
+    private CompletableFuture<StatusResult<Void>> processCreated(HolderCredentialRequest holderCredentialRequest) {
+        holderCredentialRequest.transitionRequesting();
+        updateRequest(holderCredentialRequest);
+        return CompletableFuture.completedFuture(StatusResult.success());
+    }
+
+    /**
+     * Processes a request in {@link HolderRequestState#REQUESTING} state by sending it to the Issuer. Credential requests
+     * that were interrupted before receiving the Issuer's response are in this state as well.
      * <p>
      * A failure that may resolve itself - an Issuer that is unreachable or answering 5xx - leaves the request in its
      * current state, so that the state machine attempts it again with a growing delay. Only a failure the Issuer would
@@ -278,7 +286,7 @@ public class CredentialRequestManagerImpl extends AbstractStateEntityManager<Hol
      *
      * @return a CompletableFuture containing the result of processing the request.
      */
-    private CompletableFuture<StatusResult<Void>> processInitial(HolderCredentialRequest holderCredentialRequest) {
+    private CompletableFuture<StatusResult<Void>> processRequesting(HolderCredentialRequest holderCredentialRequest) {
         monitor.debug("Processing '%s' request '%s'".formatted(holderCredentialRequest.stateAsString(), holderCredentialRequest.getHolderPid()));
 
         return telemetry.contextPropagationMiddleware(() -> entityRetryProcessFactory.<HolderCredentialRequest, Void>retryProcessor(holderCredentialRequest)

@@ -25,6 +25,7 @@ import org.eclipse.edc.identityhub.spi.verifiablecredentials.CredentialStatusChe
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStatus;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialResource;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialStore;
+import org.eclipse.edc.identityhub.transaction.TrackingTransactionContext;
 import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.spi.persistence.EdcPersistenceException;
 import org.eclipse.edc.spi.query.QuerySpec;
@@ -476,9 +477,29 @@ class CredentialWatchdogTest {
 
         watchdog.run();
 
-        // the credentials are fetched in the first transaction, and each one is updated in one of its own: if they shared a
-        // transaction, a failure on one of them would roll back the updates of all the others
-        assertThat(transactionsOfUpdates).containsExactly(2, 3);
+        // the credentials are fetched in the first transaction. Each one is reconciled in a transaction, and updated in
+        // another one of its own: if they shared a transaction, a failure on one of them would roll back the updates of
+        // all the others
+        assertThat(transactionsOfUpdates).containsExactly(3, 5);
+    }
+
+    @Test
+    void run_shouldDetermineStatusOutsideTransaction() {
+        var transactionContext = new TrackingTransactionContext();
+        var watchdog = new CredentialWatchdog(credentialStore, credentialStatusCheckService, monitor, transactionContext,
+                Duration.ofSeconds(GRACE_PERIOD), credentialRequestManager);
+        var transactionsOfChecks = new ArrayList<Integer>();
+        when(credentialStore.query(any())).thenReturn(StoreResult.success(List.of(createCredentialBuilder().build())));
+        when(credentialStatusCheckService.checkStatus(any())).thenAnswer(i -> {
+            transactionsOfChecks.add(transactionContext.currentTransaction());
+            return Result.success(REVOKED);
+        });
+
+        watchdog.run();
+
+        // determining the status may download the status list, which must not hold a database connection, nor any locks
+        assertThat(transactionsOfChecks).containsExactly(0);
+        verify(credentialStore).update(argThat(vc -> vc.getStateAsEnum() == REVOKED));
     }
 
     @Test
@@ -541,38 +562,5 @@ class CredentialWatchdogTest {
                 .type("DemoCredential")
                 .issuer(new Issuer("test-issuer", Map.of()))
                 .id("did:web:test-credential");
-    }
-
-
-    /**
-     * Numbers the transactions it runs, so that a test can tell which transaction a call happened in.
-     */
-    private static class TrackingTransactionContext extends NoopTransactionContext {
-        private int transactions;
-        private int depth;
-
-        @Override
-        public void execute(TransactionBlock block) {
-            execute(() -> {
-                block.execute();
-                return null;
-            });
-        }
-
-        @Override
-        public <T> T execute(ResultTransactionBlock<T> block) {
-            if (depth++ == 0) {
-                transactions++;
-            }
-            try {
-                return super.execute(block);
-            } finally {
-                depth--;
-            }
-        }
-
-        int currentTransaction() {
-            return depth > 0 ? transactions : 0;
-        }
     }
 }
