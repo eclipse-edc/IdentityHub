@@ -63,6 +63,23 @@ public interface DidResourceStore {
     Collection<DidResource> query(QuerySpec query);
 
     /**
+     * Queries the store like {@link #query(QuerySpec)}, and locks the matching entries for update until the surrounding
+     * transaction completes. Concurrent callers that request a lock on any of those entries wait until then, and get to
+     * see their latest state. This is needed for read-modify-write sequences on a DID document, which several runtimes
+     * may change at the same time, e.g. when a service endpoint is added while a key pair is activated. Without a
+     * surrounding transaction, the lock is released right away.
+     * <p>
+     * The default implementation does not lock anything and is only suitable for stores that are not shared between
+     * several runtimes. Implementations backed by a shared database must override it.
+     *
+     * @param query The {@link QuerySpec} indicating the criteria for the query.
+     * @return A {@link Collection} containing the {@link DidResource} objects that match the query.
+     */
+    default Collection<DidResource> queryForUpdate(QuerySpec query) {
+        return query(query);
+    }
+
+    /**
      * Deletes a {@link DidResource} object from the store with the specified DID. If the specified DID document does not
      * exist, a failure is returned
      *

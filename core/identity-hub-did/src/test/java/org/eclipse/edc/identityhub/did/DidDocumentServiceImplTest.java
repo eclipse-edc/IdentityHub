@@ -41,7 +41,9 @@ import org.eclipse.edc.participantcontext.spi.types.ParticipantContextState;
 import org.eclipse.edc.spi.event.Event;
 import org.eclipse.edc.spi.event.EventEnvelope;
 import org.eclipse.edc.spi.monitor.Monitor;
+import org.eclipse.edc.spi.query.Criterion;
 import org.eclipse.edc.spi.query.QuerySpec;
+import org.eclipse.edc.spi.query.SortOrder;
 import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.spi.result.StoreResult;
 import org.eclipse.edc.spi.telemetry.Telemetry;
@@ -51,15 +53,18 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.mockito.ArgumentMatcher;
 
 import java.net.URI;
 import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
+import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
 import java.util.UUID;
+import java.util.function.Supplier;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.InstanceOfAssertFactories.list;
@@ -127,12 +132,12 @@ class DidDocumentServiceImplTest {
     void deleteById() {
         var doc = createDidDocument().build();
         var did = doc.getId();
-        when(didResourceStoreMock.findById(eq(did))).thenReturn(DidResource.Builder.newInstance().did(did).state(DidState.UNPUBLISHED).document(doc).build());
+        when(didResourceStoreMock.queryForUpdate(argThat(byDid(did)))).thenReturn(List.of(DidResource.Builder.newInstance().did(did).state(DidState.UNPUBLISHED).document(doc).build()));
         when(didResourceStoreMock.deleteById(any())).thenReturn(StoreResult.success());
 
         assertThat(service.deleteById(did)).isSucceeded();
 
-        verify(didResourceStoreMock).findById(did);
+        verify(didResourceStoreMock).queryForUpdate(argThat(byDid(did)));
         verify(didResourceStoreMock).deleteById(did);
         verifyNoMoreInteractions(publisherMock, didResourceStoreMock, publisherRegistry);
     }
@@ -141,13 +146,13 @@ class DidDocumentServiceImplTest {
     void deleteById_alreadyPublished() {
         var doc = createDidDocument().build();
         var did = doc.getId();
-        when(didResourceStoreMock.findById(eq(did))).thenReturn(DidResource.Builder.newInstance().did(did).state(DidState.PUBLISHED).document(doc).build());
+        when(didResourceStoreMock.queryForUpdate(argThat(byDid(did)))).thenReturn(List.of(DidResource.Builder.newInstance().did(did).state(DidState.PUBLISHED).document(doc).build()));
 
         assertThat(service.deleteById(did)).isFailed()
                 .detail()
                 .isEqualTo("Cannot delete DID '%s' because it is already published. Un-publish first!".formatted(did));
 
-        verify(didResourceStoreMock).findById(did);
+        verify(didResourceStoreMock).queryForUpdate(argThat(byDid(did)));
         verifyNoMoreInteractions(publisherMock, didResourceStoreMock, publisherRegistry);
     }
 
@@ -155,12 +160,12 @@ class DidDocumentServiceImplTest {
     void deleteById_notExists() {
         var doc = createDidDocument().build();
         var did = doc.getId();
-        when(didResourceStoreMock.findById(eq(did))).thenReturn(DidResource.Builder.newInstance().did(did).state(DidState.UNPUBLISHED).document(doc).build());
+        when(didResourceStoreMock.queryForUpdate(argThat(byDid(did)))).thenReturn(List.of(DidResource.Builder.newInstance().did(did).state(DidState.UNPUBLISHED).document(doc).build()));
         when(didResourceStoreMock.deleteById(any())).thenReturn(StoreResult.notFound("test-message"));
 
         assertThat(service.deleteById(did)).isFailed().detail().isEqualTo("test-message");
 
-        verify(didResourceStoreMock).findById(did);
+        verify(didResourceStoreMock).queryForUpdate(argThat(byDid(did)));
         verify(didResourceStoreMock).deleteById(did);
         verifyNoMoreInteractions(publisherMock, didResourceStoreMock, publisherRegistry);
     }
@@ -169,12 +174,12 @@ class DidDocumentServiceImplTest {
     void publish() {
         var doc = createDidDocument().build();
         var did = doc.getId();
-        when(didResourceStoreMock.findById(eq(did))).thenReturn(DidResource.Builder.newInstance().did(did).document(doc).build());
+        when(didResourceStoreMock.queryForUpdate(argThat(byDid(did)))).thenReturn(List.of(DidResource.Builder.newInstance().did(did).document(doc).build()));
         when(publisherMock.publish(did)).thenReturn(Result.success());
 
         assertThat(service.publish(did)).isSucceeded();
 
-        verify(didResourceStoreMock).findById(did);
+        verify(didResourceStoreMock).queryForUpdate(argThat(byDid(did)));
         verify(publisherMock).publish(did);
         verifyNoMoreInteractions(publisherMock, didResourceStoreMock);
     }
@@ -182,12 +187,12 @@ class DidDocumentServiceImplTest {
     @Test
     void publish_notExist() {
         var did = "did:web:test-did";
-        when(didResourceStoreMock.findById(eq(did))).thenReturn(null);
+        when(didResourceStoreMock.queryForUpdate(argThat(byDid(did)))).thenReturn(List.of());
 
         assertThat(service.publish(did)).isFailed()
                 .detail().isEqualTo(service.notFoundMessage(did));
 
-        verify(didResourceStoreMock).findById(did);
+        verify(didResourceStoreMock).queryForUpdate(argThat(byDid(did)));
         verifyNoMoreInteractions(publisherMock, didResourceStoreMock);
     }
 
@@ -196,12 +201,12 @@ class DidDocumentServiceImplTest {
         var doc = createDidDocument().build();
         var did = doc.getId();
         when(publisherRegistry.getPublisher(any())).thenReturn(null);
-        when(didResourceStoreMock.findById(eq(did))).thenReturn(DidResource.Builder.newInstance().did(did).document(doc).build());
+        when(didResourceStoreMock.queryForUpdate(argThat(byDid(did)))).thenReturn(List.of(DidResource.Builder.newInstance().did(did).document(doc).build()));
 
         assertThat(service.publish(did)).isFailed().detail()
                 .isEqualTo(service.noPublisherFoundMessage(did));
 
-        verify(didResourceStoreMock).findById(did);
+        verify(didResourceStoreMock).queryForUpdate(argThat(byDid(did)));
         verify(publisherRegistry).getPublisher(did);
         verifyNoMoreInteractions(publisherMock, didResourceStoreMock, publisherRegistry);
     }
@@ -210,14 +215,14 @@ class DidDocumentServiceImplTest {
     void publish_publisherReportsError() {
         var doc = createDidDocument().build();
         var did = doc.getId();
-        when(didResourceStoreMock.findById(eq(did))).thenReturn(DidResource.Builder.newInstance().did(did).document(doc).build());
+        when(didResourceStoreMock.queryForUpdate(argThat(byDid(did)))).thenReturn(List.of(DidResource.Builder.newInstance().did(did).document(doc).build()));
         when(publisherMock.publish(did)).thenReturn(Result.failure("test-failure"));
 
         assertThat(service.publish(did)).isFailed()
                 .detail()
                 .isEqualTo("test-failure");
 
-        verify(didResourceStoreMock).findById(did);
+        verify(didResourceStoreMock).queryForUpdate(argThat(byDid(did)));
         verify(publisherMock).publish(did);
         verifyNoMoreInteractions(publisherMock, didResourceStoreMock);
     }
@@ -226,7 +231,7 @@ class DidDocumentServiceImplTest {
     void unpublish() {
         var doc = createDidDocument().build();
         var did = doc.getId();
-        when(didResourceStoreMock.findById(eq(did))).thenReturn(DidResource.Builder.newInstance().did(did).state(DidState.PUBLISHED).document(doc).build());
+        when(didResourceStoreMock.queryForUpdate(argThat(byDid(did)))).thenReturn(List.of(DidResource.Builder.newInstance().did(did).state(DidState.PUBLISHED).document(doc).build()));
         when(publisherMock.unpublish(did)).thenReturn(Result.success());
         when(participantContextServiceMock.findById(any())).thenReturn(StoreResult.success(ParticipantContext.Builder.newInstance()
                 .participantContextId(TEST_PARTICIPANT_ID)
@@ -237,7 +242,7 @@ class DidDocumentServiceImplTest {
 
         assertThat(service.unpublish(did)).isSucceeded();
 
-        verify(didResourceStoreMock).findById(did);
+        verify(didResourceStoreMock).queryForUpdate(argThat(byDid(did)));
         verify(publisherMock).unpublish(did);
         verifyNoMoreInteractions(publisherMock, didResourceStoreMock);
     }
@@ -245,12 +250,12 @@ class DidDocumentServiceImplTest {
     @Test
     void unpublish_notExist() {
         var did = "did:web:test-did";
-        when(didResourceStoreMock.findById(eq(did))).thenReturn(null);
+        when(didResourceStoreMock.queryForUpdate(argThat(byDid(did)))).thenReturn(List.of());
 
         assertThat(service.unpublish(did)).isFailed()
                 .detail().isEqualTo(service.notFoundMessage(did));
 
-        verify(didResourceStoreMock).findById(did);
+        verify(didResourceStoreMock).queryForUpdate(argThat(byDid(did)));
         verifyNoMoreInteractions(publisherMock, didResourceStoreMock);
     }
 
@@ -259,7 +264,7 @@ class DidDocumentServiceImplTest {
         var doc = createDidDocument().build();
         var did = doc.getId();
         when(publisherRegistry.getPublisher(any())).thenReturn(null);
-        when(didResourceStoreMock.findById(eq(did))).thenReturn(DidResource.Builder.newInstance().did(did).state(DidState.PUBLISHED).document(doc).build());
+        when(didResourceStoreMock.queryForUpdate(argThat(byDid(did)))).thenReturn(List.of(DidResource.Builder.newInstance().did(did).state(DidState.PUBLISHED).document(doc).build()));
         when(participantContextServiceMock.findById(any())).thenReturn(StoreResult.success(ParticipantContext.Builder.newInstance()
                 .participantContextId(TEST_PARTICIPANT_ID)
                 .identity("did:web:testdid")
@@ -270,7 +275,7 @@ class DidDocumentServiceImplTest {
         assertThat(service.unpublish(did)).isFailed().detail()
                 .isEqualTo(service.noPublisherFoundMessage(did));
 
-        verify(didResourceStoreMock).findById(did);
+        verify(didResourceStoreMock).queryForUpdate(argThat(byDid(did)));
         verify(publisherRegistry).getPublisher(did);
         verifyNoMoreInteractions(publisherMock, didResourceStoreMock, publisherRegistry);
     }
@@ -279,7 +284,7 @@ class DidDocumentServiceImplTest {
     void unpublish_publisherReportsError() {
         var doc = createDidDocument().build();
         var did = doc.getId();
-        when(didResourceStoreMock.findById(eq(did))).thenReturn(DidResource.Builder.newInstance().did(did).state(DidState.PUBLISHED).document(doc).build());
+        when(didResourceStoreMock.queryForUpdate(argThat(byDid(did)))).thenReturn(List.of(DidResource.Builder.newInstance().did(did).state(DidState.PUBLISHED).document(doc).build()));
         when(publisherMock.unpublish(did)).thenReturn(Result.failure("test-failure"));
         when(participantContextServiceMock.findById(any())).thenReturn(StoreResult.success(ParticipantContext.Builder.newInstance()
                 .participantContextId(TEST_PARTICIPANT_ID)
@@ -292,7 +297,7 @@ class DidDocumentServiceImplTest {
                 .detail()
                 .isEqualTo("test-failure");
 
-        verify(didResourceStoreMock).findById(did);
+        verify(didResourceStoreMock).queryForUpdate(argThat(byDid(did)));
         verify(publisherMock).unpublish(did);
         verifyNoMoreInteractions(publisherMock, didResourceStoreMock);
     }
@@ -314,12 +319,12 @@ class DidDocumentServiceImplTest {
     void addEndpoint() {
         var doc = createDidDocument().build();
         var did = doc.getId();
-        when(didResourceStoreMock.findById(eq(did))).thenReturn(DidResource.Builder.newInstance().did(did).document(doc).build());
+        when(didResourceStoreMock.queryForUpdate(argThat(byDid(did)))).thenReturn(List.of(DidResource.Builder.newInstance().did(did).document(doc).build()));
         when(didResourceStoreMock.update(any())).thenReturn(StoreResult.success());
         var res = service.addService(did, new Service("new-id", "test-type", "https://test.com"));
         assertThat(res).isSucceeded();
 
-        verify(didResourceStoreMock).findById(eq(did));
+        verify(didResourceStoreMock).queryForUpdate(argThat(byDid(did)));
         verify(didResourceStoreMock).update(any());
         verifyNoMoreInteractions(didResourceStoreMock, publisherMock);
     }
@@ -329,13 +334,13 @@ class DidDocumentServiceImplTest {
         var newService = new Service("new-id", "test-type", "https://test.com");
         var doc = createDidDocument().service(List.of(newService)).build();
         var did = doc.getId();
-        when(didResourceStoreMock.findById(eq(did))).thenReturn(DidResource.Builder.newInstance().did(did).document(doc).build());
+        when(didResourceStoreMock.queryForUpdate(argThat(byDid(did)))).thenReturn(List.of(DidResource.Builder.newInstance().did(did).document(doc).build()));
         var res = service.addService(did, newService);
         assertThat(res).isFailed()
                 .detail()
                 .isEqualTo("DID 'did:web:testdid' already contains a service endpoint with ID 'new-id'.");
 
-        verify(didResourceStoreMock).findById(eq(did));
+        verify(didResourceStoreMock).queryForUpdate(argThat(byDid(did)));
         verifyNoMoreInteractions(didResourceStoreMock, publisherMock);
     }
 
@@ -343,13 +348,13 @@ class DidDocumentServiceImplTest {
     void addEndpoint_didNotFound() {
         var doc = createDidDocument().build();
         var did = doc.getId();
-        when(didResourceStoreMock.findById(eq(did))).thenReturn(null);
+        when(didResourceStoreMock.queryForUpdate(argThat(byDid(did)))).thenReturn(List.of());
         var res = service.addService(did, new Service("test-id", "test-type", "https://test.com"));
         assertThat(res).isFailed()
                 .detail()
                 .isEqualTo("DID 'did:web:testdid' not found.");
 
-        verify(didResourceStoreMock).findById(eq(did));
+        verify(didResourceStoreMock).queryForUpdate(argThat(byDid(did)));
         verifyNoMoreInteractions(didResourceStoreMock, publisherMock);
     }
 
@@ -362,7 +367,7 @@ class DidDocumentServiceImplTest {
                     .service(List.of(new Service("service-id", "test-type", "https://test.com")))
                     .build();
             var did = doc.getId();
-            when(didResourceStoreMock.findById(any())).thenReturn(DidResource.Builder.newInstance().did(did).document(doc).build());
+            when(didResourceStoreMock.queryForUpdate(argThat(byDid(did)))).thenReturn(List.of(DidResource.Builder.newInstance().did(did).document(doc).build()));
             when(didResourceStoreMock.update(any())).thenReturn(StoreResult.success());
             var updatedService = new Service("service-id", "new-type", "https://new.com");
 
@@ -370,7 +375,7 @@ class DidDocumentServiceImplTest {
 
             assertThat(res).isSucceeded();
 
-            verify(didResourceStoreMock).findById(eq(did));
+            verify(didResourceStoreMock).queryForUpdate(argThat(byDid(did)));
             var captor = ArgumentCaptor.forClass(DidResource.class);
             verify(didResourceStoreMock).update(captor.capture());
             assertThat(captor.getValue()).extracting(DidResource::getDocument).extracting(DidDocument::getService)
@@ -384,14 +389,14 @@ class DidDocumentServiceImplTest {
             var replace = new Service("new-id", "test-type", "https://test.com");
             var doc = createDidDocument().build();
             var did = doc.getId();
-            when(didResourceStoreMock.findById(eq(did))).thenReturn(DidResource.Builder.newInstance().did(did).document(doc).build());
+            when(didResourceStoreMock.queryForUpdate(argThat(byDid(did)))).thenReturn(List.of(DidResource.Builder.newInstance().did(did).document(doc).build()));
 
             var res = service.replaceService(did, replace);
 
             assertThat(res).isFailed()
                     .detail()
                     .isEqualTo("DID 'did:web:testdid' does not contain a service endpoint with ID 'new-id'.");
-            verify(didResourceStoreMock).findById(eq(did));
+            verify(didResourceStoreMock).queryForUpdate(argThat(byDid(did)));
             verifyNoMoreInteractions(didResourceStoreMock, publisherMock);
         }
 
@@ -399,14 +404,14 @@ class DidDocumentServiceImplTest {
         void shouldFail_whenDocumentNotFound() {
             var doc = createDidDocument().build();
             var did = doc.getId();
-            when(didResourceStoreMock.findById(eq(did))).thenReturn(null);
+            when(didResourceStoreMock.queryForUpdate(argThat(byDid(did)))).thenReturn(List.of());
 
             var result = service.replaceService(did, new Service("test-id", "test-type", "https://test.com"));
 
             assertThat(result).isFailed()
                     .detail()
                     .isEqualTo("DID 'did:web:testdid' not found.");
-            verify(didResourceStoreMock).findById(eq(did));
+            verify(didResourceStoreMock).queryForUpdate(argThat(byDid(did)));
             verifyNoMoreInteractions(didResourceStoreMock, publisherMock);
         }
     }
@@ -416,13 +421,13 @@ class DidDocumentServiceImplTest {
         var toRemove = new Service("new-id", "test-type", "https://test.com");
         var doc = createDidDocument().service(List.of(toRemove)).build();
         var did = doc.getId();
-        when(didResourceStoreMock.findById(eq(did))).thenReturn(DidResource.Builder.newInstance().did(did).document(doc).build());
+        when(didResourceStoreMock.queryForUpdate(argThat(byDid(did)))).thenReturn(List.of(DidResource.Builder.newInstance().did(did).document(doc).build()));
         when(didResourceStoreMock.update(any())).thenReturn(StoreResult.success());
 
         var res = service.removeService(did, toRemove.getId());
         assertThat(res).isSucceeded();
 
-        verify(didResourceStoreMock).findById(eq(did));
+        verify(didResourceStoreMock).queryForUpdate(argThat(byDid(did)));
         verify(didResourceStoreMock).update(any());
         verifyNoMoreInteractions(didResourceStoreMock, publisherMock);
     }
@@ -431,13 +436,13 @@ class DidDocumentServiceImplTest {
     void removeEndpoint_doesNotExist() {
         var doc = createDidDocument().build();
         var did = doc.getId();
-        when(didResourceStoreMock.findById(eq(did))).thenReturn(DidResource.Builder.newInstance().did(did).document(doc).build());
+        when(didResourceStoreMock.queryForUpdate(argThat(byDid(did)))).thenReturn(List.of(DidResource.Builder.newInstance().did(did).document(doc).build()));
 
         var res = service.removeService(did, "not-exist-id");
         assertThat(res).isFailed()
                 .detail().isEqualTo("DID 'did:web:testdid' does not contain a service endpoint with ID 'not-exist-id'.");
 
-        verify(didResourceStoreMock).findById(eq(did));
+        verify(didResourceStoreMock).queryForUpdate(argThat(byDid(did)));
         verifyNoMoreInteractions(didResourceStoreMock, publisherMock);
     }
 
@@ -445,13 +450,13 @@ class DidDocumentServiceImplTest {
     void removeEndpoint_didNotFound() {
         var doc = createDidDocument().build();
         var did = doc.getId();
-        when(didResourceStoreMock.findById(eq(did))).thenReturn(null);
+        when(didResourceStoreMock.queryForUpdate(argThat(byDid(did)))).thenReturn(List.of());
         var res = service.removeService(did, "does-not-matter-id");
         assertThat(res).isFailed()
                 .detail()
                 .isEqualTo("DID 'did:web:testdid' not found.");
 
-        verify(didResourceStoreMock).findById(eq(did));
+        verify(didResourceStoreMock).queryForUpdate(argThat(byDid(did)));
         verifyNoMoreInteractions(didResourceStoreMock, publisherMock);
     }
 
@@ -462,7 +467,7 @@ class DidDocumentServiceImplTest {
         var did = doc.getId();
         var participantId = "test-id";
         var didResource = DidResource.Builder.newInstance().did(did).state(DidState.PUBLISHED).document(doc).build();
-        when(didResourceStoreMock.findById(eq(did))).thenReturn(didResource);
+        when(didResourceStoreMock.queryForUpdate(argThat(byDid(did)))).thenReturn(List.of(didResource));
         when(didResourceStoreMock.query(any())).thenReturn(List.of(didResource));
         when(publisherMock.unpublish(anyString())).thenReturn(Result.success());
 
@@ -492,7 +497,7 @@ class DidDocumentServiceImplTest {
         var did = doc.getId();
         var participantId = "test-id";
         var didResource = DidResource.Builder.newInstance().did(did).state(DidState.GENERATED).document(doc).build();
-        when(didResourceStoreMock.findById(eq(did))).thenReturn(didResource);
+        when(didResourceStoreMock.queryForUpdate(argThat(byDid(did)))).thenReturn(List.of(didResource));
         when(didResourceStoreMock.query(any())).thenReturn(List.of(didResource));
         when(publisherMock.unpublish(anyString())).thenReturn(Result.success());
 
@@ -515,7 +520,7 @@ class DidDocumentServiceImplTest {
         var did = doc.getId();
         var participantId = "test-id";
         var didResource = DidResource.Builder.newInstance().did(did).state(DidState.PUBLISHED).document(doc).build();
-        when(didResourceStoreMock.findById(eq(did))).thenReturn(didResource);
+        when(didResourceStoreMock.queryForUpdate(argThat(byDid(did)))).thenReturn(List.of(didResource));
         when(didResourceStoreMock.query(any())).thenReturn(List.of(didResource));
         when(publisherMock.unpublish(anyString())).thenReturn(Result.success());
 
@@ -545,7 +550,7 @@ class DidDocumentServiceImplTest {
         var did = doc.getId();
         var participantId = "test-id";
         var didResource = DidResource.Builder.newInstance().did(did).state(DidState.GENERATED).document(doc).build();
-        when(didResourceStoreMock.findById(eq(did))).thenReturn(didResource);
+        when(didResourceStoreMock.queryForUpdate(argThat(byDid(did)))).thenReturn(List.of(didResource));
         when(didResourceStoreMock.query(any())).thenReturn(List.of(didResource));
         when(publisherMock.publish(anyString())).thenReturn(Result.success());
 
@@ -571,9 +576,9 @@ class DidDocumentServiceImplTest {
         var did = doc.getId();
         var didResource = DidResource.Builder.newInstance().did(did).state(DidState.GENERATED).document(doc).build();
 
-        when(didResourceStoreMock.query(any(QuerySpec.class))).thenReturn(List.of(didResource));
+        when(didResourceStoreMock.queryForUpdate(argThat(byParticipantInDidOrder(TEST_PARTICIPANT_ID)))).thenReturn(List.of(didResource));
         when(didResourceStoreMock.update(any())).thenReturn(StoreResult.success());
-        when(didResourceStoreMock.findById(eq(did))).thenReturn(didResource);
+        when(didResourceStoreMock.queryForUpdate(argThat(byDid(did)))).thenReturn(List.of(didResource));
         when(publisherMock.publish(did)).thenReturn(Result.success());
 
         var event = EventEnvelope.Builder.newInstance()
@@ -589,9 +594,9 @@ class DidDocumentServiceImplTest {
 
         service.on(event);
 
-        verify(didResourceStoreMock).query(any(QuerySpec.class));
+        verify(didResourceStoreMock).queryForUpdate(argThat(byParticipantInDidOrder(TEST_PARTICIPANT_ID)));
         verify(didResourceStoreMock).update(argThat(dr -> dr.getDocument().getVerificationMethod().stream().anyMatch(vm -> vm.getId().equals(keyId))));
-        verify(didResourceStoreMock).findById(did); // happens during the publishing
+        verify(didResourceStoreMock).queryForUpdate(argThat(byDid(did))); // happens during the publishing
         verifyNoMoreInteractions(didResourceStoreMock);
         verify(publisherMock).publish(eq(did));
         // CS-PRES-13: a verifier only accepts a VP whose signing key the DID document declares for authentication
@@ -617,9 +622,9 @@ class DidDocumentServiceImplTest {
                 .build());
         var didResource = DidResource.Builder.newInstance().did(did).state(DidState.GENERATED).document(doc).build();
 
-        when(didResourceStoreMock.query(any(QuerySpec.class))).thenReturn(List.of(didResource));
+        when(didResourceStoreMock.queryForUpdate(argThat(byParticipantInDidOrder(TEST_PARTICIPANT_ID)))).thenReturn(List.of(didResource));
         when(didResourceStoreMock.update(any())).thenReturn(StoreResult.success());
-        when(didResourceStoreMock.findById(eq(did))).thenReturn(didResource);
+        when(didResourceStoreMock.queryForUpdate(argThat(byDid(did)))).thenReturn(List.of(didResource));
         when(publisherMock.publish(did)).thenReturn(Result.success());
 
         var event = EventEnvelope.Builder.newInstance()
@@ -662,9 +667,9 @@ class DidDocumentServiceImplTest {
         var did = doc.getId();
         var didResource = DidResource.Builder.newInstance().did(did).state(DidState.GENERATED).document(doc).build();
 
-        when(didResourceStoreMock.query(any(QuerySpec.class))).thenReturn(List.of(didResource));
+        when(didResourceStoreMock.queryForUpdate(argThat(byParticipantInDidOrder(TEST_PARTICIPANT_ID)))).thenReturn(List.of(didResource));
         when(didResourceStoreMock.update(any())).thenReturn(StoreResult.success());
-        when(didResourceStoreMock.findById(eq(did))).thenReturn(didResource);
+        when(didResourceStoreMock.queryForUpdate(argThat(byDid(did)))).thenReturn(List.of(didResource));
         when(publisherMock.publish(did)).thenReturn(Result.success());
 
         var event = EventEnvelope.Builder.newInstance()
@@ -680,12 +685,12 @@ class DidDocumentServiceImplTest {
 
         service.on(event);
 
-        verify(didResourceStoreMock).query(any(QuerySpec.class));
+        verify(didResourceStoreMock).queryForUpdate(argThat(byParticipantInDidOrder(TEST_PARTICIPANT_ID)));
         verify(didResourceStoreMock).update(argThat(dr ->
                 dr.getDocument().getVerificationMethod().stream().anyMatch(vm -> vm.getId().equals(keyId) &&
                         vm.getPublicKeyJwk().containsKey("x5u") &&
                         vm.getPublicKeyJwk().containsKey("alg"))));
-        verify(didResourceStoreMock).findById(did); // happens during the publishing
+        verify(didResourceStoreMock).queryForUpdate(argThat(byDid(did))); // happens during the publishing
         verifyNoMoreInteractions(didResourceStoreMock);
         verify(publisherMock).publish(eq(did));
     }
@@ -702,9 +707,9 @@ class DidDocumentServiceImplTest {
         var did = doc.getId();
         var didResource = DidResource.Builder.newInstance().did(did).state(DidState.GENERATED).document(doc).build();
 
-        when(didResourceStoreMock.query(any(QuerySpec.class))).thenReturn(List.of(didResource));
+        when(didResourceStoreMock.queryForUpdate(argThat(byParticipantInDidOrder(TEST_PARTICIPANT_ID)))).thenReturn(List.of(didResource));
         when(didResourceStoreMock.update(any())).thenReturn(StoreResult.success());
-        when(didResourceStoreMock.findById(eq(did))).thenReturn(didResource);
+        when(didResourceStoreMock.queryForUpdate(argThat(byDid(did)))).thenReturn(List.of(didResource));
         when(publisherMock.publish(did)).thenReturn(Result.success());
 
         var event = EventEnvelope.Builder.newInstance()
@@ -720,9 +725,9 @@ class DidDocumentServiceImplTest {
 
         service.on(event);
 
-        verify(didResourceStoreMock).query(any(QuerySpec.class));
+        verify(didResourceStoreMock).queryForUpdate(argThat(byParticipantInDidOrder(TEST_PARTICIPANT_ID)));
         verify(didResourceStoreMock).update(argThat(dr -> dr.getDocument().getVerificationMethod().stream().anyMatch(vm -> vm.getId().equals(keyId))));
-        verify(didResourceStoreMock).findById(did);
+        verify(didResourceStoreMock).queryForUpdate(argThat(byDid(did)));
         verifyNoMoreInteractions(didResourceStoreMock);
         verify(publisherMock).publish(eq(did));
     }
@@ -735,7 +740,7 @@ class DidDocumentServiceImplTest {
         var did = doc.getId();
         var didResource = DidResource.Builder.newInstance().did(did).state(DidState.GENERATED).document(doc).build();
 
-        when(didResourceStoreMock.query(any(QuerySpec.class))).thenReturn(List.of(didResource));
+        when(didResourceStoreMock.queryForUpdate(argThat(byParticipantInDidOrder(TEST_PARTICIPANT_ID)))).thenReturn(List.of(didResource));
 
         var event = EventEnvelope.Builder.newInstance()
                 .at(System.currentTimeMillis())
@@ -751,7 +756,7 @@ class DidDocumentServiceImplTest {
         service.on(event);
 
         verify(monitorMock).warning(anyString());
-        verify(didResourceStoreMock).query(any(QuerySpec.class));
+        verify(didResourceStoreMock).queryForUpdate(argThat(byParticipantInDidOrder(TEST_PARTICIPANT_ID)));
         verifyNoMoreInteractions(didResourceStoreMock);
         verifyNoInteractions(publisherMock);
     }
@@ -771,7 +776,7 @@ class DidDocumentServiceImplTest {
         var did = doc.getId();
         var didResource = DidResource.Builder.newInstance().did(did).state(DidState.GENERATED).document(doc).build();
 
-        when(didResourceStoreMock.query(any(QuerySpec.class))).thenReturn(List.of(didResource));
+        when(didResourceStoreMock.queryForUpdate(argThat(byParticipantInDidOrder(TEST_PARTICIPANT_ID)))).thenReturn(List.of(didResource));
         when(didResourceStoreMock.update(any())).thenReturn(StoreResult.success());
 
         var event = EventEnvelope.Builder.newInstance()
@@ -786,7 +791,7 @@ class DidDocumentServiceImplTest {
 
         service.on(event);
 
-        verify(didResourceStoreMock).query(any(QuerySpec.class));
+        verify(didResourceStoreMock).queryForUpdate(argThat(byParticipantInDidOrder(TEST_PARTICIPANT_ID)));
         // assert that the DID Doc does not contain a VerificationMethod with the ID that was revoked
         verify(didResourceStoreMock).update(argThat(dr -> dr.getDocument().getVerificationMethod().stream().noneMatch(vm -> vm.getId().equals(keyId))));
         verifyNoMoreInteractions(didResourceStoreMock);
@@ -795,6 +800,43 @@ class DidDocumentServiceImplTest {
         assertThat(doc.getAuthentication()).doesNotContain(keyId);
         // a revoked key must not stay behind as a capabilityInvocation method either
         assertThat(doc.getCapabilityInvocation()).doesNotContain(keyId);
+    }
+
+    @SuppressWarnings("unchecked")
+    @Test
+    void onKeyPairRevoked_shouldLockAndUpdateInSameTransaction() throws JOSEException {
+        var transactionContext = new TrackingTransactionContext();
+        service = new DidDocumentServiceImpl(transactionContext, didResourceStoreMock, publisherRegistry, participantContextServiceMock, monitorMock, new KeyParserRegistryImpl(), new Telemetry());
+        var keyId = "key-id";
+        var doc = createDidDocument().verificationMethod(List.of(VerificationMethod.Builder.newInstance()
+                        .id(keyId)
+                        .publicKeyJwk(new ECKeyGenerator(Curve.P_256).keyID(keyId).generate().toJSONObject())
+                        .build()))
+                .build();
+        var didResource = DidResource.Builder.newInstance().did(doc.getId()).state(DidState.GENERATED).document(doc).build();
+
+        var transactions = new ArrayList<Integer>();
+        when(didResourceStoreMock.queryForUpdate(any())).thenAnswer(i -> {
+            transactions.add(transactionContext.current());
+            return List.of(didResource);
+        });
+        when(didResourceStoreMock.update(any())).thenAnswer(i -> {
+            transactions.add(transactionContext.current());
+            return StoreResult.success();
+        });
+
+        service.on(EventEnvelope.Builder.newInstance()
+                .at(System.currentTimeMillis())
+                .id(UUID.randomUUID().toString())
+                .payload(KeyPairRevoked.Builder.newInstance()
+                        .keyId(keyId)
+                        .keyPairResource(KeyPairResource.Builder.newPresentationSigning().id(UUID.randomUUID().toString()).build())
+                        .participantContextId(TEST_PARTICIPANT_ID)
+                        .build())
+                .build());
+
+        // the lock only lasts until the transaction completes, so a concurrent change could come in between otherwise
+        assertThat(transactions).containsExactly(1, 1);
     }
 
     @SuppressWarnings("unchecked")
@@ -813,6 +855,16 @@ class DidDocumentServiceImplTest {
         verify(monitorMock).warning(startsWith("Received event with unexpected payload type: "));
     }
 
+    private ArgumentMatcher<QuerySpec> byDid(String did) {
+        return query -> query != null && query.getFilterExpression().contains(new Criterion("did", "=", did));
+    }
+
+    private ArgumentMatcher<QuerySpec> byParticipantInDidOrder(String participantContextId) {
+        return query -> query != null &&
+                query.getFilterExpression().contains(new Criterion("participantContextId", "=", participantContextId)) &&
+                "did".equals(query.getSortField()) && query.getSortOrder() == SortOrder.ASC;
+    }
+
     private DidDocument.Builder createDidDocument() {
         return DidDocument.Builder.newInstance()
                 .id(TEST_DID)
@@ -821,5 +873,45 @@ class DidDocumentServiceImplTest {
                         .id(TEST_DID + "#key-1")
                         .publicKeyMultibase("saflasjdflaskjdflasdkfj")
                         .build()));
+    }
+
+    /**
+     * Numbers the transactions, so that a test can tell whether two calls happen in the same one.
+     */
+    private static class TrackingTransactionContext extends NoopTransactionContext {
+        private int transactions;
+        private int depth;
+
+        /**
+         * The number of the current transaction, or 0 outside a transaction.
+         */
+        int current() {
+            return depth > 0 ? transactions : 0;
+        }
+
+        @Override
+        public void execute(TransactionBlock block) {
+            track(() -> {
+                super.execute(block);
+                return null;
+            });
+        }
+
+        @Override
+        public <T> T execute(ResultTransactionBlock<T> block) {
+            return track(() -> super.execute(block));
+        }
+
+        private <T> T track(Supplier<T> block) {
+            // a nested block joins the surrounding transaction
+            if (depth++ == 0) {
+                transactions++;
+            }
+            try {
+                return block.get();
+            } finally {
+                depth--;
+            }
+        }
     }
 }

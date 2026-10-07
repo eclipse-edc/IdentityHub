@@ -261,6 +261,42 @@ public abstract class DidResourceStoreTestBase {
     }
 
     @Test
+    void queryForUpdate_byDid() {
+        var dids = range(0, 10)
+                .mapToObj(i -> createDidResource(DID + i).build())
+                .toList();
+        dids.forEach(getStore()::save);
+
+        var q = QuerySpec.Builder.newInstance().filter(new Criterion("did", "=", DID + "5")).build();
+        Assertions.assertThat(getStore().queryForUpdate(q))
+                .usingRecursiveFieldByFieldElementComparator()
+                .containsExactly(dids.get(5));
+    }
+
+    @Test
+    void queryForUpdate_byParticipantIdSortedByDid() {
+        // saved out of order, so that they are not returned sorted by chance
+        List.of("c", "a", "b").forEach(suffix -> getStore().save(createDidResource(DID + suffix).build()));
+        getStore().save(createDidResource(DID + "x").participantContextId("another-participant").build());
+
+        var q = queryByParticipantContextId("test-participant")
+                .sortField("did")
+                .sortOrder(SortOrder.ASC)
+                .build();
+        Assertions.assertThat(getStore().queryForUpdate(q))
+                .extracting(DidResource::getDid)
+                .containsExactly(DID + "a", DID + "b", DID + "c");
+    }
+
+    @Test
+    void queryForUpdate_whenNotFound() {
+        getStore().save(createDidResource(DID).build());
+
+        var q = QuerySpec.Builder.newInstance().filter(new Criterion("did", "=", "did:web:notexist")).build();
+        Assertions.assertThat(getStore().queryForUpdate(q)).isEmpty();
+    }
+
+    @Test
     void deleteById() {
         var didResource = createDidResource(DID).build();
         getStore().save(didResource);
