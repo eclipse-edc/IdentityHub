@@ -93,7 +93,7 @@ public class CredentialWatchdogExtension implements ServiceExtension {
         if (scheduledExecutorService != null && !scheduledExecutorService.isShutdown()) {
             monitor.debug(() -> "Starting credential watchdog in %d seconds, every %d seconds".formatted(initialDelay, watchdogPeriod));
             var watchdog = new CredentialWatchdog(credentialStore, credentialStatusCheckService, monitor, transactionContext, Duration.ofSeconds(gracePeriodSeconds), credentialRequestManager);
-            scheduledExecutorService.scheduleAtFixedRate(watchdog, initialDelay, watchdogPeriod, TimeUnit.SECONDS);
+            scheduledExecutorService.scheduleWithFixedDelay(watchdog, initialDelay, watchdogPeriod, TimeUnit.SECONDS);
         }
     }
 

@@ -26,6 +26,7 @@ import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStatus;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialResource;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialStore;
 import org.eclipse.edc.spi.monitor.Monitor;
+import org.eclipse.edc.spi.persistence.EdcPersistenceException;
 import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.spi.result.ServiceResult;
 import org.eclipse.edc.spi.result.StoreResult;
@@ -36,6 +37,7 @@ import org.junit.jupiter.api.Test;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -43,6 +45,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat.VC1_0_JWT;
 import static org.eclipse.edc.identityhub.common.credentialwatchdog.CredentialWatchdog.ALLOWED_STATES;
 import static org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStatus.ISSUED;
@@ -404,6 +407,77 @@ class CredentialWatchdogTest {
                 .hasEntrySatisfying(METADATA_RENEWAL_REQUEST_ID, id -> assertThat(id).isNotEqualTo("renewal-request"));
     }
 
+    @Test
+    void run_whenCredentialHasNoExpirationDate_shouldCheckItWithoutRenewing() {
+        var withoutExpiry = createCredentialBuilder()
+                .metadata("credentialObjectId", "cred-object-id")
+                .credential(new VerifiableCredentialContainer("raw-vc-content", VC1_0_JWT, createVerifiableCredential()
+                        .expirationDate(null)
+                        .build()))
+                .build();
+        var expiring = createCredentialBuilder()
+                .metadata("credentialObjectId", "cred-object-id")
+                .credential(new VerifiableCredentialContainer("raw-vc-content", VC1_0_JWT, createVerifiableCredential()
+                        .expirationDate(Instant.now().plusSeconds(GRACE_PERIOD / 2))
+                        .build()))
+                .build();
+        when(credentialStore.query(any())).thenReturn(StoreResult.success(List.of(withoutExpiry, expiring)));
+        when(credentialStore.update(any())).thenReturn(StoreResult.success());
+
+        watchdog.run();
+
+        verify(credentialStatusCheckService, times(2)).checkStatus(any());
+        // only the credential that does expire is renewed
+        verify(credentialRequestManager).initiateRequest(any(), any(), any(), any());
+        verify(credentialStore).update(argThat(vc -> vc.getId().equals(expiring.getId()) && vc.getStateAsEnum() == REQUESTED));
+    }
+
+    @Test
+    void run_whenCheckingOneCredentialFails_shouldCheckTheOthers() {
+        var failing = createCredentialBuilder().build();
+        var revoked = createCredentialBuilder().build();
+        when(credentialStore.query(any())).thenReturn(StoreResult.success(List.of(failing, revoked)));
+        when(credentialStatusCheckService.checkStatus(any()))
+                .thenThrow(new EdcPersistenceException("database unavailable"))
+                .thenReturn(Result.success(REVOKED));
+
+        watchdog.run();
+
+        verify(credentialStore).update(argThat(vc -> vc.getId().equals(revoked.getId()) && vc.getStateAsEnum() == REVOKED));
+        verify(monitor).warning(contains(failing.getId()), any(EdcPersistenceException.class));
+    }
+
+    @Test
+    void run_whenFetchingCredentialsThrows_shouldNotThrow() {
+        when(credentialStore.query(any())).thenThrow(new EdcPersistenceException("database unavailable"));
+
+        // an exception escaping from a run would stop all further runs of the scheduled watchdog
+        assertThatNoException().isThrownBy(watchdog::run);
+
+        verify(monitor).severe(contains("credential watchdog failed"), any(EdcPersistenceException.class));
+        verifyNoInteractions(credentialStatusCheckService);
+    }
+
+    @Test
+    void run_shouldCheckEachCredentialInItsOwnTransaction() {
+        var transactionContext = new TrackingTransactionContext();
+        var watchdog = new CredentialWatchdog(credentialStore, credentialStatusCheckService, monitor, transactionContext,
+                Duration.ofSeconds(GRACE_PERIOD), credentialRequestManager);
+        var transactionsOfUpdates = new ArrayList<Integer>();
+        when(credentialStore.query(any())).thenReturn(StoreResult.success(List.of(createCredentialBuilder().build(), createCredentialBuilder().build())));
+        when(credentialStatusCheckService.checkStatus(any())).thenReturn(Result.success(REVOKED));
+        when(credentialStore.update(any())).thenAnswer(i -> {
+            transactionsOfUpdates.add(transactionContext.currentTransaction());
+            return StoreResult.success();
+        });
+
+        watchdog.run();
+
+        // the credentials are fetched in the first transaction, and each one is updated in one of its own: if they shared a
+        // transaction, a failure on one of them would roll back the updates of all the others
+        assertThat(transactionsOfUpdates).containsExactly(2, 3);
+    }
+
     private HolderCredentialRequest renewalRequest(HolderRequestState state, String errorDetail) {
         return HolderCredentialRequest.Builder.newInstance()
                 .id("renewal-request")
@@ -437,4 +511,36 @@ class CredentialWatchdogTest {
                 .id("did:web:test-credential");
     }
 
+
+    /**
+     * Numbers the transactions it runs, so that a test can tell which transaction a call happened in.
+     */
+    private static class TrackingTransactionContext extends NoopTransactionContext {
+        private int transactions;
+        private int depth;
+
+        @Override
+        public void execute(TransactionBlock block) {
+            execute(() -> {
+                block.execute();
+                return null;
+            });
+        }
+
+        @Override
+        public <T> T execute(ResultTransactionBlock<T> block) {
+            if (depth++ == 0) {
+                transactions++;
+            }
+            try {
+                return super.execute(block);
+            } finally {
+                depth--;
+            }
+        }
+
+        int currentTransaction() {
+            return depth > 0 ? transactions : 0;
+        }
+    }
 }

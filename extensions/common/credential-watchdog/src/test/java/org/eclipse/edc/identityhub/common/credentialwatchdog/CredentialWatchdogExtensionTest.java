@@ -124,7 +124,7 @@ class CredentialWatchdogExtensionTest {
         extension.initialize(context);
         extension.start();
 
-        verify(executorMock).scheduleAtFixedRate(isA(CredentialWatchdog.class), eq(1L), eq(1L), eq(TimeUnit.SECONDS));
+        verify(executorMock).scheduleWithFixedDelay(isA(CredentialWatchdog.class), eq(1L), eq(1L), eq(TimeUnit.SECONDS));
         verify(monitor).debug(ArgumentMatchers.<Supplier<String>>argThat(stringSupplier ->
                 stringSupplier.get().startsWith("Starting credential watchdog")));
     }
@@ -161,7 +161,7 @@ class CredentialWatchdogExtensionTest {
         extension.start();
         extension.shutdown();
 
-        verify(executorMock).scheduleAtFixedRate(isA(CredentialWatchdog.class), eq(1L), eq(1L), eq(TimeUnit.SECONDS));
+        verify(executorMock).scheduleWithFixedDelay(isA(CredentialWatchdog.class), eq(1L), eq(1L), eq(TimeUnit.SECONDS));
         verify(executorMock).shutdownNow();
     }
 }
