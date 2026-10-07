@@ -37,7 +37,7 @@ class SqlAttestationDefinitionStoreTest extends AttestationDefinitionStoreTestBa
     void setup(PostgresqlStoreSetupExtension extension, QueryExecutor queryExecutor) {
         var typeManager = new JacksonTypeManager();
         store = new SqlAttestationDefinitionStore(extension.getDataSourceRegistry(), extension.getDatasourceName(),
-                extension.getTransactionContext(), typeManager.getMapper(), queryExecutor, statements);
+                extension.getTransactionContext(), typeManager::getMapper, queryExecutor, statements);
 
         var schema = TestUtils.getResourceFileContentAsString("attestation-definition-schema.sql");
         extension.runQuery(schema);

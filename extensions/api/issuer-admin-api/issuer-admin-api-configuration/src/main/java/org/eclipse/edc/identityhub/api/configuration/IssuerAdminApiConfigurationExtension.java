@@ -30,6 +30,7 @@ import org.eclipse.edc.spi.system.ServiceExtensionContext;
 import org.eclipse.edc.spi.system.apiversion.ApiVersionService;
 import org.eclipse.edc.spi.system.apiversion.VersionRecord;
 import org.eclipse.edc.spi.types.TypeManager;
+import org.eclipse.edc.web.spi.WebService;
 import org.eclipse.edc.web.spi.configuration.PortMapping;
 import org.eclipse.edc.web.spi.configuration.PortMappingRegistry;
 import tools.jackson.databind.DeserializationFeature;
@@ -56,6 +57,8 @@ public class IssuerAdminApiConfigurationExtension implements ServiceExtension {
     private PortMappingRegistry portMappingRegistry;
     @Inject
     private ApiVersionService apiVersionService;
+    @Inject
+    private WebService webService;
 
     @Override
     public String name() {
@@ -65,6 +68,9 @@ public class IssuerAdminApiConfigurationExtension implements ServiceExtension {
     @Override
     public void initialize(ServiceExtensionContext context) {
         portMappingRegistry.register(new PortMapping(ISSUERADMIN, apiConfiguration.port(), apiConfiguration.path()));
+
+        // TODO: this should be registered by default, upstream.
+        webService.registerResource(ISSUERADMIN, new JsonMapperProvider(typeManager));
 
         registerVersionInfo(getClass().getClassLoader());
     }

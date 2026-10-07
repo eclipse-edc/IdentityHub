@@ -34,6 +34,7 @@ import java.sql.SQLException;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.Supplier;
 
 import static org.eclipse.edc.spi.result.StoreResult.alreadyExists;
 import static org.eclipse.edc.spi.result.StoreResult.success;
@@ -50,10 +51,10 @@ public class SqlAttestationDefinitionStore extends AbstractSqlStore implements A
     public SqlAttestationDefinitionStore(DataSourceRegistry dataSourceRegistry,
                                          String dataSourceName,
                                          TransactionContext transactionContext,
-                                         ObjectMapper objectMapper,
+                                         Supplier<ObjectMapper> objectMapperSupplier,
                                          QueryExecutor queryExecutor,
                                          AttestationDefinitionStoreStatements statements) {
-        super(dataSourceRegistry, dataSourceName, transactionContext, objectMapper, queryExecutor);
+        super(dataSourceRegistry, dataSourceName, transactionContext, objectMapperSupplier, queryExecutor);
         this.statements = statements;
     }
 
