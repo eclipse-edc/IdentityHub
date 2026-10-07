@@ -14,8 +14,6 @@
 
 package org.eclipse.edc.identityhub.tests.dcp.flow;
 
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.jwk.Curve;
 import com.nimbusds.jose.jwk.ECKey;
@@ -77,6 +75,8 @@ import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.ObjectMapper;
 
 import java.net.URI;
 import java.text.ParseException;
@@ -109,8 +109,10 @@ public class DcpIssuanceFlowAllInOneTest {
     protected static final Duration TIMEOUT = Duration.ofSeconds(60);
     protected static final Duration INTERVAL = Duration.ofSeconds(1);
     private static final ObjectMapper OBJECT_MAPPER = JacksonJsonLd.createObjectMapper()
+            .rebuild()
             .enable(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
-            .enable(DeserializationFeature.ACCEPT_EMPTY_ARRAY_AS_NULL_OBJECT);
+            .enable(DeserializationFeature.ACCEPT_EMPTY_ARRAY_AS_NULL_OBJECT)
+            .build();
 
     abstract static class Tests {
 

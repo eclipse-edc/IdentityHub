@@ -14,7 +14,6 @@
 
 package org.eclipse.edc.identityhub.protocols.dcp.issuer;
 
-import com.fasterxml.jackson.databind.DeserializationFeature;
 import jakarta.json.Json;
 import org.eclipse.edc.identityhub.protocols.dcp.issuer.api.v1.credentialrequest.CredentialRequestApiController;
 import org.eclipse.edc.identityhub.protocols.dcp.issuer.api.v1.credentialrequeststatus.CredentialRequestStatusApiController;
@@ -51,6 +50,8 @@ import org.eclipse.edc.web.jersey.providers.jsonld.ObjectMapperProvider;
 import org.eclipse.edc.web.spi.WebService;
 import org.eclipse.edc.web.spi.configuration.PortMapping;
 import org.eclipse.edc.web.spi.configuration.PortMappingRegistry;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.DeserializationFeature;
 
 import java.io.IOException;
 import java.util.Map;
@@ -153,10 +154,12 @@ public class IssuerApiExtension implements ServiceExtension {
                 throw new EdcException("Version file '%s' not found or not readable.".formatted(API_VERSION_JSON_FILE));
             }
             Stream.of(typeManager.getMapper()
+                            .rebuild()
                             .enable(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
+                            .build()
                             .readValue(versionContent, VersionRecord[].class))
                     .forEach(vr -> apiVersionService.addRecord("issuer-api", vr));
-        } catch (IOException e) {
+        } catch (IOException | JacksonException e) {
             throw new EdcException(e);
         }
     }

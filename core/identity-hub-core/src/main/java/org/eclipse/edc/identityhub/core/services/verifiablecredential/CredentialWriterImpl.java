@@ -14,7 +14,6 @@
 
 package org.eclipse.edc.identityhub.core.services.verifiablecredential;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.json.JsonObject;
 import org.eclipse.edc.iam.did.spi.resolution.DidPublicKeyResolver;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat;
@@ -41,8 +40,9 @@ import org.eclipse.edc.transaction.spi.TransactionContext;
 import org.eclipse.edc.transform.spi.TypeTransformerRegistry;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
-import java.io.IOException;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
@@ -401,7 +401,7 @@ public class CredentialWriterImpl implements CredentialWriter {
     private Optional<JsonObject> tryConvertToJson(@NotNull String rawCredential) {
         try {
             return Optional.of(objectMapper.readValue(rawCredential, JsonObject.class));
-        } catch (IOException e) {
+        } catch (JacksonException e) {
             return Optional.empty();
         }
     }

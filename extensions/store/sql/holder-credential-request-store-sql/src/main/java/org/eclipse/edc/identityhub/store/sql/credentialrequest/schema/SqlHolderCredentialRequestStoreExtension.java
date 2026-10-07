@@ -68,7 +68,7 @@ public class SqlHolderCredentialRequestStoreExtension implements ServiceExtensio
 
     @Provider
     public HolderCredentialRequestStore createSqlStore(ServiceExtensionContext context) {
-        return new SqlHolderCredentialRequestStore(dataSourceRegistry, dataSourceName, transactionContext, typemanager.getMapper(),
+        return new SqlHolderCredentialRequestStore(dataSourceRegistry, dataSourceName, transactionContext, typemanager::getMapper,
                 queryExecutor, getStatementImpl(), contextBuilderProvider.createContextBuilder(getStatementImpl().getHolderCredentialRequestTable()));
     }
 

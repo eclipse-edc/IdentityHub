@@ -14,7 +14,6 @@
 
 package org.eclipse.edc.identityhub.verifiablecredentials.testfixtures;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JWSHeader;
 import com.nimbusds.jose.crypto.ECDSASigner;
@@ -25,6 +24,7 @@ import com.nimbusds.jose.jwk.gen.ECKeyGenerator;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 import org.eclipse.edc.security.token.jwt.CryptoConverter;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Util class to manipulate VerifiableCredentials in tests.

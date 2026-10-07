@@ -48,7 +48,7 @@ class SqlCredentialDefinitionStoreTest extends CredentialDefinitionStoreTestBase
     void setup(PostgresqlStoreSetupExtension extension, QueryExecutor queryExecutor) {
         var typeManager = new JacksonTypeManager();
         store = new SqlCredentialDefinitionStore(extension.getDataSourceRegistry(), extension.getDatasourceName(),
-                extension.getTransactionContext(), typeManager.getMapper(), queryExecutor, statements, Clock.systemUTC());
+                extension.getTransactionContext(), typeManager::getMapper, queryExecutor, statements, Clock.systemUTC());
 
         var schema = TestUtils.getResourceFileContentAsString("credential-definition-schema.sql");
         extension.runQuery(schema);

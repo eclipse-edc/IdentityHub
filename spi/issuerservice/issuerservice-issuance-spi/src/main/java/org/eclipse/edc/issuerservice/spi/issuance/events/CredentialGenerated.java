@@ -15,8 +15,8 @@
 package org.eclipse.edc.issuerservice.spi.issuance.events;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredential;
+import tools.jackson.databind.annotation.JsonPOJOBuilder;
 
 import java.util.Collection;
 import java.util.List;

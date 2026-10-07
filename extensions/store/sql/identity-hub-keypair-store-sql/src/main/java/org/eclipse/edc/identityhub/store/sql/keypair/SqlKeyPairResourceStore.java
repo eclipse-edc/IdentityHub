@@ -14,8 +14,6 @@
 
 package org.eclipse.edc.identityhub.store.sql.keypair;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairResource;
 import org.eclipse.edc.identityhub.spi.keypair.store.KeyPairResourceStore;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyPairUsage;
@@ -27,6 +25,8 @@ import org.eclipse.edc.sql.store.AbstractSqlStore;
 import org.eclipse.edc.transaction.datasource.spi.DataSourceRegistry;
 import org.eclipse.edc.transaction.spi.TransactionContext;
 import org.jetbrains.annotations.Nullable;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.ObjectMapper;
 
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -34,6 +34,7 @@ import java.sql.SQLException;
 import java.util.Collection;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Supplier;
 
 import static org.eclipse.edc.spi.result.StoreResult.alreadyExists;
 import static org.eclipse.edc.spi.result.StoreResult.notFound;
@@ -45,8 +46,9 @@ public class SqlKeyPairResourceStore extends AbstractSqlStore implements KeyPair
     };
     private final KeyPairResourceStoreStatements statements;
 
-    public SqlKeyPairResourceStore(DataSourceRegistry dataSourceRegistry, String dataSourceName, TransactionContext transactionContext, ObjectMapper objectMapper, QueryExecutor queryExecutor, KeyPairResourceStoreStatements statements) {
-        super(dataSourceRegistry, dataSourceName, transactionContext, objectMapper, queryExecutor);
+    public SqlKeyPairResourceStore(DataSourceRegistry dataSourceRegistry, String dataSourceName, TransactionContext transactionContext,
+                                   Supplier<ObjectMapper> objectMapperSupplier, QueryExecutor queryExecutor, KeyPairResourceStoreStatements statements) {
+        super(dataSourceRegistry, dataSourceName, transactionContext, objectMapperSupplier, queryExecutor);
         this.statements = statements;
     }
 

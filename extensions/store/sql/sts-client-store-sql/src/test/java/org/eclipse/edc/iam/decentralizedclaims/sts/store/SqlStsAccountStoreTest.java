@@ -14,7 +14,6 @@
 
 package org.eclipse.edc.iam.decentralizedclaims.sts.store;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.eclipse.edc.iam.decentralizedclaims.sts.spi.store.StsAccountStore;
 import org.eclipse.edc.iam.decentralizedclaims.sts.spi.store.fixtures.StsAccountStoreTestBase;
 import org.eclipse.edc.iam.decentralizedclaims.sts.store.schema.BaseSqlDialectStatements;
@@ -28,6 +27,7 @@ import org.eclipse.edc.sql.testfixtures.PostgresqlStoreSetupExtension;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
+import tools.jackson.databind.ObjectMapper;
 
 @ComponentTest
 @ExtendWith(PostgresqlStoreSetupExtension.class)
@@ -42,8 +42,9 @@ public class SqlStsAccountStoreTest extends StsAccountStoreTestBase {
         var typeManager = new JacksonTypeManager();
         typeManager.registerTypes(PolicyRegistrationTypes.TYPES.toArray(Class<?>[]::new));
 
+        var objectMapper = new ObjectMapper();
         stsClientStore = new SqlStsAccountStore(setupExtension.getDataSourceRegistry(), setupExtension.getDatasourceName(),
-                setupExtension.getTransactionContext(), new ObjectMapper(), sqlStatements, queryExecutor);
+                setupExtension.getTransactionContext(), () -> objectMapper, sqlStatements, queryExecutor);
 
         var schema = TestUtils.getResourceFileContentAsString("sts-client-schema.sql");
         setupExtension.runQuery(schema);

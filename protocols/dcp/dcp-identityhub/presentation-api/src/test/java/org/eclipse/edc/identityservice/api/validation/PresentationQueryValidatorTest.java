@@ -15,8 +15,6 @@
 package org.eclipse.edc.identityservice.api.validation;
 
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.json.JsonArray;
 import jakarta.json.JsonObject;
 import org.eclipse.edc.iam.decentralizedclaims.spi.DcpConstants;
@@ -31,6 +29,8 @@ import org.eclipse.edc.jsonld.spi.JsonLdKeywords;
 import org.eclipse.edc.jsonld.spi.JsonLdNamespace;
 import org.eclipse.edc.jsonld.util.JacksonJsonLd;
 import org.junit.jupiter.api.Test;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
 import java.util.List;
 import java.util.UUID;
@@ -67,7 +67,7 @@ class PresentationQueryValidatorTest {
     }
 
     @Test
-    void validate_withPresentationDefinition_success() throws JsonProcessingException {
+    void validate_withPresentationDefinition_success() throws JacksonException {
         var presDef = PresentationDefinition.Builder.newInstance()
                 .id(UUID.randomUUID().toString())
                 .inputDescriptors(List.of(InputDescriptor.Builder.newInstance().id(UUID.randomUUID().toString()).constraints(new Constraints(List.of(Field.Builder.newInstance().build()))).build()))
@@ -86,7 +86,7 @@ class PresentationQueryValidatorTest {
     }
 
     @Test
-    void validate_withBoth_fails() throws JsonProcessingException {
+    void validate_withBoth_fails() throws JacksonException {
         var presDef = PresentationDefinition.Builder.newInstance()
                 .id(UUID.randomUUID().toString())
                 .inputDescriptors(List.of(InputDescriptor.Builder.newInstance().id(UUID.randomUUID().toString()).constraints(new Constraints(List.of(Field.Builder.newInstance().build()))).build()))
@@ -106,7 +106,7 @@ class PresentationQueryValidatorTest {
                 .build();
     }
 
-    private JsonArray createPresentationDefArray(PresentationDefinition presDef) throws JsonProcessingException {
+    private JsonArray createPresentationDefArray(PresentationDefinition presDef) throws JacksonException {
         var val = MAPPER.writeValueAsString(presDef);
         return createArrayBuilder()
                 .add(createObjectBuilder()

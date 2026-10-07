@@ -14,8 +14,6 @@
 
 package org.eclipse.edc.issuerservice.store.sql.attestationdefinition;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.type.MapType;
 import org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationDefinitionStore;
 import org.eclipse.edc.issuerservice.spi.issuance.model.AttestationDefinition;
 import org.eclipse.edc.issuerservice.spi.issuance.model.CredentialDefinition;
@@ -27,6 +25,8 @@ import org.eclipse.edc.sql.store.AbstractSqlStore;
 import org.eclipse.edc.transaction.datasource.spi.DataSourceRegistry;
 import org.eclipse.edc.transaction.spi.TransactionContext;
 import org.jetbrains.annotations.Nullable;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.ObjectMapper;
 
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -34,8 +34,8 @@ import java.sql.SQLException;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.Supplier;
 
-import static com.fasterxml.jackson.databind.type.TypeFactory.defaultInstance;
 import static org.eclipse.edc.spi.result.StoreResult.alreadyExists;
 import static org.eclipse.edc.spi.result.StoreResult.success;
 
@@ -50,10 +50,10 @@ public class SqlAttestationDefinitionStore extends AbstractSqlStore implements A
     public SqlAttestationDefinitionStore(DataSourceRegistry dataSourceRegistry,
                                          String dataSourceName,
                                          TransactionContext transactionContext,
-                                         ObjectMapper objectMapper,
+                                         Supplier<ObjectMapper> objectMapperSupplier,
                                          QueryExecutor queryExecutor,
                                          AttestationDefinitionStoreStatements statements) {
-        super(dataSourceRegistry, dataSourceName, transactionContext, objectMapper, queryExecutor);
+        super(dataSourceRegistry, dataSourceName, transactionContext, objectMapperSupplier, queryExecutor);
         this.statements = statements;
     }
 
@@ -178,7 +178,8 @@ public class SqlAttestationDefinitionStore extends AbstractSqlStore implements A
                 .build();
     }
 
-    private MapType map() {
-        return defaultInstance().constructMapType(Map.class, String.class, Object.class);
+    private TypeReference<Map<String, Object>> map() {
+        return new TypeReference<>() {
+        };
     }
 }

@@ -15,9 +15,9 @@
 package org.eclipse.edc.identityhub.spi.participantcontext.events;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.IdentityHubParticipantContext;
+import tools.jackson.databind.annotation.JsonDeserialize;
+import tools.jackson.databind.annotation.JsonPOJOBuilder;
 
 /**
  * Event that signals that a {@link IdentityHubParticipantContext} is in the process of being deleted. This event is emitted <em>before</em>

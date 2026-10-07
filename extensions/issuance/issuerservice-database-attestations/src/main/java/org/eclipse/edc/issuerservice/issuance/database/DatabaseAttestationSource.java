@@ -14,7 +14,6 @@
 
 package org.eclipse.edc.issuerservice.issuance.database;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationContext;
 import org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationSource;
 import org.eclipse.edc.spi.result.Result;
@@ -22,6 +21,7 @@ import org.eclipse.edc.sql.QueryExecutor;
 import org.eclipse.edc.sql.store.AbstractSqlStore;
 import org.eclipse.edc.transaction.datasource.spi.DataSourceRegistry;
 import org.eclipse.edc.transaction.spi.TransactionContext;
+import tools.jackson.databind.ObjectMapper;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -57,7 +57,7 @@ public class DatabaseAttestationSource extends AbstractSqlStore implements Attes
      * @param idColumn           The column name of the column that contains the participant context ID.
      */
     public DatabaseAttestationSource(String dataSourceName, boolean required, ObjectMapper objectMapper, String tableName, DataSourceRegistry dataSourceRegistry, QueryExecutor queryExecutor, TransactionContext transactionContext, String idColumn) {
-        super(dataSourceRegistry, dataSourceName, transactionContext, objectMapper, queryExecutor);
+        super(dataSourceRegistry, dataSourceName, transactionContext, () -> objectMapper, queryExecutor);
         this.required = required;
         this.transactionContext = transactionContext;
         this.queryExecutor = queryExecutor;

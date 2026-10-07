@@ -15,9 +15,6 @@
 
 package org.eclipse.edc.identityhub.tests;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.jwk.Curve;
 import com.nimbusds.jose.jwk.ECKey;
@@ -66,6 +63,9 @@ import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.ObjectMapper;
 
 import java.text.ParseException;
 import java.time.Instant;
@@ -143,8 +143,10 @@ public class PresentationApiEndToEndTest {
                 """;
         private static final String TEST_PARTICIPANT_CONTEXT_ID = "consumer";
         private static final ObjectMapper OBJECT_MAPPER = JacksonJsonLd.createObjectMapper()
+                .rebuild()
                 .enable(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
-                .enable(DeserializationFeature.ACCEPT_EMPTY_ARRAY_AS_NULL_OBJECT);
+                .enable(DeserializationFeature.ACCEPT_EMPTY_ARRAY_AS_NULL_OBJECT)
+                .build();
 
 
         @BeforeEach
@@ -300,7 +302,7 @@ public class PresentationApiEndToEndTest {
         }
 
         @Test
-        void query_moreScopesThanAccessToken_shouldOnlyReturnPermittedCreds(IdentityHub identityHub, CredentialStore store) throws JOSEException, JsonProcessingException {
+        void query_moreScopesThanAccessToken_shouldOnlyReturnPermittedCreds(IdentityHub identityHub, CredentialStore store) throws JOSEException, JacksonException {
 
             var token = generateSiToken();
 
@@ -365,7 +367,7 @@ public class PresentationApiEndToEndTest {
         // test with both the fully-qualified-credential-type and the compact credential type
         @ParameterizedTest
         @ValueSource(strings = { "org.eclipse.dspace.dcp.vc.type:AlumniCredential:read", "org.eclipse.dspace.dcp.vc.type:https://example.org/2026/foo/bar#AlumniCredential:read" })
-        void query_success_containsCredential(String scope, IdentityHub identityHub, CredentialStore store) throws JOSEException, JsonProcessingException {
+        void query_success_containsCredential(String scope, IdentityHub identityHub, CredentialStore store) throws JOSEException, JacksonException {
 
             storeCredential(VC_EXAMPLE, CredentialFormat.VC1_0_JWT, store);
 
@@ -399,7 +401,7 @@ public class PresentationApiEndToEndTest {
         }
 
         @Test
-        void query_success_containsMultiplePresentations(IdentityHub identityHub, CredentialStore store) throws JOSEException, JsonProcessingException {
+        void query_success_containsMultiplePresentations(IdentityHub identityHub, CredentialStore store) throws JOSEException, JacksonException {
 
             var cred = OBJECT_MAPPER.readValue(TestData.VC_EXAMPLE, VerifiableCredential.class);
             var res = VerifiableCredentialResource.Builder.newHolder()
@@ -447,7 +449,7 @@ public class PresentationApiEndToEndTest {
         }
 
         @Test
-        void query_success_containsEnvelopedCredential(IdentityHub identityHub, CredentialStore store) throws JOSEException, JsonProcessingException {
+        void query_success_containsEnvelopedCredential(IdentityHub identityHub, CredentialStore store) throws JOSEException, JacksonException {
 
             var cred = OBJECT_MAPPER.readValue(TestData.VC_EXAMPLE, VerifiableCredential.class);
             var res = VerifiableCredentialResource.Builder.newHolder()
@@ -486,7 +488,7 @@ public class PresentationApiEndToEndTest {
 
         @ParameterizedTest(name = "VcState code: {0}")
         @ValueSource(ints = { 600, 700, 800, 900 })
-        void query_shouldFilterOutInvalidCreds(int vcStateCode, IdentityHub identityHub, CredentialStore store) throws JOSEException, JsonProcessingException {
+        void query_shouldFilterOutInvalidCreds(int vcStateCode, IdentityHub identityHub, CredentialStore store) throws JOSEException, JacksonException {
 
             // modify VC content, so that it becomes either not-yet-valid or expired
             var vcContent = TestData.VC_EXAMPLE;
@@ -542,7 +544,7 @@ public class PresentationApiEndToEndTest {
         }
 
         @Test
-        void query_accessTokenKeyIdDoesNotBelongToParticipant_shouldReturn401(IdentityHub identityHub, CredentialStore store) throws JsonProcessingException, JOSEException {
+        void query_accessTokenKeyIdDoesNotBelongToParticipant_shouldReturn401(IdentityHub identityHub, CredentialStore store) throws JacksonException, JOSEException {
 
             createParticipant(identityHub, "attacker", generateEcKey("did:web:attacker#key-1"));
 
@@ -565,7 +567,7 @@ public class PresentationApiEndToEndTest {
         }
 
         @Test
-        void query_accessTokenAudienceDoesNotBelongToParticipant_shouldReturn401(IdentityHub identityHub, CredentialStore store) throws JsonProcessingException, JOSEException {
+        void query_accessTokenAudienceDoesNotBelongToParticipant_shouldReturn401(IdentityHub identityHub, CredentialStore store) throws JacksonException, JOSEException {
 
             var cred = OBJECT_MAPPER.readValue(TestData.VC_EXAMPLE, VerifiableCredential.class);
             var res = VerifiableCredentialResource.Builder.newHolder()
@@ -599,7 +601,7 @@ public class PresentationApiEndToEndTest {
         // test with both the fully-qualified-credential-type and the compact credential type
         @ParameterizedTest
         @ValueSource(strings = { "org.eclipse.dspace.dcp.vc.type:AlumniCredential:read", "org.eclipse.dspace.dcp.vc.type:https://example.org/2026/foo/bar#AlumniCredential:read" })
-        void query_filterCredentialWithWrongUsage(String scope, IdentityHub identityHub, CredentialStore store) throws JsonProcessingException, JOSEException {
+        void query_filterCredentialWithWrongUsage(String scope, IdentityHub identityHub, CredentialStore store) throws JacksonException, JOSEException {
 
             var cred = OBJECT_MAPPER.readValue(TestData.VC_EXAMPLE, VerifiableCredential.class);
             var res = VerifiableCredentialResource.Builder.newHolder()
@@ -653,7 +655,7 @@ public class PresentationApiEndToEndTest {
         }
 
         @Test
-        void query_whenTypeClash(IdentityHub identityHub, CredentialStore store) throws JsonProcessingException, JOSEException {
+        void query_whenTypeClash(IdentityHub identityHub, CredentialStore store) throws JacksonException, JOSEException {
 
             // both these credentials have the same type, but difference namespaces/contexts
             storeCredential(TestData.VC_EXAMPLE, CredentialFormat.VC1_0_JWT, store);
@@ -689,7 +691,7 @@ public class PresentationApiEndToEndTest {
         }
 
         @Test
-        void query_whenUsingFullyQualifiedType(IdentityHub identityHub, CredentialStore store) throws JsonProcessingException, JOSEException {
+        void query_whenUsingFullyQualifiedType(IdentityHub identityHub, CredentialStore store) throws JacksonException, JOSEException {
             // both these credentials have the same type, but difference namespaces/contexts
             storeCredential(TestData.VC_EXAMPLE, CredentialFormat.VC1_0_JWT, store);
             storeCredential(TestData.VC_EXAMPLE_OTHER_NAMESPACE, CredentialFormat.VC1_0_JWT, store);
@@ -726,7 +728,7 @@ public class PresentationApiEndToEndTest {
         // tests that both the fully qualified and the compact credential type work
         @ParameterizedTest
         @ValueSource(strings = { "org.eclipse.dspace.dcp.vc.type:AlumniCredential:read", "org.eclipse.dspace.dcp.vc.type:https://example.org/2026/foo/bar#AlumniCredential:read" })
-        void query_testScopesWithSingleCredential(String scope, IdentityHub identityHub, CredentialStore store) throws JsonProcessingException, JOSEException {
+        void query_testScopesWithSingleCredential(String scope, IdentityHub identityHub, CredentialStore store) throws JacksonException, JOSEException {
             // both these credentials have the same type, but difference namespaces/contexts
             storeCredential(TestData.VC_EXAMPLE, CredentialFormat.VC1_0_JWT, store);
 
@@ -760,7 +762,7 @@ public class PresentationApiEndToEndTest {
         }
 
         @Test
-        void query_withDiscriminatorAlias(IdentityHub identityHub, CredentialStore store, DiscriminatorMappingRegistry mappingRegistry) throws JsonProcessingException, JOSEException {
+        void query_withDiscriminatorAlias(IdentityHub identityHub, CredentialStore store, DiscriminatorMappingRegistry mappingRegistry) throws JacksonException, JOSEException {
             // both these credentials have the same type, but difference namespaces/contexts
             var credResource = storeCredential(TestData.VC_EXAMPLE_OTHER_NAMESPACE, CredentialFormat.VC1_0_JWT, store);
 
@@ -820,7 +822,7 @@ public class PresentationApiEndToEndTest {
 
                         try {
                             return OBJECT_MAPPER.readValue(json, VerifiableCredential.class);
-                        } catch (JsonProcessingException e) {
+                        } catch (JacksonException e) {
                             throw new RuntimeException(e);
                         }
                     } else {
@@ -879,7 +881,7 @@ public class PresentationApiEndToEndTest {
 
         }
 
-        private VerifiableCredentialResource storeCredential(String jsonContent, CredentialFormat format, CredentialStore store) throws JsonProcessingException {
+        private VerifiableCredentialResource storeCredential(String jsonContent, CredentialFormat format, CredentialStore store) throws JacksonException {
             var cred = OBJECT_MAPPER.readValue(jsonContent, VerifiableCredential.class);
             var res = VerifiableCredentialResource.Builder.newHolder()
                     .state(VcStatus.ISSUED)

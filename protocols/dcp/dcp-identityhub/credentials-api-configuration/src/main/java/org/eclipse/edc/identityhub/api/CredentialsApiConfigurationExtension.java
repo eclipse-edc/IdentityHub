@@ -14,7 +14,6 @@
 
 package org.eclipse.edc.identityhub.api;
 
-import com.fasterxml.jackson.databind.DeserializationFeature;
 import org.eclipse.edc.jsonld.spi.JsonLd;
 import org.eclipse.edc.runtime.metamodel.annotation.Configuration;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
@@ -29,6 +28,8 @@ import org.eclipse.edc.spi.system.apiversion.VersionRecord;
 import org.eclipse.edc.spi.types.TypeManager;
 import org.eclipse.edc.web.spi.configuration.PortMapping;
 import org.eclipse.edc.web.spi.configuration.PortMappingRegistry;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.DeserializationFeature;
 
 import java.io.IOException;
 import java.util.stream.Stream;
@@ -74,10 +75,12 @@ public class CredentialsApiConfigurationExtension implements ServiceExtension {
                 throw new EdcException("Version file not found or not readable.");
             }
             Stream.of(typeManager.getMapper()
+                            .rebuild()
                             .enable(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
+                            .build()
                             .readValue(versionContent, VersionRecord[].class))
                     .forEach(vr -> apiVersionService.addRecord("credentials", vr));
-        } catch (IOException e) {
+        } catch (IOException | JacksonException e) {
             throw new EdcException(e);
         }
     }

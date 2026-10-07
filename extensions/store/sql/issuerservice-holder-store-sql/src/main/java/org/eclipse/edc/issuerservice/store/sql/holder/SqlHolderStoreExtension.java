@@ -57,7 +57,7 @@ public class SqlHolderStoreExtension implements ServiceExtension {
 
     @Provider
     public HolderStore createSqlStore() {
-        return new SqlHolderStore(dataSourceRegistry, dataSourceName, transactionContext, typemanager.getMapper(),
+        return new SqlHolderStore(dataSourceRegistry, dataSourceName, transactionContext, typemanager::getMapper,
                 queryExecutor, getStatementImpl());
     }
 

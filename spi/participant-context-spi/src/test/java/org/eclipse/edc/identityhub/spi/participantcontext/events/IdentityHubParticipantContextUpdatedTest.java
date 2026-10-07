@@ -14,10 +14,10 @@
 
 package org.eclipse.edc.identityhub.spi.participantcontext.events;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import org.eclipse.edc.json.JacksonTypeManager;
 import org.eclipse.edc.spi.types.TypeManager;
 import org.junit.jupiter.api.Test;
+import tools.jackson.core.JacksonException;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -25,7 +25,7 @@ class IdentityHubParticipantContextUpdatedTest {
     private final TypeManager manager = new JacksonTypeManager();
 
     @Test
-    void verify_serDes() throws JsonProcessingException {
+    void verify_serDes() throws JacksonException {
         var evt = ParticipantContextUpdated.Builder.newInstance()
                 .participantContextId("test-participantId")
                 .build();
