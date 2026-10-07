@@ -25,4 +25,5 @@ dependencies {
     testImplementation(testFixtures(project(":spi:did-spi")))
     testImplementation(testFixtures(libs.edc.sql.test.fixtures))
     testImplementation(libs.edc.junit)
+    testImplementation(libs.edc.transaction.local)
 }

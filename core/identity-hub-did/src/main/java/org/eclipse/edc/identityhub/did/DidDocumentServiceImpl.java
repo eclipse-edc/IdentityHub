@@ -37,7 +37,9 @@ import org.eclipse.edc.spi.event.Event;
 import org.eclipse.edc.spi.event.EventEnvelope;
 import org.eclipse.edc.spi.event.EventSubscriber;
 import org.eclipse.edc.spi.monitor.Monitor;
+import org.eclipse.edc.spi.query.Criterion;
 import org.eclipse.edc.spi.query.QuerySpec;
+import org.eclipse.edc.spi.query.SortOrder;
 import org.eclipse.edc.spi.result.AbstractResult;
 import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.spi.result.ServiceResult;
@@ -45,6 +47,7 @@ import org.eclipse.edc.spi.result.StoreResult;
 import org.eclipse.edc.spi.telemetry.Telemetry;
 import org.eclipse.edc.spi.telemetry.TraceCarrier;
 import org.eclipse.edc.transaction.spi.TransactionContext;
+import org.jetbrains.annotations.Nullable;
 
 import java.security.KeyPair;
 import java.security.PublicKey;
@@ -60,6 +63,10 @@ import static org.eclipse.edc.spi.result.ServiceResult.success;
 /**
  * This is an aggregate service to manage CRUD operations of {@link DidDocument}s as well as handle their
  * publishing and un-publishing. All methods are executed transactionally.
+ * <p>
+ * Every change of a DID document reads the {@link DidResource}, changes it and writes it back as a whole. The resource is
+ * therefore locked until the transaction completes, so that concurrent changes, e.g. on several runtimes, can not
+ * overwrite each other.
  */
 public class DidDocumentServiceImpl implements DidDocumentService, EventSubscriber {
 
@@ -102,7 +109,7 @@ public class DidDocumentServiceImpl implements DidDocumentService, EventSubscrib
     @Override
     public ServiceResult<Void> deleteById(String did) {
         return transactionContext.execute(() -> {
-            var existing = didResourceStore.findById(did);
+            var existing = findByIdForUpdate(did);
             if (existing == null) {
                 return ServiceResult.notFound(notFoundMessage(did));
             }
@@ -119,7 +126,7 @@ public class DidDocumentServiceImpl implements DidDocumentService, EventSubscrib
     @Override
     public ServiceResult<Void> publish(String did) {
         return transactionContext.execute(() -> {
-            var existingResource = didResourceStore.findById(did);
+            var existingResource = findByIdForUpdate(did);
             if (existingResource == null) {
                 return ServiceResult.notFound(notFoundMessage(did));
             }
@@ -148,7 +155,7 @@ public class DidDocumentServiceImpl implements DidDocumentService, EventSubscrib
     @Override
     public ServiceResult<Void> unpublish(String did) {
         return transactionContext.execute(() -> {
-            var existingResource = didResourceStore.findById(did);
+            var existingResource = findByIdForUpdate(did);
             if (existingResource == null) {
                 return ServiceResult.notFound(notFoundMessage(did));
             }
@@ -197,7 +204,7 @@ public class DidDocumentServiceImpl implements DidDocumentService, EventSubscrib
     @Override
     public ServiceResult<Void> addService(String did, Service service) {
         return transactionContext.execute(() -> {
-            var didResource = didResourceStore.findById(did);
+            var didResource = findByIdForUpdate(did);
             if (didResource == null) {
                 return ServiceResult.notFound("DID '%s' not found.".formatted(did));
             }
@@ -217,7 +224,7 @@ public class DidDocumentServiceImpl implements DidDocumentService, EventSubscrib
     @Override
     public ServiceResult<Void> replaceService(String did, Service service) {
         return transactionContext.execute(() -> {
-            var didResource = didResourceStore.findById(did);
+            var didResource = findByIdForUpdate(did);
             if (didResource == null) {
                 return ServiceResult.notFound("DID '%s' not found.".formatted(did));
             }
@@ -238,7 +245,7 @@ public class DidDocumentServiceImpl implements DidDocumentService, EventSubscrib
     @Override
     public ServiceResult<Void> removeService(String did, String serviceId) {
         return transactionContext.execute(() -> {
-            var didResource = didResourceStore.findById(did);
+            var didResource = findByIdForUpdate(did);
             if (didResource == null) {
                 return ServiceResult.notFound("DID '%s' not found.".formatted(did));
             }
@@ -284,7 +291,7 @@ public class DidDocumentServiceImpl implements DidDocumentService, EventSubscrib
     @WithSpan(value = "did-document.keypair-activated", kind = SpanKind.INTERNAL)
     private void keyPairActivated(KeyPairActivated event) {
         transactionContext.execute(() -> {
-            var didResources = findByParticipantContextId(event.getParticipantContextId());
+            var didResources = findByParticipantContextIdForUpdate(event.getParticipantContextId());
             if (didResources.isEmpty()) {
                 monitor.warning("No DidResources were found for participant '%s'. No updated will be performed.".formatted(event.getParticipantContextId()));
             }
@@ -348,24 +355,26 @@ public class DidDocumentServiceImpl implements DidDocumentService, EventSubscrib
 
     @WithSpan(value = "did-document.keypair-revoked", kind = SpanKind.INTERNAL)
     private void keypairRevoked(KeyPairRevoked event) {
-        var didResources = findByParticipantContextId(event.getParticipantContextId());
-        var keyId = event.getKeyId();
+        transactionContext.execute(() -> {
+            var didResources = findByParticipantContextIdForUpdate(event.getParticipantContextId());
+            var keyId = event.getKeyId();
 
-        var errors = didResources.stream()
-                .peek(didResource -> {
-                    didResource.getDocument().getVerificationMethod().removeIf(vm -> vm.getId().equals(keyId));
-                    // a revoked key must no longer be offered for authentication either
-                    didResource.getDocument().getAuthentication().removeIf(keyId::equals);
-                    didResource.getDocument().getCapabilityInvocation().removeIf(keyId::equals);
-                })
-                .map(didResourceStore::update)
-                .filter(StoreResult::failed)
-                .map(AbstractResult::getFailureDetail)
-                .collect(Collectors.joining(","));
+            var errors = didResources.stream()
+                    .peek(didResource -> {
+                        didResource.getDocument().getVerificationMethod().removeIf(vm -> vm.getId().equals(keyId));
+                        // a revoked key must no longer be offered for authentication either
+                        didResource.getDocument().getAuthentication().removeIf(keyId::equals);
+                        didResource.getDocument().getCapabilityInvocation().removeIf(keyId::equals);
+                    })
+                    .map(didResourceStore::update)
+                    .filter(StoreResult::failed)
+                    .map(AbstractResult::getFailureDetail)
+                    .collect(Collectors.joining(","));
 
-        if (!errors.isEmpty()) {
-            monitor.warning("Updating DID documents after revoking a KeyPair failed: %s".formatted(errors));
-        }
+            if (!errors.isEmpty()) {
+                monitor.warning("Updating DID documents after revoking a KeyPair failed: %s".formatted(errors));
+            }
+        });
     }
 
     @WithSpan(value = "did-document.updated", kind = SpanKind.INTERNAL)
@@ -388,8 +397,36 @@ public class DidDocumentServiceImpl implements DidDocumentService, EventSubscrib
         }
     }
 
+    /**
+     * Finds the {@link DidResource} and locks it until the surrounding transaction completes.
+     */
+    private @Nullable DidResource findByIdForUpdate(String did) {
+        var query = QuerySpec.Builder.newInstance()
+                .filter(new Criterion("did", "=", did))
+                .build();
+        return didResourceStore.queryForUpdate(query).stream().findFirst().orElse(null);
+    }
+
+    /**
+     * Finds the {@link DidResource}s of the participant and locks them until the surrounding transaction completes.
+     */
+    private Collection<DidResource> findByParticipantContextIdForUpdate(String participantContextId) {
+        return didResourceStore.queryForUpdate(byParticipantContextId(participantContextId));
+    }
+
     private Collection<DidResource> findByParticipantContextId(String participantContextId) {
-        return didResourceStore.query(queryByParticipantContextId(participantContextId).build());
+        return didResourceStore.query(byParticipantContextId(participantContextId));
+    }
+
+    /**
+     * Sorts the {@link DidResource}s by DID, so that all transactions that change several of them lock them in the same
+     * order, and can not deadlock.
+     */
+    private QuerySpec byParticipantContextId(String participantContextId) {
+        return queryByParticipantContextId(participantContextId)
+                .sortField("did")
+                .sortOrder(SortOrder.ASC)
+                .build();
     }
 
 }

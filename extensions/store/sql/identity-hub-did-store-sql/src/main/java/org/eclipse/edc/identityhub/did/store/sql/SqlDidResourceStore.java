@@ -121,6 +121,18 @@ public class SqlDidResourceStore extends AbstractSqlStore implements DidResource
     }
 
     @Override
+    public Collection<DidResource> queryForUpdate(QuerySpec query) {
+        return transactionContext.execute(() -> {
+            try (var connection = getConnection()) {
+                var sql = statements.createQuery(query).forUpdate();
+                return queryExecutor.query(connection, true, this::mapResultSet, sql.getQueryAsString(), sql.getParameters()).toList();
+            } catch (Exception exception) {
+                throw new EdcPersistenceException(exception);
+            }
+        });
+    }
+
+    @Override
     public StoreResult<Void> deleteById(String did) {
         Objects.requireNonNull(did);
         return transactionContext.execute(() -> {

@@ -432,6 +432,12 @@ through specific DID methods that work directly with a VDR.
 
 The `DidDocumentService` uses the `DidResourceStore` internally.
 
+Every change of a DID document, e.g. adding a service endpoint, adding or removing the key of an activated or revoked key
+pair, or publishing it, reads the `DidResource` with `DidResourceStore#queryForUpdate` and writes the whole document
+back. The lookup locks the `DidResource` until the transaction completes, so that concurrent changes, e.g. on several
+runtimes, can not overwrite each other. Stores backed by a shared database must therefore implement `queryForUpdate` with
+a row lock. Publishers are called while the lock is held, so they should not perform long-running operations.
+
 ## 3.7. Auth/Permission Module
 
 The `Auth/Permission` module includes services that delegate to the EDC `PolicyEngine` for access control.
