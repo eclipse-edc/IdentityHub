@@ -208,6 +208,8 @@ public class IssuanceProcessManagerImplTest {
             // the process is terminal, so the Holder's access token must not linger in the vault
             verify(vault).deleteSecret(process.getId());
         });
+        // no credential has been recorded, let alone delivered, so there is nothing to reconcile
+        verify(monitor, never()).severe(argThat((String message) -> message.contains("Manual reconciliation")));
     }
 
     @DisplayName("IS-REQ-02: a failing rejection notice does not keep the process out of ERRORED")
@@ -374,10 +376,11 @@ public class IssuanceProcessManagerImplTest {
     void delivering_shouldRetryAndEventuallyError_whenDeliveryFails() {
         var process = deliveringProcess();
         var recordedCredential = membershipCredential().credential();
+        var record = recordOf(process, recordedCredential);
 
         storeHolds(process);
         var savedTransitions = recordSavedTransitions();
-        when(credentialStore.query(any())).thenReturn(StoreResult.success(List.of(recordOf(process, recordedCredential))));
+        when(credentialStore.query(any())).thenReturn(StoreResult.success(List.of(record)));
         when(credentialStore.update(any())).thenReturn(StoreResult.success());
         when(credentialGenerator.signCredential(any(), any(), any())).thenAnswer(i -> Result.success(new VerifiableCredentialContainer("signed", VC1_0_JWT, i.getArgument(1))));
         // holder unreachable / non-2xx from the Storage API
@@ -393,6 +396,10 @@ public class IssuanceProcessManagerImplTest {
             // RT-03: the holder is told the issuance it was told had been accepted is not coming
             verify(credentialStorageClient).deliverRejection(eq(process), any());
         });
+
+        // the credential stays ISSUED, although it may have reached the Holder or not, so its record needs reconciliation
+        verify(monitor).severe(argThat((String message) -> message.contains(record.getId()) && message.contains("Manual reconciliation is needed")));
+        verify(credentialStatusService, never()).revokeCredential(any());
 
         // both attempts delivered the very same credential, nothing new was generated
         @SuppressWarnings("unchecked")

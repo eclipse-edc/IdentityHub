@@ -52,6 +52,7 @@ import java.util.Collection;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialResource.METADATA_ISSUANCE_PROCESS_ID;
 import static org.eclipse.edc.participantcontext.spi.types.ParticipantResource.filterByParticipantContextId;
@@ -340,8 +341,31 @@ public class IssuanceProcessManagerImpl extends AbstractStateEntityManager<Issua
     }
 
     private void transitionToError(IssuanceProcess process, Throwable throwable) {
+        if (process.getState() == IssuanceProcessStates.DELIVERING.code()) {
+            reportUnconfirmedDelivery(process, throwable.getMessage());
+        }
         transitionToError(process, throwable.getMessage());
         observable.invokeForEach(l -> l.errored(process, throwable));
+    }
+
+    /**
+     * A process that fails while delivering leaves its credentials recorded as ISSUED, although it is unknown whether the
+     * Holder has received them, e.g. if a delivery timed out after the Holder had stored them. They are not revoked, because
+     * that would leave the Holder to deal with a failure of the Issuer. Instead, their records need manual reconciliation.
+     */
+    private void reportUnconfirmedDelivery(IssuanceProcess process, String reason) {
+        // nothing here may keep the process from reaching its terminal state
+        String recordIds;
+        try {
+            recordIds = findRecordedCredentials(process)
+                    .map(records -> records.stream().map(VerifiableCredentialResource::getId).collect(Collectors.joining(", ")))
+                    .orElse(failure -> "unknown: %s".formatted(failure.getFailureDetail()));
+        } catch (Exception e) {
+            recordIds = "unknown: %s".formatted(e.getMessage());
+        }
+        monitor.severe(("Issuance process '%s' failed to deliver its credentials to Holder '%s' (holderPid '%s'): %s. The credentials " +
+                "are recorded as ISSUED (%s), but may or may not have reached the Holder. Manual reconciliation is needed.")
+                .formatted(process.getId(), process.getHolderId(), process.getHolderPid(), reason, recordIds));
     }
 
     private void transitionToError(IssuanceProcess process, String message) {

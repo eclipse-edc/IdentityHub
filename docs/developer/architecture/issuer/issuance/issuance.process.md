@@ -405,6 +405,11 @@ If delivery is not successful, it is retried for a configured number of times, a
 the `IssuanceProcess` is transitioned to `ERRORED` if it still does not succeed. Until the `IssuanceProcess` is
 `DELIVERED`, the Credential Request Status API reports the request as `RECEIVED`.
 
+An `IssuanceProcess` that fails in the `DELIVERING` state leaves its credentials recorded as `ISSUED`, although it is
+unknown whether the holder has received them, e.g. if a delivery timed out after the holder had stored them. They are
+not revoked, because that would leave the holder to deal with a failure of the issuer. Instead, a `SEVERE` message lists
+the affected records, which need manual reconciliation.
+
 ##### The `DELIVERED` State
 
 The `DELIVERED` state is terminal.
