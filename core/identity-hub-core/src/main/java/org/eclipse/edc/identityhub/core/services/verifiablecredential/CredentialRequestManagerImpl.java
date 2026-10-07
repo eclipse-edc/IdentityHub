@@ -75,6 +75,7 @@ import static org.eclipse.edc.identityhub.spi.credential.request.model.HolderReq
 import static org.eclipse.edc.identityhub.spi.credential.request.model.HolderRequestState.ERROR;
 import static org.eclipse.edc.identityhub.spi.credential.request.model.HolderRequestState.REQUESTED;
 import static org.eclipse.edc.identityhub.spi.credential.request.model.HolderRequestState.REQUESTING;
+import static org.eclipse.edc.identityhub.store.QueryPages.forEachPage;
 import static org.eclipse.edc.jwt.spi.JwtRegisteredClaimNames.AUDIENCE;
 import static org.eclipse.edc.jwt.spi.JwtRegisteredClaimNames.EXPIRATION_TIME;
 import static org.eclipse.edc.jwt.spi.JwtRegisteredClaimNames.ISSUED_AT;
@@ -90,6 +91,7 @@ public class CredentialRequestManagerImpl extends AbstractStateEntityManager<Hol
         implements CredentialRequestManager {
     private static final int HTTP_CONFLICT = 409;
     private static final String UNKNOWN_ISSUER_PID = "";
+    private static final int STATUS_POLL_PAGE_SIZE = 100;
     private ScheduledExecutorService statusPollScheduler;
     private DidResolverRegistry didResolverRegistry;
     private TypeTransformerRegistry dcpTypeTransformerRegistry;
@@ -327,9 +329,10 @@ public class CredentialRequestManagerImpl extends AbstractStateEntityManager<Hol
             var query = QuerySpec.Builder.newInstance()
                     .filter(Criterion.criterion("state", "=", REQUESTED.code()))
                     .build();
-            transactionContext.execute(() -> store.query(query)).stream()
-                    .filter(request -> request.getIssuerPid() != null && !request.getIssuerPid().isBlank())
-                    .forEach(this::pollStatus);
+            forEachPage(query, STATUS_POLL_PAGE_SIZE, page -> transactionContext.execute(() -> store.query(page)), HolderCredentialRequest::getId,
+                    requests -> requests.stream()
+                            .filter(request -> request.getIssuerPid() != null && !request.getIssuerPid().isBlank())
+                            .forEach(this::pollStatus));
         } catch (Exception e) {
             monitor.debug("Error while polling the Issuer for credential request states: %s".formatted(e.getMessage()));
         }

@@ -41,6 +41,7 @@ import org.eclipse.edc.jsonld.spi.JsonLd;
 import org.eclipse.edc.spi.iam.TokenRepresentation;
 import org.eclipse.edc.spi.persistence.EdcPersistenceException;
 import org.eclipse.edc.spi.query.Criterion;
+import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.spi.result.ServiceResult;
 import org.eclipse.edc.spi.result.StoreResult;
@@ -56,9 +57,12 @@ import org.mockito.ArgumentMatchers;
 
 import java.io.IOException;
 import java.time.Duration;
+import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
+import java.util.stream.IntStream;
 
 import static org.awaitility.Awaitility.await;
 import static org.eclipse.edc.identityhub.protocols.dcp.spi.DcpConstants.DCP_SCOPE_V_1_0;
@@ -423,6 +427,43 @@ class CredentialRequestManagerImplTest {
                 Assertions.assertThat(rq.getState()).isEqualTo(REQUESTED.code());
                 verifyNoInteractions(resolver);
             });
+        }
+
+        @Test
+        @DisplayName("CS-REQ-07: all pending requests are polled, not just the first page of them")
+        void processRequested_shouldPollRequestsBeyondTheFirstPage() {
+            when(resolver.resolve(eq(ISSUER_DID))).thenReturn(success(didDocument()));
+            var polledIssuerPids = ConcurrentHashMap.<String>newKeySet();
+            when(httpClient.execute(any(), (Function<Response, Result<CredentialRequestStatus>>) any())).thenAnswer(i -> {
+                var request = i.getArgument(0, Request.class);
+                polledIssuerPids.add(request.url().pathSegments().get(request.url().pathSize() - 1));
+                return success(credentialRequestStatus(CredentialRequestStatus.Status.RECEIVED));
+            });
+            var requests = IntStream.range(0, 250)
+                    .mapToObj(i -> createRequest().id("request-%03d".formatted(i)).issuerPid("issuer-pid-%03d".formatted(i)).build())
+                    .toList();
+            when(store.query(any())).thenAnswer(i -> page(requests, i.getArgument(0)));
+
+            credentialRequestService.start();
+
+            await().atMost(MAX_DURATION).untilAsserted(() -> Assertions.assertThat(polledIssuerPids).hasSize(250));
+        }
+
+        /**
+         * The page of the requests that a store returns for the query: those matching its ID criterion, ordered by ID, up to
+         * its limit.
+         */
+        private List<HolderCredentialRequest> page(List<HolderCredentialRequest> requests, QuerySpec query) {
+            var after = query.getFilterExpression().stream()
+                    .filter(criterion -> criterion.getOperandLeft().equals("id") && criterion.getOperator().equals(">"))
+                    .map(criterion -> criterion.getOperandRight().toString())
+                    .findFirst()
+                    .orElse("");
+            return requests.stream()
+                    .filter(request -> request.getId().compareTo(after) > 0)
+                    .sorted(Comparator.comparing(HolderCredentialRequest::getId))
+                    .limit(query.getLimit())
+                    .toList();
         }
 
         private CredentialRequestStatus credentialRequestStatus(CredentialRequestStatus.Status status) {
