@@ -28,6 +28,7 @@ import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialSto
 import org.eclipse.edc.identityhub.transaction.TrackingTransactionContext;
 import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.spi.persistence.EdcPersistenceException;
+import org.eclipse.edc.spi.query.Criterion;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.spi.result.ServiceResult;
@@ -40,11 +41,13 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.IntStream;
 
@@ -52,11 +55,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat.VC1_0_JWT;
 import static org.eclipse.edc.identityhub.common.credentialwatchdog.CredentialWatchdog.ALLOWED_STATES;
+import static org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStatus.EXPIRED;
 import static org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStatus.ISSUED;
 import static org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStatus.REQUESTED;
 import static org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStatus.REVOKED;
 import static org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialResource.METADATA_RENEWAL_ERROR;
 import static org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialResource.METADATA_RENEWAL_REQUEST_ID;
+import static org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialResource.METADATA_SUPERSEDED_BY;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -81,17 +86,19 @@ class CredentialWatchdogTest {
     private final Monitor monitor = mock();
     private final CredentialWatchdog watchdog = new CredentialWatchdog(credentialStore, credentialStatusCheckService, monitor, new NoopTransactionContext(),
             Duration.ofSeconds(GRACE_PERIOD), credentialRequestManager);
+    private final Map<String, VerifiableCredentialResource> storedCredentials = new HashMap<>();
 
     @BeforeEach
     void setUp() {
+        // the watchdog reads every credential anew, locked, in the transactions that change it
+        when(credentialStore.queryForUpdate(any())).thenAnswer(i -> StoreResult.success(byId(i.getArgument(0))));
         when(credentialStatusCheckService.checkStatus(any())).thenReturn(Result.success(VcStatus.ISSUED));
         when(credentialRequestManager.initiateRequest(anyString(), anyString(), anyString(), anyList())).thenAnswer(i -> ServiceResult.success(i.getArgument(2)));
     }
 
     @Test
     void run_whenNonRequiresUpdate() {
-        when(credentialStore.query(any()))
-                .thenReturn(StoreResult.success(List.of(createCredentialBuilder().build(), createCredentialBuilder().build())));
+        storeHolds(createCredentialBuilder().build(), createCredentialBuilder().build());
 
         watchdog.run();
 
@@ -103,7 +110,7 @@ class CredentialWatchdogTest {
 
     @Test
     void run_whenNoCredentials() {
-        when(credentialStore.query(any())).thenReturn(StoreResult.success(Collections.emptyList()));
+        storeHolds();
 
         watchdog.run();
 
@@ -116,8 +123,7 @@ class CredentialWatchdogTest {
         var cred1 = createCredentialBuilder().build();
         var cred2 = createCredentialBuilder().build();
 
-        when(credentialStore.query(any()))
-                .thenReturn(StoreResult.success(List.of(cred1, cred2)));
+        storeHolds(cred1, cred2);
         when(credentialStatusCheckService.checkStatus(any()))
                 .thenReturn(Result.success(REVOKED))
                 .thenReturn(Result.success(ISSUED));
@@ -125,6 +131,7 @@ class CredentialWatchdogTest {
         watchdog.run();
 
         verify(credentialStore).query(any());
+        verify(credentialStore, times(4)).queryForUpdate(any());
         verify(credentialStore).update(argThat(vcr -> vcr.getId().equals(cred1.getId())));
         verifyNoMoreInteractions(credentialStore);
         verify(credentialStatusCheckService, times(2)).checkStatus(any());
@@ -133,8 +140,7 @@ class CredentialWatchdogTest {
 
     @Test
     void run_whenCheckServiceFails_shouldTransitionError() {
-        when(credentialStore.query(any()))
-                .thenReturn(StoreResult.success(List.of(createCredentialBuilder().build(), createCredentialBuilder().build())));
+        storeHolds(createCredentialBuilder().build(), createCredentialBuilder().build());
 
         when(credentialStatusCheckService.checkStatus(any()))
                 .thenReturn(Result.failure("test failure"))
@@ -142,6 +148,7 @@ class CredentialWatchdogTest {
         watchdog.run();
 
         verify(credentialStore).query(any());
+        verify(credentialStore, times(4)).queryForUpdate(any());
         verify(credentialStore).update(argThat(vcr -> vcr.getStateAsEnum() == VcStatus.ERROR));
         verifyNoMoreInteractions(credentialStore);
         verify(credentialStatusCheckService, times(2)).checkStatus(any());
@@ -150,7 +157,7 @@ class CredentialWatchdogTest {
     @Test
     void run_whenCredentialInError_andCheckSucceeds_shouldRecover() {
         var cred = createCredentialBuilder().state(VcStatus.ERROR).build();
-        when(credentialStore.query(any())).thenReturn(StoreResult.success(List.of(cred)));
+        storeHolds(cred);
 
         watchdog.run();
 
@@ -163,7 +170,7 @@ class CredentialWatchdogTest {
     @Test
     void run_whenCredentialInError_andCheckFailsAgain_shouldNotUpdate() {
         var cred = createCredentialBuilder().state(VcStatus.ERROR).build();
-        when(credentialStore.query(any())).thenReturn(StoreResult.success(List.of(cred)));
+        storeHolds(cred);
         when(credentialStatusCheckService.checkStatus(any())).thenReturn(Result.failure("status list unreachable"));
 
         watchdog.run();
@@ -182,7 +189,7 @@ class CredentialWatchdogTest {
                         .expirationDate(Instant.now().plusSeconds(GRACE_PERIOD / 2))
                         .build()))
                 .build();
-        when(credentialStore.query(any())).thenReturn(StoreResult.success(List.of(cred)));
+        storeHolds(cred);
         when(credentialStore.update(any())).thenReturn(StoreResult.success());
         when(credentialStatusCheckService.checkStatus(any())).thenReturn(Result.failure("status list unreachable"));
 
@@ -202,7 +209,7 @@ class CredentialWatchdogTest {
                         .expirationDate(Instant.now().plusSeconds(GRACE_PERIOD / 2))
                         .build()))
                 .build();
-        when(credentialStore.query(any())).thenReturn(StoreResult.success(List.of(cred)));
+        storeHolds(cred);
         when(credentialStore.update(any())).thenReturn(StoreResult.success());
 
         watchdog.run();
@@ -230,7 +237,7 @@ class CredentialWatchdogTest {
                         .expirationDate(Instant.now().plusSeconds(GRACE_PERIOD / 2))
                         .build()))
                 .build();
-        when(credentialStore.query(any())).thenReturn(StoreResult.success(List.of(cred)));
+        storeHolds(cred);
         when(credentialRequestManager.initiateRequest(anyString(), anyString(), anyString(), anyList()))
                 .thenReturn(ServiceResult.badRequest("foobarbaz"));
 
@@ -261,7 +268,7 @@ class CredentialWatchdogTest {
                         .expirationDate(Instant.now().plusSeconds(GRACE_PERIOD / 2))
                         .build()))
                 .build();
-        when(credentialStore.query(any())).thenReturn(StoreResult.success(List.of(cred)));
+        storeHolds(cred);
         when(credentialStatusCheckService.checkStatus(any())).thenReturn(Result.success(VcStatus.EXPIRED));
 
         watchdog.run();
@@ -279,7 +286,7 @@ class CredentialWatchdogTest {
                         .expirationDate(Instant.now().minusSeconds(10))
                         .build()))
                 .build();
-        when(credentialStore.query(any())).thenReturn(StoreResult.success(List.of(cred)));
+        storeHolds(cred);
         when(credentialStatusCheckService.checkStatus(any())).thenReturn(Result.success(VcStatus.EXPIRED));
         when(credentialStore.update(any())).thenReturn(StoreResult.success());
 
@@ -298,7 +305,7 @@ class CredentialWatchdogTest {
                         .expirationDate(Instant.now().plusSeconds(GRACE_PERIOD / 2))
                         .build()))
                 .build();
-        when(credentialStore.query(any())).thenReturn(StoreResult.success(List.of(cred)));
+        storeHolds(cred);
         when(credentialRequestManager.initiateRequest(anyString(), anyString(), anyString(), anyList()))
                 .thenReturn(ServiceResult.badRequest("foobarbaz"));
 
@@ -321,7 +328,7 @@ class CredentialWatchdogTest {
                 .state(REQUESTED)
                 .metadata(METADATA_RENEWAL_REQUEST_ID, "renewal-request")
                 .build();
-        when(credentialStore.query(any())).thenReturn(StoreResult.success(List.of(cred)));
+        storeHolds(cred);
         when(credentialRequestManager.findById("renewal-request")).thenReturn(renewalRequest(HolderRequestState.REQUESTING, null));
 
         watchdog.run();
@@ -337,7 +344,7 @@ class CredentialWatchdogTest {
                 .state(REQUESTED)
                 .metadata(METADATA_RENEWAL_REQUEST_ID, "renewal-request")
                 .build();
-        when(credentialStore.query(any())).thenReturn(StoreResult.success(List.of(cred)));
+        storeHolds(cred);
         when(credentialRequestManager.findById("renewal-request")).thenReturn(renewalRequest(HolderRequestState.ERROR, "issuer unreachable"));
 
         watchdog.run();
@@ -359,7 +366,7 @@ class CredentialWatchdogTest {
                 .state(REQUESTED)
                 .metadata(METADATA_RENEWAL_REQUEST_ID, "renewal-request")
                 .build();
-        when(credentialStore.query(any())).thenReturn(StoreResult.success(List.of(cred)));
+        storeHolds(cred);
         when(credentialRequestManager.findById("renewal-request")).thenReturn(null);
 
         watchdog.run();
@@ -376,7 +383,7 @@ class CredentialWatchdogTest {
                 .metadata(METADATA_RENEWAL_REQUEST_ID, "renewal-request")
                 .metadata(METADATA_RENEWAL_ERROR, "an earlier failure")
                 .build();
-        when(credentialStore.query(any())).thenReturn(StoreResult.success(List.of(cred)));
+        storeHolds(cred);
         when(credentialRequestManager.findById("renewal-request")).thenReturn(renewalRequest(HolderRequestState.ISSUED, null));
 
         watchdog.run();
@@ -397,7 +404,7 @@ class CredentialWatchdogTest {
                         .expirationDate(Instant.now().plusSeconds(GRACE_PERIOD / 2))
                         .build()))
                 .build();
-        when(credentialStore.query(any())).thenReturn(StoreResult.success(List.of(cred)));
+        storeHolds(cred);
         when(credentialStore.update(any())).thenReturn(StoreResult.success());
         when(credentialRequestManager.findById("renewal-request")).thenReturn(renewalRequest(HolderRequestState.ERROR, "issuer unreachable"));
 
@@ -425,7 +432,7 @@ class CredentialWatchdogTest {
                         .expirationDate(Instant.now().plusSeconds(GRACE_PERIOD / 2))
                         .build()))
                 .build();
-        when(credentialStore.query(any())).thenReturn(StoreResult.success(List.of(withoutExpiry, expiring)));
+        storeHolds(withoutExpiry, expiring);
         when(credentialStore.update(any())).thenReturn(StoreResult.success());
 
         watchdog.run();
@@ -440,7 +447,7 @@ class CredentialWatchdogTest {
     void run_whenCheckingOneCredentialFails_shouldCheckTheOthers() {
         var failing = createCredentialBuilder().build();
         var revoked = createCredentialBuilder().build();
-        when(credentialStore.query(any())).thenReturn(StoreResult.success(List.of(failing, revoked)));
+        storeHolds(failing, revoked);
         when(credentialStatusCheckService.checkStatus(any()))
                 .thenThrow(new EdcPersistenceException("database unavailable"))
                 .thenReturn(Result.success(REVOKED));
@@ -468,7 +475,7 @@ class CredentialWatchdogTest {
         var watchdog = new CredentialWatchdog(credentialStore, credentialStatusCheckService, monitor, transactionContext,
                 Duration.ofSeconds(GRACE_PERIOD), credentialRequestManager);
         var transactionsOfUpdates = new ArrayList<Integer>();
-        when(credentialStore.query(any())).thenReturn(StoreResult.success(List.of(createCredentialBuilder().build(), createCredentialBuilder().build())));
+        storeHolds(createCredentialBuilder().build(), createCredentialBuilder().build());
         when(credentialStatusCheckService.checkStatus(any())).thenReturn(Result.success(REVOKED));
         when(credentialStore.update(any())).thenAnswer(i -> {
             transactionsOfUpdates.add(transactionContext.currentTransaction());
@@ -489,7 +496,7 @@ class CredentialWatchdogTest {
         var watchdog = new CredentialWatchdog(credentialStore, credentialStatusCheckService, monitor, transactionContext,
                 Duration.ofSeconds(GRACE_PERIOD), credentialRequestManager);
         var transactionsOfChecks = new ArrayList<Integer>();
-        when(credentialStore.query(any())).thenReturn(StoreResult.success(List.of(createCredentialBuilder().build())));
+        storeHolds(createCredentialBuilder().build());
         when(credentialStatusCheckService.checkStatus(any())).thenAnswer(i -> {
             transactionsOfChecks.add(transactionContext.currentTransaction());
             return Result.success(REVOKED);
@@ -503,10 +510,96 @@ class CredentialWatchdogTest {
     }
 
     @Test
+    void run_shouldLockCredentialInTransactionsThatChangeIt() {
+        var transactionContext = new TrackingTransactionContext();
+        var watchdog = new CredentialWatchdog(credentialStore, credentialStatusCheckService, monitor, transactionContext,
+                Duration.ofSeconds(GRACE_PERIOD), credentialRequestManager);
+        var credential = createCredentialBuilder().build();
+        storeHolds(credential);
+        var transactionsOfLocks = new ArrayList<Integer>();
+        var transactionsOfUpdates = new ArrayList<Integer>();
+        when(credentialStore.queryForUpdate(any())).thenAnswer(i -> {
+            transactionsOfLocks.add(transactionContext.currentTransaction());
+            return StoreResult.success(byId(i.getArgument(0)));
+        });
+        when(credentialStore.update(any())).thenAnswer(i -> {
+            transactionsOfUpdates.add(transactionContext.currentTransaction());
+            return StoreResult.success();
+        });
+        when(credentialStatusCheckService.checkStatus(any())).thenReturn(Result.success(REVOKED));
+
+        watchdog.run();
+
+        // the credential is read anew and locked in both of its transactions, the second of which updates it
+        assertThat(transactionsOfLocks).containsExactly(2, 3);
+        assertThat(transactionsOfUpdates).containsExactly(3);
+        verify(credentialStore, times(2)).queryForUpdate(argThat(query -> query.getFilterExpression().contains(new Criterion("id", "=", credential.getId()))));
+    }
+
+    @Test
+    void run_whenCredentialSupersededWhileChecked_shouldNotOverwriteIt() {
+        var credential = createExpiringCredential().id("credential-id").build();
+        storeHolds(credential);
+        // a delivery supersedes the credential while its status is determined
+        var superseded = createExpiringCredential().id("credential-id")
+                .state(EXPIRED)
+                .metadata(METADATA_SUPERSEDED_BY, "new-credential-id")
+                .build();
+        when(credentialStore.queryForUpdate(any()))
+                .thenReturn(StoreResult.success(List.of(credential)))
+                .thenReturn(StoreResult.success(List.of(superseded)));
+
+        watchdog.run();
+
+        // writing the copy that was checked would make the superseded credential usable, and renew it again
+        verify(credentialStore, never()).update(any());
+        verify(credentialRequestManager, never()).initiateRequest(anyString(), anyString(), anyString(), anyList());
+    }
+
+    @Test
+    void run_whenRenewalStartedByAnotherRuntimeWhileChecked_shouldNotRenewAgain() {
+        var credential = createExpiringCredential().id("credential-id").build();
+        storeHolds(credential);
+        // another runtime checks the same credential, and starts its renewal first
+        var renewing = createExpiringCredential().id("credential-id")
+                .state(REQUESTED)
+                .metadata(METADATA_RENEWAL_REQUEST_ID, "renewal-request")
+                .build();
+        when(credentialStore.queryForUpdate(any()))
+                .thenReturn(StoreResult.success(List.of(credential)))
+                .thenReturn(StoreResult.success(List.of(renewing)));
+
+        watchdog.run();
+
+        verify(credentialRequestManager, never()).initiateRequest(anyString(), anyString(), anyString(), anyList());
+        verify(credentialStore, never()).update(any());
+    }
+
+    @Test
+    void run_whenRenewalStartedByAnotherRuntimeBeforeCheck_shouldLeaveCredentialUntouched() {
+        var credential = createExpiringCredential().id("credential-id").build();
+        storeHolds(credential);
+        // the credential was found before another runtime started its renewal
+        var renewing = createExpiringCredential().id("credential-id")
+                .state(REQUESTED)
+                .metadata(METADATA_RENEWAL_REQUEST_ID, "renewal-request")
+                .build();
+        when(credentialStore.queryForUpdate(any())).thenReturn(StoreResult.success(List.of(renewing)));
+        when(credentialRequestManager.findById("renewal-request")).thenReturn(renewalRequest(HolderRequestState.REQUESTED, null));
+
+        watchdog.run();
+
+        verifyNoInteractions(credentialStatusCheckService);
+        verify(credentialRequestManager, never()).initiateRequest(anyString(), anyString(), anyString(), anyList());
+        verify(credentialStore, never()).update(any());
+    }
+
+    @Test
     void run_shouldCheckCredentialsBeyondTheFirstPage() {
         var credentials = IntStream.range(0, 250)
                 .mapToObj(i -> createCredentialBuilder().id("credential-%03d".formatted(i)).build())
                 .toList();
+        credentials.forEach(credential -> storedCredentials.put(credential.getId(), credential));
         when(credentialStore.query(any())).thenAnswer(i -> StoreResult.success(page(credentials, i.getArgument(0))));
 
         watchdog.run();
@@ -529,6 +622,34 @@ class CredentialWatchdogTest {
                 .sorted(Comparator.comparing(VerifiableCredentialResource::getId))
                 .limit(query.getLimit())
                 .toList();
+    }
+
+    /**
+     * Lets the store hold the given credentials: the watchdog finds them with its query, and reads each one anew by its ID.
+     */
+    private void storeHolds(VerifiableCredentialResource... credentials) {
+        Arrays.stream(credentials).forEach(credential -> storedCredentials.put(credential.getId(), credential));
+        when(credentialStore.query(any())).thenReturn(StoreResult.success(List.of(credentials)));
+    }
+
+    private List<VerifiableCredentialResource> byId(QuerySpec query) {
+        // Mockito passes null when a test stubs queryForUpdate again
+        if (query == null) {
+            return List.of();
+        }
+        return query.getFilterExpression().stream()
+                .filter(criterion -> criterion.getOperandLeft().equals("id") && criterion.getOperator().equals("="))
+                .map(criterion -> storedCredentials.get(criterion.getOperandRight().toString()))
+                .filter(Objects::nonNull)
+                .toList();
+    }
+
+    private VerifiableCredentialResource.Builder createExpiringCredential() {
+        return createCredentialBuilder()
+                .metadata(VerifiableCredentialResource.METADATA_CREDENTIAL_OBJECT_ID, "credential-object-id")
+                .credential(new VerifiableCredentialContainer("raw-vc-content", VC1_0_JWT, createVerifiableCredential()
+                        .expirationDate(Instant.now().plusSeconds(GRACE_PERIOD / 2))
+                        .build()));
     }
 
     private HolderCredentialRequest renewalRequest(HolderRequestState state, String errorDetail) {

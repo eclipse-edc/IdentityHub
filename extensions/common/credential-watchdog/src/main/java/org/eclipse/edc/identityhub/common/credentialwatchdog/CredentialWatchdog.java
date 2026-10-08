@@ -27,12 +27,14 @@ import org.eclipse.edc.spi.query.Criterion;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.ServiceResult;
 import org.eclipse.edc.transaction.spi.TransactionContext;
+import org.jetbrains.annotations.Nullable;
 
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 import static java.util.Optional.ofNullable;
@@ -42,6 +44,8 @@ import static org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStat
 import static org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStatus.NOT_YET_VALID;
 import static org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStatus.REQUESTED;
 import static org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStatus.SUSPENDED;
+import static org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialResource.METADATA_RENEWAL_REQUEST_ID;
+import static org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialResource.METADATA_SUPERSEDED_BY;
 import static org.eclipse.edc.identityhub.store.QueryPages.forEachPage;
 
 /**
@@ -112,24 +116,63 @@ public class CredentialWatchdog implements Runnable {
      * Determining the status may download the credential's status list, so it happens outside of a transaction, in order
      * not to hold a database connection, nor any locks, while waiting for it. The changes before and after it are made in
      * a short transaction each.
+     * <p>
+     * Every runtime runs the watchdog, so the same credential may be checked by several of them at the same time, and a
+     * delivery may supersede it meanwhile. Each transaction therefore reads the credential anew and locks it, and leaves
+     * it for the next run if it changed while its status was determined. Otherwise, it could be renewed twice, or a
+     * superseded credential could be made usable again.
      */
     private void check(VerifiableCredentialResource credential) {
         try {
-            // credentials waiting on a renewal are held back: their REQUESTED state records that fact, and the status
-            // check below would overwrite it. Those whose renewal came to nothing are released here and treated normally.
-            if (!transactionContext.execute(() -> reconcileRenewal(credential))) {
+            var checked = transactionContext.execute(() -> {
+                var current = lock(credential.getId());
+                // credentials waiting on a renewal are held back: their REQUESTED state records that fact, and the status
+                // check below would overwrite it. Those whose renewal came to nothing are released here and treated normally.
+                return current != null && reconcileRenewal(current) ? current : null;
+            });
+            if (checked == null) {
                 return;
             }
-            var newStatus = determineStatus(credential);
+            var newStatus = determineStatus(checked);
             transactionContext.execute(() -> {
-                updateStatus(credential, newStatus);
-                if (isDueForRenewal(credential)) {
-                    startReissuance(credential);
+                var current = lock(credential.getId());
+                if (current == null || hasChanged(checked, current)) {
+                    monitor.debug("Credential '%s' changed while its status was determined, it is checked again in the next run".formatted(credential.getId()));
+                    return;
+                }
+                updateStatus(current, newStatus);
+                if (isDueForRenewal(current)) {
+                    startReissuance(current);
                 }
             });
         } catch (Exception e) {
             monitor.warning("The credential watchdog failed to check credential '%s': %s".formatted(credential.getId(), e.getMessage()), e);
         }
+    }
+
+    /**
+     * Reads the credential, and locks it until the transaction completes.
+     *
+     * @return the credential, or null if it does not exist anymore, or could not be read
+     */
+    private @Nullable VerifiableCredentialResource lock(String credentialId) {
+        var query = QuerySpec.Builder.newInstance()
+                .filter(new Criterion("id", "=", credentialId))
+                .build();
+        return credentialStore.queryForUpdate(query)
+                .onFailure(f -> monitor.warning("Failed to read credential '%s': %s".formatted(credentialId, f.getFailureDetail())))
+                .map(credentials -> credentials.stream().findFirst().orElse(null))
+                .orElse(f -> null);
+    }
+
+    /**
+     * Whether the credential was changed since it was read, in a way that matters to the watchdog: e.g. another runtime
+     * started its renewal or updated its status, or a delivery superseded it.
+     */
+    private boolean hasChanged(VerifiableCredentialResource before, VerifiableCredentialResource after) {
+        return before.getState() != after.getState() ||
+                !Objects.equals(before.getMetadata().get(METADATA_SUPERSEDED_BY), after.getMetadata().get(METADATA_SUPERSEDED_BY)) ||
+                !Objects.equals(before.getMetadata().get(METADATA_RENEWAL_REQUEST_ID), after.getMetadata().get(METADATA_RENEWAL_REQUEST_ID));
     }
 
     private VcStatus determineStatus(VerifiableCredentialResource credential) {

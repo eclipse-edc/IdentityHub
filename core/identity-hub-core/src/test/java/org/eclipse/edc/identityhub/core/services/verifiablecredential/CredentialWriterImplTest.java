@@ -33,6 +33,7 @@ import org.eclipse.edc.jsonld.util.JacksonJsonLd;
 import org.eclipse.edc.keys.spi.PublicKeyResolver;
 import org.eclipse.edc.spi.iam.ClaimToken;
 import org.eclipse.edc.spi.monitor.Monitor;
+import org.eclipse.edc.spi.query.SortOrder;
 import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.spi.result.ServiceFailure;
 import org.eclipse.edc.spi.result.StoreResult;
@@ -88,7 +89,7 @@ class CredentialWriterImplTest {
     @BeforeEach
     void setUp() {
         when(tokenValidationService.validate(anyString(), any(PublicKeyResolver.class), anyList())).thenReturn(Result.success(ClaimToken.Builder.newInstance().build()));
-        when(credentialStore.query(any())).thenReturn(StoreResult.success(List.of()));
+        when(credentialStore.queryForUpdate(any())).thenReturn(StoreResult.success(List.of()));
         storeHolds(HolderCredentialRequest.Builder.newInstance()
                 .issuerDid(ISSUER_DID)
                 .requestedCredential("test-id", TEST_CREDENTIAL_TYPE, TEST_CREDENTIAL_FORMAT)
@@ -201,7 +202,7 @@ class CredentialWriterImplTest {
         when(credentialTransformerRegistry.transform(isA(String.class), eq(VerifiableCredential.class)))
                 .thenReturn(Result.success(createCredential().build()));
         when(credentialStore.create(any())).thenReturn(StoreResult.success());
-        when(credentialStore.query(any())).thenReturn(StoreResult.success(List.of(createResource("old-credential-id"))));
+        when(credentialStore.queryForUpdate(any())).thenReturn(StoreResult.success(List.of(createResource("old-credential-id"))));
         when(credentialStore.update(any())).thenReturn(StoreResult.success());
 
         var result = credentialWriter.write("holderPid", HOLDER_DID, "issuerPid", ISSUER_DID, Set.of(new CredentialWriteRequest("raw-cred", TEST_CREDENTIAL_FORMAT)), PARTICIPANT_ID);
@@ -213,14 +214,16 @@ class CredentialWriterImplTest {
                 resource.getStateAsEnum() == VcStatus.EXPIRED &&
                 newCredential.getValue().getId().equals(resource.getMetadata().get(VerifiableCredentialResource.METADATA_SUPERSEDED_BY))));
         // the lookup must be scoped to the participant's own holder credentials for the same credential object,
-        // must not return the credential just stored, and must leave revoked credentials alone
-        verify(credentialStore).query(argThat(querySpec -> {
+        // must not return the credential just stored, and must leave revoked credentials alone. The credentials are
+        // locked, so that the watchdog cannot overwrite the supersession, in the order of their IDs, to avoid deadlocks
+        verify(credentialStore).queryForUpdate(argThat(querySpec -> {
             var filters = querySpec.getFilterExpression().toString();
             return filters.contains("participantContextId = " + PARTICIPANT_ID) &&
                     filters.contains("usage = Holder") &&
                     filters.contains("metadata.credentialObjectId = test-id") &&
                     filters.contains("id != " + newCredential.getValue().getId()) &&
-                    filters.contains("state != " + VcStatus.REVOKED.code());
+                    filters.contains("state != " + VcStatus.REVOKED.code()) &&
+                    "id".equals(querySpec.getSortField()) && querySpec.getSortOrder() == SortOrder.ASC;
         }));
     }
 
@@ -242,7 +245,7 @@ class CredentialWriterImplTest {
         when(credentialTransformerRegistry.transform(isA(String.class), eq(VerifiableCredential.class)))
                 .thenReturn(Result.success(createCredential().build()));
         when(credentialStore.create(any())).thenReturn(StoreResult.success());
-        when(credentialStore.query(any())).thenReturn(StoreResult.success(List.of(createResource("old-credential-id"))));
+        when(credentialStore.queryForUpdate(any())).thenReturn(StoreResult.success(List.of(createResource("old-credential-id"))));
         when(credentialStore.update(any())).thenReturn(StoreResult.generalError("update failed"));
 
         var result = credentialWriter.write("holderPid", HOLDER_DID, "issuerPid", ISSUER_DID, Set.of(new CredentialWriteRequest("raw-cred", TEST_CREDENTIAL_FORMAT)), PARTICIPANT_ID);
@@ -255,7 +258,7 @@ class CredentialWriterImplTest {
         when(credentialTransformerRegistry.transform(isA(String.class), eq(VerifiableCredential.class)))
                 .thenReturn(Result.success(createCredential().build()));
         when(credentialStore.create(any())).thenReturn(StoreResult.success());
-        when(credentialStore.query(any())).thenReturn(StoreResult.generalError("query failed"));
+        when(credentialStore.queryForUpdate(any())).thenReturn(StoreResult.generalError("query failed"));
 
         var result = credentialWriter.write("holderPid", HOLDER_DID, "issuerPid", ISSUER_DID, Set.of(new CredentialWriteRequest("raw-cred", TEST_CREDENTIAL_FORMAT)), PARTICIPANT_ID);
 
