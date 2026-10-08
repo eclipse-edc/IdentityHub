@@ -67,7 +67,7 @@ public class SqlKeyPairResourceStoreExtension implements ServiceExtension {
 
     @Provider
     public KeyPairResourceStore createSqlStore(ServiceExtensionContext context) {
-        return new SqlKeyPairResourceStore(dataSourceRegistry, dataSourceName, transactionContext, typemanager.getMapper(),
+        return new SqlKeyPairResourceStore(dataSourceRegistry, dataSourceName, transactionContext, typemanager::getMapper,
                 queryExecutor, getStatementImpl());
     }
 

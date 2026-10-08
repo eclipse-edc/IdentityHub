@@ -60,7 +60,7 @@ public class SqlStsClientStoreExtension implements ServiceExtension {
     @Override
     public void initialize(ServiceExtensionContext context) {
 
-        var sqlStore = new SqlStsAccountStore(dataSourceRegistry, dataSourceName, transactionContext, typeManager.getMapper(),
+        var sqlStore = new SqlStsAccountStore(dataSourceRegistry, dataSourceName, transactionContext, typeManager::getMapper,
                 getStatementImpl(), queryExecutor);
 
         context.registerService(StsAccountStore.class, sqlStore);

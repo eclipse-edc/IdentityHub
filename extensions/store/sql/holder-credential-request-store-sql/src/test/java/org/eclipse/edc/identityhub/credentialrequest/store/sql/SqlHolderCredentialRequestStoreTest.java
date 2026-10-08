@@ -51,7 +51,7 @@ class SqlHolderCredentialRequestStoreTest extends HolderCredentialRequestStoreTe
         var leaseContextBuilder = SqlLeaseContextBuilderImpl.with(extension.getTransactionContext(), RUNTIME_ID, statements.getHolderCredentialRequestTable(), leaseStatements, clock, queryExecutor);
 
         store = new SqlHolderCredentialRequestStore(extension.getDataSourceRegistry(), extension.getDatasourceName(),
-                extension.getTransactionContext(), typeManager.getMapper(), queryExecutor, statements, leaseContextBuilder);
+                extension.getTransactionContext(), typeManager::getMapper, queryExecutor, statements, leaseContextBuilder);
 
         leaseUtil = new LeaseUtil(extension.getTransactionContext(), extension::getConnection, statements.getHolderCredentialRequestTable(), leaseStatements, clock);
 

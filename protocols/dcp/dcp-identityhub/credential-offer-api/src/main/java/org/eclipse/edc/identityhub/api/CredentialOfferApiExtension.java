@@ -24,17 +24,16 @@ import org.eclipse.edc.identityhub.protocols.dcp.transform.to.JsonObjectToCreden
 import org.eclipse.edc.identityhub.protocols.dcp.transform.to.JsonObjectToCredentialOfferMessageTransformer;
 import org.eclipse.edc.identityhub.protocols.dcp.transform.to.JsonObjectToIssuerMetadataTransformer;
 import org.eclipse.edc.identityhub.spi.participantcontext.IdentityHubParticipantContextService;
-import org.eclipse.edc.identityhub.spi.verifiablecredentials.generator.CredentialWriter;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.offer.CredentialOfferService;
 import org.eclipse.edc.jsonld.spi.JsonLd;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;
-import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.spi.system.ServiceExtension;
 import org.eclipse.edc.spi.system.ServiceExtensionContext;
 import org.eclipse.edc.spi.types.TypeManager;
 import org.eclipse.edc.transform.spi.TypeTransformerRegistry;
 import org.eclipse.edc.validator.spi.JsonObjectValidatorRegistry;
+import org.eclipse.edc.web.jersey.providers.jsonld.JsonMapperProvider;
 import org.eclipse.edc.web.jersey.providers.jsonld.ObjectMapperProvider;
 import org.eclipse.edc.web.spi.WebService;
 
@@ -61,11 +60,7 @@ public class CredentialOfferApiExtension implements ServiceExtension {
     @Inject
     private TypeManager typeManager;
     @Inject
-    private CredentialWriter writer;
-    @Inject
     private DcpIssuerTokenVerifier issuerTokenVerifier;
-    @Inject
-    private Monitor monitor;
 
     @Inject
     private IdentityHubParticipantContextService participantContextService;
@@ -88,6 +83,7 @@ public class CredentialOfferApiExtension implements ServiceExtension {
 
         var credentialObjectResolver = new CredentialObjectResolver(didResolverRegistry, httpClient, jsonLd, typeTransformer);
         var controller = new CredentialOfferApiController(validatorRegistry, typeTransformer, issuerTokenVerifier, participantContextService, credentialOfferService, jsonLd, credentialObjectResolver);
+        webService.registerResource(CREDENTIALS, new JsonMapperProvider(typeManager, JSON_LD));
         webService.registerResource(CREDENTIALS, new ObjectMapperProvider(typeManager, JSON_LD));
         webService.registerResource(CREDENTIALS, controller);
 

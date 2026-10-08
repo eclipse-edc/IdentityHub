@@ -36,6 +36,7 @@ import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -60,11 +61,11 @@ public class SqlIssuanceProcessStore extends AbstractSqlStore implements Issuanc
     public SqlIssuanceProcessStore(DataSourceRegistry dataSourceRegistry,
                                    String dataSourceName,
                                    TransactionContext transactionContext,
-                                   ObjectMapper objectMapper,
+                                   Supplier<ObjectMapper> objectMapperSupplier,
                                    QueryExecutor queryExecutor,
                                    IssuanceProcessStoreStatements statements,
                                    SqlLeaseContextBuilder leaseContext) {
-        super(dataSourceRegistry, dataSourceName, transactionContext, objectMapper, queryExecutor);
+        super(dataSourceRegistry, dataSourceName, transactionContext, objectMapperSupplier, queryExecutor);
         this.statements = statements;
         this.leaseContext = leaseContext;
     }

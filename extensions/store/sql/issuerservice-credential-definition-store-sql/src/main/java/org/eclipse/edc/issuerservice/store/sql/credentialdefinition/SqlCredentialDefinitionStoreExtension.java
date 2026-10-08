@@ -62,7 +62,7 @@ public class SqlCredentialDefinitionStoreExtension implements ServiceExtension {
 
     @Provider
     public CredentialDefinitionStore createSqlStore() {
-        return new SqlCredentialDefinitionStore(dataSourceRegistry, dataSourceName, transactionContext, typemanager.getMapper(),
+        return new SqlCredentialDefinitionStore(dataSourceRegistry, dataSourceName, transactionContext, typemanager::getMapper,
                 queryExecutor, getStatementImpl(), clock);
     }
 

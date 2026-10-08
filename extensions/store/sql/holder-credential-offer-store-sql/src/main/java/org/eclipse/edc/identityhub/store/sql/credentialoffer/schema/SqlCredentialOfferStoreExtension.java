@@ -68,7 +68,7 @@ public class SqlCredentialOfferStoreExtension implements ServiceExtension {
 
     @Provider
     public CredentialOfferStore createSqlStore(ServiceExtensionContext context) {
-        return new SqlCredentialOfferStore(dataSourceRegistry, dataSourceName, transactionContext, typemanager.getMapper(),
+        return new SqlCredentialOfferStore(dataSourceRegistry, dataSourceName, transactionContext, typemanager::getMapper,
                 queryExecutor, getStatementImpl(), contextBuilderProvider.createContextBuilder(getStatementImpl().getCredentialOffersTable()));
     }
 

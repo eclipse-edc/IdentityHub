@@ -27,6 +27,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Supplier;
 
 /**
  * Resolves an attestation from a Postgres database. The resulting input claims map is resolved by executing a {@code SELECT} statement
@@ -49,15 +50,17 @@ public class DatabaseAttestationSource extends AbstractSqlStore implements Attes
      *
      * @param dataSourceName     The name of the datasource. Must be configured using a {@link org.eclipse.edc.spi.system.configuration.Config}
      * @param required           Whether this attestation is mandatory.
-     * @param objectMapper       Currently not needed. Simply pass {@code new ObjectMapper()}
+     * @param objectMapperSupplier Currently not needed. Simply pass {@code ObjectMapper::new}
      * @param tableName          The name of the table that contains the attestations.
      * @param dataSourceRegistry The datasource registry, that contains configuration for the data source
      * @param queryExecutor      A {@link QueryExecutor}
      * @param transactionContext A {@link TransactionContext}
      * @param idColumn           The column name of the column that contains the participant context ID.
      */
-    public DatabaseAttestationSource(String dataSourceName, boolean required, ObjectMapper objectMapper, String tableName, DataSourceRegistry dataSourceRegistry, QueryExecutor queryExecutor, TransactionContext transactionContext, String idColumn) {
-        super(dataSourceRegistry, dataSourceName, transactionContext, objectMapper, queryExecutor);
+    public DatabaseAttestationSource(String dataSourceName, boolean required, Supplier<ObjectMapper> objectMapperSupplier,
+                                     String tableName, DataSourceRegistry dataSourceRegistry, QueryExecutor queryExecutor,
+                                     TransactionContext transactionContext, String idColumn) {
+        super(dataSourceRegistry, dataSourceName, transactionContext, objectMapperSupplier, queryExecutor);
         this.required = required;
         this.transactionContext = transactionContext;
         this.queryExecutor = queryExecutor;

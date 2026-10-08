@@ -35,6 +35,7 @@ import java.time.Clock;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.Supplier;
 
 import static java.util.Optional.ofNullable;
 import static org.eclipse.edc.spi.result.StoreResult.alreadyExists;
@@ -53,11 +54,11 @@ public class SqlCredentialDefinitionStore extends AbstractSqlStore implements Cr
     public SqlCredentialDefinitionStore(DataSourceRegistry dataSourceRegistry,
                                         String dataSourceName,
                                         TransactionContext transactionContext,
-                                        ObjectMapper objectMapper,
+                                        Supplier<ObjectMapper> objectMapperSupplier,
                                         QueryExecutor queryExecutor,
                                         CredentialDefinitionStoreStatements statements,
                                         Clock clock) {
-        super(dataSourceRegistry, dataSourceName, transactionContext, objectMapper, queryExecutor);
+        super(dataSourceRegistry, dataSourceName, transactionContext, objectMapperSupplier, queryExecutor);
         this.statements = statements;
         this.clock = clock;
     }

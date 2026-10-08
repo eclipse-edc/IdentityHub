@@ -31,6 +31,7 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Objects;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import static java.lang.String.format;
@@ -40,8 +41,8 @@ public class SqlStsAccountStore extends AbstractSqlStore implements StsAccountSt
     private final StsClientStatements statements;
 
     public SqlStsAccountStore(DataSourceRegistry dataSourceRegistry, String dataSourceName, TransactionContext transactionContext,
-                              ObjectMapper objectMapper, StsClientStatements statements, QueryExecutor queryExecutor) {
-        super(dataSourceRegistry, dataSourceName, transactionContext, objectMapper, queryExecutor);
+                              Supplier<ObjectMapper> objectMapperSupplier, StsClientStatements statements, QueryExecutor queryExecutor) {
+        super(dataSourceRegistry, dataSourceName, transactionContext, objectMapperSupplier, queryExecutor);
         this.statements = statements;
     }
 

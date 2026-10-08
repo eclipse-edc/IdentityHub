@@ -35,6 +35,7 @@ import org.eclipse.edc.spi.types.TypeManager;
 import org.eclipse.edc.transform.spi.TypeTransformerRegistry;
 import org.eclipse.edc.transform.transformer.edc.to.JsonValueToGenericTypeTransformer;
 import org.eclipse.edc.validator.spi.JsonObjectValidatorRegistry;
+import org.eclipse.edc.web.jersey.providers.jsonld.JsonMapperProvider;
 import org.eclipse.edc.web.jersey.providers.jsonld.ObjectMapperProvider;
 import org.eclipse.edc.web.spi.WebService;
 
@@ -84,6 +85,7 @@ public class StorageApiExtension implements ServiceExtension {
         validatorRegistry.register(DSPACE_DCP_NAMESPACE_V_1_0.toIri(CREDENTIAL_MESSAGE_TERM), new CredentialMessageValidator());
 
         var controller = new StorageApiController(validatorRegistry, typeTransformer, jsonLd, writer, context.getMonitor().withPrefix("StorageAPI"), issuerTokenVerifier, participantContextService);
+        webService.registerResource(contextString, new JsonMapperProvider(typeManager, JSON_LD));
         webService.registerResource(contextString, new ObjectMapperProvider(typeManager, JSON_LD));
         webService.registerResource(contextString, controller);
 

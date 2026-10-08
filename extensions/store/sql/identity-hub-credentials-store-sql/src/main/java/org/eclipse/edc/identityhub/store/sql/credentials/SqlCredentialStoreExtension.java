@@ -58,7 +58,7 @@ public class SqlCredentialStoreExtension implements ServiceExtension {
 
     @Provider
     public CredentialStore createSqlStore(ServiceExtensionContext context) {
-        return new SqlCredentialStore(dataSourceRegistry, dataSourceName, transactionContext, typemanager.getMapper(),
+        return new SqlCredentialStore(dataSourceRegistry, dataSourceName, transactionContext, typemanager::getMapper,
                 queryExecutor, getStatementImpl());
     }
 

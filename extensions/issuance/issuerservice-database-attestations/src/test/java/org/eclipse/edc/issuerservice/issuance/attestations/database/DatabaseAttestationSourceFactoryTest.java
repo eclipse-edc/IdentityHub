@@ -26,7 +26,7 @@ import static org.mockito.Mockito.mock;
 
 class DatabaseAttestationSourceFactoryTest {
 
-    private final DatabaseAttestationSourceFactory factory = new DatabaseAttestationSourceFactory(mock(), mock(), mock());
+    private final DatabaseAttestationSourceFactory factory = new DatabaseAttestationSourceFactory(mock(), mock(), mock(), mock());
 
     @Test
     void createSource_whenSucceeds() {

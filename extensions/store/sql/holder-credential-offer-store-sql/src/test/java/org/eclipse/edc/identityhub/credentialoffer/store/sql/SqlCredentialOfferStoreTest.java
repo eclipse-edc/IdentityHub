@@ -51,7 +51,7 @@ class SqlCredentialOfferStoreTest extends CredentialOfferStoreTestBase {
         var leaseContextBuilder = SqlLeaseContextBuilderImpl.with(extension.getTransactionContext(), RUNTIME_ID, statements.getCredentialOffersTable(), leaseStatements, clock, queryExecutor);
 
         store = new SqlCredentialOfferStore(extension.getDataSourceRegistry(), extension.getDatasourceName(),
-                extension.getTransactionContext(), typeManager.getMapper(), queryExecutor, statements, leaseContextBuilder);
+                extension.getTransactionContext(), typeManager::getMapper, queryExecutor, statements, leaseContextBuilder);
 
 
         leaseUtil = new LeaseUtil(extension.getTransactionContext(), extension::getConnection, statements.getCredentialOffersTable(), leaseStatements, clock);

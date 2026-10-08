@@ -32,6 +32,7 @@ import org.eclipse.edc.spi.types.TypeManager;
 import org.eclipse.edc.transform.spi.TypeTransformerRegistry;
 import org.eclipse.edc.transform.transformer.edc.to.JsonValueToGenericTypeTransformer;
 import org.eclipse.edc.validator.spi.JsonObjectValidatorRegistry;
+import org.eclipse.edc.web.jersey.providers.jsonld.JsonMapperProvider;
 import org.eclipse.edc.web.jersey.providers.jsonld.ObjectMapperProvider;
 import org.eclipse.edc.web.spi.WebService;
 
@@ -80,6 +81,7 @@ public class PresentationApiExtension implements ServiceExtension {
 
         var controller = new PresentationApiController(validatorRegistry, typeTransformer, credentialResolver, selfIssuedTokenVerifier,
                 verifiablePresentationService, context.getMonitor().withPrefix("PresentationAPI"), participantContextService, jsonLd);
+        webService.registerResource(contextString, new JsonMapperProvider(typeManager, JSON_LD));
         webService.registerResource(contextString, new ObjectMapperProvider(typeManager, JSON_LD));
         webService.registerResource(contextString, controller);
 

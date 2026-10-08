@@ -70,7 +70,7 @@ public class SqlIssuanceProcessStoreExtension implements ServiceExtension {
 
     @Provider
     public IssuanceProcessStore createSqlStore(ServiceExtensionContext context) {
-        return new SqlIssuanceProcessStore(dataSourceRegistry, dataSourceName, transactionContext, typemanager.getMapper(),
+        return new SqlIssuanceProcessStore(dataSourceRegistry, dataSourceName, transactionContext, typemanager::getMapper,
                 queryExecutor, getStatementImpl(), contextBuilderProvider.createContextBuilder(getStatementImpl().getIssuanceProcessTable()));
     }
 

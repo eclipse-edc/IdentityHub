@@ -30,6 +30,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Collection;
 import java.util.Objects;
+import java.util.function.Supplier;
 
 
 /**
@@ -40,8 +41,8 @@ public class SqlDidResourceStore extends AbstractSqlStore implements DidResource
     private final DidResourceStatements statements;
 
     public SqlDidResourceStore(DataSourceRegistry dataSourceRegistry, String dataSourceName, TransactionContext transactionContext,
-                               ObjectMapper objectMapper, QueryExecutor queryExecutor, DidResourceStatements statements) {
-        super(dataSourceRegistry, dataSourceName, transactionContext, objectMapper, queryExecutor);
+                               Supplier<ObjectMapper> objectMapperSupplier, QueryExecutor queryExecutor, DidResourceStatements statements) {
+        super(dataSourceRegistry, dataSourceName, transactionContext, objectMapperSupplier, queryExecutor);
         this.statements = statements;
     }
 

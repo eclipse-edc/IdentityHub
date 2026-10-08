@@ -32,6 +32,7 @@ import java.sql.SQLException;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.Supplier;
 
 import static java.util.Optional.ofNullable;
 import static org.eclipse.edc.spi.result.StoreResult.alreadyExists;
@@ -48,10 +49,10 @@ public class SqlHolderStore extends AbstractSqlStore implements HolderStore {
     public SqlHolderStore(DataSourceRegistry dataSourceRegistry,
                           String dataSourceName,
                           TransactionContext transactionContext,
-                          ObjectMapper objectMapper,
+                          Supplier<ObjectMapper> objectMapperSupplier,
                           QueryExecutor queryExecutor,
                           HolderStoreStatements statements) {
-        super(dataSourceRegistry, dataSourceName, transactionContext, objectMapper, queryExecutor);
+        super(dataSourceRegistry, dataSourceName, transactionContext, objectMapperSupplier, queryExecutor);
         this.statements = statements;
     }
 

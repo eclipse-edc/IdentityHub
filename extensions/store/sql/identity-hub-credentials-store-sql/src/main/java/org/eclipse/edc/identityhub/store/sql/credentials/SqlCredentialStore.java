@@ -36,6 +36,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Collection;
 import java.util.Objects;
+import java.util.function.Supplier;
 
 import static java.util.Optional.ofNullable;
 import static org.eclipse.edc.spi.result.StoreResult.alreadyExists;
@@ -50,8 +51,8 @@ public class SqlCredentialStore extends AbstractSqlStore implements CredentialSt
     private final CredentialStoreStatements statements;
 
     public SqlCredentialStore(DataSourceRegistry dataSourceRegistry, String dataSourceName, TransactionContext transactionContext,
-                              ObjectMapper objectMapper, QueryExecutor queryExecutor, CredentialStoreStatements statements) {
-        super(dataSourceRegistry, dataSourceName, transactionContext, objectMapper, queryExecutor);
+                              Supplier<ObjectMapper> objectMapperSupplier, QueryExecutor queryExecutor, CredentialStoreStatements statements) {
+        super(dataSourceRegistry, dataSourceName, transactionContext, objectMapperSupplier, queryExecutor);
         this.statements = statements;
     }
 

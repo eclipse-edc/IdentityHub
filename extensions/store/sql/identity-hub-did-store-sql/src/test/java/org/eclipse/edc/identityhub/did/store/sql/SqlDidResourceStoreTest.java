@@ -58,7 +58,7 @@ class SqlDidResourceStoreTest extends DidResourceStoreTestBase {
     @BeforeEach
     void setup(PostgresqlStoreSetupExtension extension, QueryExecutor queryExecutor) {
         store = new SqlDidResourceStore(extension.getDataSourceRegistry(), extension.getDatasourceName(),
-                extension.getTransactionContext(), typeManager.getMapper(), queryExecutor, statements);
+                extension.getTransactionContext(), typeManager::getMapper, queryExecutor, statements);
 
         var schema = TestUtils.getResourceFileContentAsString("did-schema.sql");
         extension.runQuery(schema);
@@ -122,7 +122,7 @@ class SqlDidResourceStoreTest extends DidResourceStoreTestBase {
         var dataSourceRegistry = new LocalDataSourceRegistry(transactionContext);
         dataSourceRegistry.register(extension.getDatasourceName(), extension.getDataSourceRegistry().resolve(extension.getDatasourceName()));
         return new SqlDidResourceStore(dataSourceRegistry, extension.getDatasourceName(), transactionContext,
-                typeManager.getMapper(), queryExecutor, statements);
+                typeManager::getMapper, queryExecutor, statements);
     }
 
     private void awaitRelease(CountDownLatch release) {

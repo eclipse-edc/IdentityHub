@@ -34,6 +34,7 @@ import java.sql.SQLException;
 import java.util.Collection;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Supplier;
 
 import static org.eclipse.edc.spi.result.StoreResult.alreadyExists;
 import static org.eclipse.edc.spi.result.StoreResult.notFound;
@@ -45,8 +46,10 @@ public class SqlKeyPairResourceStore extends AbstractSqlStore implements KeyPair
     };
     private final KeyPairResourceStoreStatements statements;
 
-    public SqlKeyPairResourceStore(DataSourceRegistry dataSourceRegistry, String dataSourceName, TransactionContext transactionContext, ObjectMapper objectMapper, QueryExecutor queryExecutor, KeyPairResourceStoreStatements statements) {
-        super(dataSourceRegistry, dataSourceName, transactionContext, objectMapper, queryExecutor);
+    public SqlKeyPairResourceStore(DataSourceRegistry dataSourceRegistry, String dataSourceName, TransactionContext transactionContext,
+                                   Supplier<ObjectMapper> objectMapperSupplier, QueryExecutor queryExecutor,
+                                   KeyPairResourceStoreStatements statements) {
+        super(dataSourceRegistry, dataSourceName, transactionContext, objectMapperSupplier, queryExecutor);
         this.statements = statements;
     }
 

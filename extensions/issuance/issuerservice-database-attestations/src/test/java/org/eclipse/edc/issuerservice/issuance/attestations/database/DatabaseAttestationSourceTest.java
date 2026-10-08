@@ -50,7 +50,7 @@ class DatabaseAttestationSourceTest {
         }
         attestationSource = new DatabaseAttestationSource(extension.getDatasourceName(),
                 true,
-                new ObjectMapper(),
+                ObjectMapper::new,
                 tableName,
                 extension.getDataSourceRegistry(),
                 queryExecutor,

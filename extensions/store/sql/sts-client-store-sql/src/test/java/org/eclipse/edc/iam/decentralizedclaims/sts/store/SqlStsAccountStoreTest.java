@@ -27,7 +27,6 @@ import org.eclipse.edc.sql.testfixtures.PostgresqlStoreSetupExtension;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
-import tools.jackson.databind.ObjectMapper;
 
 @ComponentTest
 @ExtendWith(PostgresqlStoreSetupExtension.class)
@@ -43,7 +42,7 @@ public class SqlStsAccountStoreTest extends StsAccountStoreTestBase {
         typeManager.registerTypes(PolicyRegistrationTypes.TYPES.toArray(Class<?>[]::new));
 
         stsClientStore = new SqlStsAccountStore(setupExtension.getDataSourceRegistry(), setupExtension.getDatasourceName(),
-                setupExtension.getTransactionContext(), new ObjectMapper(), sqlStatements, queryExecutor);
+                setupExtension.getTransactionContext(), typeManager::getMapper, sqlStatements, queryExecutor);
 
         var schema = TestUtils.getResourceFileContentAsString("sts-client-schema.sql");
         setupExtension.runQuery(schema);
