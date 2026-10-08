@@ -14,8 +14,6 @@
 
 package org.eclipse.edc.issuerservice.publisher.api;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.ws.rs.DefaultValue;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.HeaderParam;
@@ -33,6 +31,8 @@ import org.eclipse.edc.spi.query.Criterion;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.web.spi.exception.InvalidRequestException;
 import org.eclipse.edc.web.spi.exception.ObjectConflictException;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
 import java.util.List;
 import java.util.function.Supplier;
@@ -94,7 +94,7 @@ public class StatusListCredentialController {
             try {
                 body = mapper.get().writeValueAsString(selectedCredential.getVerifiableCredential().credential());
                 contentType = APPLICATION_JSON;
-            } catch (JsonProcessingException e) {
+            } catch (JacksonException e) {
                 throw new EdcException(e);
             }
         }

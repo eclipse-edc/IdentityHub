@@ -14,7 +14,6 @@
 
 package org.eclipse.edc.iam.decentralizedclaims.sts.store;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.eclipse.edc.iam.decentralizedclaims.sts.spi.store.StsAccountStore;
 import org.eclipse.edc.iam.decentralizedclaims.sts.spi.store.fixtures.StsAccountStoreTestBase;
 import org.eclipse.edc.iam.decentralizedclaims.sts.store.schema.BaseSqlDialectStatements;
@@ -43,7 +42,7 @@ public class SqlStsAccountStoreTest extends StsAccountStoreTestBase {
         typeManager.registerTypes(PolicyRegistrationTypes.TYPES.toArray(Class<?>[]::new));
 
         stsClientStore = new SqlStsAccountStore(setupExtension.getDataSourceRegistry(), setupExtension.getDatasourceName(),
-                setupExtension.getTransactionContext(), new ObjectMapper(), sqlStatements, queryExecutor);
+                setupExtension.getTransactionContext(), typeManager::getMapper, sqlStatements, queryExecutor);
 
         var schema = TestUtils.getResourceFileContentAsString("sts-client-schema.sql");
         setupExtension.runQuery(schema);

@@ -21,6 +21,7 @@ import org.eclipse.edc.iam.did.spi.document.Service;
 import org.eclipse.edc.identityhub.api.Versions;
 import org.eclipse.edc.identityhub.spi.did.DidDocumentService;
 import org.eclipse.edc.identityhub.spi.did.model.DidResource;
+import org.eclipse.edc.jsonld.util.JacksonJsonLd;
 import org.eclipse.edc.junit.annotations.ApiTest;
 import org.eclipse.edc.spi.query.Criterion;
 import org.eclipse.edc.spi.query.QuerySpec;
@@ -29,6 +30,7 @@ import org.eclipse.edc.web.jersey.testfixtures.RestControllerTestBase;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.MapperFeature;
 
 import java.util.Base64;
 import java.util.List;
@@ -56,6 +58,10 @@ class DidManagementApiControllerTest extends RestControllerTestBase {
     @BeforeEach
     void setUp() {
         when(authService.authorize(any(), anyString(), anyString(), any())).thenReturn(ServiceResult.success());
+        // this mock program should be not necessary, it was failing mostly for a cache issue. please try to remove and run tests again
+        when(typeManager.getMapper("test")).thenReturn(JacksonJsonLd.createObjectMapper().rebuild()
+                .enable(MapperFeature.USE_GETTERS_AS_SETTERS)
+                .build());
     }
 
     @Override

@@ -14,7 +14,6 @@
 
 package org.eclipse.edc.identityhub.protocols.dcp.issuer;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.json.Json;
 import okhttp3.Protocol;
 import okhttp3.Request;
@@ -46,6 +45,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.NullSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
+import tools.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
 import java.io.StringReader;

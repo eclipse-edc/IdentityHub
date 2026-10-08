@@ -57,7 +57,7 @@ public class SqlDidResourceStoreExtension implements ServiceExtension {
 
     @Provider
     public DidResourceStore createSqlStore(ServiceExtensionContext context) {
-        return new SqlDidResourceStore(dataSourceRegistry, dataSourceName, transactionContext, typemanager.getMapper(),
+        return new SqlDidResourceStore(dataSourceRegistry, dataSourceName, transactionContext, typemanager::getMapper,
                 queryExecutor, getStatementImpl());
     }
 

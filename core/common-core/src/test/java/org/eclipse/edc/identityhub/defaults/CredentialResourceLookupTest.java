@@ -14,8 +14,6 @@
 
 package org.eclipse.edc.identityhub.defaults;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredential;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredentialContainer;
@@ -24,6 +22,8 @@ import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCre
 import org.eclipse.edc.jsonld.util.JacksonJsonLd;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
 import java.time.Instant;
 import java.util.List;
@@ -203,7 +203,7 @@ class CredentialResourceLookupTest {
                     .issuerId("test-issuer")
                     .holderId("test-holder")
                     .build();
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw new RuntimeException(e);
         }
     }

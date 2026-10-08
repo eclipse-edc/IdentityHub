@@ -49,7 +49,7 @@ class SqlIssuanceProcessStoreTest extends IssuanceProcessStoreTestBase {
         var leaseContextBuilder = SqlLeaseContextBuilderImpl.with(extension.getTransactionContext(), RUNTIME_ID, statements.getIssuanceProcessTable(), leaseStatements, clock, queryExecutor);
 
         store = new SqlIssuanceProcessStore(extension.getDataSourceRegistry(), extension.getDatasourceName(),
-                extension.getTransactionContext(), typeManager.getMapper(), queryExecutor, statements, leaseContextBuilder);
+                extension.getTransactionContext(), typeManager::getMapper, queryExecutor, statements, leaseContextBuilder);
 
         leaseUtil = new LeaseUtil(extension.getTransactionContext(), extension::getConnection, statements.getIssuanceProcessTable(), leaseStatements, clock);
 

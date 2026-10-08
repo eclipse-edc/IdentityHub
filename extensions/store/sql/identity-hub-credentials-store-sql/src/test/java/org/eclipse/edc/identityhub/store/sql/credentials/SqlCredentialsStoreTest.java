@@ -57,7 +57,7 @@ class SqlCredentialsStoreTest extends CredentialStoreTestBase {
     @BeforeEach
     void setup(PostgresqlStoreSetupExtension extension, QueryExecutor queryExecutor) {
         store = new SqlCredentialStore(extension.getDataSourceRegistry(), extension.getDatasourceName(),
-                extension.getTransactionContext(), typeManager.getMapper(), queryExecutor, statements);
+                extension.getTransactionContext(), typeManager::getMapper, queryExecutor, statements);
 
         var schema = TestUtils.getResourceFileContentAsString("credentials-schema.sql");
         extension.runQuery(schema);
@@ -149,7 +149,7 @@ class SqlCredentialsStoreTest extends CredentialStoreTestBase {
         var dataSourceRegistry = new LocalDataSourceRegistry(transactionContext);
         dataSourceRegistry.register(extension.getDatasourceName(), extension.getDataSourceRegistry().resolve(extension.getDatasourceName()));
         return new SqlCredentialStore(dataSourceRegistry, extension.getDatasourceName(), transactionContext,
-                typeManager.getMapper(), queryExecutor, statements);
+                typeManager::getMapper, queryExecutor, statements);
     }
 
     private QuerySpec byId(String id) {

@@ -14,8 +14,6 @@
 
 package org.eclipse.edc.issuerservice.store.sql.credentialdefinition;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.type.MapType;
 import org.eclipse.edc.issuerservice.spi.issuance.credentialdefinition.store.CredentialDefinitionStore;
 import org.eclipse.edc.issuerservice.spi.issuance.model.CredentialDefinition;
 import org.eclipse.edc.issuerservice.spi.issuance.model.CredentialRuleDefinition;
@@ -27,6 +25,8 @@ import org.eclipse.edc.sql.QueryExecutor;
 import org.eclipse.edc.sql.store.AbstractSqlStore;
 import org.eclipse.edc.transaction.datasource.spi.DataSourceRegistry;
 import org.eclipse.edc.transaction.spi.TransactionContext;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.type.MapType;
 
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -35,11 +35,12 @@ import java.time.Clock;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.Supplier;
 
-import static com.fasterxml.jackson.databind.type.TypeFactory.defaultInstance;
 import static java.util.Optional.ofNullable;
 import static org.eclipse.edc.spi.result.StoreResult.alreadyExists;
 import static org.eclipse.edc.spi.result.StoreResult.success;
+import static tools.jackson.databind.type.TypeFactory.createDefaultInstance;
 
 
 /**
@@ -53,11 +54,11 @@ public class SqlCredentialDefinitionStore extends AbstractSqlStore implements Cr
     public SqlCredentialDefinitionStore(DataSourceRegistry dataSourceRegistry,
                                         String dataSourceName,
                                         TransactionContext transactionContext,
-                                        ObjectMapper objectMapper,
+                                        Supplier<ObjectMapper> objectMapperSupplier,
                                         QueryExecutor queryExecutor,
                                         CredentialDefinitionStoreStatements statements,
                                         Clock clock) {
-        super(dataSourceRegistry, dataSourceName, transactionContext, objectMapper, queryExecutor);
+        super(dataSourceRegistry, dataSourceName, transactionContext, objectMapperSupplier, queryExecutor);
         this.statements = statements;
         this.clock = clock;
     }
@@ -200,6 +201,6 @@ public class SqlCredentialDefinitionStore extends AbstractSqlStore implements Cr
     }
 
     private MapType map() {
-        return defaultInstance().constructMapType(Map.class, String.class, Object.class);
+        return createDefaultInstance().constructMapType(Map.class, String.class, Object.class);
     }
 }

@@ -15,13 +15,15 @@
 package org.eclipse.edc.issuerservice.issuance.database;
 
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationSource;
 import org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationSourceFactory;
 import org.eclipse.edc.issuerservice.spi.issuance.model.AttestationDefinition;
 import org.eclipse.edc.sql.QueryExecutor;
 import org.eclipse.edc.transaction.datasource.spi.DataSourceRegistry;
 import org.eclipse.edc.transaction.spi.TransactionContext;
+import tools.jackson.databind.ObjectMapper;
+
+import java.util.function.Supplier;
 
 import static org.eclipse.edc.issuerservice.issuance.database.DatabaseAttestationSource.DATASOURCE_NAME;
 import static org.eclipse.edc.issuerservice.issuance.database.DatabaseAttestationSource.DEFAULT_ID_COLUMN;
@@ -33,13 +35,14 @@ public class DatabaseAttestationSourceFactory implements AttestationSourceFactor
 
     private final TransactionContext transactionContext;
     private final QueryExecutor queryExecutor;
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final Supplier<ObjectMapper> objectMapperSupplier;
     private final DataSourceRegistry dataSourceRegistry;
 
-    public DatabaseAttestationSourceFactory(TransactionContext transactionContext, QueryExecutor queryExecutor, DataSourceRegistry dataSourceRegistry) {
+    public DatabaseAttestationSourceFactory(TransactionContext transactionContext, QueryExecutor queryExecutor, DataSourceRegistry dataSourceRegistry, Supplier<ObjectMapper> objectMapperSupplier) {
         this.transactionContext = transactionContext;
         this.queryExecutor = queryExecutor;
         this.dataSourceRegistry = dataSourceRegistry;
+        this.objectMapperSupplier = objectMapperSupplier;
     }
 
     @Override
@@ -50,6 +53,6 @@ public class DatabaseAttestationSourceFactory implements AttestationSourceFactor
         var tableName = (String) configuration.get(TABLE_NAME);
         var idColumn = (String) configuration.getOrDefault(ID_COLUMN, DEFAULT_ID_COLUMN);
 
-        return new DatabaseAttestationSource(dataSourceName, required, objectMapper, tableName, dataSourceRegistry, queryExecutor, transactionContext, idColumn);
+        return new DatabaseAttestationSource(dataSourceName, required, objectMapperSupplier, tableName, dataSourceRegistry, queryExecutor, transactionContext, idColumn);
     }
 }

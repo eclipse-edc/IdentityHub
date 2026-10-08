@@ -14,8 +14,6 @@
 
 package org.eclipse.edc.issuerservice.store.sql.holder;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.eclipse.edc.issuerservice.spi.holder.model.Holder;
 import org.eclipse.edc.issuerservice.spi.holder.store.HolderStore;
 import org.eclipse.edc.spi.persistence.EdcPersistenceException;
@@ -25,6 +23,8 @@ import org.eclipse.edc.sql.QueryExecutor;
 import org.eclipse.edc.sql.store.AbstractSqlStore;
 import org.eclipse.edc.transaction.datasource.spi.DataSourceRegistry;
 import org.eclipse.edc.transaction.spi.TransactionContext;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.ObjectMapper;
 
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -32,6 +32,7 @@ import java.sql.SQLException;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.Supplier;
 
 import static java.util.Optional.ofNullable;
 import static org.eclipse.edc.spi.result.StoreResult.alreadyExists;
@@ -48,10 +49,10 @@ public class SqlHolderStore extends AbstractSqlStore implements HolderStore {
     public SqlHolderStore(DataSourceRegistry dataSourceRegistry,
                           String dataSourceName,
                           TransactionContext transactionContext,
-                          ObjectMapper objectMapper,
+                          Supplier<ObjectMapper> objectMapperSupplier,
                           QueryExecutor queryExecutor,
                           HolderStoreStatements statements) {
-        super(dataSourceRegistry, dataSourceName, transactionContext, objectMapper, queryExecutor);
+        super(dataSourceRegistry, dataSourceName, transactionContext, objectMapperSupplier, queryExecutor);
         this.statements = statements;
     }
 

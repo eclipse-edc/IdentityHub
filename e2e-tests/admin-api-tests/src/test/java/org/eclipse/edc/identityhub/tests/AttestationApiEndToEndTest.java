@@ -50,6 +50,7 @@ import static org.eclipse.edc.identityhub.tests.TestData.ISSUER_RUNTIME_NAME;
 import static org.eclipse.edc.identityhub.tests.fixtures.TestFunctions.authorizeOauth2;
 import static org.eclipse.edc.identityhub.tests.fixtures.TestFunctions.authorizeTokenBased;
 import static org.eclipse.edc.junit.assertions.AbstractResultAssert.assertThat;
+import static org.eclipse.edc.spi.query.Criterion.criterion;
 import static org.hamcrest.Matchers.equalTo;
 
 @SuppressWarnings("JUnitMalformedDeclaration")
@@ -137,14 +138,13 @@ public class AttestationApiEndToEndTest {
             store.create(attestation2);
             store.create(attestation3);
 
-            //query by attestation type
             issuer.getAdminEndpoint().baseRequest()
                     .contentType(JSON)
                     .header(authorizeUser(USER, issuer))
                     .body(QuerySpec.Builder.newInstance()
                             .sortField("id")
                             .sortOrder(SortOrder.ASC)
-                            .filter(new Criterion("attestationType", "=", "test-type"))
+                            .filter(criterion("attestationType", "=", "test-type"))
                             .build())
                     .post("/v1/participants/%s/attestations/query".formatted(USER))
                     .then()

@@ -22,6 +22,7 @@ import org.eclipse.edc.runtime.metamodel.annotation.Extension;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;
 import org.eclipse.edc.spi.system.ServiceExtension;
 import org.eclipse.edc.spi.system.ServiceExtensionContext;
+import org.eclipse.edc.spi.types.TypeManager;
 import org.eclipse.edc.sql.QueryExecutor;
 import org.eclipse.edc.transaction.datasource.spi.DataSourceRegistry;
 import org.eclipse.edc.transaction.spi.TransactionContext;
@@ -44,10 +45,12 @@ public class DatabaseAttestationExtension implements ServiceExtension {
     private QueryExecutor queryExecutor;
     @Inject
     private DataSourceRegistry dataSourceRegistry;
+    @Inject
+    private TypeManager typeManager;
 
     @Override
     public void initialize(ServiceExtensionContext context) {
-        registry.registerFactory(DATABASE_ATTESTATION_TYPE, new DatabaseAttestationSourceFactory(transactionContext, queryExecutor, dataSourceRegistry));
+        registry.registerFactory(DATABASE_ATTESTATION_TYPE, new DatabaseAttestationSourceFactory(transactionContext, queryExecutor, dataSourceRegistry, typeManager::getMapper));
         validatorRegistry.registerValidator(DATABASE_ATTESTATION_TYPE, new DatabaseAttestationSourceValidator(dataSourceRegistry, transactionContext, queryExecutor));
     }
 }

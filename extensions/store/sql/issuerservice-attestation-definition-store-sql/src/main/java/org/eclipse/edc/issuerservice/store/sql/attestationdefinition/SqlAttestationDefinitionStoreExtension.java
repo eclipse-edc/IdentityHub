@@ -57,7 +57,7 @@ public class SqlAttestationDefinitionStoreExtension implements ServiceExtension 
 
     @Provider
     public AttestationDefinitionStore createSqlStore() {
-        return new SqlAttestationDefinitionStore(dataSourceRegistry, dataSourceName, transactionContext, typemanager.getMapper(),
+        return new SqlAttestationDefinitionStore(dataSourceRegistry, dataSourceName, transactionContext, typemanager::getMapper,
                 queryExecutor, getStatementImpl());
     }
 

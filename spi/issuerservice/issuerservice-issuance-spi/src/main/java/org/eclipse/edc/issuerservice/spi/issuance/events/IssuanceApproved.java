@@ -15,7 +15,7 @@
 package org.eclipse.edc.issuerservice.spi.issuance.events;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
+import tools.jackson.databind.annotation.JsonPOJOBuilder;
 
 public class IssuanceApproved extends IssuanceEvent {
     @Override

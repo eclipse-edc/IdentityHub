@@ -14,7 +14,6 @@
 
 package org.eclipse.edc.iam.decentralizedclaims.sts.defaults;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jwt.SignedJWT;
 import org.eclipse.edc.boot.vault.InMemoryVault;
 import org.eclipse.edc.iam.decentralizedclaims.sts.service.EmbeddedSecureTokenService;
@@ -37,6 +36,7 @@ import org.eclipse.edc.token.JwtGenerationService;
 import org.eclipse.edc.transaction.spi.NoopTransactionContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
 import java.time.Clock;

@@ -14,12 +14,12 @@
 
 package org.eclipse.edc.identityhub.api.verifiablecredential.v1.unstable.model;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.eclipse.edc.iam.did.spi.document.Service;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyDescriptor;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantManifest;
 import org.junit.jupiter.api.Test;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
 import java.util.Map;
 
@@ -30,7 +30,7 @@ class ParticipantManifestTest {
     private final ObjectMapper mapper = new ObjectMapper();
 
     @Test
-    void verify_serdes() throws JsonProcessingException {
+    void verify_serdes() throws JacksonException {
         var manifest = ParticipantManifest.Builder.newInstance()
                 .serviceEndpoint(new Service("id", "type", "foobar"))
                 .active(true)
@@ -53,7 +53,7 @@ class ParticipantManifestTest {
     }
 
     @Test
-    void verify_deserialize_singleValueAsArray() throws JsonProcessingException {
+    void verify_deserialize_singleValueAsArray() throws JacksonException {
         var json = """
                 {
                     "scopes":[],
@@ -90,7 +90,7 @@ class ParticipantManifestTest {
     }
 
     @Test
-    void verify_deserialize_array() throws JsonProcessingException {
+    void verify_deserialize_array() throws JacksonException {
         var json = """
                 {
                     "scopes":[],

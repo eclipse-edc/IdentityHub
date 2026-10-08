@@ -14,7 +14,6 @@
 
 package org.eclipse.edc.identityhub.protocols.dcp.issuer;
 
-import com.fasterxml.jackson.databind.DeserializationFeature;
 import jakarta.json.Json;
 import org.eclipse.edc.identityhub.protocols.dcp.issuer.api.v1.credentialrequest.CredentialRequestApiController;
 import org.eclipse.edc.identityhub.protocols.dcp.issuer.api.v1.credentialrequeststatus.CredentialRequestStatusApiController;
@@ -46,11 +45,13 @@ import org.eclipse.edc.spi.types.TypeManager;
 import org.eclipse.edc.transform.spi.TypeTransformerRegistry;
 import org.eclipse.edc.validator.spi.JsonObjectValidatorRegistry;
 import org.eclipse.edc.web.jersey.providers.jsonld.JerseyJsonLdInterceptor;
+import org.eclipse.edc.web.jersey.providers.jsonld.JsonMapperProvider;
 import org.eclipse.edc.web.jersey.providers.jsonld.JsonObjectMessageBodyReader;
 import org.eclipse.edc.web.jersey.providers.jsonld.ObjectMapperProvider;
 import org.eclipse.edc.web.spi.WebService;
 import org.eclipse.edc.web.spi.configuration.PortMapping;
 import org.eclipse.edc.web.spi.configuration.PortMappingRegistry;
+import tools.jackson.databind.DeserializationFeature;
 
 import java.io.IOException;
 import java.util.Map;
@@ -121,6 +122,7 @@ public class IssuerApiExtension implements ServiceExtension {
         webService.registerResource(ISSUANCE_API, new CredentialRequestStatusApiController(participantContextService, dcpHolderTokenVerifier, issuanceProcessService, dcpRegistry));
         webService.registerResource(ISSUANCE_API, new IssuerMetadataApiController(participantContextService, issuerMetadataService, dcpRegistry));
 
+        webService.registerResource(ISSUANCE_API, new JsonMapperProvider(typeManager, JSON_LD));
         webService.registerResource(ISSUANCE_API, new ObjectMapperProvider(typeManager, JSON_LD));
         webService.registerResource(ISSUANCE_API, new JerseyJsonLdInterceptor(jsonLd, typeManager, JSON_LD, DCP_SCOPE_V_1_0));
 
@@ -153,8 +155,9 @@ public class IssuerApiExtension implements ServiceExtension {
                 throw new EdcException("Version file '%s' not found or not readable.".formatted(API_VERSION_JSON_FILE));
             }
             Stream.of(typeManager.getMapper()
-                            .enable(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
-                            .readValue(versionContent, VersionRecord[].class))
+                            .readerFor(VersionRecord[].class)
+                            .with(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
+                            .<VersionRecord[]>readValue(versionContent))
                     .forEach(vr -> apiVersionService.addRecord("issuer-api", vr));
         } catch (IOException e) {
             throw new EdcException(e);

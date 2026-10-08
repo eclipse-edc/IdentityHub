@@ -14,7 +14,6 @@
 
 package org.eclipse.edc.issuerservice.issuance.attestations.database;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.assertj.core.api.Assertions;
 import org.eclipse.edc.issuerservice.issuance.database.DatabaseAttestationSource;
 import org.eclipse.edc.junit.annotations.PostgresqlIntegrationTest;
@@ -25,6 +24,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import tools.jackson.databind.ObjectMapper;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -50,7 +50,7 @@ class DatabaseAttestationSourceTest {
         }
         attestationSource = new DatabaseAttestationSource(extension.getDatasourceName(),
                 true,
-                new ObjectMapper(),
+                ObjectMapper::new,
                 tableName,
                 extension.getDataSourceRegistry(),
                 queryExecutor,

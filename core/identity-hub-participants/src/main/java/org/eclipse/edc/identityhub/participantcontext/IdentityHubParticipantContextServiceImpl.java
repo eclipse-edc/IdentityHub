@@ -14,8 +14,6 @@
 
 package org.eclipse.edc.identityhub.participantcontext;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.opentelemetry.api.trace.SpanKind;
 import io.opentelemetry.instrumentation.annotations.WithSpan;
 import org.eclipse.edc.identityhub.spi.did.store.DidResourceStore;
@@ -36,6 +34,8 @@ import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.ServiceResult;
 import org.eclipse.edc.spi.security.Vault;
 import org.eclipse.edc.transaction.spi.TransactionContext;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
 import java.util.Collection;
 import java.util.List;
@@ -199,7 +199,7 @@ public class IdentityHubParticipantContextServiceImpl implements IdentityHubPart
                     }
                     try {
                         return objectMapper.writeValueAsString(e.getValue());
-                    } catch (JsonProcessingException ex) {
+                    } catch (JacksonException ex) {
                         throw new RuntimeException(ex);
                     }
                 }));

@@ -14,7 +14,6 @@
 
 package org.eclipse.edc.identityhub.publickey;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.jwk.Curve;
 import com.nimbusds.jose.jwk.ECKey;
@@ -33,6 +32,7 @@ import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.spi.result.StoreResult;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.ObjectMapper;
 
 import java.util.Collections;
 import java.util.List;

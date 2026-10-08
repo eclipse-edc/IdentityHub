@@ -14,7 +14,6 @@
 
 package org.eclipse.edc.identityhub.did.store.sql;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.eclipse.edc.iam.did.spi.document.DidDocument;
 import org.eclipse.edc.identityhub.spi.did.model.DidResource;
 import org.eclipse.edc.identityhub.spi.did.store.DidResourceStore;
@@ -25,11 +24,13 @@ import org.eclipse.edc.sql.QueryExecutor;
 import org.eclipse.edc.sql.store.AbstractSqlStore;
 import org.eclipse.edc.transaction.datasource.spi.DataSourceRegistry;
 import org.eclipse.edc.transaction.spi.TransactionContext;
+import tools.jackson.databind.ObjectMapper;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Collection;
 import java.util.Objects;
+import java.util.function.Supplier;
 
 
 /**
@@ -40,8 +41,8 @@ public class SqlDidResourceStore extends AbstractSqlStore implements DidResource
     private final DidResourceStatements statements;
 
     public SqlDidResourceStore(DataSourceRegistry dataSourceRegistry, String dataSourceName, TransactionContext transactionContext,
-                               ObjectMapper objectMapper, QueryExecutor queryExecutor, DidResourceStatements statements) {
-        super(dataSourceRegistry, dataSourceName, transactionContext, objectMapper, queryExecutor);
+                               Supplier<ObjectMapper> objectMapperSupplier, QueryExecutor queryExecutor, DidResourceStatements statements) {
+        super(dataSourceRegistry, dataSourceName, transactionContext, objectMapperSupplier, queryExecutor);
         this.statements = statements;
     }
 

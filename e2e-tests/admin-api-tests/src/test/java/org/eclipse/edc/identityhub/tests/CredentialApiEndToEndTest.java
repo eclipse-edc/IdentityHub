@@ -14,9 +14,6 @@
 
 package org.eclipse.edc.identityhub.tests;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.jwk.Curve;
@@ -62,6 +59,9 @@ import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.ObjectMapper;
 
 import java.time.Instant;
 import java.util.List;
@@ -98,9 +98,10 @@ public class CredentialApiEndToEndTest {
     protected static final DidResolverRegistry DID_RESOLVER_REGISTRY = mock();
     private static final String STATUS_LIST_CREDENTIAL_ID = UUID.randomUUID().toString();
     private static final String STATUS_LIST_CREDENTIAL_URL = "https://example.com/credentials/status/" + STATUS_LIST_CREDENTIAL_ID;
-    private final ObjectMapper objectMapper = new JacksonTypeManager().getMapper()
+    private final ObjectMapper objectMapper = new JacksonTypeManager().getMapper().rebuild()
             .enable(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
-            .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
+            .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+            .build();
 
     private @NotNull VerifiableCredentialResource createCredential(String credentialId) {
         return createCredential(credentialId, USER);
@@ -141,7 +142,7 @@ public class CredentialApiEndToEndTest {
                     .participantContextId(USER)
                     .credential(new VerifiableCredentialContainer(credentialJwt, CredentialFormat.VC1_0_JWT, credential))
                     .build();
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw new RuntimeException(e);
         }
     }

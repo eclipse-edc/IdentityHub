@@ -15,7 +15,6 @@
 package org.eclipse.edc.identityhub.core.services.verifiablepresentation.generators;
 
 import com.apicatalog.vc.suite.SignatureSuite;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import io.opentelemetry.api.trace.SpanKind;
 import io.opentelemetry.instrumentation.annotations.WithSpan;
 import jakarta.json.Json;
@@ -37,6 +36,7 @@ import org.eclipse.edc.spi.EdcException;
 import org.eclipse.edc.spi.types.TypeManager;
 import org.eclipse.edc.verifiablecredentials.linkeddata.LdpIssuer;
 import org.jetbrains.annotations.NotNull;
+import tools.jackson.core.JacksonException;
 
 import java.net.URI;
 import java.security.KeyPair;
@@ -153,7 +153,7 @@ public class LdpPresentationGenerator implements PresentationGenerator<JsonObjec
                 .map(str -> {
                     try {
                         return typeManager.getMapper(typeContext).readValue(str, JsonObject.class);
-                    } catch (JsonProcessingException e) {
+                    } catch (JacksonException e) {
                         throw new EdcException(e);
                     }
                 })

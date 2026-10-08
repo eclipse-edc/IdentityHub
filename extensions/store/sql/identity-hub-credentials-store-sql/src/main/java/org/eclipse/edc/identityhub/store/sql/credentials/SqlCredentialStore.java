@@ -14,7 +14,6 @@
 
 package org.eclipse.edc.identityhub.store.sql.credentials;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredential;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredentialContainer;
@@ -30,12 +29,14 @@ import org.eclipse.edc.sql.QueryExecutor;
 import org.eclipse.edc.sql.store.AbstractSqlStore;
 import org.eclipse.edc.transaction.datasource.spi.DataSourceRegistry;
 import org.eclipse.edc.transaction.spi.TransactionContext;
+import tools.jackson.databind.ObjectMapper;
 
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Collection;
 import java.util.Objects;
+import java.util.function.Supplier;
 
 import static java.util.Optional.ofNullable;
 import static org.eclipse.edc.spi.result.StoreResult.alreadyExists;
@@ -50,8 +51,8 @@ public class SqlCredentialStore extends AbstractSqlStore implements CredentialSt
     private final CredentialStoreStatements statements;
 
     public SqlCredentialStore(DataSourceRegistry dataSourceRegistry, String dataSourceName, TransactionContext transactionContext,
-                              ObjectMapper objectMapper, QueryExecutor queryExecutor, CredentialStoreStatements statements) {
-        super(dataSourceRegistry, dataSourceName, transactionContext, objectMapper, queryExecutor);
+                              Supplier<ObjectMapper> objectMapperSupplier, QueryExecutor queryExecutor, CredentialStoreStatements statements) {
+        super(dataSourceRegistry, dataSourceName, transactionContext, objectMapperSupplier, queryExecutor);
         this.statements = statements;
     }
 
