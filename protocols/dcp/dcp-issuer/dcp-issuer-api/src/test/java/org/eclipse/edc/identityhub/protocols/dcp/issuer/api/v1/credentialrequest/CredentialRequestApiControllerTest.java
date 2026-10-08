@@ -181,6 +181,24 @@ class CredentialRequestApiControllerTest extends RestControllerTestBase {
         verify(dcpIssuerService).initiateCredentialsIssuance(participantContextId, requestMessage, ctx);
     }
 
+    @Test
+    void requestCredential_whenAlreadyReceived_shouldReturn409WithLocation() {
+        when(validatorRegistryMock.validate(eq(namespace.toIri(CREDENTIAL_REQUEST_MESSAGE_TERM)), any())).thenReturn(success());
+        when(typeTransformerRegistry.transform(isA(JsonObject.class), eq(CredentialRequestMessage.class))).thenReturn(Result.success(createCredentialRequestMessage()));
+        var ctx = new DcpRequestContext(createHolder("id", "did", "name"), Map.of(), null);
+        // e.g. the Holder sent the request again, after it did not receive the response to the first one
+        var responseMessage = new CredentialRequestMessage.Response(UUID.randomUUID().toString(), true);
+        when(dcpIssuerTokenVerifier.verify(any(), any())).thenReturn(ServiceResult.success(ctx));
+        when(dcpIssuerService.initiateCredentialsIssuance(eq(participantContextId), any(), any())).thenReturn(ServiceResult.success(responseMessage));
+        when(participantContextService.getParticipantContext(eq(participantContextId))).thenReturn(ServiceResult.success(createParticipantContext()));
+
+        var response = controller().requestCredential(participantContextId, createObjectBuilder().build(), "Bearer " + generateJwt());
+
+        // the Location lets the Holder query the status of the existing issuance process
+        assertThat(response.getStatus()).isEqualTo(409);
+        assertThat(response.getHeaderString("Location")).contains("/v1/participants/%s/requests/%s".formatted(participantContextId, responseMessage.requestId()));
+    }
+
     @Override
     protected CredentialRequestApiController controller() {
         return new CredentialRequestApiController(participantContextService, dcpIssuerService, dcpIssuerTokenVerifier, validatorRegistryMock, typeTransformerRegistry, namespace);

@@ -151,9 +151,9 @@ public class DcpIssuerServiceImplTest {
         verify(listener).requested(issuanceProcess);
     }
 
-    @DisplayName("IS-REQ-06: a second request with the same holderPid returns 409 and creates no second process")
+    @DisplayName("IS-REQ-06: a second request with the same holderPid creates no second process, and is answered with the existing one")
     @Test
-    void initiateCredentialsIssuance_whenDuplicateHolderPid_returnsConflict() {
+    void initiateCredentialsIssuance_whenDuplicateHolderPid_returnsExistingProcess() {
 
         var holderPid = UUID.randomUUID().toString();
         var message = CredentialRequestMessage.Builder.newInstance()
@@ -186,29 +186,79 @@ public class DcpIssuerServiceImplTest {
 
         var result = dcpIssuerService.initiateCredentialsIssuance("participantContextId", message, participant);
 
-        assertThat(result).isFailed().satisfies(f -> assertThat(f.getReason()).isEqualTo(ServiceFailure.Reason.CONFLICT));
+        // the Holder learns the ID of the existing process, so that it can query its status
+        assertThat(result).isSucceeded().isEqualTo(new CredentialRequestMessage.Response(existingProcess.getId(), true));
+        verify(issuanceProcessStore, never()).save(any());
+        // the existing process carries on, so the request is only announced as received, not as requested or rejected
+        var listenerCaptor = ArgumentCaptor.forClass(Consumer.class);
+        //noinspection unchecked
+        verify(issuanceObservable).invokeForEach(listenerCaptor.capture());
+        var listener = mock(IssuanceEventListener.class);
+        //noinspection unchecked
+        listenerCaptor.getValue().accept(listener);
+        verify(listener).received(any(), any(), any());
+        verify(listener, never()).requested(any());
+        verify(listener, never()).rejected(any(), any(), any());
+    }
+
+    @Test
+    void initiateCredentialsIssuance_whenDuplicateHolderPidOfOtherHolder_returnsConflict() {
+        var holderPid = UUID.randomUUID().toString();
+        var message = CredentialRequestMessage.Builder.newInstance()
+                .holderPid(holderPid)
+                .credential(new CredentialRequestSpecifier("credentialDefinitionId1"))
+                .build();
+        var participant = stubIssuableRequest(null);
+        var otherHoldersProcess = IssuanceProcess.Builder.newInstance().holderPid(holderPid).holderId("other-holder").participantContextId("participantContextId")
+                .state(IssuanceProcessStates.APPROVED.code()).build();
+        when(issuanceProcessStore.query(any())).thenReturn(Stream.of(otherHoldersProcess));
+
+        var result = dcpIssuerService.initiateCredentialsIssuance("participantContextId", message, participant);
+
+        // the ID of another Holder's process is not disclosed
+        assertThat(result).isFailed().satisfies(f -> {
+            assertThat(f.getReason()).isEqualTo(ServiceFailure.Reason.CONFLICT);
+            assertThat(f.getFailureDetail()).doesNotContain(otherHoldersProcess.getId());
+        });
         verify(issuanceProcessStore, never()).save(any());
     }
 
     @Test
-    void initiateCredentialsIssuance_whenConcurrentRequestCreatedProcess_returnsConflict() {
+    void initiateCredentialsIssuance_whenConcurrentRequestCreatedProcess_returnsThatProcess() {
         var holderPid = UUID.randomUUID().toString();
         var message = CredentialRequestMessage.Builder.newInstance()
                 .holderPid(holderPid)
                 .credential(new CredentialRequestSpecifier("credentialDefinitionId1"))
                 .build();
         var participant = stubIssuableRequest("holder-access-token");
+        var concurrentProcess = IssuanceProcess.Builder.newInstance().holderPid(holderPid).holderId("holderId").participantContextId("participantContextId")
+                .state(IssuanceProcessStates.APPROVED.code()).build();
         // the request with the same holderPid that is handled at the same time is not visible yet, but the store rejects it
-        when(issuanceProcessStore.query(any())).thenReturn(Stream.of());
+        when(issuanceProcessStore.query(any())).thenReturn(Stream.of()).thenReturn(Stream.of(concurrentProcess));
+        when(issuanceProcessStore.save(any())).thenReturn(StoreResult.alreadyExists("already exists"));
+
+        var result = dcpIssuerService.initiateCredentialsIssuance("participantContextId", message, participant);
+
+        assertThat(result).isSucceeded().isEqualTo(new CredentialRequestMessage.Response(concurrentProcess.getId(), true));
+        var captor = ArgumentCaptor.forClass(IssuanceProcess.class);
+        verify(issuanceProcessStore).save(captor.capture());
+        // the access token of the process that was not created is not kept
+        verify(vault).deleteSecret(captor.getValue().getId());
+    }
+
+    @Test
+    void initiateCredentialsIssuance_whenStoreRejectsProcessThatCannotBeFound_returnsConflict() {
+        var message = CredentialRequestMessage.Builder.newInstance()
+                .holderPid(UUID.randomUUID().toString())
+                .credential(new CredentialRequestSpecifier("credentialDefinitionId1"))
+                .build();
+        var participant = stubIssuableRequest("holder-access-token");
+        when(issuanceProcessStore.query(any())).thenAnswer(i -> Stream.of());
         when(issuanceProcessStore.save(any())).thenReturn(StoreResult.alreadyExists("already exists"));
 
         var result = dcpIssuerService.initiateCredentialsIssuance("participantContextId", message, participant);
 
         assertThat(result).isFailed().satisfies(f -> assertThat(f.getReason()).isEqualTo(ServiceFailure.Reason.CONFLICT));
-        var captor = ArgumentCaptor.forClass(IssuanceProcess.class);
-        verify(issuanceProcessStore).save(captor.capture());
-        // the access token of the process that was not created is not kept
-        verify(vault).deleteSecret(captor.getValue().getId());
     }
 
     @Test

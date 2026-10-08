@@ -35,11 +35,14 @@ import org.eclipse.edc.spi.result.ServiceResult;
 import org.eclipse.edc.spi.security.Vault;
 import org.eclipse.edc.spi.telemetry.Telemetry;
 import org.eclipse.edc.transaction.spi.TransactionContext;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
+
+import static java.util.Optional.ofNullable;
 
 public class DcpIssuerServiceImpl implements DcpIssuerService {
 
@@ -89,13 +92,16 @@ public class DcpIssuerServiceImpl implements DcpIssuerService {
                 .compose(credentialDefinitions -> evaluateAttestations(context, credentialDefinitions))
                 .compose(this::evaluateRules)
                 .compose(evaluation -> createIssuanceProcess(participantContextId, message.getHolderPid(), credentialFormats.getContent(), context, evaluation))
-                .onSuccess(ip -> {
-                    observable.invokeForEach(l -> l.requested(ip));
+                .onSuccess(issuance -> {
+                    // a request that was received before neither starts nor rejects anything: its process carries on
+                    if (!issuance.alreadyReceived()) {
+                        observable.invokeForEach(l -> l.requested(issuance.process()));
+                    }
                 })
                 .onFailure(f -> {
                     observable.invokeForEach(l -> l.rejected(message.getHolderPid(), participantContextId, f.getFailureDetail()));
                 })
-                .map(issuanceProcess -> new CredentialRequestMessage.Response(issuanceProcess.getId())));
+                .map(issuance -> new CredentialRequestMessage.Response(issuance.process().getId(), issuance.alreadyReceived())));
 
     }
 
@@ -161,16 +167,11 @@ public class DcpIssuerServiceImpl implements DcpIssuerService {
         return ServiceResult.success(evaluationResponse);
     }
 
-    private ServiceResult<IssuanceProcess> createIssuanceProcess(String participantContextId, String holderPid, Map<String, CredentialFormat> credentialFormats, DcpRequestContext context, AttestationEvaluationResponse evaluationResponse) {
+    private ServiceResult<Issuance> createIssuanceProcess(String participantContextId, String holderPid, Map<String, CredentialFormat> credentialFormats, DcpRequestContext context, AttestationEvaluationResponse evaluationResponse) {
 
-        var query = QuerySpec.Builder.newInstance()
-                .filter(Criterion.criterion("holderPid", "=", holderPid))
-                .filter(Criterion.criterion("participantContextId", "=", participantContextId))
-                .build();
-
-        var existing = issuanceProcessStore.query(query).findAny();
-        if (existing.isPresent()) {
-            return ServiceResult.conflict("An issuance process with holderPid '%s' already exists for this participant.".formatted(holderPid));
+        var existing = findExisting(participantContextId, holderPid, context);
+        if (existing != null) {
+            return existing;
         }
 
         var credentialDefinitionIds = evaluationResponse.credentialDefinitions().stream()
@@ -206,10 +207,31 @@ public class DcpIssuerServiceImpl implements DcpIssuerService {
                 // a token that cannot be deleted is never used, because its alias is the ID of a process that does not exist
                 vault.deleteSecret(issuanceProcess.getId());
             }
-            return ServiceResult.fromFailure(saveResult);
+            return ofNullable(findExisting(participantContextId, holderPid, context))
+                    .orElseGet(() -> ServiceResult.fromFailure(saveResult));
         }
 
-        return ServiceResult.success(issuanceProcess);
+        return ServiceResult.success(new Issuance(issuanceProcess, false));
+    }
+
+    /**
+     * Looks for the issuance process of a request that was received before, e.g. because the Holder sent it again after it
+     * was interrupted.
+     *
+     * @return the existing process, if it belongs to the requesting Holder, a conflict if it belongs to another Holder, so
+     *         that its ID is not disclosed, or null if there is none
+     */
+    private @Nullable ServiceResult<Issuance> findExisting(String participantContextId, String holderPid, DcpRequestContext context) {
+        var query = QuerySpec.Builder.newInstance()
+                .filter(Criterion.criterion("holderPid", "=", holderPid))
+                .filter(Criterion.criterion("participantContextId", "=", participantContextId))
+                .build();
+
+        return issuanceProcessStore.query(query).findAny()
+                .map(existing -> existing.getHolderId().equals(context.holder().getHolderId())
+                        ? ServiceResult.success(new Issuance(existing, true))
+                        : ServiceResult.<Issuance>conflict("An issuance process with holderPid '%s' already exists for this participant.".formatted(holderPid)))
+                .orElse(null);
 
     }
 
@@ -233,5 +255,13 @@ public class DcpIssuerServiceImpl implements DcpIssuerService {
 
     private record AttestationEvaluationResponse(Collection<CredentialDefinition> credentialDefinitions,
                                                  Map<String, Object> claims) {
+    }
+
+    /**
+     * The issuance process of a credential request.
+     *
+     * @param alreadyReceived whether the process was created for an earlier copy of the request
+     */
+    private record Issuance(IssuanceProcess process, boolean alreadyReceived) {
     }
 }
