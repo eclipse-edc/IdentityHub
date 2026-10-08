@@ -126,10 +126,9 @@ public class SqlIssuanceProcessStore extends AbstractSqlStore implements Issuanc
                         return result;
                     }
                     update(conn, issuanceProcess);
-                } else {
-                    insert(conn, issuanceProcess);
+                    return StoreResult.success();
                 }
-                return StoreResult.success();
+                return insert(conn, issuanceProcess);
             } catch (SQLException e) {
                 throw new EdcPersistenceException(e);
             }
@@ -159,9 +158,9 @@ public class SqlIssuanceProcessStore extends AbstractSqlStore implements Issuanc
         });
     }
 
-    private void insert(Connection conn, IssuanceProcess process) {
+    private StoreResult<Void> insert(Connection conn, IssuanceProcess process) {
         var insertTpStatement = statements.getInsertTemplate();
-        queryExecutor.execute(conn, insertTpStatement, process.getId(),
+        var inserted = queryExecutor.execute(conn, insertTpStatement, process.getId(),
                 process.getState(),
                 process.getStateCount(),
                 process.getStateTimestamp(),
@@ -176,6 +175,9 @@ public class SqlIssuanceProcessStore extends AbstractSqlStore implements Issuanc
                 toJson(process.getCredentialDefinitions()),
                 toJson(process.getCredentialFormats())
         );
+        return inserted > 0
+                ? StoreResult.success()
+                : StoreResult.alreadyExists(holderPidConflictMessage(process));
     }
 
     private void update(Connection conn, IssuanceProcess process) {

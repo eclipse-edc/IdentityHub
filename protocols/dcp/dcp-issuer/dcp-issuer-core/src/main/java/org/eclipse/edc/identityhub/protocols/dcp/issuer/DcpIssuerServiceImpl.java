@@ -187,12 +187,26 @@ public class DcpIssuerServiceImpl implements DcpIssuerService {
                 .credentialFormats(credentialFormats)
                 .build();
 
-        issuanceProcessStore.save(issuanceProcess);
-
         // the access token is a bearer credential, so it is kept in the vault rather than alongside the process.
-        // It is presented back to the Holder's Credential Service when the credentials are delivered.
-        if (context.accessToken() != null && !context.accessToken().isBlank()) {
-            vault.storeSecret(issuanceProcess.getId(), context.accessToken());
+        // It is presented back to the Holder's Credential Service when the credentials are delivered. It is stored first:
+        // a process without it could not deliver its credentials, and would reject the Holder's retry as a duplicate.
+        var hasAccessToken = context.accessToken() != null && !context.accessToken().isBlank();
+        if (hasAccessToken) {
+            var storeResult = vault.storeSecret(issuanceProcess.getId(), context.accessToken());
+            if (storeResult.failed()) {
+                return ServiceResult.unexpected("Failed to store the access token of the credential request with holderPid '%s': %s"
+                        .formatted(holderPid, storeResult.getFailureDetail()));
+            }
+        }
+
+        // the store rejects a second process with the same holderPid, e.g. of a request that is handled concurrently
+        var saveResult = issuanceProcessStore.save(issuanceProcess);
+        if (saveResult.failed()) {
+            if (hasAccessToken) {
+                // a token that cannot be deleted is never used, because its alias is the ID of a process that does not exist
+                vault.deleteSecret(issuanceProcess.getId());
+            }
+            return ServiceResult.fromFailure(saveResult);
         }
 
         return ServiceResult.success(issuanceProcess);

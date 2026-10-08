@@ -17,8 +17,10 @@ package org.eclipse.edc.issuerservice.defaults.store;
 import org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcess;
 import org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcessStates;
 import org.eclipse.edc.issuerservice.spi.issuance.process.store.IssuanceProcessStore;
+import org.eclipse.edc.spi.query.Criterion;
 import org.eclipse.edc.spi.query.CriterionOperatorRegistry;
 import org.eclipse.edc.spi.query.QuerySpec;
+import org.eclipse.edc.spi.result.StoreResult;
 import org.eclipse.edc.store.InMemoryStatefulEntityStore;
 
 import java.time.Clock;
@@ -38,5 +40,23 @@ public class InMemoryIssuanceProcessStore extends InMemoryStatefulEntityStore<Is
     @Override
     public Stream<IssuanceProcess> query(QuerySpec querySpec) {
         return super.findAll(querySpec);
+    }
+
+    /**
+     * Rejects a new process whose holderPid is used by another process of the same participant context. Synchronized, so
+     * that the check and the save cannot interleave with those of another process.
+     */
+    @Override
+    public synchronized StoreResult<Void> save(IssuanceProcess process) {
+        if (findById(process.getId()) == null) {
+            var sameHolderPid = QuerySpec.Builder.newInstance()
+                    .filter(new Criterion("participantContextId", "=", process.getParticipantContextId()))
+                    .filter(new Criterion("holderPid", "=", process.getHolderPid()))
+                    .build();
+            if (findAll(sameHolderPid).findAny().isPresent()) {
+                return StoreResult.alreadyExists(holderPidConflictMessage(process));
+            }
+        }
+        return super.save(process);
     }
 }

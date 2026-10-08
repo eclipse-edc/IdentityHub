@@ -48,3 +48,7 @@ CREATE TABLE IF NOT EXISTS edc_issuance_process
 -- This will help to identify states that need to be transitioned without a table scan when the entries grow
 CREATE INDEX IF NOT EXISTS issuance_process_state ON edc_issuance_process (state,state_time_stamp);
 
+-- A Holder may send a credential request again, e.g. when it did not receive the response, so concurrent requests with the
+-- same holderPid must not create a second issuance process
+CREATE UNIQUE INDEX IF NOT EXISTS issuance_process_holder_pid ON edc_issuance_process (participant_context_id, holder_pid);
+

@@ -102,6 +102,38 @@ public abstract class IssuanceProcessStoreTestBase {
             assertThat(retrieved).isNotNull().usingRecursiveComparison().isEqualTo(issuanceProcess);
             assertThat(retrieved.getCreatedAt()).isNotEqualTo(0L);
         }
+
+        @Test
+        void whenHolderPidUsedInSameParticipantContext_shouldFail() {
+            getStore().save(createIssuanceProcessBuilder().participantContextId("participant").holderPid("holder-pid").build());
+            // e.g. a credential request that the Holder sent again, and that is handled concurrently
+            var duplicate = createIssuanceProcessBuilder().participantContextId("participant").holderPid("holder-pid").build();
+
+            AbstractResultAssert.assertThat(getStore().save(duplicate)).isFailed()
+                    .extracting(StoreFailure::getReason)
+                    .isEqualTo(StoreFailure.Reason.ALREADY_EXISTS);
+            assertThat(getStore().findById(duplicate.getId())).isNull();
+        }
+
+        @Test
+        void whenHolderPidUsedInOtherParticipantContext_shouldCreate() {
+            getStore().save(createIssuanceProcessBuilder().participantContextId("participant").holderPid("holder-pid").build());
+            var other = createIssuanceProcessBuilder().participantContextId("other-participant").holderPid("holder-pid").build();
+
+            AbstractResultAssert.assertThat(getStore().save(other)).isSucceeded();
+            assertThat(getStore().findById(other.getId())).isNotNull();
+        }
+
+        @Test
+        void whenSavedAgain_shouldUpdate() {
+            var issuanceProcess = createIssuanceProcessBuilder().participantContextId("participant").holderPid("holder-pid").build();
+            getStore().save(issuanceProcess);
+            issuanceProcess.transitionToDelivering();
+
+            // the process itself does not conflict with its own holderPid
+            AbstractResultAssert.assertThat(getStore().save(issuanceProcess)).isSucceeded();
+            assertThat(getStore().findById(issuanceProcess.getId()).getState()).isEqualTo(IssuanceProcessStates.DELIVERING.code());
+        }
     }
 
     @Nested
