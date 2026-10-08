@@ -33,6 +33,7 @@ import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialSto
 import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.spi.query.Criterion;
 import org.eclipse.edc.spi.query.QuerySpec;
+import org.eclipse.edc.spi.query.SortOrder;
 import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.spi.result.ServiceResult;
 import org.eclipse.edc.token.spi.TokenValidationService;
@@ -299,6 +300,9 @@ public class CredentialWriterImpl implements CredentialWriter {
      * any time, so it must no longer be used in DCP interactions: it is moved to {@link VcStatus#EXPIRED}, which excludes
      * it from presentations immediately, and marked as superseded so the credential watchdog neither re-activates it nor
      * requests re-issuance for it. The watchdog may still move it on to {@link VcStatus#REVOKED} once the Issuer revokes it.
+     * <p>
+     * The replaced credentials are locked, so that a concurrent check by the watchdog cannot overwrite the supersession,
+     * and in the order of their IDs, so that concurrent deliveries cannot deadlock.
      */
     private ServiceResult<Void> expireSupersededCredentials(VerifiableCredentialResource newCredential, String participantContextId) {
         var query = QuerySpec.Builder.newInstance()
@@ -310,9 +314,11 @@ public class CredentialWriterImpl implements CredentialWriter {
                 .filter(new Criterion("id", "!=", newCredential.getId()))
                 // a revocation is authoritative and must not be masked by the supersession
                 .filter(new Criterion("state", "!=", VcStatus.REVOKED.code()))
+                .sortField("id")
+                .sortOrder(SortOrder.ASC)
                 .build();
 
-        var queryResult = credentialStore.query(query);
+        var queryResult = credentialStore.queryForUpdate(query);
         if (queryResult.failed()) {
             return from(queryResult).mapEmpty();
         }
