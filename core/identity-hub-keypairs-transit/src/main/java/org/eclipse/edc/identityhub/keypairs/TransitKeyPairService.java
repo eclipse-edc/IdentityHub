@@ -22,6 +22,7 @@ import com.nimbusds.jose.util.Base64URL;
 import io.opentelemetry.api.trace.SpanKind;
 import io.opentelemetry.instrumentation.annotations.WithSpan;
 import org.eclipse.edc.identityhub.spi.keypair.KeyPairService;
+import org.eclipse.edc.identityhub.spi.keypair.events.KeyPairEventListener;
 import org.eclipse.edc.identityhub.spi.keypair.events.KeyPairObservable;
 import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairResource;
 import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairState;
@@ -54,6 +55,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import static java.util.Optional.ofNullable;
@@ -116,163 +119,137 @@ public class TransitKeyPairService implements KeyPairService, EventSubscriber {
             }
 
             var keyName = generateKeyName(participantContextId, keyDescriptor.getPrivateKeyAlias());
+            // an existing key is never taken over: it belongs to another key pair, which would then share its key material
+            if (transitEngine.getKey(keyName).succeeded()) {
+                return ServiceResult.conflict("A Transit key with name '%s' already exists.".formatted(keyName));
+            }
             var keyResult = transitEngine.generateKey(keyName, type);
             if (keyResult.failed()) {
                 return ServiceResult.from(keyResult.mapEmpty());
             }
 
-            var publicKey = keyResult.getContent().getLatestVersion();
-            if (publicKey.failed()) {
-                return ServiceResult.from(publicKey.mapEmpty());
+            // Transit is not part of the transaction, so the new key is deleted again if the key pair is not added after all
+            KeyPairResource newResource;
+            StoreResult<Void> createResult;
+            try {
+                var publicKey = keyResult.getContent().getLatestVersion();
+                if (publicKey.failed()) {
+                    discardKey(keyName);
+                    return ServiceResult.from(publicKey.mapEmpty());
+                }
+
+                newResource = KeyPairResource.Builder.newInstance()
+                        .usage(keyDescriptor.getUsage())
+                        .id(keyDescriptor.getResourceId())
+                        .keyId(keyDescriptor.getKeyId())
+                        .state(keyDescriptor.isActive() ? KeyPairState.ACTIVATED : KeyPairState.CREATED)
+                        .isDefaultPair(makeDefault)
+                        .privateKeyAlias(keyName)
+                        .serializedPublicKey(decodePublicKeyToJwk(publicKey.getContent().getPublicKey()))
+                        .timestamp(Instant.now().toEpochMilli())
+                        .participantContextId(participantContextId)
+                        .keyContext(keyDescriptor.getType())
+                        .build();
+                createResult = keyPairResourceStore.create(newResource);
+            } catch (RuntimeException e) {
+                discardKey(keyName);
+                throw e;
+            }
+            if (createResult.failed()) {
+                discardKey(keyName);
+                return ServiceResult.from(createResult);
             }
 
-            var newResource = KeyPairResource.Builder.newInstance()
-                    .usage(keyDescriptor.getUsage())
-                    .id(keyDescriptor.getResourceId())
-                    .keyId(keyDescriptor.getKeyId())
-                    .state(keyDescriptor.isActive() ? KeyPairState.ACTIVATED : KeyPairState.CREATED)
-                    .isDefaultPair(makeDefault)
-                    .privateKeyAlias(keyName)
-                    .serializedPublicKey(decodePublicKeyToJwk(publicKey.getContent().getPublicKey()))
-                    .timestamp(Instant.now().toEpochMilli())
-                    .participantContextId(participantContextId)
-                    .keyContext(keyDescriptor.getType())
-                    .build();
-
-            return ServiceResult.from(keyPairResourceStore.create(newResource))
-                    .onSuccess(v -> observable.invokeForEach(l -> {
-                        l.added(newResource, keyDescriptor.getType());
-                        // must emit the activate event, so that downstream services get notified
-                        if (keyDescriptor.isActive()) {
-                            l.activated(newResource, keyDescriptor.getType());
-                        }
-                    }));
+            observable.invokeForEach(l -> {
+                l.added(newResource, keyDescriptor.getType());
+                // must emit the activate event, so that downstream services get notified
+                if (keyDescriptor.isActive()) {
+                    l.activated(newResource, keyDescriptor.getType());
+                }
+            });
+            return success();
         });
     }
 
     @Override
     @WithSpan(value = "keypairs.rotate", kind = SpanKind.INTERNAL)
     public ServiceResult<Void> rotateKeyPair(String oldId, @Nullable KeyDescriptor newKeyDesc, long duration) {
-        return transactionContext.execute(() -> {
-            var oldKey = findById(oldId);
-            if (oldKey == null) {
-                return ServiceResult.notFound("A KeyPairResource with ID '%s' does not exist.".formatted(oldId));
-            }
-
-            var participantContextId = oldKey.getParticipantContextId();
-
-            if (newKeyDesc != null) {
-                // a rotated key stays in the DID document, so its successor cannot have the same key ID. This is checked
-                // before anything is changed, so that a rejected successor does not leave the old key rotated. Without a
-                // successor descriptor, the successor deliberately keeps the old key ID, c.f. DidDocumentService
-                var keyIdResult = checkKeyIdAvailable(participantContextId, newKeyDesc.getKeyId(), null);
-                if (keyIdResult.failed()) {
-                    return keyIdResult;
+        try {
+            return transactionContext.execute(() -> {
+                var oldKey = findById(oldId);
+                if (oldKey == null) {
+                    return ServiceResult.notFound("A KeyPairResource with ID '%s' does not exist.".formatted(oldId));
                 }
-            }
 
-            // deactivate the old key
-            oldKey.rotate(duration);
+                var participantContextId = oldKey.getParticipantContextId();
 
-            var res = keyPairResourceStore.update(oldKey);
-            if (res.failed()) {
-                return ServiceResult.from(res);
-            }
+                if (newKeyDesc != null) {
+                    // a rotated key stays in the DID document, so its successor cannot have the same key ID. This is checked
+                    // before anything is changed, so that a rejected successor does not leave the old key rotated. Without a
+                    // successor descriptor, the successor deliberately keeps the old key ID, c.f. DidDocumentService
+                    var keyIdResult = checkKeyIdAvailable(participantContextId, newKeyDesc.getKeyId(), null);
+                    if (keyIdResult.failed()) {
+                        return keyIdResult;
+                    }
+                }
 
-            // have Transit rotate the key, and create a copy of the keypairResource
+                // have Transit rotate the key, and create a copy of the keypairResource
+                var keyName = oldKey.getPrivateKeyAlias();
+                var rotateResult = transitEngine.rotateKey(keyName);
+                if (rotateResult.failed()) {
+                    return ServiceResult.from(rotateResult);
+                }
+                var keyVersion = transitEngine.getKey(keyName)
+                        .compose(tkd -> transitEngine.setMinEncryptionKeyVersion(keyName, tkd.getData().getLatestVersion()).compose(u -> Result.success(tkd)))
+                        .compose(TransitKeyDescriptor::getLatestVersion);
 
-            var keyName = oldKey.getPrivateKeyAlias();
-            var transitRotateResult = transitEngine.rotateKey(keyName)
-                    .compose(u -> transitEngine.getKey(keyName))
-                    .compose(tkd -> transitEngine.setMinEncryptionKeyVersion(keyName, tkd.getData().getLatestVersion()).compose(u -> Result.success(tkd)))
-                    .compose(TransitKeyDescriptor::getLatestVersion);
-
-            if (transitRotateResult.failed()) {
-                return ServiceResult.from(transitRotateResult.mapFailure());
-            }
-            var keyVersion = transitRotateResult.getContent();
-            var newKeyPairResource = KeyPairResource.Builder.newInstance()
-                    .usage(oldKey.getUsage())
-                    .id(ofNullable(newKeyDesc).map(KeyDescriptor::getResourceId).orElse(UUID.randomUUID().toString()))
-                    .keyId(ofNullable(newKeyDesc).map(KeyDescriptor::getKeyId).orElse(oldKey.getKeyId()))
-                    .state(KeyPairState.ACTIVATED)
-                    .isDefaultPair(true)
-                    .privateKeyAlias(keyName)
-                    .serializedPublicKey(decodePublicKeyToJwk(keyVersion.getPublicKey()))
-                    .timestamp(Instant.now().toEpochMilli())
-                    .participantContextId(participantContextId)
-                    .keyContext(oldKey.getKeyContext())
-                    .build();
-
-            var storeResult = keyPairResourceStore.create(newKeyPairResource)
-                    .onSuccess(v -> observable.invokeForEach(l -> {
-                        l.rotated(oldKey, newKeyDesc);
-                        l.added(newKeyPairResource, oldKey.getKeyContext());
-                        l.activated(newKeyPairResource, oldKey.getKeyContext());
-                    }));
-            return ServiceResult.from(storeResult);
-        });
+                return recordKeyChange(oldKey, newKeyDesc, keyVersion, key -> key.rotate(duration), (listener, key) -> listener.rotated(key, newKeyDesc));
+            });
+        } catch (RollbackException e) {
+            return e.failure();
+        }
     }
 
     @Override
     @WithSpan(value = "keypairs.revoke", kind = SpanKind.INTERNAL)
     public ServiceResult<Void> revokeKey(String id, @Nullable KeyDescriptor newKeyDesc) {
-        return transactionContext.execute(() -> {
+        try {
+            return transactionContext.execute(() -> {
 
-            var oldKey = findById(id);
-            if (oldKey == null) {
-                return ServiceResult.notFound("A KeyPairResource with ID '%s' does not exist.".formatted(id));
-            }
-
-            var participantContextId = oldKey.getParticipantContextId();
-
-            if (newKeyDesc != null) {
-                // a revoked key is removed from the DID document, so its successor may reuse its key ID. This is checked
-                // before anything is changed, so that a rejected successor does not leave the old key revoked
-                var keyIdResult = checkKeyIdAvailable(participantContextId, newKeyDesc.getKeyId(), oldKey.getId());
-                if (keyIdResult.failed()) {
-                    return keyIdResult;
+                var oldKey = findById(id);
+                if (oldKey == null) {
+                    return ServiceResult.notFound("A KeyPairResource with ID '%s' does not exist.".formatted(id));
                 }
-            }
 
-            // mark the old key as "revoked"
-            oldKey.revoke();
-            var res = keyPairResourceStore.update(oldKey);
-            if (res.failed()) {
-                return ServiceResult.from(res);
-            }
+                var participantContextId = oldKey.getParticipantContextId();
 
-            // there is no "revoke" action in Transit, so we rotate the key and trim to the latest version
-            var keyName = oldKey.getPrivateKeyAlias();
-            var transitResult = transitEngine.rotateKey(keyName)
-                    .compose(u -> transitEngine.getKey(keyName))
-                    .compose(tkd -> transitEngine.setMinEncryptionKeyVersion(keyName, tkd.getData().getLatestVersion())
-                            .compose(u -> transitEngine.setMinDecryptionKeyVersion(keyName, tkd.getData().getLatestVersion()))
-                            .compose(u -> transitEngine.setMinAvailableVersion(keyName, tkd.getData().getLatestVersion()))
-                            .compose(u -> Result.success(tkd)))
-                    .compose(TransitKeyDescriptor::getLatestVersion)
-                    .map(latestVersion ->
-                            KeyPairResource.Builder.newInstance()
-                                    .usage(oldKey.getUsage())
-                                    .id(ofNullable(newKeyDesc).map(KeyDescriptor::getResourceId).orElse(UUID.randomUUID().toString()))
-                                    .keyId(ofNullable(newKeyDesc).map(KeyDescriptor::getKeyId).orElse(oldKey.getKeyId()))
-                                    .state(KeyPairState.ACTIVATED)
-                                    .isDefaultPair(true)
-                                    .privateKeyAlias(keyName)
-                                    .serializedPublicKey(decodePublicKeyToJwk(latestVersion.getPublicKey()))
-                                    .timestamp(Instant.now().toEpochMilli())
-                                    .participantContextId(participantContextId)
-                                    .keyContext(oldKey.getKeyContext())
-                                    .build());
+                if (newKeyDesc != null) {
+                    // a revoked key is removed from the DID document, so its successor may reuse its key ID. This is checked
+                    // before anything is changed, so that a rejected successor does not leave the old key revoked
+                    var keyIdResult = checkKeyIdAvailable(participantContextId, newKeyDesc.getKeyId(), oldKey.getId());
+                    if (keyIdResult.failed()) {
+                        return keyIdResult;
+                    }
+                }
 
-            // ... and finally create the new keypair resource
-            if (transitResult.succeeded()) {
-                return ServiceResult.from(keyPairResourceStore.create(transitResult.getContent()))
-                        .onSuccess(v -> observable.invokeForEach(l -> l.revoked(oldKey, newKeyDesc)));
-            }
-            return ServiceResult.from(transitResult.mapFailure());
+                // there is no "revoke" action in Transit, so we rotate the key and trim to the latest version
+                var keyName = oldKey.getPrivateKeyAlias();
+                var rotateResult = transitEngine.rotateKey(keyName);
+                if (rotateResult.failed()) {
+                    return ServiceResult.from(rotateResult);
+                }
+                var keyVersion = transitEngine.getKey(keyName)
+                        .compose(tkd -> transitEngine.setMinEncryptionKeyVersion(keyName, tkd.getData().getLatestVersion())
+                                .compose(u -> transitEngine.setMinDecryptionKeyVersion(keyName, tkd.getData().getLatestVersion()))
+                                .compose(u -> transitEngine.setMinAvailableVersion(keyName, tkd.getData().getLatestVersion()))
+                                .compose(u -> Result.success(tkd)))
+                        .compose(TransitKeyDescriptor::getLatestVersion);
 
-        });
+                return recordKeyChange(oldKey, newKeyDesc, keyVersion, KeyPairResource::revoke, (listener, key) -> listener.revoked(key, newKeyDesc));
+            });
+        } catch (RollbackException e) {
+            return e.failure();
+        }
     }
 
     @Override
@@ -434,9 +411,96 @@ public class TransitKeyPairService implements KeyPairService, EventSubscriber {
                 : success();
     }
 
+    /**
+     * Records that the Transit key of a key pair was rotated, by adding a successor with the new key version, and taking the
+     * old key pair out of use.
+     * <p>
+     * Transit cannot undo a rotation, so it happens before anything is written to the database. If recording it fails, the
+     * transaction is rolled back all the same, so that the old key pair is not taken out of use without its successor. The
+     * key pairs then lag behind Transit, which signs with the latest key version, while the DID document still has the
+     * previous one, so that signatures fail until they are reconciled manually.
+     *
+     * @param takeOutOfUse rotates or revokes the old key pair
+     * @param announce     emits the event about the old key pair
+     */
+    private ServiceResult<Void> recordKeyChange(KeyPairResource oldKey, @Nullable KeyDescriptor newKeyDesc, Result<TransitKeyDescriptor.KeyVersion> keyVersion,
+                                                Consumer<KeyPairResource> takeOutOfUse, BiConsumer<KeyPairEventListener, KeyPairResource> announce) {
+        if (keyVersion.failed()) {
+            reportUnrecordedKeyChange(oldKey, keyVersion.getFailureDetail());
+            return ServiceResult.from(keyVersion.mapEmpty());
+        }
+
+        KeyPairResource successor;
+        StoreResult<Void> result;
+        try {
+            successor = KeyPairResource.Builder.newInstance()
+                    .usage(oldKey.getUsage())
+                    .id(ofNullable(newKeyDesc).map(KeyDescriptor::getResourceId).orElse(UUID.randomUUID().toString()))
+                    .keyId(ofNullable(newKeyDesc).map(KeyDescriptor::getKeyId).orElse(oldKey.getKeyId()))
+                    .state(KeyPairState.ACTIVATED)
+                    .isDefaultPair(true)
+                    .privateKeyAlias(oldKey.getPrivateKeyAlias())
+                    .serializedPublicKey(decodePublicKeyToJwk(keyVersion.getContent().getPublicKey()))
+                    .timestamp(Instant.now().toEpochMilli())
+                    .participantContextId(oldKey.getParticipantContextId())
+                    .keyContext(oldKey.getKeyContext())
+                    .build();
+            takeOutOfUse.accept(oldKey);
+            var createResult = keyPairResourceStore.create(successor);
+            result = createResult.failed() ? createResult : keyPairResourceStore.update(oldKey);
+        } catch (RuntimeException e) {
+            reportUnrecordedKeyChange(oldKey, e.getMessage());
+            throw e;
+        }
+        if (result.failed()) {
+            reportUnrecordedKeyChange(oldKey, result.getFailureDetail());
+            throw new RollbackException(ServiceResult.fromFailure(result));
+        }
+
+        // the successor is announced after the old key pair, because it may have the same key ID: without a successor
+        // descriptor, it keeps the old key ID, and a revoked key pair is removed from the DID document
+        observable.invokeForEach(l -> {
+            announce.accept(l, oldKey);
+            l.added(successor, oldKey.getKeyContext());
+            l.activated(successor, oldKey.getKeyContext());
+        });
+        return success();
+    }
+
+    private void reportUnrecordedKeyChange(KeyPairResource oldKey, String failureDetail) {
+        monitor.severe(("The Transit key '%s' of key pair '%s' was rotated, but the key pairs could not be updated: %s. Signatures fail " +
+                "verification until the key pairs are reconciled with the Transit key manually.").formatted(oldKey.getPrivateKeyAlias(), oldKey.getId(), failureDetail));
+    }
+
+    /**
+     * Deletes a Transit key whose key pair is not added after all.
+     */
+    private void discardKey(String keyName) {
+        transitEngine.deleteKey(keyName)
+                .onFailure(f -> monitor.warning("Failed to delete the Transit key '%s' of a key pair that was not added, it must be deleted manually: %s"
+                        .formatted(keyName, f.getFailureDetail())));
+    }
+
     private KeyPairResource findById(String oldId) {
         var q = QuerySpec.Builder.newInstance()
                 .filter(new Criterion("id", "=", oldId)).build();
         return keyPairResourceStore.query(q).map(list -> list.stream().findFirst().orElse(null)).orElse(f -> null);
+    }
+
+    /**
+     * Rolls back the record of a key change that could not be written completely, and carries its failure out of the
+     * transaction.
+     */
+    private static class RollbackException extends EdcException {
+        private final ServiceResult<Void> failure;
+
+        RollbackException(ServiceResult<Void> failure) {
+            super(failure.getFailureDetail());
+            this.failure = failure;
+        }
+
+        ServiceResult<Void> failure() {
+            return failure;
+        }
     }
 }

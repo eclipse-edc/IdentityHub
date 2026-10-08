@@ -7,23 +7,22 @@ weight: 10
 ---
 
 <!-- TOC -->
-
-- [Overview](#overview)
-- [Why Use the Transit Engine?](#why-use-the-transit-engine)
-- [How It Works](#how-it-works)
-  - [Key Generation](#key-generation)
-  - [Signing Flow](#signing-flow)
-  - [Key Rotation](#key-rotation)
-  - [Key Revocation](#key-revocation)
-- [Adding the Extension](#adding-the-extension)
-- [Vault Setup and Bootstrap](#vault-setup-and-bootstrap)
-  - [Enabling the Transit Engine](#enabling-the-transit-engine)
-  - [Vault Policies](#vault-policies)
-  - [Key Naming Convention](#key-naming-convention)
-- [Configuration](#configuration)
-- [Creating Key Pairs via the Identity API](#creating-key-pairs-via-the-identity-api)
-- [Constraints and Limitations](#constraints-and-limitations)
-- [Reference Implementation](#reference-implementation)
+    * [Overview](#overview)
+    * [Why Use the Transit Engine?](#why-use-the-transit-engine)
+    * [How It Works](#how-it-works)
+        * [Key Generation](#key-generation)
+        * [Signing Flow](#signing-flow)
+        * [Key Rotation](#key-rotation)
+        * [Key Revocation](#key-revocation)
+    * [Adding the Extension](#adding-the-extension)
+    * [Vault Setup and Bootstrap](#vault-setup-and-bootstrap)
+        * [Enabling the Transit Engine](#enabling-the-transit-engine)
+        * [Vault Policies](#vault-policies)
+        * [Key Naming Convention](#key-naming-convention)
+    * [Configuration](#configuration)
+    * [Creating Key Pairs via the Identity API](#creating-key-pairs-via-the-identity-api)
+    * [Constraints and Limitations](#constraints-and-limitations)
+    * [Reference Implementation](#reference-implementation)
 <!-- TOC -->
 
 ## Overview
@@ -98,6 +97,11 @@ Revoking a key pair performs a two-step operation against Vault:
 2. The `min_encryption_version`, `min_decryption_version`, and `min_available_version` fields are all set to the latest version, trimming all older key versions from Vault storage.
 
 This effectively invalidates all signatures produced by any previous version of the key, which is the desired behaviour when a key is considered compromised.
+
+In both cases, a new `KeyPairResource` for the latest key version replaces the old one. It is announced as activated, so
+that it replaces the old key in the DID document. Vault cannot undo a rotation, so the rotation happens before the
+`KeyPairResource`s are written. If writing them fails, an error is logged: the `KeyPairResource`s then lag behind Vault,
+and signatures fail verification until they are reconciled manually.
 
 ## Adding the Extension
 

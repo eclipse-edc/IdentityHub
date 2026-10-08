@@ -25,4 +25,5 @@ dependencies {
     implementation(libs.opentelemetry.instrumentation.annotations)
     runtimeOnly(libs.edc.core.security)
     testImplementation(libs.edc.junit)
+    testImplementation(testFixtures(project(":core:lib:common-lib")))
 }
