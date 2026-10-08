@@ -163,7 +163,7 @@ public class IssuanceProcessApiEndToEndTest {
                     .state(IssuanceProcessStates.DELIVERED.code())
                     .holderId("test-participant")
                     .participantContextId(participantContextId)
-                    .holderPid("test-holder")
+                    .holderPid(UUID.randomUUID().toString())
                     .claims(Map.of("test-claim", "test-value"))
                     .credentialDefinitions(List.of("test-cred-def"))
                     .credentialFormats(Map.of("test-format", CredentialFormat.VC1_0_JWT))

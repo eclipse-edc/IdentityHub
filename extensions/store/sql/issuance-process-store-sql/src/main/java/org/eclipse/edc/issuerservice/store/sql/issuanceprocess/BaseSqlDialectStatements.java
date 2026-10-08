@@ -39,7 +39,7 @@ public class BaseSqlDialectStatements implements IssuanceProcessStoreStatements 
 
     @Override
     public String getInsertTemplate() {
-        return executeStatement()
+        var insert = executeStatement()
                 .column(getIdColumn())
                 .column(getStateColumn())
                 .column(getStateCountColumn())
@@ -55,6 +55,10 @@ public class BaseSqlDialectStatements implements IssuanceProcessStoreStatements 
                 .jsonColumn(getCredentialDefinitionsColumn())
                 .jsonColumn(getCredentialFormatsColumn())
                 .insertInto(getIssuanceProcessTable());
+        // a process that conflicts with an existing one, e.g. by its holderPid, is not inserted. Unlike a failed statement,
+        // this does not abort the surrounding transaction. Without a conflict target, it also works on a schema that lacks
+        // the unique index on the holderPid
+        return insert.replaceFirst(";\\s*$", "") + " ON CONFLICT DO NOTHING;";
     }
 
     @Override

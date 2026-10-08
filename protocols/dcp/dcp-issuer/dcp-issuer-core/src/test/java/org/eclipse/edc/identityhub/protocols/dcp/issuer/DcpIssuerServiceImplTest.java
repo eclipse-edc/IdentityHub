@@ -34,9 +34,11 @@ import org.eclipse.edc.issuerservice.spi.issuance.rule.CredentialRuleDefinitionE
 import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.spi.result.ServiceFailure;
 import org.eclipse.edc.spi.result.ServiceResult;
+import org.eclipse.edc.spi.result.StoreResult;
 import org.eclipse.edc.spi.security.Vault;
 import org.eclipse.edc.transaction.spi.NoopTransactionContext;
 import org.eclipse.edc.transaction.spi.TransactionContext;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -55,6 +57,7 @@ import static org.eclipse.edc.junit.assertions.AbstractResultAssert.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -75,6 +78,12 @@ public class DcpIssuerServiceImplTest {
     private final DcpIssuerService dcpIssuerService = new DcpIssuerServiceImpl(transactionContext, credentialDefinitionService,
             issuanceProcessStore, attestationPipeline, credentialRuleDefinitionEvaluator, dcpProfileRegistry, mock(), issuanceObservable, vault);
 
+    @BeforeEach
+    void setUp() {
+        when(issuanceProcessStore.save(any())).thenReturn(StoreResult.success());
+        when(vault.storeSecret(anyString(), anyString())).thenReturn(Result.success());
+        when(vault.deleteSecret(anyString())).thenReturn(Result.success());
+    }
 
     @DisplayName("IS-REQ-01: a valid CredentialRequestMessage from an authorized holder creates an issuance process")
     @Test
@@ -128,8 +137,10 @@ public class DcpIssuerServiceImplTest {
         assertThat(issuanceProcess.getClaims()).containsAllEntriesOf(claims);
         assertThat(issuanceProcess.getParticipantContextId()).isEqualTo("participantContextId");
         assertThat(issuanceProcess.getHolderPid()).isEqualTo(message.getHolderPid());
-        // it is needed later, when the credentials are delivered to the Holder
-        verify(vault).storeSecret(issuanceProcess.getId(), "holder-access-token");
+        // it is needed later, when the credentials are delivered to the Holder, so it is stored before the process
+        var inOrder = inOrder(vault, issuanceProcessStore);
+        inOrder.verify(vault).storeSecret(issuanceProcess.getId(), "holder-access-token");
+        inOrder.verify(issuanceProcessStore).save(issuanceProcess);
 
         var listenerCaptor = ArgumentCaptor.forClass(Consumer.class);
         //noinspection unchecked
@@ -176,6 +187,44 @@ public class DcpIssuerServiceImplTest {
         var result = dcpIssuerService.initiateCredentialsIssuance("participantContextId", message, participant);
 
         assertThat(result).isFailed().satisfies(f -> assertThat(f.getReason()).isEqualTo(ServiceFailure.Reason.CONFLICT));
+        verify(issuanceProcessStore, never()).save(any());
+    }
+
+    @Test
+    void initiateCredentialsIssuance_whenConcurrentRequestCreatedProcess_returnsConflict() {
+        var holderPid = UUID.randomUUID().toString();
+        var message = CredentialRequestMessage.Builder.newInstance()
+                .holderPid(holderPid)
+                .credential(new CredentialRequestSpecifier("credentialDefinitionId1"))
+                .build();
+        var participant = stubIssuableRequest("holder-access-token");
+        // the request with the same holderPid that is handled at the same time is not visible yet, but the store rejects it
+        when(issuanceProcessStore.query(any())).thenReturn(Stream.of());
+        when(issuanceProcessStore.save(any())).thenReturn(StoreResult.alreadyExists("already exists"));
+
+        var result = dcpIssuerService.initiateCredentialsIssuance("participantContextId", message, participant);
+
+        assertThat(result).isFailed().satisfies(f -> assertThat(f.getReason()).isEqualTo(ServiceFailure.Reason.CONFLICT));
+        var captor = ArgumentCaptor.forClass(IssuanceProcess.class);
+        verify(issuanceProcessStore).save(captor.capture());
+        // the access token of the process that was not created is not kept
+        verify(vault).deleteSecret(captor.getValue().getId());
+    }
+
+    @Test
+    void initiateCredentialsIssuance_whenStoringAccessTokenFails_createsNoProcess() {
+        var message = CredentialRequestMessage.Builder.newInstance()
+                .holderPid(UUID.randomUUID().toString())
+                .credential(new CredentialRequestSpecifier("credentialDefinitionId1"))
+                .build();
+        var participant = stubIssuableRequest("holder-access-token");
+        when(issuanceProcessStore.query(any())).thenReturn(Stream.of());
+        when(vault.storeSecret(anyString(), anyString())).thenReturn(Result.failure("vault unavailable"));
+
+        var result = dcpIssuerService.initiateCredentialsIssuance("participantContextId", message, participant);
+
+        // a process without the token could not deliver its credentials, and would reject the Holder's retry as a duplicate
+        assertThat(result).isFailed().detail().contains("vault unavailable");
         verify(issuanceProcessStore, never()).save(any());
     }
 
@@ -378,4 +427,27 @@ public class DcpIssuerServiceImplTest {
         verify(listener).rejected(message.getHolderPid(), "participantContextId", "No attestations found for requested credentials");
     }
 
+    /**
+     * Stubs a credential definition, attestations and rules that allow issuing it, and returns the request context of a holder
+     * with the given access token.
+     */
+    private DcpRequestContext stubIssuableRequest(String accessToken) {
+        var attestations = Set.of("attestation1");
+        var credentialDefinition = CredentialDefinition.Builder.newInstance()
+                .id("credentialDefinitionId1")
+                .credentialType("MembershipCredential")
+                .jsonSchema("jsonSchema")
+                .jsonSchemaUrl("jsonSchemaUrl")
+                .attestations(attestations)
+                .participantContextId("participantContextId")
+                .formatFrom(VC1_0_JWT)
+                .build();
+        when(credentialDefinitionService.queryCredentialDefinitions(any())).thenReturn(ServiceResult.success(List.of(credentialDefinition)));
+        when(credentialDefinitionService.findCredentialDefinitionById(anyString())).thenReturn(ServiceResult.success(credentialDefinition));
+        when(attestationPipeline.evaluate(eq(attestations), any())).thenReturn(Result.success(Map.of()));
+        when(credentialRuleDefinitionEvaluator.evaluate(any(), any())).thenReturn(Result.success());
+        when(dcpProfileRegistry.profilesFor(VC1_0_JWT)).thenReturn(List.of(new DcpProfile("profile", VC1_0_JWT, "statusType")));
+        var holder = Holder.Builder.newInstance().holderId("holderId").did("participantDid").holderName("name").participantContextId("participantContextId").build();
+        return new DcpRequestContext(holder, Map.of(), accessToken);
+    }
 }
