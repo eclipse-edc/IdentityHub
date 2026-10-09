@@ -80,8 +80,15 @@ public class CredentialRequestMessage {
 
     /**
      * Represents a response for a {@link CredentialRequestMessage}
+     *
+     * @param requestId       the ID of the issuance process that handles the request
+     * @param alreadyReceived whether the request was received before, e.g. because the Holder sent it again, so that the
+     *                        issuance process already existed
      */
-    public record Response(String requestId) {
+    public record Response(String requestId, boolean alreadyReceived) {
 
+        public Response(String requestId) {
+            this(requestId, false);
+        }
     }
 }

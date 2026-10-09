@@ -54,6 +54,7 @@ import org.mockito.ArgumentMatchers;
 
 import java.io.IOException;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
@@ -65,6 +66,7 @@ import static org.awaitility.Awaitility.await;
 import static org.eclipse.edc.identityhub.protocols.dcp.spi.DcpConstants.DCP_SCOPE_V_1_0;
 import static org.eclipse.edc.identityhub.spi.credential.request.model.HolderRequestState.CREATED;
 import static org.eclipse.edc.identityhub.spi.credential.request.model.HolderRequestState.ERROR;
+import static org.eclipse.edc.identityhub.spi.credential.request.model.HolderRequestState.ISSUED;
 import static org.eclipse.edc.identityhub.spi.credential.request.model.HolderRequestState.REQUESTED;
 import static org.eclipse.edc.identityhub.spi.credential.request.model.HolderRequestState.REQUESTING;
 import static org.eclipse.edc.junit.assertions.AbstractResultAssert.assertThat;
@@ -120,6 +122,7 @@ class CredentialRequestManagerImplTest {
     @BeforeEach
     void setUp() {
         when(configuration.statusPollInterval()).thenReturn(50L);
+        when(configuration.untrackedTimeout()).thenReturn(CredentialRequestConfiguration.DEFAULT_UNTRACKED_TIMEOUT);
         when(configuration.bearerAccessScope()).thenReturn(null);
         when(transformerRegistry.transform(any(CredentialRequestMessage.class), eq(JsonObject.class)))
                 .thenReturn(success(Json.createObjectBuilder().build()));
@@ -408,6 +411,75 @@ class CredentialRequestManagerImplTest {
         }
 
 
+        @Test
+        void processRequesting_whenIssuerReportsDuplicateWithLocation_shouldRecordIssuerPid() throws IOException {
+            when(resolver.resolve(eq(ISSUER_DID))).thenReturn(success(didDocument()));
+            // EDC Issuers report the existing issuance process in the Location header, like for a new one
+            when(httpClient.execute(any(Request.class))).thenReturn(response(409, "Conflict", "",
+                    "/v1/participants/issuer/requests/existing-issuer-pid"));
+            var rq = createRequest()
+                    .state(REQUESTING.code())
+                    .build();
+            when(store.nextNotLeased(anyInt(), stateIs(REQUESTING.code())))
+                    .thenReturn(List.of(rq))
+                    .thenReturn(List.of());
+
+            credentialRequestService.start();
+
+            // with the Issuer's process ID, the Holder can query the status of the request
+            await().atMost(MAX_DURATION).untilAsserted(() -> {
+                Assertions.assertThat(rq.getState()).isEqualTo(REQUESTED.code());
+                Assertions.assertThat(rq.getIssuerPid()).isEqualTo("existing-issuer-pid");
+            });
+        }
+
+        @Test
+        void processRequested_whenIssuerPidUnknownAndOverdue_shouldTransitionToError() {
+            when(configuration.untrackedTimeout()).thenReturn(60L);
+            var rq = createRequest().state(REQUESTED.code()).stateTimestamp(Instant.now().minusSeconds(61).toEpochMilli()).build();
+            when(store.query(any())).thenReturn(List.of(rq));
+            // the request is re-acquired before it is timed out
+            when(store.findByIdAndLease(anyString())).thenReturn(StoreResult.success(rq));
+
+            credentialRequestService.start();
+
+            // otherwise, it would wait forever for credentials, e.g. those of a failed issuance it could not learn about
+            await().atMost(MAX_DURATION).untilAsserted(() -> {
+                Assertions.assertThat(rq.getState()).isEqualTo(ERROR.code());
+                Assertions.assertThat(rq.getErrorDetail()).contains("did not report its issuance process ID");
+            });
+            verifyNoInteractions(resolver);
+        }
+
+        @Test
+        void processRequested_whenIssuerPidUnknownAndNotOverdue_shouldStayRequested() {
+            when(configuration.untrackedTimeout()).thenReturn(60L);
+            var rq = createRequest().state(REQUESTED.code()).stateTimestamp(Instant.now().minusSeconds(30).toEpochMilli()).build();
+            when(store.query(any())).thenReturn(List.of(rq));
+
+            credentialRequestService.start();
+
+            await().atMost(MAX_DURATION).untilAsserted(() -> verify(store, atLeastOnce()).query(any()));
+            Assertions.assertThat(rq.getState()).isEqualTo(REQUESTED.code());
+            verify(store, never()).findByIdAndLease(anyString());
+        }
+
+        @Test
+        void processRequested_whenTimedOutRequestChangedMeanwhile_shouldLeaveIt() {
+            when(configuration.untrackedTimeout()).thenReturn(60L);
+            var rq = createRequest().state(REQUESTED.code()).stateTimestamp(Instant.now().minusSeconds(61).toEpochMilli()).build();
+            when(store.query(any())).thenReturn(List.of(rq));
+            // the credentials were delivered after the request was found
+            var delivered = createRequest().state(ISSUED.code()).issuerPid("issuer-pid").build();
+            when(store.findByIdAndLease(anyString())).thenReturn(StoreResult.success(delivered));
+
+            credentialRequestService.start();
+
+            await().atMost(MAX_DURATION).untilAsserted(() -> verify(store, atLeastOnce()).breakLease(delivered));
+            Assertions.assertThat(delivered.getState()).isEqualTo(ISSUED.code());
+            verify(store, never()).save(argThat(r -> r != null && r.getState() == ERROR.code()));
+        }
+
         // CS-REQ-07: a request the Issuer accepted can still fail later, so the Holder polls the Issuer's status endpoint
         @Test
         @DisplayName("CS-REQ-07: an Issuer that reports REJECTED moves the request to ERROR")
@@ -451,7 +523,7 @@ class CredentialRequestManagerImplTest {
         @Test
         @DisplayName("CS-REQ-07: a request whose Issuer process ID is unknown is not polled")
         void processRequested_whenIssuerPidUnknown_shouldNotQueryIssuer() {
-            var rq = createRequest().state(REQUESTED.code()).build();
+            var rq = createRequest().state(REQUESTED.code()).stateTimestamp(Instant.now().toEpochMilli()).build();
             when(store.query(any())).thenReturn(List.of(rq));
 
             credentialRequestService.start();
@@ -546,6 +618,12 @@ class CredentialRequestManagerImplTest {
                 .code(code)
                 .message(message)
                 .body(ResponseBody.create(body, MediaType.parse("application/json")))
+                .build();
+    }
+
+    private Response response(int code, String message, String body, String location) {
+        return response(code, message, body).newBuilder()
+                .header("Location", location)
                 .build();
     }
 }

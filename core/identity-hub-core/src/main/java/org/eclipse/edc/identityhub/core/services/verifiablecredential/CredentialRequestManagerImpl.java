@@ -59,6 +59,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.io.StringReader;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
@@ -69,6 +70,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.function.Function;
 
 import static java.util.Objects.requireNonNull;
+import static java.util.Optional.ofNullable;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.eclipse.edc.identityhub.protocols.dcp.spi.DcpConstants.DCP_SCOPE_V_1_0;
 import static org.eclipse.edc.identityhub.spi.credential.request.model.HolderRequestState.CREATED;
@@ -338,12 +340,56 @@ public class CredentialRequestManagerImpl extends AbstractStateEntityManager<Hol
                     .filter(Criterion.criterion("state", "=", REQUESTED.code()))
                     .build();
             forEachPage(query, STATUS_POLL_PAGE_SIZE, page -> transactionContext.execute(() -> store.query(page)), HolderCredentialRequest::getId,
-                    requests -> requests.stream()
-                            .filter(request -> request.getIssuerPid() != null && !request.getIssuerPid().isBlank())
-                            .forEach(this::pollStatus));
+                    requests -> requests.forEach(request -> {
+                        if (isTracked(request)) {
+                            pollStatus(request);
+                        } else {
+                            timeOutIfOverdue(request);
+                        }
+                    }));
         } catch (Exception e) {
             monitor.debug("Error while polling the Issuer for credential request states: %s".formatted(e.getMessage()));
         }
+    }
+
+    /**
+     * Whether the status of the request can be queried, which requires the Issuer-assigned issuance process ID.
+     */
+    private boolean isTracked(HolderCredentialRequest request) {
+        return request.getIssuerPid() != null && !request.getIssuerPid().isBlank();
+    }
+
+    /**
+     * Gives up on a request whose status cannot be queried, because the Issuer did not report its issuance process ID, e.g.
+     * an Issuer that answered a re-sent request with 409 and without a {@code Location} header. Otherwise, the request would
+     * wait for its credentials forever if the Issuer failed to issue them, and so would a credential it is meant to renew.
+     */
+    private void timeOutIfOverdue(HolderCredentialRequest request) {
+        if (!isOverdue(request)) {
+            return;
+        }
+        transactionContext.execute(() -> {
+            // the request is only acquired now: it may be held by an incoming credential delivery, in which case this
+            // round is skipped
+            var leased = store.findByIdAndLease(request.getId());
+            if (leased.failed()) {
+                monitor.debug("Could not acquire credential request '%s' to time it out: %s".formatted(request.getId(), leased.getFailureDetail()));
+                return null;
+            }
+            var current = leased.getContent();
+            if (current.stateAsEnum() != REQUESTED || isTracked(current) || !isOverdue(current)) {
+                // the credentials arrived, or the request changed in the meantime
+                store.breakLease(current);
+                return null;
+            }
+            transitionError(current, ("No credentials were received for the request within %s, and its status cannot be queried, " +
+                    "because the Issuer did not report its issuance process ID").formatted(Duration.ofSeconds(configuration.untrackedTimeout())));
+            return null;
+        });
+    }
+
+    private boolean isOverdue(HolderCredentialRequest request) {
+        return clock.millis() - request.getStateTimestamp() > Duration.ofSeconds(configuration.untrackedTimeout()).toMillis();
     }
 
     private void pollStatus(HolderCredentialRequest request) {
@@ -418,16 +464,16 @@ public class CredentialRequestManagerImpl extends AbstractStateEntityManager<Hol
         try (var body = response.body()) {
             if (response.code() == HTTP_CONFLICT) {
                 // The Issuer already tracks an issuance process for this holderPid, which happens when a request is re-sent
-                // after having been interrupted, e.g. by a restart. It was accepted earlier, so this is not a failure. The
-                // Issuer-assigned ID is not disclosed here, it gets recorded once the credentials are delivered.
+                // after having been interrupted, e.g. by a restart. It was accepted earlier, so this is not a failure. EDC
+                // Issuers report the existing process in the Location header, like for a new one. Other Issuers may not, in
+                // which case the request is given up on after a while, c.f. #timeOutIfOverdue
                 monitor.debug("Issuer reports an already existing issuance process, treating the re-sent request as accepted");
-                return StatusResult.success(UNKNOWN_ISSUER_PID);
+                return StatusResult.success(ofNullable(issuerPidFromLocation(response)).orElse(UNKNOWN_ISSUER_PID));
             }
             if (response.isSuccessful()) {
-                var location = response.header("Location");
-                if (location != null && !location.isBlank()) {
-                    var segments = location.split("/");
-                    return StatusResult.success(segments[segments.length - 1]);
+                var issuerPid = issuerPidFromLocation(response);
+                if (issuerPid != null) {
+                    return StatusResult.success(issuerPid);
                 }
                 return StatusResult.success(body.string());
             } else {
@@ -441,6 +487,21 @@ public class CredentialRequestManagerImpl extends AbstractStateEntityManager<Hol
             return StatusResult.failure(ERROR_RETRY, "Error sending DCP Credential Request: code: '%s', message: '%s'"
                     .formatted(response.code(), response.message()));
         }
+    }
+
+    /**
+     * Takes the Issuer-assigned issuance process ID from the {@code Location} header, which points at the request-status
+     * resource, i.e. its last path segment is the ID.
+     *
+     * @return the ID, or null if there is no {@code Location} header
+     */
+    private @Nullable String issuerPidFromLocation(Response response) {
+        var location = response.header("Location");
+        if (location == null || location.isBlank()) {
+            return null;
+        }
+        var segments = location.split("/");
+        return segments[segments.length - 1];
     }
 
     /**

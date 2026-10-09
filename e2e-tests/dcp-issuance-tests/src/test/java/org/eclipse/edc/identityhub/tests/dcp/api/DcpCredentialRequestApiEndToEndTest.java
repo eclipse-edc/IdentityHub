@@ -233,6 +233,18 @@ public class DcpCredentialRequestApiEndToEndTest {
                                 assertThat(process.getHolderPid()).isEqualTo("holderPid");
                             });
                 });
+
+                // the Holder may send the request again, e.g. when it did not receive the response, and learns the
+                // existing issuance process from the Location, so that it can query its status
+                issuer.getIssuerApiEndpoint().baseRequest()
+                        .contentType(JSON)
+                        .header(AUTHORIZATION, generateSiToken())
+                        .body(VALID_CREDENTIAL_REQUEST_MESSAGE)
+                        .post(issuanceUrl())
+                        .then()
+                        .log().ifValidationFails()
+                        .statusCode(409)
+                        .header("Location", location);
             } finally {
                 mockedCredentialService.stop();
             }

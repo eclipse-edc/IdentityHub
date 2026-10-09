@@ -33,10 +33,17 @@ public record CredentialRequestConfiguration(
                 description = "The scope that will be used to issue an access token to be included in the Self-Issued ID token in the 'token' claim. By default, no token will be generated.",
                 required = false, key = "edc.iam.credential.request.bearer.access.scope"
         )
-        String bearerAccessScope
+        String bearerAccessScope,
+
+        @Setting(
+                description = "Time in seconds after which a credential request is considered failed if its credentials have not arrived, and its status cannot be queried, because the Issuer did not report its issuance process ID",
+                defaultValue = DEFAULT_UNTRACKED_TIMEOUT + "", key = "edc.iam.credential.request.untracked.timeout"
+        )
+        long untrackedTimeout
 ) {
 
     public static final int DEFAULT_STATUS_POLL_INTERVAL = 5000;
+    public static final long DEFAULT_UNTRACKED_TIMEOUT = 6 * 60 * 60;
 
     @Override
     public long statusPollInterval() {
@@ -44,5 +51,13 @@ public record CredentialRequestConfiguration(
             return DEFAULT_STATUS_POLL_INTERVAL;
         }
         return statusPollInterval;
+    }
+
+    @Override
+    public long untrackedTimeout() {
+        if (untrackedTimeout == 0) {
+            return DEFAULT_UNTRACKED_TIMEOUT;
+        }
+        return untrackedTimeout;
     }
 }

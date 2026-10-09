@@ -91,7 +91,14 @@ public class CredentialRequestApiController implements CredentialRequestApi {
                 .orElseThrow((f) -> new AuthenticationFailedException("ID token verification failed: %s".formatted(f.getFailureDetail())));
 
         return dcpIssuerService.initiateCredentialsIssuance(participantContext.getParticipantContextId(), credentialMessage, participant)
-                .map(response -> Response.created(URI.create("/v1/participants/%s/requests/%s".formatted(participantContextId, response.requestId()))).build())
+                .map(response -> {
+                    var location = URI.create("/v1/participants/%s/requests/%s".formatted(participantContextId, response.requestId()));
+                    // a request that was received before, e.g. because the Holder sent it again, is answered with the
+                    // issuance process that handles it, so that the Holder can query its status
+                    return response.alreadyReceived()
+                            ? Response.status(Response.Status.CONFLICT).location(location).build()
+                            : Response.created(location).build();
+                })
                 .orElseThrow(exceptionMapper(CredentialRequestMessage.class));
 
     }
