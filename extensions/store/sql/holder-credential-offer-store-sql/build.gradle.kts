@@ -26,4 +26,7 @@ dependencies {
     testImplementation(testFixtures(project(":spi:verifiable-credential-spi")))
     testImplementation(testFixtures(libs.edc.sql.test.fixtures))
     testImplementation(libs.edc.junit)
+    // needed by the lease tests: the standard test fixture auto-commits every statement, so a lease is never held by an
+    // open transaction
+    testImplementation(libs.edc.transaction.local)
 }

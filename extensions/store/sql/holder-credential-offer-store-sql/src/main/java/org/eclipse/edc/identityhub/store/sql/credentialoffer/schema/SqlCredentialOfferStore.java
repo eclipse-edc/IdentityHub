@@ -34,11 +34,11 @@ import tools.jackson.databind.ObjectMapper;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 import static java.lang.String.format;
 import static java.util.stream.Collectors.toList;
@@ -83,12 +83,14 @@ public class SqlCredentialOfferStore extends AbstractSqlStore implements Credent
             var filter = Arrays.stream(criteria).collect(toList());
             var querySpec = QuerySpec.Builder.newInstance().filter(filter).sortField("stateTimestamp").limit(max).build();
             var statement = statements.createNextNotLeaseQuery(querySpec);
-            try (
-                    var connection = getConnection();
-                    var stream = queryExecutor.query(connection, true, this::mapResultSet, statement.getQueryAsString(), statement.getParameters())
-            ) {
-                return stream.filter(entry -> leaseContext.withConnection(connection).acquireLease(entry.getId()).succeeded())
-                        .collect(Collectors.toList());
+            try (var connection = getConnection()) {
+                List<String> leasedIds;
+                try (var stream = queryExecutor.query(connection, false, this::mapResultSet, statement.getQueryAsString(), statement.getParameters())) {
+                    leasedIds = stream.map(CredentialOffer::getId)
+                            .filter(id -> leaseContext.withConnection(connection).acquireLease(id).succeeded())
+                            .toList();
+                }
+                return readLeased(connection, leasedIds, filter);
             } catch (SQLException e) {
                 throw new EdcPersistenceException(e);
             }
@@ -99,12 +101,22 @@ public class SqlCredentialOfferStore extends AbstractSqlStore implements Credent
     public StoreResult<CredentialOffer> findByIdAndLease(String id) {
         return transactionContext.execute(() -> {
             try (var connection = getConnection()) {
-                var entity = findByIdInternal(connection, id);
-                if (entity == null) {
+                if (findByIdInternal(connection, id) == null) {
                     return StoreResult.notFound(format("HolderCredentialRequest %s not found", id));
                 }
 
-                return leaseContext.withConnection(connection).acquireLease(entity.getId()).map(it -> entity);
+                var leaseResult = leaseContext.withConnection(connection).acquireLease(id);
+                if (leaseResult.failed()) {
+                    return leaseResult.mapFailure();
+                }
+                // acquiring the lease waits for another transaction that holds a lease on the entity, which may have changed
+                // it in the meantime. Every statement reads what was committed when it starts, so the entity is read again.
+                var entity = findByIdInternal(connection, id);
+                if (entity == null) {
+                    leaseContext.withConnection(connection).breakLease(id);
+                    return StoreResult.notFound(format("HolderCredentialRequest %s not found", id));
+                }
+                return StoreResult.success(entity);
             } catch (SQLException e) {
                 throw new EdcPersistenceException(e);
             }
@@ -204,6 +216,28 @@ public class SqlCredentialOfferStore extends AbstractSqlStore implements Credent
                 toJson(offer.getCredentialObjects()),
                 offer.getId());
 
+    }
+
+    /**
+     * Reads entities again after their leases were acquired: acquiring a lease waits for another transaction that holds a
+     * lease on the same entity, which may have changed it in the meantime. The leases of entities that no longer match the
+     * criteria are broken again.
+     */
+    private List<CredentialOffer> readLeased(Connection connection, List<String> leasedIds, List<Criterion> criteria) {
+        if (leasedIds.isEmpty()) {
+            return List.of();
+        }
+        var filter = new ArrayList<>(criteria);
+        filter.add(new Criterion("id", "in", leasedIds));
+        var querySpec = QuerySpec.Builder.newInstance().filter(filter).sortField("stateTimestamp").limit(leasedIds.size()).build();
+        var statement = statements.createQuery(querySpec);
+        try (var stream = queryExecutor.query(connection, false, this::mapResultSet, statement.getQueryAsString(), statement.getParameters())) {
+            var entities = stream.toList();
+            leasedIds.stream()
+                    .filter(id -> entities.stream().noneMatch(entity -> entity.getId().equals(id)))
+                    .forEach(id -> leaseContext.withConnection(connection).breakLease(id));
+            return entities;
+        }
     }
 
     private CredentialOffer findByIdInternal(Connection connection, String id) {
