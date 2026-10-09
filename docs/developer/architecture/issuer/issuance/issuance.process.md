@@ -410,6 +410,25 @@ unknown whether the holder has received them, e.g. if a delivery timed out after
 not revoked, because that would leave the holder to deal with a failure of the issuer. Instead, a `SEVERE` message lists
 the affected records, which need manual reconciliation.
 
+##### Retries
+
+Generating, recording and delivering credentials are retried with a growing delay: the n-th retry waits the base delay
+times 2 to the power of n, but at most the maximum delay. By default, the retries are 2 s, 4 s, ..., 256 s apart, and
+5 min after that, so that an `IssuanceProcess` keeps being retried for about six hours, e.g. while the holder is
+unavailable. The following settings control this:
+
+| Setting                                         | Description                                                  | Default  |
+|-------------------------------------------------|--------------------------------------------------------------|----------|
+| `edc.issuer.issuance.send.retry.limit`          | How many times an operation is retried before it fails       | `80`     |
+| `edc.issuer.issuance.send.retry.base-delay.ms`  | The base delay of retries in milliseconds                    | `1000`   |
+| `edc.issuer.issuance.send.retry.max-delay.ms`   | The maximum delay between two retries in milliseconds        | `300000` |
+| `edc.issuer.issuance.state-machine.iteration-wait-millis` | How long the state machine waits between iterations in milliseconds | `1000` |
+| `edc.issuer.issuance.state-machine.batch-size`  | How many `IssuanceProcess`es are processed per iteration     | `20`     |
+
+A holder whose request does not report the `issuanceProcessId` gives up waiting for its credentials after six hours by
+default (`edc.iam.credential.request.untracked.timeout`), and refuses credentials that arrive later. A longer retry
+window is only useful if holders wait longer as well.
+
 ##### The `DELIVERED` State
 
 The `DELIVERED` state is terminal.

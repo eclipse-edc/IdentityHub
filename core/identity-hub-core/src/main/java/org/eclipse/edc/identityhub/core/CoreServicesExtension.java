@@ -53,6 +53,7 @@ import org.eclipse.edc.identityhub.spi.verifiablecredentials.resolution.Credenti
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialOfferStore;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialStore;
 import org.eclipse.edc.identityhub.spi.verification.SelfIssuedTokenVerifier;
+import org.eclipse.edc.identityhub.statemachine.IdentityHubStateMachineConfiguration;
 import org.eclipse.edc.jsonld.spi.JsonLd;
 import org.eclipse.edc.jsonld.util.JacksonJsonLd;
 import org.eclipse.edc.jwt.spi.signer.JwsSignerProvider;
@@ -68,7 +69,6 @@ import org.eclipse.edc.spi.event.EventRouter;
 import org.eclipse.edc.spi.system.ServiceExtension;
 import org.eclipse.edc.spi.system.ServiceExtensionContext;
 import org.eclipse.edc.spi.types.TypeManager;
-import org.eclipse.edc.statemachine.StateMachineConfiguration;
 import org.eclipse.edc.token.JwtGenerationService;
 import org.eclipse.edc.token.spi.TokenValidationRulesRegistry;
 import org.eclipse.edc.token.spi.TokenValidationService;
@@ -94,7 +94,7 @@ public class CoreServicesExtension implements ServiceExtension {
     private CredentialRequestConfiguration credentialRequestConfiguration;
 
     @Configuration(context = "edc.iam.credential.request")
-    private StateMachineConfiguration credentialRequestStateMachineConfiguration;
+    private IdentityHubStateMachineConfiguration credentialRequestStateMachineConfiguration;
 
     @Inject
     private DidPublicKeyResolver publicKeyResolver;
