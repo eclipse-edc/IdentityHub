@@ -26,7 +26,6 @@ dependencies {
     implementation(project(":protocols:dcp:dcp-identityhub:credentials-api-configuration"))
     implementation(libs.edc.spi.dcp)
     implementation(libs.edc.lib.core)
-    implementation(libs.edc.lib.jsonld)
     implementation(libs.edc.dcp.transform)
     implementation(libs.jakarta.rsApi)
     testImplementation(libs.edc.junit)

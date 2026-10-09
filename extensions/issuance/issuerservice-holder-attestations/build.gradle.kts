@@ -24,6 +24,5 @@ dependencies {
     implementation(libs.edc.lib.core)
 
     testImplementation(libs.edc.junit)
-    testImplementation(libs.edc.lib.jsonld)
     testImplementation(testFixtures(libs.edc.sql.test.fixtures))
 }

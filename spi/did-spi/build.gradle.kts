@@ -23,7 +23,7 @@ dependencies {
     api(libs.edc.spi.core)
     api(project(":spi:participant-context-spi"))
 
-    testImplementation(libs.edc.lib.jsonld)
+    testImplementation(libs.edc.lib.core)
 
     testFixturesImplementation(libs.edc.spi.core)
     testFixturesImplementation(libs.junit.jupiter.api)

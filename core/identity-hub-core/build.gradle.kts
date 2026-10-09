@@ -18,7 +18,6 @@ dependencies {
     implementation(libs.edc.jsonld) // for the JSON-LD mapper
     implementation(libs.edc.lib.core)
     implementation(libs.edc.lib.controlplane)
-    implementation(libs.edc.lib.jsonld)
     implementation(libs.edc.lib.jws2020)
     implementation(libs.edc.vc.ldp)
     implementation(libs.edc.vc.jwt) // JtiValidationRule

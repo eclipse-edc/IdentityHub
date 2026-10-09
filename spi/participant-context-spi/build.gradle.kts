@@ -20,5 +20,5 @@ plugins {
 dependencies {
     api(libs.edc.spi.core)
     implementation(libs.opentelemetry.api)
-    testImplementation(libs.edc.lib.jsonld)
+    testImplementation(libs.edc.lib.core)
 }
