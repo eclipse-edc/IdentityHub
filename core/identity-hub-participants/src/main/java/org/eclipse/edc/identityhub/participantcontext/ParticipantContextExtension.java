@@ -24,6 +24,7 @@ import org.eclipse.edc.runtime.metamodel.annotation.Extension;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;
 import org.eclipse.edc.runtime.metamodel.annotation.Provider;
 import org.eclipse.edc.spi.event.EventRouter;
+import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.spi.security.Vault;
 import org.eclipse.edc.spi.system.ServiceExtension;
 import org.eclipse.edc.spi.telemetry.Telemetry;
@@ -58,6 +59,8 @@ public class ParticipantContextExtension implements ServiceExtension {
     private ParticipantContextConfigService configService;
     @Inject
     private Telemetry telemetry;
+    @Inject
+    private Monitor monitor;
 
     @Override
     public String name() {
@@ -66,7 +69,7 @@ public class ParticipantContextExtension implements ServiceExtension {
 
     @Provider
     public IdentityHubParticipantContextService createParticipantService() {
-        return new IdentityHubParticipantContextServiceImpl(participantContextStore, didResourceStore, vault, transactionContext, participantContextObservable(), stsAccountProvisioner, configService);
+        return new IdentityHubParticipantContextServiceImpl(participantContextStore, didResourceStore, vault, transactionContext, participantContextObservable(), stsAccountProvisioner, configService, monitor);
     }
 
     @Provider

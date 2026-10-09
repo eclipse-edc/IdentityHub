@@ -541,8 +541,46 @@ class KeyPairServiceImplTest {
         inOrder.verify(keyPairResourceStore).create(any());
         inOrder.verify(vault).deleteSecret(PARTICIPANT_ID, key.getPrivateKeyAlias());
         verifyNoInteractions(observableMock);
-        // nothing was written, so a surrounding transaction, e.g. the one creating a participant context, must not be rolled back
+        // nothing was written, so the caller decides whether a surrounding transaction, e.g. the one creating a participant
+        // context, is rolled back
         assertThat(transactionContext.isRolledBack(1)).isFalse();
+    }
+
+    @Test
+    void discardKeyMaterial_whenGenerated_shouldDeletePrivateKey() {
+        var key = createKey().publicKeyJwk(null).publicKeyPem(null).keyGeneratorParams(Map.of(
+                "algorithm", "EdDSA",
+                "curve", "Ed25519"
+        )).build();
+
+        keyPairService.discardKeyMaterial(PARTICIPANT_ID, key);
+
+        verify(vault).deleteSecret(PARTICIPANT_ID, key.getPrivateKeyAlias());
+        verifyNoMoreInteractions(vault);
+        verifyNoInteractions(keyPairResourceStore, observableMock);
+    }
+
+    @Test
+    void discardKeyMaterial_whenImported_shouldNotDeletePrivateKey() {
+        var key = createKey().publicKeyJwk(createJwk()).publicKeyPem(null).keyGeneratorParams(null).build();
+
+        keyPairService.discardKeyMaterial(PARTICIPANT_ID, key);
+
+        // the private key of an imported key pair was stored by someone else
+        verifyNoInteractions(vault, keyPairResourceStore, observableMock);
+    }
+
+    @Test
+    void discardKeyMaterial_whenDeletingFails_shouldWarn() {
+        when(vault.deleteSecret(anyString(), anyString())).thenReturn(Result.failure("vault down"));
+        var key = createKey().publicKeyJwk(null).publicKeyPem(null).keyGeneratorParams(Map.of(
+                "algorithm", "EdDSA",
+                "curve", "Ed25519"
+        )).build();
+
+        keyPairService.discardKeyMaterial(PARTICIPANT_ID, key);
+
+        verify(monitor).warning(contains(key.getPrivateKeyAlias()));
     }
 
     @Test

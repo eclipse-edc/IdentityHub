@@ -74,16 +74,18 @@ public class StsAccountProvisionerImpl implements EventSubscriber, StsAccountPro
     public ServiceResult<AccountCredentials> create(ParticipantManifest manifest) {
 
         var secretAlias = manifest.clientSecretAlias();
-        var createResult = stsAccountService.createAccount(manifest, secretAlias)
-                .map(v -> stsClientSecretGenerator.generateClientSecret(null))
-                .map(secret -> new AccountCredentials(manifest.getDid(), secret))
-                .onSuccess(accountCredentials -> {
-                    // the vault's result does not influence the service result, since that may cause the transaction to roll back,
-                    // but vaults aren't transactional resources
-                    vault.storeSecret(manifest.getParticipantContextId(), secretAlias, accountCredentials.clientSecret())
-                            .onFailure(e -> monitor.severe(e.getFailureDetail()));
-                });
+        var createResult = stsAccountService.createAccount(manifest, secretAlias);
+        if (createResult.failed()) {
+            return ServiceResult.badRequest(createResult.getFailureDetail());
+        }
 
-        return createResult.succeeded() ? ServiceResult.success(createResult.getContent()) : ServiceResult.badRequest(createResult.getFailureDetail());
+        // without its client secret, the account cannot authenticate, so a failure fails the creation of the participant
+        // context, which rolls back the account
+        var secret = stsClientSecretGenerator.generateClientSecret(null);
+        var storeResult = vault.storeSecret(manifest.getParticipantContextId(), secretAlias, secret);
+        if (storeResult.failed()) {
+            return ServiceResult.unexpected("Failed to store the client secret with alias '%s': %s".formatted(secretAlias, storeResult.getFailureDetail()));
+        }
+        return ServiceResult.success(new AccountCredentials(manifest.getDid(), secret));
     }
 }

@@ -172,6 +172,12 @@ public class TransitKeyPairService implements KeyPairService, EventSubscriber {
     }
 
     @Override
+    public void discardKeyMaterial(String participantContextId, KeyDescriptor keyDescriptor) {
+        // addKeyPair always generates the key in Transit, importing a key is not supported
+        discardKey(generateKeyName(participantContextId, keyDescriptor.getPrivateKeyAlias()));
+    }
+
+    @Override
     @WithSpan(value = "keypairs.rotate", kind = SpanKind.INTERNAL)
     public ServiceResult<Void> rotateKeyPair(String oldId, @Nullable KeyDescriptor newKeyDesc, long duration) {
         try {

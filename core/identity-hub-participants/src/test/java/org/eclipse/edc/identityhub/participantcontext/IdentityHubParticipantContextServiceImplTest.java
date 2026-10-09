@@ -33,6 +33,8 @@ import org.eclipse.edc.participantcontext.spi.config.model.ParticipantContextCon
 import org.eclipse.edc.participantcontext.spi.config.service.ParticipantContextConfigService;
 import org.eclipse.edc.participantcontext.spi.store.ParticipantContextStore;
 import org.eclipse.edc.participantcontext.spi.types.ParticipantContextState;
+import org.eclipse.edc.spi.EdcException;
+import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.spi.result.ServiceFailure;
@@ -51,15 +53,19 @@ import java.util.Map;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.eclipse.edc.junit.assertions.AbstractResultAssert.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
@@ -71,6 +77,7 @@ class IdentityHubParticipantContextServiceImplTest {
     private final DidResourceStore didResourceStore = mock();
     private final StsAccountProvisioner stsAccountProvisioner = mock();
     private final ParticipantContextConfigService configService = mock();
+    private final Monitor monitor = mock();
     private final TrackingTransactionContext transactionContext = new TrackingTransactionContext();
     private IdentityHubParticipantContextServiceImpl participantContextService;
 
@@ -78,8 +85,9 @@ class IdentityHubParticipantContextServiceImplTest {
     void setUp() {
         var keyParserRegistry = new KeyParserRegistryImpl();
         keyParserRegistry.register(new PemParser(mock()));
-        participantContextService = new IdentityHubParticipantContextServiceImpl(participantContextStore, didResourceStore, vault, transactionContext, observableMock, stsAccountProvisioner, configService);
+        participantContextService = new IdentityHubParticipantContextServiceImpl(participantContextStore, didResourceStore, vault, transactionContext, observableMock, stsAccountProvisioner, configService, monitor);
         when(stsAccountProvisioner.create(any())).thenReturn(ServiceResult.success());
+        when(vault.deleteSecret(anyString(), anyString())).thenReturn(Result.success());
         when(configService.save(any(ParticipantContextConfiguration.class))).thenReturn(ServiceResult.success());
     }
 
@@ -258,6 +266,94 @@ class IdentityHubParticipantContextServiceImplTest {
 
         verify(didResourceStore).findById(eq(ctx.getDid()));
         verifyNoMoreInteractions(didResourceStore, participantContextStore, observableMock);
+    }
+
+    @Test
+    void createParticipantContext_whenConfigurationFails_shouldRollBack() {
+        when(participantContextStore.create(any())).thenReturn(StoreResult.success());
+        when(configService.save(any(ParticipantContextConfiguration.class))).thenReturn(ServiceResult.unexpected("foobar"));
+
+        assertThat(participantContextService.createParticipantContext(createManifest().build())).isFailed()
+                .detail().isEqualTo("foobar");
+
+        assertThat(transactionContext.isRolledBack(1)).isTrue();
+        verify(vault, never()).storeSecret(anyString(), anyString(), anyString());
+        verifyNoInteractions(stsAccountProvisioner, observableMock);
+    }
+
+    @Test
+    void createParticipantContext_whenApiTokenFails_shouldRollBack() {
+        when(participantContextStore.create(any())).thenReturn(StoreResult.success());
+        when(vault.storeSecret(anyString(), anyString(), anyString())).thenReturn(Result.failure("foobar"));
+
+        assertThat(participantContextService.createParticipantContext(createManifest().build())).isFailed()
+                .detail().contains("foobar");
+
+        assertThat(transactionContext.isRolledBack(1)).isTrue();
+        verify(vault, never()).deleteSecret(anyString(), anyString());
+        verifyNoInteractions(stsAccountProvisioner, observableMock);
+    }
+
+    @Test
+    void createParticipantContext_whenStsAccountFails_shouldRollBackAndDeleteApiToken() {
+        when(participantContextStore.create(any())).thenReturn(StoreResult.success());
+        when(vault.storeSecret(anyString(), anyString(), anyString())).thenReturn(Result.success());
+        when(stsAccountProvisioner.create(any())).thenReturn(ServiceResult.unexpected("foobar"));
+        var manifest = createManifest().build();
+
+        assertThat(participantContextService.createParticipantContext(manifest)).isFailed()
+                .detail().isEqualTo("foobar");
+
+        assertThat(transactionContext.isRolledBack(1)).isTrue();
+        verify(vault).deleteSecret("test-id", "test-id-apikey");
+        verify(vault, never()).deleteSecret("test-id", manifest.clientSecretAlias());
+        verifyNoInteractions(observableMock);
+    }
+
+    @Test
+    void createParticipantContext_whenProvisioningFails_shouldRollBackAndDeleteSecrets() {
+        when(participantContextStore.create(any())).thenReturn(StoreResult.success());
+        when(vault.storeSecret(anyString(), anyString(), anyString())).thenReturn(Result.success());
+        when(stsAccountProvisioner.create(any())).thenReturn(ServiceResult.success(new AccountCredentials("clientId", "clientSecret")));
+        doThrow(new ProvisioningException(ServiceResult.conflict("foobar"))).when(observableMock).invokeForEach(any());
+        var manifest = createManifest().build();
+
+        assertThat(participantContextService.createParticipantContext(manifest)).isFailed()
+                .satisfies(f -> assertThat(f.getReason()).isEqualTo(ServiceFailure.Reason.CONFLICT))
+                .detail().isEqualTo("foobar");
+
+        assertThat(transactionContext.isRolledBack(1)).isTrue();
+        verify(vault).deleteSecret("test-id", "test-id-apikey");
+        verify(vault).deleteSecret("test-id", manifest.clientSecretAlias());
+    }
+
+    @Test
+    void createParticipantContext_whenUnexpectedExceptionIsThrown_shouldDeleteSecretsAndRethrow() {
+        when(participantContextStore.create(any())).thenReturn(StoreResult.success());
+        when(vault.storeSecret(anyString(), anyString(), anyString())).thenReturn(Result.success());
+        when(stsAccountProvisioner.create(any())).thenReturn(ServiceResult.success(new AccountCredentials("clientId", "clientSecret")));
+        var exception = new EdcException("foobar");
+        doThrow(exception).when(observableMock).invokeForEach(any());
+        var manifest = createManifest().build();
+
+        assertThatThrownBy(() -> participantContextService.createParticipantContext(manifest)).isSameAs(exception);
+
+        assertThat(transactionContext.isRolledBack(1)).isTrue();
+        verify(vault).deleteSecret("test-id", "test-id-apikey");
+        verify(vault).deleteSecret("test-id", manifest.clientSecretAlias());
+    }
+
+    @Test
+    void createParticipantContext_whenDeletingSecretFails_shouldWarn() {
+        when(participantContextStore.create(any())).thenReturn(StoreResult.success());
+        when(vault.storeSecret(anyString(), anyString(), anyString())).thenReturn(Result.success());
+        when(vault.deleteSecret(anyString(), anyString())).thenReturn(Result.failure("vault down"));
+        doThrow(new ProvisioningException(ServiceResult.conflict("foobar"))).when(observableMock).invokeForEach(any());
+
+        assertThat(participantContextService.createParticipantContext(createManifest().provisionStsAccount(false).build())).isFailed()
+                .detail().isEqualTo("foobar");
+
+        verify(monitor).warning(contains("test-id-apikey"));
     }
 
     @Test

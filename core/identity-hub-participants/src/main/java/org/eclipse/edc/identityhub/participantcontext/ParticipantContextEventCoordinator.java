@@ -29,6 +29,8 @@ import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.spi.result.ServiceResult;
 import org.eclipse.edc.spi.telemetry.Telemetry;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.stream.Stream;
 
 import static org.eclipse.edc.participantcontext.spi.types.ParticipantResource.queryByParticipantContextId;
@@ -42,6 +44,8 @@ import static org.eclipse.edc.spi.result.ServiceResult.success;
  *     <li>Add a KeyPair</li>
  * </ul>
  * To that end, the {@link ParticipantContextEventCoordinator} directly collaborates with the {@link KeyPairService} and the {@link DidDocumentService}.
+ * <p>
+ * If any of these actions fails, the creation of the participant context is rolled back by throwing a {@link ProvisioningException}.
  * <p>
  * Please note that once this initial sequence is executed, every collaborator service emits their events as per their event contract.
  * For example, once a KeyPair is added, the {@link KeyPairService} will emit a {@link org.eclipse.edc.identityhub.spi.events.keypair.KeyPairAdded} event. The {@link DidDocumentService}
@@ -80,13 +84,23 @@ class ParticipantContextEventCoordinator implements EventSubscriber {
                             "This will result in a DID Document without Verification Methods, and thus, an unusable ParticipantContext.");
                 }
 
-                didDocumentService.store(doc, manifest.getParticipantContextId())
-                        // adding the keypair event will cause the DidDocumentService to update the DID
-                        .compose(u -> storeKeyPairs(createdEvent))
-                        .compose(u -> manifest.isActive()
-                                ? participantContextService.updateParticipant(manifest.getParticipantContextId(), IdentityHubParticipantContext::activate) //implicitly publishes the did document
-                                : success())
-                        .onFailure(f -> monitor.warning("%s".formatted(f.getFailureDetail())));
+                var addedKeys = new ArrayList<KeyDescriptor>();
+                try {
+                    var result = didDocumentService.store(doc, manifest.getParticipantContextId())
+                            // adding the keypair event will cause the DidDocumentService to update the DID
+                            .compose(u -> storeKeyPairs(createdEvent, addedKeys))
+                            .compose(u -> manifest.isActive()
+                                    ? participantContextService.updateParticipant(manifest.getParticipantContextId(), IdentityHubParticipantContext::activate) //implicitly publishes the did document
+                                    : success());
+                    if (result.failed()) {
+                        // rolls back the creation of the participant context
+                        throw new ProvisioningException(result);
+                    }
+                } catch (RuntimeException e) {
+                    // the key material is not part of the transaction that creates the participant context
+                    addedKeys.forEach(key -> keyPairService.discardKeyMaterial(manifest.getParticipantContextId(), key));
+                    throw e;
+                }
                 return null;
             }, createdEvent).get();
 
@@ -111,14 +125,21 @@ class ParticipantContextEventCoordinator implements EventSubscriber {
         }
     }
 
-    private ServiceResult<Void> storeKeyPairs(ParticipantContextCreated createdEvent) {
+    /**
+     * Adds the key pairs of the manifest until one fails.
+     *
+     * @param addedKeys collects the keys whose key pairs were added
+     */
+    private ServiceResult<Void> storeKeyPairs(ParticipantContextCreated createdEvent, List<KeyDescriptor> addedKeys) {
         var participantContextId = createdEvent.getParticipantContextId();
-        var keys = createdEvent.getManifest().getKeys();
-
-        return keys.stream().map(k -> keyPairService.addKeyPair(participantContextId, k, true))
-                .reduce((sr1, sr2) -> sr1.succeeded() && sr2.succeeded() ? success() :
-                        ServiceResult.unexpected(sr1.getFailureDetail(), sr2.getFailureDetail()))
-                .orElse(success());
+        for (var key : createdEvent.getManifest().getKeys()) {
+            var result = keyPairService.addKeyPair(participantContextId, key, true);
+            if (result.failed()) {
+                return result;
+            }
+            addedKeys.add(key);
+        }
+        return success();
     }
 
     private ServiceResult<Void> merge(ServiceResult<Void> sr1, ServiceResult<Void> sr2) {

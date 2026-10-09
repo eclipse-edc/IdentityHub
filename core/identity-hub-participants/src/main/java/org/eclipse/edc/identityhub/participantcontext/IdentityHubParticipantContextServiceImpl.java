@@ -30,6 +30,7 @@ import org.eclipse.edc.participantcontext.spi.config.service.ParticipantContextC
 import org.eclipse.edc.participantcontext.spi.store.ParticipantContextStore;
 import org.eclipse.edc.participantcontext.spi.types.ParticipantContext;
 import org.eclipse.edc.participantcontext.spi.types.ParticipantContextState;
+import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.ServiceResult;
 import org.eclipse.edc.spi.security.Vault;
@@ -37,6 +38,7 @@ import org.eclipse.edc.transaction.spi.TransactionContext;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.ObjectMapper;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -67,6 +69,7 @@ public class IdentityHubParticipantContextServiceImpl implements IdentityHubPart
     private final ParticipantContextObservable observable;
     private final StsAccountProvisioner stsAccountProvisioner;
     private final ParticipantContextConfigService configService;
+    private final Monitor monitor;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     public IdentityHubParticipantContextServiceImpl(ParticipantContextStore participantContextStore,
@@ -75,7 +78,8 @@ public class IdentityHubParticipantContextServiceImpl implements IdentityHubPart
                                                     TransactionContext transactionContext,
                                                     ParticipantContextObservable observable,
                                                     StsAccountProvisioner stsAccountProvisioner,
-                                                    ParticipantContextConfigService configService) {
+                                                    ParticipantContextConfigService configService,
+                                                    Monitor monitor) {
         this.participantContextStore = participantContextStore;
         this.didResourceStore = didResourceStore;
         this.vault = vault;
@@ -83,37 +87,59 @@ public class IdentityHubParticipantContextServiceImpl implements IdentityHubPart
         this.observable = observable;
         this.stsAccountProvisioner = stsAccountProvisioner;
         this.configService = configService;
+        this.monitor = monitor;
         this.tokenGenerator = new ApiTokenGenerator();
     }
 
     @WithSpan(value = "participant-context.create", kind = SpanKind.INTERNAL)
     @Override
     public ServiceResult<CreateParticipantContextResponse> createParticipantContext(ParticipantManifest manifest) {
-        return transactionContext.execute(() -> {
-            if (didResourceStore.findById(manifest.getDid()) != null) {
-                return ServiceResult.conflict("Another participant with the same DID '%s' already exists.".formatted(manifest.getDid()));
-            }
-            var context = convert(manifest);
+        // the vault is not part of the transaction, so the secrets that are stored are deleted again if the creation fails
+        var storedSecretAliases = new ArrayList<String>();
+        try {
+            return transactionContext.execute(() -> {
+                if (didResourceStore.findById(manifest.getDid()) != null) {
+                    return ServiceResult.conflict("Another participant with the same DID '%s' already exists.".formatted(manifest.getDid()));
+                }
+                var context = convert(manifest);
 
-            return createParticipantContext(context)
-                    .compose(ctx -> manifest.isProvisionApiKey()
-                            ? createTokenAndStoreInVault(ctx)
-                            : ServiceResult.success(null))
-                    .compose(apiKey -> {
-                        if (!manifest.isProvisionStsAccount()) {
-                            return success(new CreateParticipantContextResponse(apiKey, null, null));
-                        }
-                        return stsAccountProvisioner.create(manifest)
-                                .map(accountInfo -> {
-                                    if (accountInfo == null) {
-                                        return new CreateParticipantContextResponse(apiKey, null, null);
-                                    } else {
-                                        return new CreateParticipantContextResponse(apiKey, accountInfo.clientId(), accountInfo.clientSecret());
-                                    }
-                                });
-                    })
-                    .onSuccess(apiToken -> observable.invokeForEach(l -> l.created(context, manifest)));
-        });
+                var createResult = participantContextStore.create(context);
+                if (createResult.failed()) {
+                    // e.g. a participant context with the same ID exists, whose configuration must not be overwritten: the
+                    // configuration is saved with an upsert
+                    return ServiceResult.fromFailure(createResult);
+                }
+
+                // from here on, a failure rolls back the transaction, so that no partially provisioned participant context remains
+                rollbackOnFailure(saveConfiguration(context));
+
+                String apiKey = null;
+                if (manifest.isProvisionApiKey()) {
+                    apiKey = rollbackOnFailure(createTokenAndStoreInVault(context));
+                    storedSecretAliases.add(context.getApiTokenAlias());
+                }
+
+                var response = new CreateParticipantContextResponse(apiKey, null, null);
+                if (manifest.isProvisionStsAccount()) {
+                    var accountInfo = rollbackOnFailure(stsAccountProvisioner.create(manifest));
+                    if (accountInfo != null) {
+                        storedSecretAliases.add(manifest.clientSecretAlias());
+                        response = new CreateParticipantContextResponse(apiKey, accountInfo.clientId(), accountInfo.clientSecret());
+                    }
+                }
+
+                // the ParticipantContextEventCoordinator creates the DID document and the key pairs, and throws a
+                // ProvisioningException if that fails
+                observable.invokeForEach(l -> l.created(context, manifest));
+                return success(response);
+            });
+        } catch (ProvisioningException e) {
+            deleteSecrets(manifest.getParticipantContextId(), storedSecretAliases);
+            return e.failure();
+        } catch (RuntimeException e) {
+            deleteSecrets(manifest.getParticipantContextId(), storedSecretAliases);
+            throw e;
+        }
     }
 
     @Override
@@ -193,14 +219,7 @@ public class IdentityHubParticipantContextServiceImpl implements IdentityHubPart
     }
 
 
-    private ServiceResult<IdentityHubParticipantContext> createParticipantContext(IdentityHubParticipantContext context) {
-        var result = participantContextStore.create(context);
-        if (result.failed()) {
-            // e.g. a participant context with the same ID exists, whose configuration must not be overwritten: the
-            // configuration is saved with an upsert
-            return ServiceResult.fromFailure(result);
-        }
-
+    private ServiceResult<Void> saveConfiguration(IdentityHubParticipantContext context) {
         var config = context.getProperties().entrySet().stream()
                 .collect(toMap(Map.Entry::getKey, e -> {
                     if (e.getValue() instanceof String v) {
@@ -217,7 +236,20 @@ public class IdentityHubParticipantContextServiceImpl implements IdentityHubPart
                 .participantContextId(context.getParticipantContextId())
                 .privateEntries(config)
                 .build();
-        return configService.save(cfg).map(u -> context);
+        return configService.save(cfg);
+    }
+
+    private <T> T rollbackOnFailure(ServiceResult<T> result) {
+        if (result.failed()) {
+            throw new ProvisioningException(result);
+        }
+        return result.getContent();
+    }
+
+    private void deleteSecrets(String participantContextId, List<String> aliases) {
+        aliases.forEach(alias -> vault.deleteSecret(participantContextId, alias)
+                .onFailure(f -> monitor.warning("Failed to delete the secret '%s' of participant context '%s', whose creation failed. It must be deleted manually: %s"
+                        .formatted(alias, participantContextId, f.getFailureDetail()))));
     }
 
     private IdentityHubParticipantContext findByIdInternal(String participantContextId) {

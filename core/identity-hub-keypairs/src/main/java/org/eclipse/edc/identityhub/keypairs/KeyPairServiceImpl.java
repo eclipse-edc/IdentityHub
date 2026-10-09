@@ -92,13 +92,21 @@ public class KeyPairServiceImpl implements KeyPairService, EventSubscriber {
                 warnIfNoActiveKeyPair(participantContextId);
             }
 
-            // a failure is returned rather than thrown, so that it does not roll back a surrounding transaction, e.g. the one
-            // that creates the participant context. Nothing is written to the database when it happens.
+            // a failure is returned rather than thrown, so that the caller decides whether a surrounding transaction, e.g. the
+            // one that creates the participant context, is rolled back. Nothing is written to the database when it happens.
             return storePrivateKey(participantContextId, keyDescriptor)
                     .compose(newKey -> createKeyPair(newKey, makeDefault))
                     .onSuccess(this::announceAdded)
                     .mapEmpty();
         });
+    }
+
+    @Override
+    public void discardKeyMaterial(String participantContextId, KeyDescriptor keyDescriptor) {
+        // only the private key of a key pair that is generated here is stored in the vault, c.f. storePrivateKey
+        if (keyDescriptor.getKeyGeneratorParams() != null) {
+            discardPrivateKey(participantContextId, keyDescriptor.getPrivateKeyAlias());
+        }
     }
 
     @Override
@@ -460,11 +468,14 @@ public class KeyPairServiceImpl implements KeyPairService, EventSubscriber {
      */
     private void discardPrivateKey(NewKey newKey) {
         if (newKey.privateKeyStored()) {
-            var alias = newKey.descriptor().getPrivateKeyAlias();
-            vault.deleteSecret(newKey.participantContextId(), alias)
-                    .onFailure(f -> monitor.warning("Failed to delete the private key '%s' of a key pair that was not added, it must be deleted manually: %s"
-                            .formatted(alias, f.getFailureDetail())));
+            discardPrivateKey(newKey.participantContextId(), newKey.descriptor().getPrivateKeyAlias());
         }
+    }
+
+    private void discardPrivateKey(String participantContextId, String alias) {
+        vault.deleteSecret(participantContextId, alias)
+                .onFailure(f -> monitor.warning("Failed to delete the private key '%s' of a key pair that was not added, it must be deleted manually: %s"
+                        .formatted(alias, f.getFailureDetail())));
     }
 
     /**
