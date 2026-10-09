@@ -27,7 +27,7 @@ dependencies {
     testImplementation(project(":protocols:dcp:dcp-spi"))
 
     testImplementation(libs.edc.junit)
-    testImplementation(libs.edc.lib.jsonld)
+    testImplementation(libs.edc.lib.core)
     testImplementation(libs.restAssured)
     testImplementation(libs.awaitility)
     testImplementation(testFixtures(project(":e2e-tests:identityhub-test-fixtures")))

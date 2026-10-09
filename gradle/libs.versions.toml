@@ -56,7 +56,6 @@ edc-vault-hashicorp = { module = "org.eclipse.edc:vault-hashicorp", version.ref 
 
 # EDC libs (consolidated, see Connector DR 2026-06-18-lib-module-consolidation)
 edc-lib-core = { module = "org.eclipse.edc:core-lib", version.ref = "edc" }
-edc-lib-jsonld = { module = "org.eclipse.edc:jsonld-lib", version.ref = "edc" }
 edc-lib-controlplane = { module = "org.eclipse.edc:control-plane-lib", version.ref = "edc" }
 edc-lib-jws2020 = { module = "org.eclipse.edc:jws2020-lib", version.ref = "edc" }
 

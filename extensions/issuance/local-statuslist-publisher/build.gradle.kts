@@ -24,7 +24,7 @@ dependencies {
 
     implementation(libs.edc.spi.core)
     implementation(libs.jakarta.rsApi)
-    implementation(libs.edc.lib.jsonld)
+    implementation(libs.edc.lib.core)
 
     testImplementation(libs.edc.junit)
     testImplementation(libs.restAssured)
