@@ -15,6 +15,7 @@
 package org.eclipse.edc.issuerservice.issuance;
 
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialStore;
+import org.eclipse.edc.identityhub.statemachine.IdentityHubStateMachineConfiguration;
 import org.eclipse.edc.issuerservice.issuance.process.IssuanceProcessManagerImpl;
 import org.eclipse.edc.issuerservice.issuance.process.IssuanceProcessServiceImpl;
 import org.eclipse.edc.issuerservice.spi.credentials.CredentialStatusService;
@@ -30,13 +31,11 @@ import org.eclipse.edc.runtime.metamodel.annotation.Configuration;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;
 import org.eclipse.edc.runtime.metamodel.annotation.Provider;
-import org.eclipse.edc.runtime.metamodel.annotation.SettingContext;
 import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.spi.security.Vault;
 import org.eclipse.edc.spi.system.ExecutorInstrumentation;
 import org.eclipse.edc.spi.system.ServiceExtension;
 import org.eclipse.edc.spi.telemetry.Telemetry;
-import org.eclipse.edc.statemachine.StateMachineConfiguration;
 import org.eclipse.edc.transaction.spi.TransactionContext;
 
 import java.time.Clock;
@@ -48,9 +47,8 @@ public class IssuanceCoreExtension implements ServiceExtension {
 
     public static final String NAME = "Issuance Core Extension";
 
-    @SettingContext("edc.issuer.issuance")
-    @Configuration
-    private StateMachineConfiguration stateMachineConfiguration;
+    @Configuration(context = "edc.issuer.issuance")
+    private IdentityHubStateMachineConfiguration stateMachineConfiguration;
 
     private IssuanceProcessManager issuanceProcessManager;
 

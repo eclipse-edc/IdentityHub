@@ -400,6 +400,20 @@ requests.
 The `CredentialRequestManager` will delegate to the EDC `PolicyEngine` to ensure the `issuancePolicy`
 and `reissuancePolicy` are evaluated when a self-issued ID token is generated as part of an issuer request.
 
+If a credential request cannot be sent, e.g. because the issuer is unavailable or answers with a server error, it is
+retried with a growing delay: the n-th retry waits the base delay times 2 to the power of n, but at most the maximum
+delay. By default, the retries are 2 s, 4 s, ..., 256 s apart, and 5 min after that, so that a request keeps being
+retried for about six hours. An issuer that answers with a client error (4xx) would refuse a retry as well, so the
+request fails right away. The following settings control this:
+
+| Setting                                                 | Description                                                  | Default  |
+|---------------------------------------------------------|--------------------------------------------------------------|----------|
+| `edc.iam.credential.request.send.retry.limit`           | How many times sending a request is retried before it fails  | `80`     |
+| `edc.iam.credential.request.send.retry.base-delay.ms`   | The base delay of retries in milliseconds                    | `1000`   |
+| `edc.iam.credential.request.send.retry.max-delay.ms`    | The maximum delay between two retries in milliseconds        | `300000` |
+| `edc.iam.credential.request.state-machine.iteration-wait-millis` | How long the state machine waits between iterations in milliseconds | `1000` |
+| `edc.iam.credential.request.state-machine.batch-size`   | How many credential requests are processed per iteration     | `20`     |
+
 Request operations publish events.
 
 ### 3.5.4. CredentialStore
