@@ -28,6 +28,7 @@ import org.eclipse.edc.spi.event.Event;
 import org.eclipse.edc.spi.event.EventEnvelope;
 import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.spi.result.Result;
+import org.eclipse.edc.spi.result.ServiceFailure;
 import org.eclipse.edc.spi.result.ServiceResult;
 import org.eclipse.edc.spi.security.Vault;
 import org.eclipse.edc.spi.telemetry.Telemetry;
@@ -37,6 +38,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.edc.junit.assertions.AbstractResultAssert.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -102,6 +104,19 @@ class StsAccountProvisionerImplTest {
 
         verify(accountServiceMock).createAccount(any(), anyString());
         verifyNoInteractions(keyPairService, didDocumentService, vault);
+    }
+
+    @Test
+    void create_whenVaultFails_shouldFail() {
+        when(accountServiceMock.createAccount(any(), anyString())).thenReturn(ServiceResult.success());
+        when(vault.storeSecret(anyString(), anyString(), anyString())).thenReturn(Result.failure("vault down"));
+
+        var res = accountProvisioner.create(createManifest().build());
+
+        assertThat(res).isFailed()
+                .satisfies(f -> assertThat(f.getReason()).isEqualTo(ServiceFailure.Reason.UNEXPECTED))
+                .detail().contains("vault down");
+        verify(accountServiceMock).createAccount(any(), anyString());
     }
 
     @Test

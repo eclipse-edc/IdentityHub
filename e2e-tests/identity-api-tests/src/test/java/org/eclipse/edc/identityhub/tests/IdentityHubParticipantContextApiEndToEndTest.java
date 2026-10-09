@@ -76,6 +76,7 @@ import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.mock;
@@ -706,6 +707,69 @@ public class IdentityHubParticipantContextApiEndToEndTest {
                 .configurationProvider(() -> POSTGRESQL_EXTENSION.configFor(DB_NAME))
                 .paramProvider(IdentityHub.class, IdentityHub::forContext)
                 .build();
+
+        /**
+         * Only runs against a transactional store, since the in-memory stores cannot roll back.
+         */
+        @Test
+        void createNewUser_whenKeyPairFails_shouldRollBackAndAllowRetry(IdentityHub identityHub, Vault vault, EventRouter router) {
+            var subscriber = mock(EventSubscriber.class);
+            router.registerSync(DidDocumentPublished.class, subscriber);
+
+            var participantId = UUID.randomUUID().toString();
+            // both key pairs have the same key ID, so whichever is added second fails after the first was generated
+            var manifest = createNewParticipant()
+                    .participantContextId(participantId)
+                    .active(true)
+                    .did("did:web:" + participantId)
+                    .keys(Set.of(
+                            createKeyDescriptor().keyId("key1").privateKeyAlias("alias1").active(true).build(),
+                            createKeyDescriptor().keyId("key1").privateKeyAlias("alias2").active(true).build()))
+                    .build();
+
+            identityHub.getIdentityEndpoint().baseRequest()
+                    .header(authorizeUser(SUPER_USER, identityHub))
+                    .contentType(ContentType.JSON)
+                    .body(manifest)
+                    .post("/v1/participants/")
+                    .then()
+                    .log().ifValidationFails()
+                    .statusCode(409);
+
+            identityHub.getIdentityEndpoint().baseRequest()
+                    .header(authorizeUser(SUPER_USER, identityHub))
+                    .get("/v1/participants/" + participantId)
+                    .then()
+                    .statusCode(404);
+            assertThat(identityHub.getKeyPairsForParticipant(participantId)).isEmpty();
+            assertThat(identityHub.getDidForParticipant(participantId)).isEmpty();
+            assertThat(vault.resolveSecret(participantId, "alias1")).isNull();
+            assertThat(vault.resolveSecret(participantId, "alias2")).isNull();
+            assertThat(vault.resolveSecret(participantId, participantId + "-apikey")).isNull();
+            assertThat(vault.resolveSecret(participantId, manifest.clientSecretAlias())).isNull();
+            verify(subscriber, never()).on(any());
+
+            // a private key that remained in the vault would block adding a key pair with its alias again
+            var retry = createNewParticipant()
+                    .participantContextId(participantId)
+                    .active(true)
+                    .did("did:web:" + participantId)
+                    .keys(Set.of(
+                            createKeyDescriptor().keyId("key1").privateKeyAlias("alias1").active(true).build(),
+                            createKeyDescriptor().keyId("key2").privateKeyAlias("alias2").active(true).build()))
+                    .build();
+
+            identityHub.getIdentityEndpoint().baseRequest()
+                    .header(authorizeUser(SUPER_USER, identityHub))
+                    .contentType(ContentType.JSON)
+                    .body(retry)
+                    .post("/v1/participants/")
+                    .then()
+                    .log().ifError()
+                    .statusCode(anyOf(equalTo(200), equalTo(204)));
+
+            assertThat(identityHub.getKeyPairsForParticipant(participantId)).hasSize(2);
+        }
 
         @Override
         protected Header authorizeUser(String participantContextId, IdentityHub identityHub) {

@@ -38,6 +38,20 @@ public interface KeyPairService {
     ServiceResult<Void> addKeyPair(String participantContextId, KeyDescriptor keyDescriptor, boolean makeDefault);
 
     /**
+     * Deletes the key material that {@link #addKeyPair(String, KeyDescriptor, boolean)} generated for a key pair that is not
+     * added after all, because the transaction it was added in is rolled back, e.g. when the creation of its participant
+     * context fails. The key material is not part of that transaction, and would otherwise prevent adding the key pair again.
+     * Key material that was imported is left untouched. Failures are logged, not returned.
+     * <p>
+     * Must only be called for a key pair that was added successfully, otherwise the key material may belong to another key pair.
+     *
+     * @param participantContextId The participant context ID the key pair was added to.
+     * @param keyDescriptor        The key descriptor the key pair was added with.
+     */
+    default void discardKeyMaterial(String participantContextId, KeyDescriptor keyDescriptor) {
+    }
+
+    /**
      * Phases out an old key and creates a new one. The old key pair's private key gets deleted from the vault, so it cannot be used
      * to sign/encrypt anymore, but the public key stays in the DID document.
      * <ul>

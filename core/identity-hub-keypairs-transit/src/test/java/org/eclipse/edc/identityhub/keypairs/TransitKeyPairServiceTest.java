@@ -198,6 +198,27 @@ class TransitKeyPairServiceTest {
         }
     }
 
+    @Test
+    void discardKeyMaterial_shouldDeleteTransitKey() {
+        var key = createKey().keyGeneratorParams(Map.of("type", "ed25519")).build();
+
+        keyPairService.discardKeyMaterial(PARTICIPANT_ID, key);
+
+        verify(transitEngine).deleteKey(TransitEngine.keyName(PARTICIPANT_ID, key.getPrivateKeyAlias()));
+        verifyNoMoreInteractions(transitEngine);
+        verifyNoInteractions(keyPairResourceStore, observableMock);
+    }
+
+    @Test
+    void discardKeyMaterial_whenDeletingFails_shouldWarn() {
+        when(transitEngine.deleteKey(anyString())).thenReturn(Result.failure("vault down"));
+        var key = createKey().build();
+
+        keyPairService.discardKeyMaterial(PARTICIPANT_ID, key);
+
+        verify(monitor).warning(contains(TransitEngine.keyName(PARTICIPANT_ID, key.getPrivateKeyAlias())));
+    }
+
     @Nested
     class GetActiveKeyPair {
         @Test

@@ -21,6 +21,7 @@ import org.eclipse.edc.identityhub.spi.participantcontext.events.ParticipantCont
 import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyDescriptor;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyPairUsage;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantManifest;
+import org.eclipse.edc.spi.EdcException;
 import org.eclipse.edc.spi.event.Event;
 import org.eclipse.edc.spi.event.EventEnvelope;
 import org.eclipse.edc.spi.monitor.Monitor;
@@ -31,9 +32,12 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
+import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -76,17 +80,18 @@ class IdentityHubParticipantContextEventCoordinatorTest {
     }
 
     @Test
-    void onParticipantCreated_didDocumentServiceStoreFailure() {
+    void onParticipantCreated_didDocumentServiceStoreFailure_shouldRollBack() {
         var participantId = "test-id";
         when(didDocumentService.store(any(), eq(participantId))).thenReturn(ServiceResult.badRequest("foobar"));
 
-        coordinator.on(envelope(ParticipantContextCreated.Builder.newInstance()
+        assertThatThrownBy(() -> coordinator.on(envelope(ParticipantContextCreated.Builder.newInstance()
                 .participantContextId(participantId)
                 .manifest(createManifest().build())
-                .build()));
+                .build())))
+                .isInstanceOf(ProvisioningException.class)
+                .hasMessage("foobar");
 
         verify(didDocumentService).store(any(), eq(participantId));
-        verify(monitor).warning("foobar");
         verifyNoMoreInteractions(keyPairService, didDocumentService);
     }
 
@@ -124,21 +129,83 @@ class IdentityHubParticipantContextEventCoordinatorTest {
     }
 
     @Test
-    void onParticipantCreated_active_whenKeyPairServiceFailure_shouldNotPublish() {
+    void onParticipantCreated_active_whenKeyPairServiceFailure_shouldRollBack() {
         var participantId = "test-id";
         when(didDocumentService.store(any(), eq(participantId))).thenReturn(ServiceResult.success());
         when(keyPairService.addKeyPair(eq(participantId), any(KeyDescriptor.class), anyBoolean())).thenReturn(ServiceResult.notFound("foobar"));
 
-        coordinator.on(envelope(ParticipantContextCreated.Builder.newInstance()
+        assertThatThrownBy(() -> coordinator.on(envelope(ParticipantContextCreated.Builder.newInstance()
                 .participantContextId(participantId)
                 .manifest(createManifest().active(true).build())
-                .build()));
+                .build())))
+                .isInstanceOf(ProvisioningException.class)
+                .hasMessage("foobar");
 
         verify(didDocumentService).store(any(), eq(participantId));
         verify(keyPairService).addKeyPair(eq(participantId), any(), eq(true));
         verify(didDocumentService, never()).publish(eq("did:web:" + participantId));
-        verify(monitor).warning("foobar");
+        verify(participantContextService, never()).updateParticipant(anyString(), any());
+        // the failed key pair was not added, so its key material is not discarded
         verifyNoMoreInteractions(keyPairService, didDocumentService);
+    }
+
+    @Test
+    void onParticipantCreated_whenSecondKeyPairFails_shouldDiscardFirstAndRollBack() {
+        var participantId = "test-id";
+        var firstKey = createKey().keyId("key1").privateKeyAlias("alias1").build();
+        var secondKey = createKey().keyId("key2").privateKeyAlias("alias2").build();
+        when(didDocumentService.store(any(), eq(participantId))).thenReturn(ServiceResult.success());
+        when(keyPairService.addKeyPair(participantId, firstKey, true)).thenReturn(ServiceResult.success());
+        when(keyPairService.addKeyPair(participantId, secondKey, true)).thenReturn(ServiceResult.conflict("foobar"));
+
+        assertThatThrownBy(() -> coordinator.on(envelope(ParticipantContextCreated.Builder.newInstance()
+                .participantContextId(participantId)
+                .manifest(createManifest().keys(new LinkedHashSet<>(List.of(firstKey, secondKey))).build())
+                .build())))
+                .isInstanceOf(ProvisioningException.class)
+                .hasMessage("foobar");
+
+        verify(keyPairService).discardKeyMaterial(participantId, firstKey);
+        verify(keyPairService, never()).discardKeyMaterial(participantId, secondKey);
+        verify(participantContextService, never()).updateParticipant(anyString(), any());
+    }
+
+    @Test
+    void onParticipantCreated_whenKeyPairServiceThrows_shouldDiscardAddedKeysAndRethrow() {
+        var participantId = "test-id";
+        var firstKey = createKey().keyId("key1").privateKeyAlias("alias1").build();
+        var secondKey = createKey().keyId("key2").privateKeyAlias("alias2").build();
+        var exception = new EdcException("foobar");
+        when(didDocumentService.store(any(), eq(participantId))).thenReturn(ServiceResult.success());
+        when(keyPairService.addKeyPair(participantId, firstKey, true)).thenReturn(ServiceResult.success());
+        when(keyPairService.addKeyPair(participantId, secondKey, true)).thenThrow(exception);
+
+        assertThatThrownBy(() -> coordinator.on(envelope(ParticipantContextCreated.Builder.newInstance()
+                .participantContextId(participantId)
+                .manifest(createManifest().keys(new LinkedHashSet<>(List.of(firstKey, secondKey))).build())
+                .build())))
+                .isSameAs(exception);
+
+        verify(keyPairService).discardKeyMaterial(participantId, firstKey);
+        verify(keyPairService, never()).discardKeyMaterial(participantId, secondKey);
+    }
+
+    @Test
+    void onParticipantCreated_active_whenActivationFails_shouldDiscardKeysAndRollBack() {
+        var participantId = "test-id";
+        var manifest = createManifest().active(true).build();
+        when(didDocumentService.store(any(), eq(participantId))).thenReturn(ServiceResult.success());
+        when(keyPairService.addKeyPair(eq(participantId), any(), anyBoolean())).thenReturn(ServiceResult.success());
+        when(participantContextService.updateParticipant(eq(participantId), any())).thenReturn(ServiceResult.unexpected("foobar"));
+
+        assertThatThrownBy(() -> coordinator.on(envelope(ParticipantContextCreated.Builder.newInstance()
+                .participantContextId(participantId)
+                .manifest(manifest)
+                .build())))
+                .isInstanceOf(ProvisioningException.class)
+                .hasMessage("foobar");
+
+        verify(keyPairService).discardKeyMaterial(participantId, manifest.getKeys().iterator().next());
     }
 
     @Test
