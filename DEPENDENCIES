@@ -211,7 +211,6 @@ maven/mavencentral/org.eclipse.edc/identity-did-web/1.0.0-SNAPSHOT, Apache-2.0, 
 maven/mavencentral/org.eclipse.edc/jersey-core/1.0.0-SNAPSHOT, Apache-2.0, approved, technology.edc
 maven/mavencentral/org.eclipse.edc/jetty-core/1.0.0-SNAPSHOT, Apache-2.0, approved, technology.edc
 maven/mavencentral/org.eclipse.edc/json-ld/1.0.0-SNAPSHOT, Apache-2.0, approved, technology.edc
-maven/mavencentral/org.eclipse.edc/jsonld-lib/1.0.0-SNAPSHOT, Apache-2.0, approved, technology.edc
 maven/mavencentral/org.eclipse.edc/jti-validation-store-sql/1.0.0-SNAPSHOT, Apache-2.0, approved, technology.edc
 maven/mavencentral/org.eclipse.edc/junit-base/1.0.0-SNAPSHOT, Apache-2.0, approved, technology.edc
 maven/mavencentral/org.eclipse.edc/junit/1.0.0-SNAPSHOT, Apache-2.0, approved, technology.edc
