@@ -130,6 +130,7 @@ class CredentialRequestManagerImplTest {
         when(participantContextService.getParticipantContext(anyString())).thenReturn(ServiceResult.success(participantContext()));
         when(store.findById(anyString())).thenReturn(null);
         when(store.save(any())).thenReturn(StoreResult.success());
+        when(resolver.isSupported(anyString())).thenReturn(true);
     }
 
     @Nested
@@ -241,8 +242,8 @@ class CredentialRequestManagerImplTest {
         }
 
         @Test
-        @DisplayName("CS-REQ-08: an unresolvable issuer DID fails the request cleanly, with no message sent")
-        void processRequesting_whenDidNotResolvable_shouldTransitionToError() {
+        @DisplayName("CS-REQ-08: an issuer DID that cannot be resolved for the moment is retried, with no message sent")
+        void processRequesting_whenDidNotResolvable_shouldRetry() {
             when(resolver.resolve(eq(ISSUER_DID))).thenReturn(Result.failure("foobar"));
             var rq = createRequest()
                     .state(REQUESTING.code())
@@ -256,8 +257,30 @@ class CredentialRequestManagerImplTest {
             await().atMost(MAX_DURATION).untilAsserted(() -> {
                 var inOrder = inOrder(resolver, store);
                 inOrder.verify(resolver).resolve(eq(ISSUER_DID));
-                inOrder.verify(store, times(1)).save(argThat(r -> r.getState() == ERROR.code() && r.getErrorDetail().equals("foobar")));
-                verifyNoMoreInteractions(resolver, sts, httpClient);
+                // e.g. the host of the issuer's DID document is unavailable, which may be over by the next attempt
+                inOrder.verify(store, times(1)).save(argThat(r -> r.getState() == REQUESTING.code()));
+                verify(store, never()).save(argThat(r -> r.getState() == ERROR.code()));
+                verifyNoInteractions(sts, httpClient);
+            });
+        }
+
+        @Test
+        @DisplayName("CS-REQ-08: an issuer DID that no resolver supports fails the request cleanly, with no message sent")
+        void processRequesting_whenDidNotSupported_shouldTransitionToError() {
+            when(resolver.isSupported(ISSUER_DID)).thenReturn(false);
+            var rq = createRequest()
+                    .state(REQUESTING.code())
+                    .build();
+            when(store.nextNotLeased(anyInt(), stateIs(REQUESTING.code())))
+                    .thenReturn(List.of(rq))
+                    .thenReturn(List.of());
+
+            credentialRequestService.start();
+
+            await().atMost(MAX_DURATION).untilAsserted(() -> {
+                verify(store, times(1)).save(argThat(r -> r.getState() == ERROR.code() && r.getErrorDetail().contains("is not supported by any DID resolver")));
+                verify(resolver, never()).resolve(anyString());
+                verifyNoInteractions(sts, httpClient);
             });
         }
 
@@ -282,7 +305,7 @@ class CredentialRequestManagerImplTest {
                 var inOrder = inOrder(resolver, store);
                 inOrder.verify(resolver).resolve(eq(ISSUER_DID));
                 inOrder.verify(store, times(1)).save(argThat(r -> r.getState() == ERROR.code() && r.getErrorDetail().contains("DID Document does not contain any 'IssuerService' endpoint")));
-                verifyNoMoreInteractions(resolver, sts, httpClient);
+                verifyNoInteractions(sts, httpClient);
             });
         }
 

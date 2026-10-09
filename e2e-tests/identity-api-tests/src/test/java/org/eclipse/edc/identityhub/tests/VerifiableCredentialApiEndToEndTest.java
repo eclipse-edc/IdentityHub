@@ -322,6 +322,7 @@ public class VerifiableCredentialApiEndToEndTest {
                                 .withStatus(200)));
 
 
+                when(DID_RESOLVER_REGISTRY.isSupported(eq("did:web:issuer"))).thenReturn(true);
                 when(DID_RESOLVER_REGISTRY.resolve(eq("did:web:issuer")))
                         .thenReturn(Result.success(DidDocument.Builder.newInstance()
                                 .service(List.of(new Service(UUID.randomUUID().toString(),
@@ -435,6 +436,7 @@ public class VerifiableCredentialApiEndToEndTest {
                                 .withBody("Invalid credentialObjectId")
                                 .withStatus(400)));
 
+                when(DID_RESOLVER_REGISTRY.isSupported(eq("did:web:issuer"))).thenReturn(true);
                 when(DID_RESOLVER_REGISTRY.resolve(eq("did:web:issuer")))
                         .thenReturn(Result.success(DidDocument.Builder.newInstance()
                                 .service(List.of(new Service(UUID.randomUUID().toString(),

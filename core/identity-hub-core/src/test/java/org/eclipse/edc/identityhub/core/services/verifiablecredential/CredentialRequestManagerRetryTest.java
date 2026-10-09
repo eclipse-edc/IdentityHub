@@ -65,6 +65,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -117,10 +118,8 @@ class CredentialRequestManagerRetryTest {
                         .id("test-participant").did("did:web:holder").apiTokenAlias("alias").build()));
         when(sts.createToken(anyString(), anyMap(), isNull()))
                 .thenReturn(success(TokenRepresentation.Builder.newInstance().token("token").build()));
-        when(resolver.resolve(ISSUER_DID)).thenReturn(success(DidDocument.Builder.newInstance()
-                .id(ISSUER_DID)
-                .service(List.of(new Service("id", "IssuerService", "https://issuer.com/api/issuance")))
-                .build()));
+        when(resolver.isSupported(anyString())).thenReturn(true);
+        when(resolver.resolve(ISSUER_DID)).thenReturn(issuerDidDocument());
     }
 
     @AfterEach
@@ -188,17 +187,54 @@ class CredentialRequestManagerRetryTest {
     }
 
     @Test
-    @DisplayName("an unresolvable Issuer DID is not attempted again, and nothing is sent")
-    void unresolvableDid_isTerminal() {
-        when(resolver.resolve(ISSUER_DID)).thenReturn(Result.failure("Error resolving DID: did:web:issuer. HTTP Code was: 404"));
+    @DisplayName("an Issuer DID that cannot be resolved is attempted again, and the request fails once the retry limit is exhausted")
+    void unresolvableDid_isRetriedUntilTheLimit_thenErrors() {
+        when(resolver.resolve(ISSUER_DID)).thenReturn(Result.failure("Error resolving DID: did:web:issuer. HTTP Code was: 503"));
         var holderPid = initiate();
 
         manager.start();
 
         await().atMost(MAX_DURATION).untilAsserted(() -> assertThat(store.findById(holderPid).stateAsEnum()).isEqualTo(ERROR));
-        await().during(Duration.ofMillis(200)).untilAsserted(() -> verify(resolver, times(1)).resolve(ISSUER_DID));
+        // the first attempt, then one retry for each unit of the limit
+        verify(resolver, times(RETRY_LIMIT + 1)).resolve(ISSUER_DID);
         verifyNoInteractions(httpClient);
-        assertThat(store.findById(holderPid).getErrorDetail()).contains("HTTP Code was: 404");
+        assertThat(store.findById(holderPid).getErrorDetail()).contains("HTTP Code was: 503");
+    }
+
+    @Test
+    @DisplayName("a request whose Issuer DID could not be resolved goes through once it can be resolved again")
+    void unresolvableDid_recoversOnLaterAttempt() throws IOException {
+        when(resolver.resolve(ISSUER_DID))
+                .thenReturn(Result.failure("Error resolving DID: did:web:issuer. HTTP Code was: 503"))
+                .thenReturn(issuerDidDocument());
+        when(httpClient.execute(any(Request.class))).thenReturn(created("https://issuer.com/api/issuance/requests/issuance-process-id"));
+        var holderPid = initiate();
+
+        manager.start();
+
+        await().atMost(MAX_DURATION).untilAsserted(() -> assertThat(store.findById(holderPid).stateAsEnum()).isEqualTo(REQUESTED));
+        verify(httpClient, times(1)).execute(any(Request.class));
+    }
+
+    @Test
+    @DisplayName("an Issuer DID that no resolver supports is not attempted again, and nothing is sent")
+    void unsupportedDid_isTerminal() {
+        when(resolver.isSupported(ISSUER_DID)).thenReturn(false);
+        var holderPid = initiate();
+
+        manager.start();
+
+        await().atMost(MAX_DURATION).untilAsserted(() -> assertThat(store.findById(holderPid).stateAsEnum()).isEqualTo(ERROR));
+        await().during(Duration.ofMillis(200)).untilAsserted(() -> verify(resolver, never()).resolve(anyString()));
+        verifyNoInteractions(httpClient);
+        assertThat(store.findById(holderPid).getErrorDetail()).contains("is not supported by any DID resolver");
+    }
+
+    private Result<DidDocument> issuerDidDocument() {
+        return success(DidDocument.Builder.newInstance()
+                .id(ISSUER_DID)
+                .service(List.of(new Service("id", "IssuerService", "https://issuer.com/api/issuance")))
+                .build());
     }
 
     private String initiate() {

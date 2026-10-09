@@ -542,9 +542,15 @@ public class CredentialRequestManagerImpl extends AbstractStateEntityManager<Hol
      *         unavailable, and a request whose Issuer cannot be found is not going to succeed by being repeated.
      */
     private StatusResult<String> getCredentialRequestEndpoint(HolderCredentialRequest request) {
-        var didDocument = didResolverRegistry.resolve(request.getIssuerDid());
+        var issuerDid = request.getIssuerDid();
+        // a DID that no resolver supports would not be resolved on a retry either
+        if (!didResolverRegistry.isSupported(issuerDid)) {
+            return StatusResult.failure(FATAL_ERROR, "The Issuer's DID '%s' is not supported by any DID resolver".formatted(issuerDid));
+        }
+        var didDocument = didResolverRegistry.resolve(issuerDid);
         if (didDocument.failed()) {
-            return StatusResult.failure(FATAL_ERROR, didDocument.getFailureDetail());
+            // e.g. the host of the Issuer's DID document is unavailable for a moment
+            return StatusResult.failure(ERROR_RETRY, didDocument.getFailureDetail());
         }
         var service = didDocument.getContent().getService().stream()
                 .filter(s -> s.getType().equalsIgnoreCase(ISSUER_SERVICE_ENDPOINT_TYPE))
