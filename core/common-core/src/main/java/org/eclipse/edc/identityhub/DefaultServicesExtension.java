@@ -39,7 +39,9 @@ import org.eclipse.edc.runtime.metamodel.annotation.Inject;
 import org.eclipse.edc.runtime.metamodel.annotation.Provider;
 import org.eclipse.edc.runtime.metamodel.annotation.Setting;
 import org.eclipse.edc.security.token.jwt.DefaultJwsSignerProvider;
+import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.spi.query.CriterionOperatorRegistry;
+import org.eclipse.edc.spi.system.ExecutorInstrumentation;
 import org.eclipse.edc.spi.system.ServiceExtension;
 import org.eclipse.edc.spi.system.ServiceExtensionContext;
 import org.eclipse.edc.token.rules.ExpirationIssuedAtValidationRule;
@@ -49,6 +51,9 @@ import org.eclipse.edc.token.spi.TokenValidationRulesRegistry;
 
 import java.net.URISyntaxException;
 import java.time.Clock;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 import static org.eclipse.edc.iam.decentralizedclaims.spi.DcpConstants.DSPACE_DCP_V_1_0_CONTEXT;
 import static org.eclipse.edc.iam.verifiablecredentials.spi.VcConstants.DID_CONTEXT_URL;
@@ -78,6 +83,10 @@ public class DefaultServicesExtension implements ServiceExtension {
     @Setting(key = ACCESSTOKEN_JTI_VALIDATION_ACTIVATE, description = "Activates the JTI check: access tokens can only be used once to guard against replay attacks", defaultValue = "false")
     private boolean activateJtiCheck;
 
+    static final String JTI_CLEANUP_PERIOD = "edc.sql.store.jti.cleanup.period";
+    @Setting(key = JTI_CLEANUP_PERIOD, description = "The period in seconds, in which expired JTI entries are deleted while the JTI check is activated", defaultValue = "60")
+    private long jtiCleanupPeriod;
+
     @Inject
     private TokenValidationRulesRegistry registry;
     @Inject
@@ -96,6 +105,11 @@ public class DefaultServicesExtension implements ServiceExtension {
     private DiscriminatorMappingRegistry discriminatorMappingRegistry;
     @Inject
     private ScopeMappingRegistry scopeMappingRegistry;
+    @Inject
+    private ExecutorInstrumentation executorInstrumentation;
+
+    private Monitor monitor;
+    private ScheduledExecutorService jtiEntryReaper;
 
     @Override
     public String name() {
@@ -104,6 +118,7 @@ public class DefaultServicesExtension implements ServiceExtension {
 
     @Override
     public void initialize(ServiceExtensionContext context) {
+        monitor = context.getMonitor();
         var accessTokenRule = new ClaimIsPresentRule(TOKEN_CLAIM);
         registry.addRule(DCP_PRESENTATION_SELF_ISSUED_TOKEN_CONTEXT, accessTokenRule);
         registry.addRule(DCP_PRESENTATION_SELF_ISSUED_TOKEN_CONTEXT, new ExpirationIssuedAtValidationRule(clock, 5, true));
@@ -121,6 +136,22 @@ public class DefaultServicesExtension implements ServiceExtension {
 
         // Setup API
         cacheContextDocuments(getClass().getClassLoader());
+    }
+
+    @Override
+    public void start() {
+        if (activateJtiCheck) {
+            // the entries expire with their tokens, and are deleted periodically, so that they do not accumulate
+            jtiEntryReaper = executorInstrumentation.instrument(Executors.newSingleThreadScheduledExecutor(), "JTI Validation Entry Reaper");
+            jtiEntryReaper.scheduleAtFixedRate(this::deleteExpiredJtiEntries, jtiCleanupPeriod, jtiCleanupPeriod, TimeUnit.SECONDS);
+        }
+    }
+
+    @Override
+    public void shutdown() {
+        if (jtiEntryReaper != null) {
+            jtiEntryReaper.shutdownNow();
+        }
     }
 
     @Provider(isDefault = true)
@@ -158,6 +189,16 @@ public class DefaultServicesExtension implements ServiceExtension {
     @Provider(isDefault = true)
     public CredentialOfferStore createCredentialOfferStore() {
         return new InMemoryCredentialOfferStore(clock, criterionOperatorRegistry);
+    }
+
+    private void deleteExpiredJtiEntries() {
+        // an exception would end the periodic execution
+        try {
+            jtiValidationStore.deleteExpired()
+                    .onFailure(f -> monitor.warning("Failed to delete expired JTI entries: %s".formatted(f.getFailureDetail())));
+        } catch (RuntimeException e) {
+            monitor.warning("Failed to delete expired JTI entries", e);
+        }
     }
 
     private void cacheContextDocuments(ClassLoader classLoader) {
