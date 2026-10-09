@@ -191,6 +191,11 @@ public class IdentityHubParticipantContextServiceImpl implements IdentityHubPart
 
     private ServiceResult<IdentityHubParticipantContext> createParticipantContext(IdentityHubParticipantContext context) {
         var result = participantContextStore.create(context);
+        if (result.failed()) {
+            // e.g. a participant context with the same ID exists, whose configuration must not be overwritten: the
+            // configuration is saved with an upsert
+            return ServiceResult.fromFailure(result);
+        }
 
         var config = context.getProperties().entrySet().stream()
                 .collect(toMap(Map.Entry::getKey, e -> {
@@ -208,8 +213,7 @@ public class IdentityHubParticipantContextServiceImpl implements IdentityHubPart
                 .participantContextId(context.getParticipantContextId())
                 .privateEntries(config)
                 .build();
-        var configResult = configService.save(cfg);
-        return configResult.compose(u -> ServiceResult.from(result).map(it -> context));
+        return configService.save(cfg).map(u -> context);
     }
 
     private IdentityHubParticipantContext findByIdInternal(String participantContextId) {
@@ -222,7 +226,7 @@ public class IdentityHubParticipantContextServiceImpl implements IdentityHubPart
     private IdentityHubParticipantContext convert(ParticipantManifest manifest) {
         var apiKeyAlias = ofNullable(manifest.getApiKeyAlias()).orElse("%s-%s".formatted(manifest.getParticipantContextId(), API_KEY_ALIAS_SUFFIX));
         var context = IdentityHubParticipantContext.Builder.newInstance()
-                .participantContextId(manifest.getParticipantContextId())
+                .id(manifest.getParticipantContextId())
                 .scopes(manifest.getScopes())
                 .did(manifest.getDid())
                 .apiTokenAlias(apiKeyAlias)
@@ -237,7 +241,7 @@ public class IdentityHubParticipantContextServiceImpl implements IdentityHubPart
 
     private IdentityHubParticipantContext convert(ParticipantContext participantContext) {
         return IdentityHubParticipantContext.Builder.newInstance()
-                .participantContextId(participantContext.getParticipantContextId())
+                .id(participantContext.getParticipantContextId())
                 .did(participantContext.getIdentity())
                 .state(participantContext.getStateAsEnum())
                 .createdAt(participantContext.getCreatedAt())

@@ -62,7 +62,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
-class IdentityHubIdentityHubParticipantContextServiceImplTest {
+class IdentityHubParticipantContextServiceImplTest {
 
     private final Vault vault = mock();
     private final ParticipantContextStore participantContextStore = mock();
@@ -227,6 +227,7 @@ class IdentityHubIdentityHubParticipantContextServiceImplTest {
                 .isFailed();
 
         verify(participantContextStore).create(any());
+        verify(configService, never()).save(any(ParticipantContextConfiguration.class));
         verifyNoMoreInteractions(vault, participantContextStore, observableMock);
     }
 
@@ -239,6 +240,8 @@ class IdentityHubIdentityHubParticipantContextServiceImplTest {
                 .isFailed()
                 .satisfies(f -> assertThat(f.getReason()).isEqualTo(ServiceFailure.Reason.CONFLICT));
         verify(participantContextStore).create(any());
+        // the configuration is saved with an upsert, so it would replace that of the existing participant context
+        verify(configService, never()).save(any(ParticipantContextConfiguration.class));
         verifyNoMoreInteractions(vault, participantContextStore, observableMock);
 
     }
