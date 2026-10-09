@@ -161,7 +161,11 @@ public class IdentityHubParticipantContextServiceImpl implements IdentityHubPart
     @WithSpan(value = "participant-context.update", kind = SpanKind.INTERNAL)
     public ServiceResult<Void> updateParticipant(String participantContextId, Consumer<IdentityHubParticipantContext> modificationFunction) {
         return transactionContext.execute(() -> {
-            var participant = findByIdInternal(participantContextId);
+            // the participant context is locked until the transaction completes, so that concurrent updates, e.g. on other
+            // replicas, do not overwrite each other
+            var participant = participantContextStore.findByIdForUpdate(participantContextId)
+                    .map(this::convert)
+                    .orElse(f -> null);
             if (participant == null) {
                 return notFound("ParticipantContext with ID '%s' not found.".formatted(participantContextId));
             }
