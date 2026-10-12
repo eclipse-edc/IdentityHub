@@ -18,6 +18,7 @@ plugins {
 
 dependencies {
     api(project(":spi:issuerservice:issuerservice-issuance-spi"))
+    implementation(project(":core:lib:common-lib"))
     implementation(libs.edc.lib.core)
     implementation(libs.edc.sql.bootstrapper)
     implementation(libs.edc.sql.lease)

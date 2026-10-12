@@ -15,7 +15,9 @@
 package org.eclipse.edc.identityhub.store.sql.credentialrequest.schema;
 
 import org.eclipse.edc.identityhub.spi.credential.request.store.HolderCredentialRequestStore;
+import org.eclipse.edc.identityhub.statemachine.IdentityHubStateMachineConfiguration;
 import org.eclipse.edc.identityhub.store.sql.credentialrequest.schema.schema.postgres.PostgresDialectStatements;
+import org.eclipse.edc.runtime.metamodel.annotation.Configuration;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;
 import org.eclipse.edc.runtime.metamodel.annotation.Provider;
@@ -57,6 +59,10 @@ public class SqlHolderCredentialRequestStoreExtension implements ServiceExtensio
     @Inject
     private LeaseStatements leaseStatements;
 
+    // the state machine of the credential requests leases them for as long as it may take to process a batch of them
+    @Configuration(context = "edc.iam.credential.request")
+    private IdentityHubStateMachineConfiguration stateMachineConfiguration;
+
     @Inject
     private Clock clock;
 
@@ -69,7 +75,8 @@ public class SqlHolderCredentialRequestStoreExtension implements ServiceExtensio
     @Provider
     public HolderCredentialRequestStore createSqlStore(ServiceExtensionContext context) {
         return new SqlHolderCredentialRequestStore(dataSourceRegistry, dataSourceName, transactionContext, typemanager::getMapper,
-                queryExecutor, getStatementImpl(), contextBuilderProvider.createContextBuilder(getStatementImpl().getHolderCredentialRequestTable()));
+                queryExecutor, getStatementImpl(), contextBuilderProvider.createContextBuilder(getStatementImpl().getHolderCredentialRequestTable())
+                .forTime(stateMachineConfiguration.leaseDuration()));
     }
 
     private HolderCredentialRequestStoreStatements getStatementImpl() {
