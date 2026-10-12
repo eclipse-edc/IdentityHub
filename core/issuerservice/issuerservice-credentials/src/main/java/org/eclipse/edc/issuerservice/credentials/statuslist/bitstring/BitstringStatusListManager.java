@@ -274,11 +274,16 @@ public class BitstringStatusListManager implements StatusListManager {
                         .claim(BITSTRING_ENCODED_LIST_LITERAL, encodedList)
                         .build())
                 .toList();
+        // status list credentials that were created before were missing the type that every credential must have
+        var types = new ArrayList<>(credential.getType());
+        if (!types.contains(VERIFIABLE_CREDENTIAL)) {
+            types.add(0, VERIFIABLE_CREDENTIAL);
+        }
         var now = clock.instant();
         return VerifiableCredential.Builder.newInstance()
                 .id(credential.getId())
                 .contexts(new ArrayList<>(credential.getContext()))
-                .types(new ArrayList<>(credential.getType()))
+                .types(types)
                 .issuer(credential.getIssuer())
                 .name(credential.getName())
                 .description(credential.getDescription())

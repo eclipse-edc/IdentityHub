@@ -515,6 +515,20 @@ class BitstringStatusListManagerTest {
     }
 
     @Test
+    void renew_whenVerifiableCredentialTypeIsMissing_shouldAddIt() {
+        var statusList = statusListResource(MIN_BITSTRING_SIZE).metadata(BITSTRING_SIZE, MIN_BITSTRING_SIZE).build();
+        // like the status list credentials that were created before
+        statusList.getVerifiableCredential().credential().getType().remove("VerifiableCredential");
+
+        var result = manager.renew(statusList);
+
+        assertThat(result).isSucceeded().satisfies(renewed -> assertThat(renewed.getVerifiableCredential().credential().getType())
+                .containsExactly("VerifiableCredential", "BitstringStatusListCredential"));
+        verify(generator).signCredential(eq(PARTICIPANT_CONTEXT_ID),
+                argThat(credential -> credential.getType().equals(List.of("VerifiableCredential", "BitstringStatusListCredential"))), any());
+    }
+
+    @Test
     void renew_whenSigningFails_shouldLeaveResourceUnchanged() {
         var statusList = statusListResource(16 * 1024, 7)
                 .metadata(BITSTRING_SIZE, 16 * 1024)
