@@ -34,7 +34,6 @@ import org.eclipse.edc.issuerservice.credentials.statuslist.bitstring.BitstringS
 import org.eclipse.edc.issuerservice.spi.credentials.statuslist.StatusListCredentialEntry;
 import org.eclipse.edc.issuerservice.spi.credentials.statuslist.StatusListInfo;
 import org.eclipse.edc.issuerservice.spi.credentials.statuslist.StatusListManager;
-import org.eclipse.edc.issuerservice.spi.issuance.generator.CredentialGeneratorRegistry;
 import org.eclipse.edc.json.JacksonTypeManager;
 import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.spi.result.Result;
@@ -71,7 +70,6 @@ import static org.eclipse.edc.spi.result.StoreResult.notFound;
 import static org.eclipse.edc.spi.result.StoreResult.success;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -96,22 +94,18 @@ class CredentialStatusServiceImplTest {
     private final TokenGenerationService tokenGenerationService = mock(TokenGenerationService.class);
     private final Monitor monitor = mock();
     private final TestStatusListInfo statusListInfo = spy(new TestStatusListInfo());
-    private final CredentialGeneratorRegistry credentialGeneratorRegistry = mock();
+    private final StatusListManager statusListManager = mock();
     private final StatusListInfoFactoryRegistryImpl statusListInfoFactoryRegistry = new StatusListInfoFactoryRegistryImpl();
     private CredentialStatusServiceImpl revocationService;
 
     @BeforeEach
     void setUp() {
-        when(credentialGeneratorRegistry.signCredential(any(), any(), any())).thenAnswer(i -> {
-            VerifiableCredential credential = i.getArgument(1);
-            CredentialFormat format = i.getArgument(2);
-            return Result.success(new VerifiableCredentialContainer("rawVc", format, credential));
-        });
+        when(statusListManager.renew(any())).thenAnswer(i -> ServiceResult.success(i.getArgument(0)));
         statusListInfoFactoryRegistry.register("BitstringStatusListEntry", bitstringStatusListFactory);
         when(bitstringStatusListFactory.create(any())).thenReturn(ServiceResult.success(statusListInfo));
 
         revocationService = new CredentialStatusServiceImpl(credentialStore, new NoopTransactionContext(),
-                monitor, statusListInfoFactoryRegistry, mock(), credentialGeneratorRegistry);
+                monitor, statusListInfoFactoryRegistry, statusListManager);
     }
 
     @Nested
@@ -127,7 +121,8 @@ class CredentialStatusServiceImplTest {
             var result = revocationService.revokeCredential(CREDENTIAL_ID);
 
             assertThat(result).isSucceeded();
-            verify(credentialGeneratorRegistry).signCredential(anyString(), any(), any());
+            // signing it again renews its validity, and extends a status list that is shorter than configured
+            verify(statusListManager).renew(any());
             verify(credentialStore, times(2)).update(any());
         }
 
@@ -135,7 +130,7 @@ class CredentialStatusServiceImplTest {
         void revokeCredential_readsAndWritesStatusListWithinOneTransaction() {
             var transactionContext = new TrackingTransactionContext();
             var statusService = new CredentialStatusServiceImpl(credentialStore, transactionContext, monitor,
-                    statusListInfoFactoryRegistry, mock(), credentialGeneratorRegistry);
+                    statusListInfoFactoryRegistry, statusListManager);
             var transactionsOfCalls = new ArrayList<Integer>();
             when(bitstringStatusListFactory.create(any())).thenAnswer(i -> {
                 transactionsOfCalls.add(transactionContext.currentTransaction());
@@ -166,7 +161,7 @@ class CredentialStatusServiceImplTest {
 
             assertThat(result).isFailed().detail().isEqualTo("cannot decode the bitstring");
             verify(statusListInfo, never()).setStatus(anyBoolean());
-            verify(credentialGeneratorRegistry, never()).signCredential(any(), any(), any());
+            verify(statusListManager, never()).renew(any());
             verify(credentialStore, never()).update(any());
         }
 
@@ -174,7 +169,7 @@ class CredentialStatusServiceImplTest {
         void revokeCredential_whenRevokedCredentialCannotBeWritten_shouldRollBack() {
             var transactionContext = new TrackingTransactionContext();
             var statusService = new CredentialStatusServiceImpl(credentialStore, transactionContext, monitor,
-                    statusListInfoFactoryRegistry, mock(), credentialGeneratorRegistry);
+                    statusListInfoFactoryRegistry, statusListManager);
             when(statusListInfo.getStatus()).thenReturn(Result.success("any"));
             when(statusListInfo.statusListCredential()).thenReturn(createCredential(EXAMPLE_CREDENTIAL, EXAMPLE_CREDENTIAL_JWT.replace("\n", "")));
             when(credentialStore.findById(eq(CREDENTIAL_ID))).thenReturn(success(createCredential(EXAMPLE_CREDENTIAL, EXAMPLE_CREDENTIAL_JWT.replace("\n", ""))));
@@ -194,7 +189,7 @@ class CredentialStatusServiceImplTest {
         void revokeCredential_whenStatusListCannotBeWritten_shouldRollBack() {
             var transactionContext = new TrackingTransactionContext();
             var statusService = new CredentialStatusServiceImpl(credentialStore, transactionContext, monitor,
-                    statusListInfoFactoryRegistry, mock(), credentialGeneratorRegistry);
+                    statusListInfoFactoryRegistry, statusListManager);
             when(statusListInfo.getStatus()).thenReturn(Result.success("any"));
             when(statusListInfo.statusListCredential()).thenReturn(createCredential(EXAMPLE_CREDENTIAL, EXAMPLE_CREDENTIAL_JWT.replace("\n", "")));
             when(credentialStore.findById(eq(CREDENTIAL_ID))).thenReturn(success(createCredential(EXAMPLE_CREDENTIAL, EXAMPLE_CREDENTIAL_JWT.replace("\n", ""))));
@@ -287,7 +282,7 @@ class CredentialStatusServiceImplTest {
         @BeforeEach
         void setUp() {
             statusService = new CredentialStatusServiceImpl(credentialStore, transactionContext, monitor,
-                    new StatusListInfoFactoryRegistryImpl(), statusListManager, credentialGeneratorRegistry);
+                    new StatusListInfoFactoryRegistryImpl(), statusListManager);
             when(entry.createCredentialStatus()).thenReturn(credentialStatus);
         }
 

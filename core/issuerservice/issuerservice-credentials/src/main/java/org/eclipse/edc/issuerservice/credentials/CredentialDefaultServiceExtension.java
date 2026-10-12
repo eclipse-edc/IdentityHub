@@ -17,21 +17,34 @@ package org.eclipse.edc.issuerservice.credentials;
 import org.eclipse.edc.identityhub.spi.participantcontext.IdentityHubParticipantContextService;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialStore;
 import org.eclipse.edc.issuerservice.credentials.statuslist.StatusListInfoFactoryRegistryImpl;
+import org.eclipse.edc.issuerservice.credentials.statuslist.bitstring.BitstringStatusListConfiguration;
 import org.eclipse.edc.issuerservice.credentials.statuslist.bitstring.BitstringStatusListManager;
 import org.eclipse.edc.issuerservice.spi.credentials.statuslist.StatusListCredentialPublisher;
 import org.eclipse.edc.issuerservice.spi.credentials.statuslist.StatusListInfoFactoryRegistry;
 import org.eclipse.edc.issuerservice.spi.credentials.statuslist.StatusListManager;
 import org.eclipse.edc.issuerservice.spi.issuance.generator.CredentialGeneratorRegistry;
+import org.eclipse.edc.runtime.metamodel.annotation.Configuration;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;
 import org.eclipse.edc.runtime.metamodel.annotation.Provider;
+import org.eclipse.edc.spi.monitor.Monitor;
+import org.eclipse.edc.spi.system.ExecutorInstrumentation;
 import org.eclipse.edc.spi.system.ServiceExtension;
 import org.eclipse.edc.transaction.spi.TransactionContext;
+
+import java.time.Clock;
+import java.time.Duration;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 @Extension(CredentialDefaultServiceExtension.NAME)
 public class CredentialDefaultServiceExtension implements ServiceExtension {
 
     public static final String NAME = "Issuer Service Credential Default Services";
+
+    @Configuration
+    private BitstringStatusListConfiguration statusListConfiguration;
 
     @Inject
     private StatusListCredentialPublisher credentialPublisher;
@@ -43,6 +56,15 @@ public class CredentialDefaultServiceExtension implements ServiceExtension {
     private CredentialGeneratorRegistry registry;
     @Inject
     private IdentityHubParticipantContextService participantContextService;
+    @Inject
+    private Clock clock;
+    @Inject
+    private ExecutorInstrumentation executorInstrumentation;
+    @Inject
+    private Monitor monitor;
+
+    private BitstringStatusListManager statusListManager;
+    private ScheduledExecutorService renewalExecutor;
 
     @Override
     public String name() {
@@ -56,6 +78,53 @@ public class CredentialDefaultServiceExtension implements ServiceExtension {
 
     @Provider(isDefault = true)
     public StatusListManager statusListManager() {
-        return new BitstringStatusListManager(store, transactionContext, registry, participantContextService, credentialPublisher);
+        if (statusListManager == null) {
+            // replaces the values that cannot be used as they are, and warns about them
+            statusListConfiguration = statusListConfiguration.validated(monitor);
+            statusListManager = new BitstringStatusListManager(store, transactionContext, registry, participantContextService, credentialPublisher,
+                    statusListConfiguration, clock, monitor);
+        }
+        return statusListManager;
+    }
+
+    /**
+     * Renews the status list credentials that are about to expire periodically, so that they do not expire while no
+     * credential is issued or revoked. Only those of the default {@link StatusListManager} are renewed, another one takes
+     * care of its own.
+     */
+    @Override
+    public void start() {
+        if (statusListManager == null) {
+            return;
+        }
+        var renewalPeriodSeconds = statusListConfiguration.renewalPeriodSeconds();
+        if (renewalPeriodSeconds <= 0) {
+            monitor.warning("The renewal of status list credentials is deactivated, so they expire unless a credential is issued or revoked");
+            return;
+        }
+        var threshold = statusListConfiguration.renewalThreshold();
+        var validity = statusListConfiguration.validity();
+        if (threshold.compareTo(validity) >= 0) {
+            monitor.warning("Status list credentials are renewed %s before they expire, which is not shorter than their validity of %s, so they are renewed on every run"
+                    .formatted(threshold, validity));
+        }
+        renewalExecutor = executorInstrumentation.instrument(Executors.newSingleThreadScheduledExecutor(), "Status List Renewal");
+        renewalExecutor.scheduleAtFixedRate(() -> renewExpiring(threshold), 0, renewalPeriodSeconds, TimeUnit.SECONDS);
+    }
+
+    @Override
+    public void shutdown() {
+        if (renewalExecutor != null) {
+            renewalExecutor.shutdownNow();
+        }
+    }
+
+    private void renewExpiring(Duration threshold) {
+        // an exception would end the periodic execution
+        try {
+            statusListManager.renewExpiring(threshold);
+        } catch (RuntimeException e) {
+            monitor.warning("Could not renew the status list credentials that are about to expire", e);
+        }
     }
 }
