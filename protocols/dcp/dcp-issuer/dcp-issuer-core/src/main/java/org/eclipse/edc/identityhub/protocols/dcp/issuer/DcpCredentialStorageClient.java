@@ -21,6 +21,7 @@ import okhttp3.Request;
 import okhttp3.RequestBody;
 import org.eclipse.edc.http.spi.EdcHttpClient;
 import org.eclipse.edc.iam.decentralizedclaims.spi.CredentialServiceUrlResolver;
+import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredential;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredentialContainer;
 import org.eclipse.edc.identityhub.spi.authentication.ParticipantSecureTokenService;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.CredentialProfile;
@@ -68,6 +69,7 @@ import static org.eclipse.edc.spi.result.Result.failure;
 
 public class DcpCredentialStorageClient implements CredentialStorageClient {
     public static final String STORAGE_ENDPOINT = "/credentials";
+    private static final String VERIFIABLE_CREDENTIAL = "VerifiableCredential";
     private final EdcHttpClient httpClient;
     private final ParticipantContextStore participantContextStore;
     private final HolderStore holderStore;
@@ -181,10 +183,21 @@ public class DcpCredentialStorageClient implements CredentialStorageClient {
 
     private JsonObject toJson(VerifiableCredentialContainer credential) {
         return Json.createObjectBuilder()
-                .add("credentialType", credential.credential().getType().stream().filter("VerifiableCredential"::equals).findFirst().orElseThrow())
+                .add("credentialType", credentialType(credential.credential()))
                 .add("format", CredentialProfile.profileForFormat(credential.format()).orElseThrow(f -> new IllegalArgumentException("Invalid credential format: " + credential.format())))
                 .add("payload", credential.rawVc())
                 .build();
+    }
+
+    /**
+     * The type of the credential, i.e. the type of its credential definition, which it has besides
+     * {@code VerifiableCredential}.
+     */
+    private String credentialType(VerifiableCredential credential) {
+        return credential.getType().stream()
+                .filter(type -> !VERIFIABLE_CREDENTIAL.equals(type))
+                .findFirst()
+                .orElse(VERIFIABLE_CREDENTIAL);
     }
 
     /**
