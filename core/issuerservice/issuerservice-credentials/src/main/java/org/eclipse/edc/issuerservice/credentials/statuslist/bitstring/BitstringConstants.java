@@ -15,6 +15,7 @@
 package org.eclipse.edc.issuerservice.credentials.statuslist.bitstring;
 
 public interface BitstringConstants {
+    String VERIFIABLE_CREDENTIAL = "VerifiableCredential";
     String BITSTRING_STATUS_LIST_ENTRY = "BitstringStatusListEntry";
     String BITSTRING_STATUS_LIST = "BitstringStatusList";
     String REVOCATION = "revocation";

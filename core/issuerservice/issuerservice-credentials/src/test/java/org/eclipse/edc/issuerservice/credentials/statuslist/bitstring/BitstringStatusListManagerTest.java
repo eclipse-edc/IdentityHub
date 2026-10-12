@@ -16,6 +16,7 @@ package org.eclipse.edc.issuerservice.credentials.statuslist.bitstring;
 
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialSubject;
+import org.eclipse.edc.iam.verifiablecredentials.spi.model.DataModelVersion;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.Issuer;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredential;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredentialContainer;
@@ -36,6 +37,8 @@ import org.eclipse.edc.spi.result.StoreResult;
 import org.eclipse.edc.transaction.spi.NoopTransactionContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 import java.time.Clock;
 import java.time.Duration;
@@ -93,7 +96,7 @@ class BitstringStatusListManagerTest {
                         .build()));
 
         when(generator.signCredential(any(), any(), any()))
-                .thenAnswer(i -> Result.success(new VerifiableCredentialContainer("test-raw-token", CredentialFormat.VC1_0_JWT, i.getArgument(1))));
+                .thenAnswer(i -> Result.success(new VerifiableCredentialContainer("test-raw-token", i.getArgument(2), i.getArgument(1))));
     }
 
     @Test
@@ -142,7 +145,7 @@ class BitstringStatusListManagerTest {
         verify(store).create(hasParticipantId(PARTICIPANT_CONTEXT_ID));
         verify(store).update(hasParticipantId(PARTICIPANT_CONTEXT_ID));
         verify(participantContextService).getParticipantContext(PARTICIPANT_CONTEXT_ID);
-        verify(generator).signCredential(eq(PARTICIPANT_CONTEXT_ID), any(), eq(CredentialFormat.VC1_0_JWT));
+        verify(generator).signCredential(eq(PARTICIPANT_CONTEXT_ID), any(), eq(CredentialFormat.VC2_0_JOSE));
         verifyNoMoreInteractions(store, generator, participantContextService);
     }
 
@@ -213,7 +216,7 @@ class BitstringStatusListManagerTest {
         verify(store).create(hasParticipantId(PARTICIPANT_CONTEXT_ID));
         verify(store).update(hasParticipantId(PARTICIPANT_CONTEXT_ID));
         verify(participantContextService).getParticipantContext(PARTICIPANT_CONTEXT_ID);
-        verify(generator).signCredential(eq(PARTICIPANT_CONTEXT_ID), any(), eq(CredentialFormat.VC1_0_JWT));
+        verify(generator).signCredential(eq(PARTICIPANT_CONTEXT_ID), any(), eq(CredentialFormat.VC2_0_JOSE));
         verifyNoMoreInteractions(store, generator, participantContextService);
     }
 
@@ -238,7 +241,7 @@ class BitstringStatusListManagerTest {
         verify(store).create(hasParticipantId(PARTICIPANT_CONTEXT_ID));
         verify(store).update(hasParticipantId(PARTICIPANT_CONTEXT_ID));
         verify(participantContextService).getParticipantContext(PARTICIPANT_CONTEXT_ID);
-        verify(generator).signCredential(eq(PARTICIPANT_CONTEXT_ID), any(), eq(CredentialFormat.VC1_0_JWT));
+        verify(generator).signCredential(eq(PARTICIPANT_CONTEXT_ID), any(), eq(CredentialFormat.VC2_0_JOSE));
         verifyNoMoreInteractions(store, generator, participantContextService);
     }
 
@@ -253,7 +256,7 @@ class BitstringStatusListManagerTest {
 
         verify(store, times(2)).queryForUpdate(any());
         verify(participantContextService).getParticipantContext(PARTICIPANT_CONTEXT_ID);
-        verify(generator).signCredential(eq(PARTICIPANT_CONTEXT_ID), any(), eq(CredentialFormat.VC1_0_JWT));
+        verify(generator).signCredential(eq(PARTICIPANT_CONTEXT_ID), any(), eq(CredentialFormat.VC2_0_JOSE));
         verifyNoMoreInteractions(store, generator, participantContextService);
     }
 
@@ -330,6 +333,25 @@ class BitstringStatusListManagerTest {
             assertThat(bitString(e.statusListCredential()).length()).isEqualTo(MIN_BITSTRING_SIZE);
             assertThat(e.statusListCredential().getMetadata()).containsEntry(BITSTRING_SIZE, MIN_BITSTRING_SIZE);
         });
+    }
+
+    @Test
+    void getActiveCredential_whenCreateNew_shouldCreateVcdm20Credential() {
+        when(store.queryForUpdate(any())).thenReturn(StoreResult.success(List.of()));
+        when(store.update(any())).thenReturn(StoreResult.success());
+        when(store.create(any())).thenReturn(StoreResult.success());
+
+        var entry = manager.getActiveCredential(PARTICIPANT_CONTEXT_ID);
+
+        assertThat(entry).isSucceeded().satisfies(e -> {
+            assertThat(e.statusListCredential().getVerifiableCredential().format()).isEqualTo(CredentialFormat.VC2_0_JOSE);
+            var credential = e.statusListCredential().getVerifiableCredential().credential();
+            assertThat(credential.getContext()).containsExactly("https://www.w3.org/ns/credentials/v2");
+            assertThat(credential.getDataModelVersion()).isEqualTo(DataModelVersion.V_2_0);
+            assertThat(credential.getType()).containsExactly("VerifiableCredential", "BitstringStatusListCredential");
+        });
+        verify(generator).signCredential(eq(PARTICIPANT_CONTEXT_ID), argThat(credential -> credential.getDataModelVersion() == DataModelVersion.V_2_0),
+                eq(CredentialFormat.VC2_0_JOSE));
     }
 
     @Test
@@ -478,6 +500,20 @@ class BitstringStatusListManagerTest {
         verifyNoInteractions(store);
     }
 
+    @ParameterizedTest
+    @EnumSource(value = CredentialFormat.class, names = { "VC1_0_JWT", "VC2_0_JOSE" })
+    void renew_shouldKeepFormat(CredentialFormat format) {
+        var statusList = statusListResource(format, MIN_BITSTRING_SIZE, NOW.plus(Duration.ofDays(265)))
+                .metadata(BITSTRING_SIZE, MIN_BITSTRING_SIZE)
+                .build();
+
+        var result = manager.renew(statusList);
+
+        // a status list credential that was issued before VCDM 2.0 was used for new ones stays in its format
+        assertThat(result).isSucceeded().satisfies(renewed -> assertThat(renewed.getVerifiableCredential().format()).isEqualTo(format));
+        verify(generator).signCredential(eq(PARTICIPANT_CONTEXT_ID), any(), eq(format));
+    }
+
     @Test
     void renew_whenSigningFails_shouldLeaveResourceUnchanged() {
         var statusList = statusListResource(16 * 1024, 7)
@@ -561,6 +597,10 @@ class BitstringStatusListManagerTest {
     }
 
     private VerifiableCredentialResource.Builder statusListResource(int bitstringSize, Instant expirationDate, int... setIndexes) {
+        return statusListResource(CredentialFormat.VC1_0_JWT, bitstringSize, expirationDate, setIndexes);
+    }
+
+    private VerifiableCredentialResource.Builder statusListResource(CredentialFormat format, int bitstringSize, Instant expirationDate, int... setIndexes) {
         var bitString = BitString.Builder.newInstance().size(bitstringSize).build();
         for (var index : setIndexes) {
             bitString.set(index, true);
@@ -584,7 +624,7 @@ class BitstringStatusListManagerTest {
                 .participantContextId(PARTICIPANT_CONTEXT_ID)
                 .issuerId("issuer-id")
                 .holderId("holder-id")
-                .credential(new VerifiableCredentialContainer("raw-token", CredentialFormat.VC1_0_JWT, credential));
+                .credential(new VerifiableCredentialContainer("raw-token", format, credential));
     }
 
     private BitString bitString(VerifiableCredentialResource statusListCredential) {

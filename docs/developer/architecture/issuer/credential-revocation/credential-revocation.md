@@ -26,6 +26,9 @@ In order for credential status lists to work we must make a few general assumpti
   short-circuited
 - status list credentials are always stored in signed JWT form. Other content types may be supported,
   cf. [here](#using-the-publicly-available-status-list-credential).
+- new status list credentials use the VC Data Model 2.0, secured with JOSE (VC-JOSE-COSE), i.e. the payload of the JWT
+  is the credential itself. Status list credentials that were created before use the VC Data Model 1.1, i.e. the
+  credential is the `vc` claim of the JWT, and keep that format when they are signed again.
 
 ## Creating credentials with status information
 
@@ -229,8 +232,8 @@ media type that cannot be served.
 At this time, only the following media type headers are available:
 
 - `Accept: application/vc+jwt`: serves the status list credential as signed JWT. The concrete format (VC DataModel 1.1
-  or 2.0)
-  is determined by the status list type.
+  or 2.0) is the one the status list credential was created with,
+  c.f. [above](#credential-status-information-in-the-issuerservice).
 - `Accept: application/vc`: the encoding, proof type and data model is left up to the server
 - `Accept: application/json`: serves the status list credential in plain JSON form without proof. NOT RECOMMENDED!
 - none: defaults to `Accept: application/vc+jwt`
