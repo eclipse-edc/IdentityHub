@@ -25,10 +25,13 @@ import jakarta.json.JsonArray;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonString;
 import jakarta.json.JsonValue;
+import org.eclipse.edc.http.spi.EdcHttpClient;
 import org.eclipse.edc.iam.did.spi.document.DidDocument;
 import org.eclipse.edc.iam.did.spi.document.VerificationMethod;
+import org.eclipse.edc.iam.did.spi.resolution.DidPublicKeyResolver;
 import org.eclipse.edc.iam.did.spi.resolution.DidResolver;
 import org.eclipse.edc.iam.did.spi.resolution.DidResolverRegistry;
+import org.eclipse.edc.iam.verifiablecredentials.revocation.bitstring.BitstringStatusListRevocationService;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredential;
 import org.eclipse.edc.identityhub.spi.credential.request.model.HolderRequestState;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.CredentialUsage;
@@ -63,7 +66,9 @@ import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.spi.security.Vault;
 import org.eclipse.edc.spi.system.configuration.Config;
 import org.eclipse.edc.spi.system.configuration.ConfigFactory;
+import org.eclipse.edc.spi.types.TypeManager;
 import org.eclipse.edc.sql.testfixtures.PostgresqlEndToEndExtension;
+import org.eclipse.edc.token.spi.TokenValidationService;
 import org.eclipse.edc.validator.spi.ValidationResult;
 import org.hamcrest.Matchers;
 import org.jetbrains.annotations.NotNull;
@@ -90,9 +95,13 @@ import static io.restassured.RestAssured.given;
 import static io.restassured.http.ContentType.JSON;
 import static jakarta.ws.rs.core.HttpHeaders.AUTHORIZATION;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.InstanceOfAssertFactories.LIST;
+import static org.assertj.core.api.InstanceOfAssertFactories.MAP;
 import static org.awaitility.Awaitility.await;
 import static org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat.VC1_0_JWT;
+import static org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat.VC2_0_JOSE;
 import static org.eclipse.edc.identityhub.verifiablecredentials.testfixtures.JwtCreationUtil.generateJwt;
+import static org.eclipse.edc.junit.assertions.AbstractResultAssert.assertThat;
 import static org.eclipse.edc.util.io.Ports.getFreePort;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.refEq;
@@ -462,10 +471,16 @@ public class DcpIssuanceFlowAllInOneTest {
 
             var keyId = SignedJWT.parse(issuer.getStatusListCredential().getVerifiableCredential().rawVc()).getHeader().getKeyID();
             assertThat(keyId).isNotNull();
+            assertIsVcdm20Jose(issuer.getStatusListCredential());
 
             var credentials = issuer.getHolderCredentials(participantDid, PARTICIPANT_ID, participantToken);
 
             var credentialId = credentials.getString("[0].id");
+            var credentialStatus = identityHub.getCredential(credentialId).orElseThrow()
+                    .getVerifiableCredential().credential().getCredentialStatus().get(0);
+            // a verifier downloads the published status list credential, and validates it, like the Connector does
+            assertThat(revocationService(identityHub).checkValidity(credentialStatus)).isSucceeded();
+
             issuer.getAdminEndpoint().baseRequest()
                     .header("x-api-key", participantToken)
                     .contentType(ContentType.JSON)
@@ -481,6 +496,34 @@ public class DcpIssuanceFlowAllInOneTest {
 
             var afterRevocationKeyId = SignedJWT.parse(issuer.getStatusListCredential().getVerifiableCredential().rawVc()).getHeader().getKeyID();
             assertThat(afterRevocationKeyId).isEqualTo(keyId);
+            assertIsVcdm20Jose(issuer.getStatusListCredential());
+            assertThat(revocationService(identityHub).checkValidity(credentialStatus)).isFailed()
+                    .detail().startsWith("Credential status is 'revocation'");
+        }
+
+        /**
+         * Asserts that the status list credential is secured according to VCDM 2.0 with JOSE (VC-JOSE-COSE): the payload of
+         * the JWT is the credential itself.
+         */
+        private void assertIsVcdm20Jose(VerifiableCredentialResource statusListCredential) throws ParseException {
+            assertThat(statusListCredential.getVerifiableCredential().format()).isEqualTo(VC2_0_JOSE);
+            var claims = SignedJWT.parse(statusListCredential.getVerifiableCredential().rawVc()).getJWTClaimsSet();
+            assertThat(claims.getClaim("vc")).isNull();
+            assertThat(claims.getClaim("@context")).asInstanceOf(LIST).containsExactly("https://www.w3.org/ns/credentials/v2");
+            assertThat(claims.getStringListClaim("type")).containsExactly("VerifiableCredential", "BitstringStatusListCredential");
+            assertThat(claims.getClaim("credentialSubject")).asInstanceOf(LIST).singleElement().asInstanceOf(MAP)
+                    .containsEntry("type", "BitstringStatusList")
+                    .containsEntry("statusPurpose", "revocation")
+                    .containsKey("encodedList");
+        }
+
+        /**
+         * A revocation service without a cache, that downloads the status list credential each time.
+         */
+        private BitstringStatusListRevocationService revocationService(IdentityHub identityHub) {
+            return new BitstringStatusListRevocationService(identityHub.getService(TypeManager.class).getMapper(), 0, List.of("*/*"),
+                    identityHub.getService(EdcHttpClient.class), identityHub.getService(TokenValidationService.class),
+                    identityHub.getService(DidPublicKeyResolver.class));
         }
 
         @Test

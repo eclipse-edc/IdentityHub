@@ -16,6 +16,7 @@ package org.eclipse.edc.issuerservice.credentials.statuslist.bitstring;
 
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialSubject;
+import org.eclipse.edc.iam.verifiablecredentials.spi.model.DataModelVersion;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.Issuer;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredential;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredentialContainer;
@@ -47,6 +48,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -54,9 +56,12 @@ import java.util.UUID;
 
 import static java.util.Optional.ofNullable;
 import static org.eclipse.edc.iam.verifiablecredentials.spi.VcConstants.BITSTRING_STATUS_LIST_PREFIX;
+import static org.eclipse.edc.iam.verifiablecredentials.spi.VcConstants.VC_PREFIX_V2;
 import static org.eclipse.edc.iam.verifiablecredentials.spi.model.revocation.bitstringstatuslist.BitstringStatusListCredential.BITSTRING_ENCODED_LIST_LITERAL;
+import static org.eclipse.edc.iam.verifiablecredentials.spi.model.revocation.bitstringstatuslist.BitstringStatusListCredential.BITSTRING_STATUSLIST_CREDENTIAL;
 import static org.eclipse.edc.issuerservice.credentials.statuslist.bitstring.BitstringConstants.BITSTRING_STATUS_LIST;
 import static org.eclipse.edc.issuerservice.credentials.statuslist.bitstring.BitstringConstants.REVOCATION;
+import static org.eclipse.edc.issuerservice.credentials.statuslist.bitstring.BitstringConstants.VERIFIABLE_CREDENTIAL;
 import static org.eclipse.edc.participantcontext.spi.types.ParticipantResource.filterByParticipantContextId;
 
 public class BitstringStatusListManager implements StatusListManager {
@@ -269,11 +274,16 @@ public class BitstringStatusListManager implements StatusListManager {
                         .claim(BITSTRING_ENCODED_LIST_LITERAL, encodedList)
                         .build())
                 .toList();
+        // status list credentials that were created before were missing the type that every credential must have
+        var types = new ArrayList<>(credential.getType());
+        if (!types.contains(VERIFIABLE_CREDENTIAL)) {
+            types.add(0, VERIFIABLE_CREDENTIAL);
+        }
         var now = clock.instant();
         return VerifiableCredential.Builder.newInstance()
                 .id(credential.getId())
                 .contexts(new ArrayList<>(credential.getContext()))
-                .types(new ArrayList<>(credential.getType()))
+                .types(types)
                 .issuer(credential.getIssuer())
                 .name(credential.getName())
                 .description(credential.getDescription())
@@ -339,6 +349,7 @@ public class BitstringStatusListManager implements StatusListManager {
         return ServiceResult.from(res);
     }
 
+    @SuppressWarnings("unchecked")
     private ServiceResult<VerifiableCredentialResource> createNewStatusListCredential(String participantContextId) {
 
         var participant = participantContextService.getParticipantContext(participantContextId);
@@ -347,7 +358,7 @@ public class BitstringStatusListManager implements StatusListManager {
         }
         var participantDid = participant.getContent().getDid();
 
-        // generate new bitstring status credential
+        // generate new bitstring status credential. The W3C Bitstring Status List builds on the VC Data Model 2.0
         var now = clock.instant();
 
         var credential = VerifiableCredential.Builder.newInstance()
@@ -359,15 +370,17 @@ public class BitstringStatusListManager implements StatusListManager {
                         //todo: add support for statusMessage, statusSize, etc.
                         .build())
                 .id(UUID.randomUUID().toString())
+                .context(VC_PREFIX_V2)
+                .dataModelVersion(DataModelVersion.V_2_0)
                 .issuanceDate(now)
                 .expirationDate(now.plus(configuration.validity()))
                 .issuer(new Issuer(participantDid))
-                .type("BitstringStatusListCredential")
+                .types(List.of(VERIFIABLE_CREDENTIAL, BITSTRING_STATUSLIST_CREDENTIAL))
                 .build();
 
         // sign and package in resource
         //do not upsert - this must be an insert
-        return credentialGenerator.signCredential(participantContextId, credential, CredentialFormat.VC1_0_JWT)// todo: change to VC2_0_JOSE
+        return credentialGenerator.signCredential(participantContextId, credential, CredentialFormat.VC2_0_JOSE)
                 .map(signedCredential -> createCredentialResource(participantContextId, signedCredential, participantDid))
                 .compose(this::storeResource)
                 .compose(this::publish)
