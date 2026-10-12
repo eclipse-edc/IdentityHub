@@ -42,6 +42,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.NullSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
@@ -136,6 +137,7 @@ class DcpCredentialStorageClientTest {
         var credentials = message.getJsonArray(CREDENTIALS_TERM);
         assertThat(credentials).hasSize(1);
         var credentialJson = credentials.getJsonObject(0);
+        assertThat(credentialJson.getString("credentialType")).isEqualTo("MembershipCredential");
         assertThat(credentialJson.getString("format")).isEqualTo(DCP_PROFILE_VC11);
         assertThat(credentialJson.getString("payload")).isEqualTo("rawVc");
 
@@ -249,6 +251,25 @@ class DcpCredentialStorageClientTest {
         assertThat(claimsCaptor.getValue()).doesNotContainKey("token");
     }
 
+    @ParameterizedTest(name = "types {0}: credentialType {1}")
+    @CsvSource({
+            "VerifiableCredential MembershipCredential, MembershipCredential",
+            "MembershipCredential VerifiableCredential, MembershipCredential",
+            "MembershipCredential, MembershipCredential",
+            "VerifiableCredential, VerifiableCredential"
+    })
+    void deliverCredentials_shouldSendTypeOfCredential(String types, String expectedCredentialType) throws IOException {
+        var result = client.deliverCredentials(issuanceProcess(), List.of(credential(types.split(" "))));
+
+        assertThat(result).isSucceeded();
+        var requestCaptor = ArgumentCaptor.forClass(Request.class);
+        verify(httpClient).execute(requestCaptor.capture());
+        var buffer = new Buffer();
+        requestCaptor.getValue().body().writeTo(buffer);
+        var message = Json.createReader(new StringReader(buffer.readUtf8())).readObject();
+        assertThat(message.getJsonArray(CREDENTIALS_TERM).getJsonObject(0).getString("credentialType")).isEqualTo(expectedCredentialType);
+    }
+
     private ParticipantContext participantContext() {
         return ParticipantContext.Builder.newInstance()
                 .participantContextId(PARTICIPANT_CONTEXT_ID)
@@ -329,9 +350,12 @@ class DcpCredentialStorageClientTest {
     }
 
     private VerifiableCredentialContainer credential() {
+        return credential("VerifiableCredential", "MembershipCredential");
+    }
+
+    private VerifiableCredentialContainer credential(String... types) {
         return new VerifiableCredentialContainer("rawVc", VC1_0_JWT, VerifiableCredential.Builder.newInstance()
-                .type("VerifiableCredential")
-                .type("MembershipCredential")
+                .types(List.of(types))
                 .issuer(new Issuer(ISSUER_DID))
                 .issuanceDate(Instant.now())
                 .credentialSubject(CredentialSubject.Builder.newInstance()
