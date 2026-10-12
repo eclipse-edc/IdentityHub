@@ -25,11 +25,13 @@ import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.CredentialUsa
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStatus;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialResource;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialStore;
+import org.eclipse.edc.identityhub.store.QueryPages;
 import org.eclipse.edc.issuerservice.spi.credentials.statuslist.StatusListCredentialEntry;
 import org.eclipse.edc.issuerservice.spi.credentials.statuslist.StatusListCredentialPublisher;
 import org.eclipse.edc.issuerservice.spi.credentials.statuslist.StatusListManager;
 import org.eclipse.edc.issuerservice.spi.issuance.generator.CredentialGeneratorRegistry;
 import org.eclipse.edc.spi.EdcException;
+import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.spi.query.Criterion;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.query.SortOrder;
@@ -39,14 +41,20 @@ import org.eclipse.edc.spi.result.StoreFailure;
 import org.eclipse.edc.transaction.spi.TransactionContext;
 import org.jetbrains.annotations.Nullable;
 
+import java.time.Clock;
+import java.time.Duration;
 import java.time.Instant;
-import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 
 import static java.util.Optional.ofNullable;
+import static org.eclipse.edc.iam.verifiablecredentials.spi.VcConstants.BITSTRING_STATUS_LIST_PREFIX;
+import static org.eclipse.edc.iam.verifiablecredentials.spi.model.revocation.bitstringstatuslist.BitstringStatusListCredential.BITSTRING_ENCODED_LIST_LITERAL;
 import static org.eclipse.edc.issuerservice.credentials.statuslist.bitstring.BitstringConstants.BITSTRING_STATUS_LIST;
 import static org.eclipse.edc.issuerservice.credentials.statuslist.bitstring.BitstringConstants.REVOCATION;
 import static org.eclipse.edc.participantcontext.spi.types.ParticipantResource.filterByParticipantContextId;
@@ -54,26 +62,35 @@ import static org.eclipse.edc.participantcontext.spi.types.ParticipantResource.f
 public class BitstringStatusListManager implements StatusListManager {
 
     /**
-     * the size of the bitstring in the status list credential. Defaults to 16kB.
+     * the length of the bitstring in the status list credential, i.e. its number of entries
      */
     public static final String BITSTRING_SIZE = "bitstringSize";
-    public static final int DEFAULT_BITSTRING_SIZE = 16 * 1024;
+    private static final int PAGE_SIZE = 100;
     private final CredentialStore store;
     private final TransactionContext transactionContext;
     private final CredentialGeneratorRegistry credentialGenerator;
     private final IdentityHubParticipantContextService participantContextService;
     private final StatusListCredentialPublisher publisher;
+    private final BitstringStatusListConfiguration configuration;
+    private final Clock clock;
+    private final Monitor monitor;
 
     public BitstringStatusListManager(CredentialStore store,
                                       TransactionContext transactionContext,
                                       CredentialGeneratorRegistry credentialGenerator,
                                       IdentityHubParticipantContextService participantContextService,
-                                      StatusListCredentialPublisher publisher) {
+                                      StatusListCredentialPublisher publisher,
+                                      BitstringStatusListConfiguration configuration,
+                                      Clock clock,
+                                      Monitor monitor) {
         this.store = store;
         this.transactionContext = transactionContext;
         this.credentialGenerator = credentialGenerator;
         this.participantContextService = participantContextService;
         this.publisher = publisher;
+        this.configuration = configuration;
+        this.clock = clock;
+        this.monitor = monitor;
     }
 
     @Override
@@ -112,6 +129,60 @@ public class BitstringStatusListManager implements StatusListManager {
     }
 
     /**
+     * Signs a status list credential again: it is valid for the configured validity from now on, and a status list that
+     * is shorter than the configured length is extended to it. Existing entries keep their indexes. Only the bitstring,
+     * the dates and the {@link #BITSTRING_SIZE} change, so the status list credential keeps its ID and URL.
+     * <p>
+     * The given resource is left unchanged if signing fails.
+     */
+    @Override
+    public ServiceResult<VerifiableCredentialResource> renew(VerifiableCredentialResource statusListCredential) {
+        var container = statusListCredential.getVerifiableCredential();
+        var bitString = decode(statusListCredential);
+        if (bitString.failed()) {
+            return ServiceResult.unexpected(bitString.getFailureDetail());
+        }
+        var extendedBitString = extend(bitString.getContent());
+        var encodedList = BitString.Writer.newInstance().writeMultibase(extendedBitString);
+        if (encodedList.failed()) {
+            return ServiceResult.unexpected(encodedList.getFailureDetail());
+        }
+
+        var renewedCredential = renewedCopy(container.credential(), encodedList.getContent());
+        var signed = credentialGenerator.signCredential(statusListCredential.getParticipantContextId(), renewedCredential, container.format());
+        if (signed.failed()) {
+            return ServiceResult.unexpected(signed.getFailureDetail());
+        }
+        var metadata = new HashMap<>(statusListCredential.getMetadata());
+        metadata.put(BITSTRING_SIZE, extendedBitString.length());
+        return ServiceResult.success(statusListCredential.toBuilder()
+                .credential(signed.getContent())
+                .metadata(metadata)
+                .build());
+    }
+
+    /**
+     * Renews the status list credentials of all participant contexts that expire within the given time, so that they do
+     * not expire while nothing else changes them. Each one is locked while it is renewed, and skipped if another runtime
+     * renewed it in the meantime. A status list credential that cannot be renewed is skipped, and attempted again on the
+     * next call.
+     */
+    public void renewExpiring(Duration within) {
+        var deadline = clock.instant().plus(within);
+        var expiring = new ArrayList<String>();
+        QueryPages.forEachPage(allBitstringStatusLists(), PAGE_SIZE, this::query, VerifiableCredentialResource::getId,
+                page -> page.stream().filter(statusList -> expiresBefore(statusList, deadline)).forEach(statusList -> expiring.add(statusList.getId())));
+
+        for (var id : expiring) {
+            try {
+                transactionContext.execute(() -> renewIfExpiring(id, deadline));
+            } catch (RuntimeException e) {
+                monitor.warning("Could not renew status list credential '%s'".formatted(id), e);
+            }
+        }
+    }
+
+    /**
      * Looks up the status list credential that new holder credentials can be added to, i.e. an active one that is not full.
      * All status list credentials of the participant context stay locked until the surrounding transaction completes, so
      * that no other runtime can hand out the same index before this one has been incremented, c.f. {@link StatusListManager}
@@ -121,10 +192,137 @@ public class BitstringStatusListManager implements StatusListManager {
         if (credentialQueryResult.failed()) {
             return ServiceResult.fromFailure(credentialQueryResult);
         }
-        return ServiceResult.success(credentialQueryResult.getContent().stream()
+        var statusListCredentials = new ArrayList<VerifiableCredentialResource>();
+        for (var statusListCredential : credentialQueryResult.getContent()) {
+            var extended = extendIfShorter(statusListCredential);
+            if (extended.failed()) {
+                return extended.mapFailure();
+            }
+            statusListCredentials.add(extended.getContent());
+        }
+        // a status list credential that was full may have been extended, and is used again before newer ones
+        return ServiceResult.success(statusListCredentials.stream()
                 .filter(this::isActive)
                 .filter(this::isNotFull)
                 .findFirst());
+    }
+
+    /**
+     * Extends a status list that is shorter than the configured length, e.g. one that was created before the length was
+     * raised, and stores it. If it cannot be signed, e.g. because the vault is not available for a moment, it is used as
+     * it is, and extended the next time.
+     */
+    private ServiceResult<VerifiableCredentialResource> extendIfShorter(VerifiableCredentialResource statusListCredential) {
+        if (capacity(statusListCredential) >= configuration.bitstringSize()) {
+            return ServiceResult.success(statusListCredential);
+        }
+        var renewed = renew(statusListCredential);
+        if (renewed.failed()) {
+            monitor.warning("Could not extend status list credential '%s', it is used as it is: %s"
+                    .formatted(statusListCredential.getId(), renewed.getFailureDetail()));
+            return ServiceResult.success(statusListCredential);
+        }
+        var updateResult = store.update(renewed.getContent());
+        if (updateResult.failed()) {
+            return ServiceResult.fromFailure(updateResult);
+        }
+        return renewed;
+    }
+
+    private void renewIfExpiring(String id, Instant deadline) {
+        var locked = store.queryForUpdate(QuerySpec.Builder.newInstance().filter(new Criterion("id", "=", id)).build());
+        if (locked.failed() || locked.getContent().isEmpty()) {
+            return;
+        }
+        var statusListCredential = locked.getContent().iterator().next();
+        if (!expiresBefore(statusListCredential, deadline)) {
+            // renewed by another runtime in the meantime
+            return;
+        }
+        var renewed = renew(statusListCredential);
+        if (renewed.failed()) {
+            monitor.warning("Could not renew status list credential '%s': %s".formatted(id, renewed.getFailureDetail()));
+            return;
+        }
+        store.update(renewed.getContent())
+                .onFailure(f -> monitor.warning("Could not store the renewed status list credential '%s': %s".formatted(id, f.getFailureDetail())));
+    }
+
+    private boolean expiresBefore(VerifiableCredentialResource statusListCredential, Instant deadline) {
+        var expirationDate = statusListCredential.getVerifiableCredential().credential().getExpirationDate();
+        return expirationDate != null && expirationDate.isBefore(deadline);
+    }
+
+    private Collection<VerifiableCredentialResource> query(QuerySpec query) {
+        return store.query(query).orElseThrow(f -> new EdcException(f.getFailureDetail()));
+    }
+
+    /**
+     * Copies a status list credential with the given bitstring, valid for the configured validity from now on.
+     */
+    @SuppressWarnings("unchecked")
+    private VerifiableCredential renewedCopy(VerifiableCredential credential, String encodedList) {
+        var subjects = credential.getCredentialSubject().stream()
+                .map(subject -> CredentialSubject.Builder.newInstance()
+                        .id(subject.getId())
+                        .claims(new HashMap<>(subject.getClaims()))
+                        .claim(BITSTRING_ENCODED_LIST_LITERAL, encodedList)
+                        .build())
+                .toList();
+        var now = clock.instant();
+        return VerifiableCredential.Builder.newInstance()
+                .id(credential.getId())
+                .contexts(new ArrayList<>(credential.getContext()))
+                .types(new ArrayList<>(credential.getType()))
+                .issuer(credential.getIssuer())
+                .name(credential.getName())
+                .description(credential.getDescription())
+                .credentialSubjects(new ArrayList<>(subjects))
+                .credentialStatus(new ArrayList<>(credential.getCredentialStatus()))
+                .credentialSchemas(new ArrayList<>(credential.getCredentialSchema()))
+                .dataModelVersion(credential.getDataModelVersion())
+                .issuanceDate(now)
+                .expirationDate(now.plus(configuration.validity()))
+                .build();
+    }
+
+    /**
+     * Returns the given bitstring if it has the configured length or more, or a copy of it with the configured length.
+     */
+    private BitString extend(BitString bitString) {
+        if (bitString.length() >= configuration.bitstringSize()) {
+            return bitString;
+        }
+        var extended = BitString.Builder.newInstance().size(configuration.bitstringSize()).build();
+        for (var index = 0; index < bitString.length(); index++) {
+            if (bitString.get(index)) {
+                extended.set(index, true);
+            }
+        }
+        return extended;
+    }
+
+    private Result<BitString> decode(VerifiableCredentialResource statusListCredential) {
+        var credential = statusListCredential.getVerifiableCredential().credential();
+        var encodedList = credential.getCredentialSubject().stream()
+                .map(subject -> subject.getClaim(BITSTRING_STATUS_LIST_PREFIX, BITSTRING_ENCODED_LIST_LITERAL))
+                .filter(Objects::nonNull)
+                .findFirst();
+        if (encodedList.isEmpty()) {
+            return Result.failure("Status list credential '%s' has no encoded list".formatted(statusListCredential.getId()));
+        }
+        return BitString.Parser.newInstance().parse(encodedList.get().toString());
+    }
+
+    /**
+     * The number of entries of a status list, as recorded when it was created or extended, or else as given by its
+     * bitstring.
+     */
+    private int capacity(VerifiableCredentialResource statusListCredential) {
+        return ofNullable(statusListCredential.getMetadata().get(BITSTRING_SIZE))
+                .map(Object::toString)
+                .map(Integer::parseInt)
+                .orElseGet(() -> decode(statusListCredential).map(BitString::length).orElse(f -> 0));
     }
 
     /**
@@ -150,7 +348,7 @@ public class BitstringStatusListManager implements StatusListManager {
         var participantDid = participant.getContent().getDid();
 
         // generate new bitstring status credential
-        var now = Instant.now();
+        var now = clock.instant();
 
         var credential = VerifiableCredential.Builder.newInstance()
                 .credentialSubject(CredentialSubject.Builder.newInstance()
@@ -162,7 +360,7 @@ public class BitstringStatusListManager implements StatusListManager {
                         .build())
                 .id(UUID.randomUUID().toString())
                 .issuanceDate(now)
-                .expirationDate(now.plus(365, ChronoUnit.DAYS)) //todo: make configurable
+                .expirationDate(now.plus(configuration.validity()))
                 .issuer(new Issuer(participantDid))
                 .type("BitstringStatusListCredential")
                 .build();
@@ -187,7 +385,7 @@ public class BitstringStatusListManager implements StatusListManager {
                 .state(VcStatus.ISSUED)
                 .metadata(Map.of(CURRENT_INDEX, 0,
                         IS_ACTIVE, true,
-                        BITSTRING_SIZE, DEFAULT_BITSTRING_SIZE)) //todo: make configurable
+                        BITSTRING_SIZE, configuration.bitstringSize()))
                 .participantContextId(participantContextId)
                 .credential(signedCredential)
                 .issuerId(issuerDid)
@@ -208,10 +406,9 @@ public class BitstringStatusListManager implements StatusListManager {
                 });
     }
 
-    // creates an empty 16kb bitstring:
     private String createEmptyBitstring() {
         var bs = BitString.Builder.newInstance()
-                .size(DEFAULT_BITSTRING_SIZE) //todo: make configurable
+                .size(configuration.bitstringSize())
                 .build();
         return BitString.Writer.newInstance().writeMultibase(bs).orElseThrow(f -> new EdcException(f.getFailureDetail()));
     }
@@ -238,16 +435,18 @@ public class BitstringStatusListManager implements StatusListManager {
      * size, the credential is considered "full", and a new one needs to be created
      */
     private boolean isFull(VerifiableCredentialResource statusListCredential) {
-        var index = statusListIndex(statusListCredential);
-        return ofNullable(statusListCredential.getMetadata().getOrDefault(BITSTRING_SIZE, DEFAULT_BITSTRING_SIZE))
-                .map(Object::toString)
-                .map(Integer::parseInt)
-                .map(bitstringSize -> bitstringSize <= index)
-                .orElse(true);
+        return capacity(statusListCredential) <= statusListIndex(statusListCredential);
     }
 
     private boolean isNotFull(VerifiableCredentialResource statusListCredential) {
         return !isFull(statusListCredential);
+    }
+
+    private QuerySpec allBitstringStatusLists() {
+        return QuerySpec.Builder.newInstance()
+                .filter(new Criterion("verifiableCredential.credential.credentialSubject.type", "=", BITSTRING_STATUS_LIST))
+                .filter(new Criterion("usage", "=", CredentialUsage.StatusList.toString()))
+                .build();
     }
 
     private QuerySpec whereTypeIsBitstringCredential(String participantContextId) {

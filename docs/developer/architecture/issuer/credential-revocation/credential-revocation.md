@@ -33,7 +33,31 @@ Whenever the IssuerService creates (_issues_) a credential, it must update the s
 the status list credential is full, i.e. all the bits are occupied, the IssuerService must create and publish a new
 status list credential.
 
-[//]: # (todo: add documentation about status list credential sizing and partitioning logic)
+### Length, validity and renewal of status list credentials
+
+A status list has at least 131,072 entries (16 KB), the minimum of the W3C Bitstring Status List, or more if configured.
+A status list credential is valid for a configured time after it was signed, one year by default. It is signed again,
+which renews its validity:
+
+- when the status of one of its entries changes, e.g. when a credential is revoked;
+- when it is shorter than the configured length, e.g. because it was created before the length was raised. It is then
+  extended to the configured length. The existing entries keep their indexes, so the credentials that reference it are
+  not affected. This happens with the next status change, or when the next credential is issued by the same participant
+  context. A status list that was full can then take up new credentials again;
+- periodically, when it expires within a configured time, so that it does not expire while no credential is issued or
+  revoked.
+
+A status list credential keeps its ID and its URL when it is signed again.
+
+| Setting                                  | Description                                                                         | Default    |
+|------------------------------------------|-------------------------------------------------------------------------------------|------------|
+| `edc.issuer.statuslist.bitstring.size`   | The number of entries of a status list. Lower values are raised to `131072`         | `131072`   |
+| `edc.issuer.statuslist.validity`         | How long a status list credential is valid after it was signed, in seconds          | `31536000` |
+| `edc.issuer.statuslist.renewal.period`   | How often expiring status list credentials are renewed, in seconds. `0` deactivates | `86400`    |
+| `edc.issuer.statuslist.renewal.threshold` | How long before it expires a status list credential is renewed, in seconds         | `2592000`  |
+
+A warning is logged when a configured value cannot be used as it is, e.g. a length that is below the minimum or not a
+multiple of 8.
 
 The resulting credential URL and status list index must be added to the `credentialStatus` object of the pending holder
 credential:

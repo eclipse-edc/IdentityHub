@@ -27,7 +27,6 @@ import org.eclipse.edc.issuerservice.spi.credentials.IssuerCredentialOfferServic
 import org.eclipse.edc.issuerservice.spi.credentials.statuslist.StatusListInfoFactoryRegistry;
 import org.eclipse.edc.issuerservice.spi.credentials.statuslist.StatusListManager;
 import org.eclipse.edc.issuerservice.spi.holder.store.HolderStore;
-import org.eclipse.edc.issuerservice.spi.issuance.generator.CredentialGeneratorRegistry;
 import org.eclipse.edc.jsonld.spi.JsonLd;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;
@@ -61,8 +60,6 @@ public class CredentialServiceExtension implements ServiceExtension {
     @Inject
     private EdcHttpClient httpClient;
     @Inject
-    private CredentialGeneratorRegistry registry;
-    @Inject
     private TypeTransformerRegistry transformerRegistry;
     @Inject
     private DcpIssuerMetadataService issuerMetadataService;
@@ -82,7 +79,7 @@ public class CredentialServiceExtension implements ServiceExtension {
     public CredentialStatusService getStatusListService(ServiceExtensionContext context) {
         statusListInfoFactoryRegistry.register(BITSTRING_STATUS_LIST_ENTRY, new BitstringStatusListFactory(store));
 
-        return new CredentialStatusServiceImpl(store, transactionContext, context.getMonitor(), statusListInfoFactoryRegistry, statusListManager, registry);
+        return new CredentialStatusServiceImpl(store, transactionContext, context.getMonitor(), statusListInfoFactoryRegistry, statusListManager);
     }
 
     @Provider

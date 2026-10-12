@@ -15,13 +15,20 @@
 package org.eclipse.edc.issuerservice.credentials.statuslist.bitstring;
 
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat;
+import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialSubject;
+import org.eclipse.edc.iam.verifiablecredentials.spi.model.Issuer;
+import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredential;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredentialContainer;
+import org.eclipse.edc.iam.verifiablecredentials.spi.model.revocation.BitString;
 import org.eclipse.edc.identityhub.spi.participantcontext.IdentityHubParticipantContextService;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.IdentityHubParticipantContext;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialResource;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialStore;
 import org.eclipse.edc.issuerservice.spi.credentials.statuslist.StatusListCredentialPublisher;
 import org.eclipse.edc.issuerservice.spi.issuance.generator.CredentialGeneratorRegistry;
+import org.eclipse.edc.spi.monitor.Monitor;
+import org.eclipse.edc.spi.persistence.EdcPersistenceException;
+import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.query.SortOrder;
 import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.spi.result.ServiceResult;
@@ -30,11 +37,20 @@ import org.eclipse.edc.transaction.spi.NoopTransactionContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.time.Clock;
+import java.time.Duration;
+import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.List;
+import java.util.UUID;
+import java.util.stream.IntStream;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.eclipse.edc.issuerservice.credentials.statuslist.bitstring.BitstringStatusListConfiguration.DEFAULT_RENEWAL_PERIOD_SECONDS;
+import static org.eclipse.edc.issuerservice.credentials.statuslist.bitstring.BitstringStatusListConfiguration.DEFAULT_RENEWAL_THRESHOLD_SECONDS;
+import static org.eclipse.edc.issuerservice.credentials.statuslist.bitstring.BitstringStatusListConfiguration.MIN_BITSTRING_SIZE;
+import static org.eclipse.edc.issuerservice.credentials.statuslist.bitstring.BitstringStatusListManager.BITSTRING_SIZE;
 import static org.eclipse.edc.issuerservice.credentials.statuslist.bitstring.BitstringStatusListManager.CURRENT_INDEX;
-import static org.eclipse.edc.issuerservice.credentials.statuslist.bitstring.BitstringStatusListManager.DEFAULT_BITSTRING_SIZE;
 import static org.eclipse.edc.issuerservice.credentials.statuslist.bitstring.BitstringStatusListManager.IS_ACTIVE;
 import static org.eclipse.edc.issuerservice.credentials.statuslist.bitstring.BitstringStatusListManager.PUBLIC_URL;
 import static org.eclipse.edc.junit.assertions.AbstractResultAssert.assertThat;
@@ -42,10 +58,13 @@ import static org.eclipse.edc.spi.result.ServiceResult.success;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
@@ -56,7 +75,12 @@ class BitstringStatusListManagerTest {
     private final CredentialGeneratorRegistry generator = mock();
     private final IdentityHubParticipantContextService participantContextService = mock();
     private final StatusListCredentialPublisher publisher = mock();
-    private final BitstringStatusListManager manager = new BitstringStatusListManager(store, new NoopTransactionContext(), generator, participantContextService, publisher);
+    private static final Instant NOW = Instant.parse("2026-10-12T10:00:00Z");
+    private static final Duration VALIDITY = Duration.ofDays(365);
+    private final Monitor monitor = mock();
+    private final BitstringStatusListManager manager = new BitstringStatusListManager(store, new NoopTransactionContext(), generator, participantContextService, publisher,
+            new BitstringStatusListConfiguration(MIN_BITSTRING_SIZE, VALIDITY.toSeconds(), DEFAULT_RENEWAL_PERIOD_SECONDS, DEFAULT_RENEWAL_THRESHOLD_SECONDS),
+            Clock.fixed(NOW, ZoneOffset.UTC), monitor);
 
     @BeforeEach
     void setUp() {
@@ -125,7 +149,7 @@ class BitstringStatusListManagerTest {
     @Test
     void getActiveCredential_whenFull_andNewOneCreatedMeanwhile_shouldUseIt() {
         var fullCredential = createVerifiableCredentialResource()
-                .metadata(CURRENT_INDEX, DEFAULT_BITSTRING_SIZE)
+                .metadata(CURRENT_INDEX, MIN_BITSTRING_SIZE)
                 .metadata(PUBLIC_URL, "http://bar.com/full")
                 .metadata(IS_ACTIVE, true)
                 .build();
@@ -155,7 +179,7 @@ class BitstringStatusListManagerTest {
     void getActiveCredential_whenFull_andSecondQueryFails_shouldReturnFailure() {
         when(store.queryForUpdate(any()))
                 .thenReturn(StoreResult.success(List.of(createVerifiableCredentialResource()
-                        .metadata(CURRENT_INDEX, DEFAULT_BITSTRING_SIZE)
+                        .metadata(CURRENT_INDEX, MIN_BITSTRING_SIZE)
                         .metadata(PUBLIC_URL, "http://bar.com/full")
                         .metadata(IS_ACTIVE, true)
                         .build())))
@@ -171,7 +195,7 @@ class BitstringStatusListManagerTest {
     @Test
     void getActiveCredential_whenFull_shouldCreateNew() {
         when(store.queryForUpdate(any())).thenReturn(StoreResult.success(List.of(createVerifiableCredentialResource()
-                .metadata(CURRENT_INDEX, DEFAULT_BITSTRING_SIZE) // credential is saturated
+                .metadata(CURRENT_INDEX, MIN_BITSTRING_SIZE) // credential is saturated
                 .metadata(PUBLIC_URL, "http://bar.com/quizz")
                 .metadata(IS_ACTIVE, true)
                 .build())));
@@ -291,14 +315,281 @@ class BitstringStatusListManagerTest {
         verifyNoMoreInteractions(store, generator, participantContextService);
     }
 
+    @Test
+    void getActiveCredential_whenCreateNew_shouldUseConfiguredLengthAndValidity() {
+        when(store.queryForUpdate(any())).thenReturn(StoreResult.success(List.of()));
+        when(store.update(any())).thenReturn(StoreResult.success());
+        when(store.create(any())).thenReturn(StoreResult.success());
+
+        var entry = manager.getActiveCredential(PARTICIPANT_CONTEXT_ID);
+
+        assertThat(entry).isSucceeded().satisfies(e -> {
+            var credential = e.statusListCredential().getVerifiableCredential().credential();
+            assertThat(credential.getIssuanceDate()).isEqualTo(NOW);
+            assertThat(credential.getExpirationDate()).isEqualTo(NOW.plus(VALIDITY));
+            assertThat(bitString(e.statusListCredential()).length()).isEqualTo(MIN_BITSTRING_SIZE);
+            assertThat(e.statusListCredential().getMetadata()).containsEntry(BITSTRING_SIZE, MIN_BITSTRING_SIZE);
+        });
+    }
+
+    @Test
+    void getActiveCredential_whenShorterThanConfigured_shouldExtendAndRenew() {
+        var shortList = statusListResource(16 * 1024, 3, 16 * 1024 - 1)
+                .metadata(BITSTRING_SIZE, 16 * 1024)
+                .metadata(CURRENT_INDEX, 100)
+                .metadata(PUBLIC_URL, "http://bar.com/short")
+                .metadata(IS_ACTIVE, true)
+                .build();
+        var originalCredential = shortList.getVerifiableCredential().credential();
+        when(store.queryForUpdate(any())).thenReturn(StoreResult.success(List.of(shortList)));
+        when(store.update(any())).thenReturn(StoreResult.success());
+
+        var entry = manager.getActiveCredential(PARTICIPANT_CONTEXT_ID);
+
+        assertThat(entry).isSucceeded().satisfies(e -> {
+            assertThat(e.statusListIndex()).isEqualTo(100);
+            assertThat(e.credentialUrl()).isEqualTo("http://bar.com/short");
+            var extended = e.statusListCredential();
+            assertThat(extended.getId()).isEqualTo(shortList.getId());
+            assertThat(extended.getMetadata()).containsEntry(BITSTRING_SIZE, MIN_BITSTRING_SIZE).containsEntry(CURRENT_INDEX, 100);
+            var bitString = bitString(extended);
+            assertThat(bitString.length()).isEqualTo(MIN_BITSTRING_SIZE);
+            // the existing entries keep their indexes
+            assertThat(IntStream.range(0, bitString.length()).filter(bitString::get)).containsExactly(3, 16 * 1024 - 1);
+            var credential = extended.getVerifiableCredential().credential();
+            assertThat(credential.getIssuanceDate()).isEqualTo(NOW);
+            assertThat(credential.getExpirationDate()).isEqualTo(NOW.plus(VALIDITY));
+            // the status list credential keeps its identity, so that the credentials that reference it still find it
+            assertThat(credential.getId()).isEqualTo(originalCredential.getId());
+            assertThat(credential.getType()).containsExactlyElementsOf(originalCredential.getType());
+            assertThat(credential.getIssuer()).isEqualTo(originalCredential.getIssuer());
+            assertThat(credential.getCredentialSubject()).singleElement().satisfies(subject -> {
+                assertThat(subject.getId()).isEqualTo("status-list-subject-id");
+                assertThat(subject.getClaims()).containsEntry("type", "BitstringStatusList").containsEntry("statusPurpose", "revocation");
+            });
+        });
+        verify(generator).signCredential(eq(PARTICIPANT_CONTEXT_ID), any(), eq(CredentialFormat.VC1_0_JWT));
+        verify(store).update(argThat(r -> MIN_BITSTRING_SIZE == (int) r.getMetadata().get(BITSTRING_SIZE)));
+        verify(store, never()).create(any());
+    }
+
+    @Test
+    void getActiveCredential_whenFullButShorterThanConfigured_shouldExtendAndUseItAgain() {
+        var fullShortList = statusListResource(16 * 1024)
+                .metadata(BITSTRING_SIZE, 16 * 1024)
+                .metadata(CURRENT_INDEX, 16 * 1024)
+                .metadata(PUBLIC_URL, "http://bar.com/full")
+                .metadata(IS_ACTIVE, true)
+                .build();
+        when(store.queryForUpdate(any())).thenReturn(StoreResult.success(List.of(fullShortList)));
+        when(store.update(any())).thenReturn(StoreResult.success());
+
+        var entry = manager.getActiveCredential(PARTICIPANT_CONTEXT_ID);
+
+        // the extension adds new entries to it, which are used before a new status list is created
+        assertThat(entry).isSucceeded().satisfies(e -> {
+            assertThat(e.statusListCredential().getId()).isEqualTo(fullShortList.getId());
+            assertThat(e.statusListIndex()).isEqualTo(16 * 1024);
+        });
+        verify(store, never()).create(any());
+    }
+
+    @Test
+    void getActiveCredential_whenExtendingFails_shouldUseShorterList() {
+        var shortList = statusListResource(16 * 1024)
+                .metadata(BITSTRING_SIZE, 16 * 1024)
+                .metadata(CURRENT_INDEX, 100)
+                .metadata(PUBLIC_URL, "http://bar.com/short")
+                .metadata(IS_ACTIVE, true)
+                .build();
+        var originalCredential = shortList.getVerifiableCredential();
+        when(store.queryForUpdate(any())).thenReturn(StoreResult.success(List.of(shortList)));
+        when(generator.signCredential(any(), any(), any())).thenReturn(Result.failure("vault unavailable"));
+
+        var entry = manager.getActiveCredential(PARTICIPANT_CONTEXT_ID);
+
+        assertThat(entry).isSucceeded().satisfies(e -> {
+            assertThat(e.statusListIndex()).isEqualTo(100);
+            assertThat(e.statusListCredential().getVerifiableCredential()).isSameAs(originalCredential);
+            assertThat(e.statusListCredential().getMetadata()).containsEntry(BITSTRING_SIZE, 16 * 1024);
+        });
+        verify(store, never()).update(any());
+        verify(monitor).warning(contains("vault unavailable"));
+    }
+
+    @Test
+    void getActiveCredential_withoutLengthInMetadata_shouldTakeItFromBitstring() {
+        var fullList = statusListResource(MIN_BITSTRING_SIZE)
+                .metadata(CURRENT_INDEX, MIN_BITSTRING_SIZE)
+                .metadata(PUBLIC_URL, "http://bar.com/full")
+                .metadata(IS_ACTIVE, true)
+                .build();
+        when(store.queryForUpdate(any())).thenReturn(StoreResult.success(List.of(fullList)));
+        when(store.create(any())).thenReturn(StoreResult.success());
+        when(store.update(any())).thenReturn(StoreResult.success());
+
+        var entry = manager.getActiveCredential(PARTICIPANT_CONTEXT_ID);
+
+        // its bitstring has the configured length, so it is neither extended nor used, but full
+        assertThat(entry).isSucceeded().satisfies(e -> assertThat(e.statusListCredential().getId()).isNotEqualTo(fullList.getId()));
+        verify(store).create(any());
+        verify(generator, times(1)).signCredential(any(), any(), any());
+    }
+
+    @Test
+    void getActiveCredential_whenShorterWithoutLengthInMetadata_shouldExtend() {
+        var shortList = statusListResource(16 * 1024)
+                .metadata(CURRENT_INDEX, 100)
+                .metadata(PUBLIC_URL, "http://bar.com/short")
+                .metadata(IS_ACTIVE, true)
+                .build();
+        when(store.queryForUpdate(any())).thenReturn(StoreResult.success(List.of(shortList)));
+        when(store.update(any())).thenReturn(StoreResult.success());
+
+        var entry = manager.getActiveCredential(PARTICIPANT_CONTEXT_ID);
+
+        // its length is taken from its bitstring, not from the configuration, which it would not match
+        assertThat(entry).isSucceeded().satisfies(e -> {
+            assertThat(bitString(e.statusListCredential()).length()).isEqualTo(MIN_BITSTRING_SIZE);
+            assertThat(e.statusListCredential().getMetadata()).containsEntry(BITSTRING_SIZE, MIN_BITSTRING_SIZE);
+        });
+    }
+
+    @Test
+    void renew_shouldRenewValidityAndKeepEntries() {
+        var statusList = statusListResource(MIN_BITSTRING_SIZE, 7)
+                .metadata(BITSTRING_SIZE, MIN_BITSTRING_SIZE)
+                .metadata(CURRENT_INDEX, 42)
+                .build();
+
+        var result = manager.renew(statusList);
+
+        assertThat(result).isSucceeded().satisfies(renewed -> {
+            var credential = renewed.getVerifiableCredential().credential();
+            assertThat(credential.getIssuanceDate()).isEqualTo(NOW);
+            assertThat(credential.getExpirationDate()).isEqualTo(NOW.plus(VALIDITY));
+            var bitString = bitString(renewed);
+            assertThat(bitString.length()).isEqualTo(MIN_BITSTRING_SIZE);
+            assertThat(IntStream.range(0, bitString.length()).filter(bitString::get)).containsExactly(7);
+            assertThat(renewed.getMetadata()).containsEntry(CURRENT_INDEX, 42).containsEntry(BITSTRING_SIZE, MIN_BITSTRING_SIZE);
+        });
+        verify(generator).signCredential(eq(PARTICIPANT_CONTEXT_ID), any(), eq(CredentialFormat.VC1_0_JWT));
+        // the caller stores it
+        verifyNoInteractions(store);
+    }
+
+    @Test
+    void renew_whenSigningFails_shouldLeaveResourceUnchanged() {
+        var statusList = statusListResource(16 * 1024, 7)
+                .metadata(BITSTRING_SIZE, 16 * 1024)
+                .build();
+        var originalCredential = statusList.getVerifiableCredential();
+        when(generator.signCredential(any(), any(), any())).thenReturn(Result.failure("vault unavailable"));
+
+        var result = manager.renew(statusList);
+
+        assertThat(result).isFailed().detail().contains("vault unavailable");
+        assertThat(statusList.getVerifiableCredential()).isSameAs(originalCredential);
+        assertThat(statusList.getVerifiableCredential().credential().getExpirationDate()).isEqualTo(NOW.plus(Duration.ofDays(265)));
+        assertThat(bitString(statusList).length()).isEqualTo(16 * 1024);
+        assertThat(statusList.getMetadata()).containsEntry(BITSTRING_SIZE, 16 * 1024);
+    }
+
+    @Test
+    void renewExpiring_shouldRenewCredentialsThatExpireWithinThreshold() {
+        var expiring = statusListResource(MIN_BITSTRING_SIZE, NOW.plus(Duration.ofDays(10))).metadata(BITSTRING_SIZE, MIN_BITSTRING_SIZE).build();
+        var notExpiring = statusListResource(MIN_BITSTRING_SIZE, NOW.plus(Duration.ofDays(200))).metadata(BITSTRING_SIZE, MIN_BITSTRING_SIZE).build();
+        when(store.query(any())).thenReturn(StoreResult.success(List.of(expiring, notExpiring)));
+        when(store.queryForUpdate(isIdQuery(expiring.getId()))).thenReturn(StoreResult.success(List.of(expiring)));
+        when(store.update(any())).thenReturn(StoreResult.success());
+
+        manager.renewExpiring(Duration.ofDays(30));
+
+        verify(store).update(argThat(r -> r.getId().equals(expiring.getId()) &&
+                r.getVerifiableCredential().credential().getExpirationDate().equals(NOW.plus(VALIDITY))));
+        verify(store, never()).queryForUpdate(isIdQuery(notExpiring.getId()));
+        verify(generator, times(1)).signCredential(any(), any(), any());
+    }
+
+    @Test
+    void renewExpiring_whenRenewedByAnotherRuntimeMeanwhile_shouldSkipIt() {
+        var expiring = statusListResource(MIN_BITSTRING_SIZE, NOW.plus(Duration.ofDays(10))).metadata(BITSTRING_SIZE, MIN_BITSTRING_SIZE).build();
+        var renewedMeanwhile = statusListResource(MIN_BITSTRING_SIZE, NOW.plus(Duration.ofDays(365))).id(expiring.getId()).metadata(BITSTRING_SIZE, MIN_BITSTRING_SIZE).build();
+        when(store.query(any())).thenReturn(StoreResult.success(List.of(expiring)));
+        when(store.queryForUpdate(isIdQuery(expiring.getId()))).thenReturn(StoreResult.success(List.of(renewedMeanwhile)));
+
+        manager.renewExpiring(Duration.ofDays(30));
+
+        verify(generator, never()).signCredential(any(), any(), any());
+        verify(store, never()).update(any());
+    }
+
+    @Test
+    void renewExpiring_whenOneFails_shouldRenewTheOthers() {
+        var failing = statusListResource(MIN_BITSTRING_SIZE, NOW.plus(Duration.ofDays(10))).metadata(BITSTRING_SIZE, MIN_BITSTRING_SIZE).build();
+        var other = statusListResource(MIN_BITSTRING_SIZE, NOW.plus(Duration.ofDays(10))).metadata(BITSTRING_SIZE, MIN_BITSTRING_SIZE).build();
+        when(store.query(any())).thenReturn(StoreResult.success(List.of(failing, other)));
+        when(store.queryForUpdate(isIdQuery(failing.getId()))).thenThrow(new EdcPersistenceException("database unavailable"));
+        when(store.queryForUpdate(isIdQuery(other.getId()))).thenReturn(StoreResult.success(List.of(other)));
+        when(store.update(any())).thenReturn(StoreResult.success());
+
+        manager.renewExpiring(Duration.ofDays(30));
+
+        verify(store).update(argThat(r -> r.getId().equals(other.getId())));
+        verify(monitor).warning(contains(failing.getId()), any(EdcPersistenceException.class));
+    }
+
+    private QuerySpec isIdQuery(String id) {
+        return argThat(query -> query != null && query.getFilterExpression().stream()
+                .anyMatch(criterion -> "id".equals(criterion.getOperandLeft()) && id.equals(criterion.getOperandRight())));
+    }
+
     private VerifiableCredentialResource hasParticipantId(String participantContextId) {
         return argThat(res -> res.getParticipantContextId().equals(participantContextId));
     }
 
     private VerifiableCredentialResource.Builder createVerifiableCredentialResource() {
-        return VerifiableCredentialResource.Builder.newIssuanceTracker()
+        return statusListResource(MIN_BITSTRING_SIZE)
+                .metadata(BITSTRING_SIZE, MIN_BITSTRING_SIZE);
+    }
+
+    /**
+     * A status list credential with a bitstring of the given length, in which the given indexes are set.
+     */
+    private VerifiableCredentialResource.Builder statusListResource(int bitstringSize, int... setIndexes) {
+        return statusListResource(bitstringSize, NOW.plus(Duration.ofDays(265)), setIndexes);
+    }
+
+    private VerifiableCredentialResource.Builder statusListResource(int bitstringSize, Instant expirationDate, int... setIndexes) {
+        var bitString = BitString.Builder.newInstance().size(bitstringSize).build();
+        for (var index : setIndexes) {
+            bitString.set(index, true);
+        }
+        var credential = VerifiableCredential.Builder.newInstance()
+                .id("status-list-credential-id")
+                .type("VerifiableCredential")
+                .type("BitstringStatusListCredential")
+                .issuer(new Issuer("did:web:issuer"))
+                .issuanceDate(NOW.minus(Duration.ofDays(100)))
+                .expirationDate(expirationDate)
+                .credentialSubject(CredentialSubject.Builder.newInstance()
+                        .id("status-list-subject-id")
+                        .claim("type", "BitstringStatusList")
+                        .claim("statusPurpose", "revocation")
+                        .claim("encodedList", BitString.Writer.newInstance().writeMultibase(bitString).getContent())
+                        .build())
+                .build();
+        return VerifiableCredentialResource.Builder.newStatusList()
+                .id(UUID.randomUUID().toString())
+                .participantContextId(PARTICIPANT_CONTEXT_ID)
                 .issuerId("issuer-id")
-                .holderId("holder-id");
+                .holderId("holder-id")
+                .credential(new VerifiableCredentialContainer("raw-token", CredentialFormat.VC1_0_JWT, credential));
+    }
+
+    private BitString bitString(VerifiableCredentialResource statusListCredential) {
+        var encodedList = statusListCredential.getVerifiableCredential().credential().getCredentialSubject().get(0).getClaims().get("encodedList");
+        return BitString.Parser.newInstance().parse(encodedList.toString()).getContent();
     }
 
 }

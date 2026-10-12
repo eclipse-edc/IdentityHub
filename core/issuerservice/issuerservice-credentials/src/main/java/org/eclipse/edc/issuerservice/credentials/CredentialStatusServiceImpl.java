@@ -22,7 +22,6 @@ import org.eclipse.edc.issuerservice.spi.credentials.CredentialStatusService;
 import org.eclipse.edc.issuerservice.spi.credentials.statuslist.StatusListInfo;
 import org.eclipse.edc.issuerservice.spi.credentials.statuslist.StatusListInfoFactoryRegistry;
 import org.eclipse.edc.issuerservice.spi.credentials.statuslist.StatusListManager;
-import org.eclipse.edc.issuerservice.spi.issuance.generator.CredentialGeneratorRegistry;
 import org.eclipse.edc.spi.EdcException;
 import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.spi.query.QuerySpec;
@@ -44,17 +43,14 @@ public class CredentialStatusServiceImpl implements CredentialStatusService {
     private final Monitor monitor;
     private final StatusListInfoFactoryRegistry statusListInfoFactoryRegistry;
     private final StatusListManager statusListManager;
-    private final CredentialGeneratorRegistry credentialGeneratorRegistry;
 
     public CredentialStatusServiceImpl(CredentialStore credentialStore, TransactionContext transactionContext, Monitor monitor,
-                                       StatusListInfoFactoryRegistry statusListInfoFactoryRegistry, StatusListManager statusListManager,
-                                       CredentialGeneratorRegistry credentialGeneratorRegistry) {
+                                       StatusListInfoFactoryRegistry statusListInfoFactoryRegistry, StatusListManager statusListManager) {
         this.credentialStore = credentialStore;
         this.transactionContext = transactionContext;
         this.monitor = monitor;
         this.statusListInfoFactoryRegistry = statusListInfoFactoryRegistry;
         this.statusListManager = statusListManager;
-        this.credentialGeneratorRegistry = credentialGeneratorRegistry;
     }
 
     @Override
@@ -167,13 +163,8 @@ public class CredentialStatusServiceImpl implements CredentialStatusService {
      * a JWT and signed with the private key.
      */
     private ServiceResult<VerifiableCredentialResource> updateStatusCredential(VerifiableCredentialResource credentialResource) {
-        var verifiableCredential = credentialResource.getVerifiableCredential();
-
-        return credentialGeneratorRegistry.signCredential(credentialResource.getParticipantContextId(), verifiableCredential.credential(), verifiableCredential.format())
-                .flatMap(ServiceResult::from)
-                .map(container -> credentialResource.toBuilder()
-                        .credential(container)
-                        .build());
+        // signing it again renews its validity, and extends a status list that is shorter than configured
+        return statusListManager.renew(credentialResource);
     }
 
     private ServiceResult<StatusListInfo> getRevocationInfo(VerifiableCredentialResource resource) {

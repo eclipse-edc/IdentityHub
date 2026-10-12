@@ -14,6 +14,7 @@
 
 package org.eclipse.edc.issuerservice.spi.credentials.statuslist;
 
+import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialResource;
 import org.eclipse.edc.spi.result.ServiceResult;
 
 /**
@@ -64,4 +65,14 @@ public interface StatusListManager {
      * @return a service result to indicate the success of the operation
      */
     ServiceResult<Void> incrementIndex(StatusListCredentialEntry entry);
+
+    /**
+     * Signs a status list credential again, e.g. after the status of one of its entries has changed. The signed credential is
+     * valid for the configured validity from now on. The returned resource is not stored, and the given one is left
+     * unchanged if signing fails.
+     *
+     * @param statusListCredential the status list credential to sign again
+     * @return the status list credential with the newly signed credential
+     */
+    ServiceResult<VerifiableCredentialResource> renew(VerifiableCredentialResource statusListCredential);
 }
