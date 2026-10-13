@@ -85,7 +85,7 @@ public class SqlHolderStore extends AbstractSqlStore implements HolderStore {
                         holder.getDid(),
                         holder.getHolderName(),
                         holder.getCreatedAt(),
-                        holder.getCreatedAt(),
+                        holder.getLastModifiedAt(),
                         holder.isAnonymous(),
                         toJson(holder.getProperties())
                 );
