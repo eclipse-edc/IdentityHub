@@ -32,6 +32,7 @@ import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialSto
 import org.eclipse.edc.issuerservice.credentials.statuslist.StatusListInfoFactoryRegistryImpl;
 import org.eclipse.edc.issuerservice.credentials.statuslist.bitstring.BitstringStatusListFactory;
 import org.eclipse.edc.issuerservice.spi.credentials.statuslist.StatusListCredentialEntry;
+import org.eclipse.edc.issuerservice.spi.credentials.statuslist.StatusListCredentialPublisher;
 import org.eclipse.edc.issuerservice.spi.credentials.statuslist.StatusListInfo;
 import org.eclipse.edc.issuerservice.spi.credentials.statuslist.StatusListManager;
 import org.eclipse.edc.json.JacksonTypeManager;
@@ -71,6 +72,7 @@ import static org.eclipse.edc.spi.result.StoreResult.success;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
@@ -95,17 +97,19 @@ class CredentialStatusServiceImplTest {
     private final Monitor monitor = mock();
     private final TestStatusListInfo statusListInfo = spy(new TestStatusListInfo());
     private final StatusListManager statusListManager = mock();
+    private final StatusListCredentialPublisher publisher = mock();
     private final StatusListInfoFactoryRegistryImpl statusListInfoFactoryRegistry = new StatusListInfoFactoryRegistryImpl();
     private CredentialStatusServiceImpl revocationService;
 
     @BeforeEach
     void setUp() {
         when(statusListManager.renew(any())).thenAnswer(i -> ServiceResult.success(i.getArgument(0)));
+        when(publisher.publish(any())).thenReturn(Result.success("http://example.com/statuslist"));
         statusListInfoFactoryRegistry.register("BitstringStatusListEntry", bitstringStatusListFactory);
         when(bitstringStatusListFactory.create(any())).thenReturn(ServiceResult.success(statusListInfo));
 
         revocationService = new CredentialStatusServiceImpl(credentialStore, new NoopTransactionContext(),
-                monitor, statusListInfoFactoryRegistry, statusListManager);
+                monitor, statusListInfoFactoryRegistry, statusListManager, publisher);
     }
 
     @Nested
@@ -113,8 +117,9 @@ class CredentialStatusServiceImplTest {
 
         @Test
         void revokeCredential() {
+            var statusListCredential = createCredential(EXAMPLE_CREDENTIAL, EXAMPLE_CREDENTIAL_JWT.replace("\n", ""));
             when(statusListInfo.getStatus()).thenReturn(Result.success("any"));
-            when(statusListInfo.statusListCredential()).thenReturn(createCredential(EXAMPLE_CREDENTIAL, EXAMPLE_CREDENTIAL_JWT.replace("\n", "")));
+            when(statusListInfo.statusListCredential()).thenReturn(statusListCredential);
             when(credentialStore.findById(eq(CREDENTIAL_ID))).thenReturn(success(createCredential(EXAMPLE_CREDENTIAL, EXAMPLE_CREDENTIAL_JWT.replace("\n", ""))));
             when(credentialStore.update(any())).thenReturn(success());
 
@@ -123,14 +128,35 @@ class CredentialStatusServiceImplTest {
             assertThat(result).isSucceeded();
             // signing it again renews its validity, and extends a status list that is shorter than configured
             verify(statusListManager).renew(any());
-            verify(credentialStore, times(2)).update(any());
+            // published once it is stored, so that a publisher that pushes it elsewhere serves the revocation
+            var inOrder = inOrder(credentialStore, publisher);
+            inOrder.verify(credentialStore, times(2)).update(any());
+            inOrder.verify(publisher).publish(statusListCredential);
+        }
+
+        @Test
+        void revokeCredential_whenStatusListCannotBePublished_shouldRollBack() {
+            var transactionContext = new TrackingTransactionContext();
+            var statusService = new CredentialStatusServiceImpl(credentialStore, transactionContext, monitor,
+                    statusListInfoFactoryRegistry, statusListManager, publisher);
+            when(statusListInfo.getStatus()).thenReturn(Result.success("any"));
+            when(statusListInfo.statusListCredential()).thenReturn(createCredential(EXAMPLE_CREDENTIAL, EXAMPLE_CREDENTIAL_JWT.replace("\n", "")));
+            when(credentialStore.findById(eq(CREDENTIAL_ID))).thenReturn(success(createCredential(EXAMPLE_CREDENTIAL, EXAMPLE_CREDENTIAL_JWT.replace("\n", ""))));
+            when(credentialStore.update(any())).thenReturn(success());
+            when(publisher.publish(any())).thenReturn(Result.failure("publication target unavailable"));
+
+            var result = statusService.revokeCredential(CREDENTIAL_ID);
+
+            assertThat(result).isFailed().detail().contains("publication target unavailable");
+            // otherwise the issuer would record the revocation, while the published status list does not show it
+            assertThat(transactionContext.rolledBack()).isTrue();
         }
 
         @Test
         void revokeCredential_readsAndWritesStatusListWithinOneTransaction() {
             var transactionContext = new TrackingTransactionContext();
             var statusService = new CredentialStatusServiceImpl(credentialStore, transactionContext, monitor,
-                    statusListInfoFactoryRegistry, statusListManager);
+                    statusListInfoFactoryRegistry, statusListManager, publisher);
             var transactionsOfCalls = new ArrayList<Integer>();
             when(bitstringStatusListFactory.create(any())).thenAnswer(i -> {
                 transactionsOfCalls.add(transactionContext.currentTransaction());
@@ -169,7 +195,7 @@ class CredentialStatusServiceImplTest {
         void revokeCredential_whenRevokedCredentialCannotBeWritten_shouldRollBack() {
             var transactionContext = new TrackingTransactionContext();
             var statusService = new CredentialStatusServiceImpl(credentialStore, transactionContext, monitor,
-                    statusListInfoFactoryRegistry, statusListManager);
+                    statusListInfoFactoryRegistry, statusListManager, publisher);
             when(statusListInfo.getStatus()).thenReturn(Result.success("any"));
             when(statusListInfo.statusListCredential()).thenReturn(createCredential(EXAMPLE_CREDENTIAL, EXAMPLE_CREDENTIAL_JWT.replace("\n", "")));
             when(credentialStore.findById(eq(CREDENTIAL_ID))).thenReturn(success(createCredential(EXAMPLE_CREDENTIAL, EXAMPLE_CREDENTIAL_JWT.replace("\n", ""))));
@@ -189,7 +215,7 @@ class CredentialStatusServiceImplTest {
         void revokeCredential_whenStatusListCannotBeWritten_shouldRollBack() {
             var transactionContext = new TrackingTransactionContext();
             var statusService = new CredentialStatusServiceImpl(credentialStore, transactionContext, monitor,
-                    statusListInfoFactoryRegistry, statusListManager);
+                    statusListInfoFactoryRegistry, statusListManager, publisher);
             when(statusListInfo.getStatus()).thenReturn(Result.success("any"));
             when(statusListInfo.statusListCredential()).thenReturn(createCredential(EXAMPLE_CREDENTIAL, EXAMPLE_CREDENTIAL_JWT.replace("\n", "")));
             when(credentialStore.findById(eq(CREDENTIAL_ID))).thenReturn(success(createCredential(EXAMPLE_CREDENTIAL, EXAMPLE_CREDENTIAL_JWT.replace("\n", ""))));
@@ -282,7 +308,7 @@ class CredentialStatusServiceImplTest {
         @BeforeEach
         void setUp() {
             statusService = new CredentialStatusServiceImpl(credentialStore, transactionContext, monitor,
-                    new StatusListInfoFactoryRegistryImpl(), statusListManager);
+                    new StatusListInfoFactoryRegistryImpl(), statusListManager, publisher);
             when(entry.createCredentialStatus()).thenReturn(credentialStatus);
         }
 

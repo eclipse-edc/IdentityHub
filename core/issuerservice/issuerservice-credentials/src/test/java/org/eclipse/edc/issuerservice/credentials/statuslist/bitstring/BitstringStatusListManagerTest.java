@@ -63,6 +63,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -116,6 +117,112 @@ class BitstringStatusListManagerTest {
         // oldest first, so that all runtimes lock the status list credentials in the same order
         verify(store).queryForUpdate(argThat(query -> "timestamp".equals(query.getSortField()) && query.getSortOrder() == SortOrder.ASC));
         verifyNoMoreInteractions(store, generator, participantContextService);
+    }
+
+    @Test
+    void getActiveCredential_shouldConsiderAllStatusLists() {
+        when(store.queryForUpdate(any())).thenReturn(StoreResult.success(List.of(createVerifiableCredentialResource()
+                .metadata(CURRENT_INDEX, 42)
+                .metadata(IS_ACTIVE, true)
+                .build())));
+
+        manager.getActiveCredential(PARTICIPANT_CONTEXT_ID);
+
+        // not only as many as by default, which could leave out the active one
+        verify(store).queryForUpdate(argThat(query -> query.getLimit() == Integer.MAX_VALUE));
+    }
+
+    @Test
+    void getActiveCredential_whenExpired_shouldRenewAndPublish() {
+        var expired = statusListResource(MIN_BITSTRING_SIZE, NOW.minus(Duration.ofDays(1)), 7)
+                .metadata(BITSTRING_SIZE, MIN_BITSTRING_SIZE)
+                .metadata(CURRENT_INDEX, 42)
+                .metadata(PUBLIC_URL, "http://bar.com/expired")
+                .metadata(IS_ACTIVE, true)
+                .build();
+        when(store.queryForUpdate(any())).thenReturn(StoreResult.success(List.of(expired)));
+        when(store.update(any())).thenReturn(StoreResult.success());
+
+        var entry = manager.getActiveCredential(PARTICIPANT_CONTEXT_ID);
+
+        assertThat(entry).isSucceeded().satisfies(e -> {
+            assertThat(e.statusListCredential().getId()).isEqualTo(expired.getId());
+            assertThat(e.statusListIndex()).isEqualTo(42);
+            // it keeps the URL it was published at first, not the one returned when it is published again
+            assertThat(e.credentialUrl()).isEqualTo("http://bar.com/expired");
+            assertThat(e.statusListCredential().getVerifiableCredential().credential().getExpirationDate()).isEqualTo(NOW.plus(VALIDITY));
+            var bitString = bitString(e.statusListCredential());
+            assertThat(IntStream.range(0, bitString.length()).filter(bitString::get)).containsExactly(7);
+        });
+        var inOrder = inOrder(publisher, store);
+        inOrder.verify(publisher).publish(argThat(r -> r.getId().equals(expired.getId())));
+        inOrder.verify(store).update(argThat(r -> r.getId().equals(expired.getId()) &&
+                r.getVerifiableCredential().credential().getExpirationDate().equals(NOW.plus(VALIDITY))));
+        verify(store, never()).create(any());
+    }
+
+    @Test
+    void getActiveCredential_whenExpired_andPublishingFails_shouldUseItAsItIs() {
+        var expired = statusListResource(MIN_BITSTRING_SIZE, NOW.minus(Duration.ofDays(1)))
+                .metadata(BITSTRING_SIZE, MIN_BITSTRING_SIZE)
+                .metadata(CURRENT_INDEX, 42)
+                .metadata(PUBLIC_URL, "http://bar.com/expired")
+                .metadata(IS_ACTIVE, true)
+                .build();
+        var originalCredential = expired.getVerifiableCredential();
+        when(store.queryForUpdate(any())).thenReturn(StoreResult.success(List.of(expired)));
+        when(publisher.publish(any())).thenReturn(Result.failure("publication target unavailable"));
+
+        var entry = manager.getActiveCredential(PARTICIPANT_CONTEXT_ID);
+
+        assertThat(entry).isSucceeded().satisfies(e -> {
+            assertThat(e.statusListCredential().getVerifiableCredential()).isSameAs(originalCredential);
+            assertThat(e.statusListIndex()).isEqualTo(42);
+        });
+        verify(store, never()).update(any());
+        verify(store, never()).create(any());
+        verify(monitor).warning(contains("publication target unavailable"));
+    }
+
+    @Test
+    void getActiveCredential_whenExpired_andSigningFails_shouldUseItAsItIs() {
+        var expired = statusListResource(MIN_BITSTRING_SIZE, NOW.minus(Duration.ofDays(1)))
+                .metadata(BITSTRING_SIZE, MIN_BITSTRING_SIZE)
+                .metadata(CURRENT_INDEX, 42)
+                .metadata(IS_ACTIVE, true)
+                .build();
+        var originalCredential = expired.getVerifiableCredential();
+        when(store.queryForUpdate(any())).thenReturn(StoreResult.success(List.of(expired)));
+        when(generator.signCredential(any(), any(), any())).thenReturn(Result.failure("vault unavailable"));
+
+        var entry = manager.getActiveCredential(PARTICIPANT_CONTEXT_ID);
+
+        assertThat(entry).isSucceeded().satisfies(e -> assertThat(e.statusListCredential().getVerifiableCredential()).isSameAs(originalCredential));
+        verify(store, never()).update(any());
+        verify(publisher, never()).publish(any());
+        verify(monitor).warning(contains("vault unavailable"));
+    }
+
+    @Test
+    void getActiveCredential_whenOtherStatusListExpired_shouldNotRenewIt() {
+        var expiredInactive = statusListResource(MIN_BITSTRING_SIZE, NOW.minus(Duration.ofDays(1)))
+                .metadata(BITSTRING_SIZE, MIN_BITSTRING_SIZE)
+                .metadata(CURRENT_INDEX, MIN_BITSTRING_SIZE)
+                .metadata(IS_ACTIVE, false)
+                .build();
+        var active = createVerifiableCredentialResource()
+                .metadata(CURRENT_INDEX, 42)
+                .metadata(IS_ACTIVE, true)
+                .build();
+        when(store.queryForUpdate(any())).thenReturn(StoreResult.success(List.of(expiredInactive, active)));
+
+        var entry = manager.getActiveCredential(PARTICIPANT_CONTEXT_ID);
+
+        // left to the periodic renewal
+        assertThat(entry).isSucceeded().satisfies(e -> assertThat(e.statusListCredential().getId()).isEqualTo(active.getId()));
+        verify(generator, never()).signCredential(any(), any(), any());
+        verify(store, never()).update(any());
+        verify(publisher, never()).publish(any());
     }
 
     @Test
@@ -391,8 +498,31 @@ class BitstringStatusListManagerTest {
             });
         });
         verify(generator).signCredential(eq(PARTICIPANT_CONTEXT_ID), any(), eq(CredentialFormat.VC1_0_JWT));
-        verify(store).update(argThat(r -> MIN_BITSTRING_SIZE == (int) r.getMetadata().get(BITSTRING_SIZE)));
+        var inOrder = inOrder(publisher, store);
+        inOrder.verify(publisher).publish(argThat(r -> MIN_BITSTRING_SIZE == (int) r.getMetadata().get(BITSTRING_SIZE)));
+        inOrder.verify(store).update(argThat(r -> MIN_BITSTRING_SIZE == (int) r.getMetadata().get(BITSTRING_SIZE)));
         verify(store, never()).create(any());
+    }
+
+    @Test
+    void getActiveCredential_whenExtended_andPublishingFails_shouldUseShorterList() {
+        var shortList = statusListResource(16 * 1024)
+                .metadata(BITSTRING_SIZE, 16 * 1024)
+                .metadata(CURRENT_INDEX, 100)
+                .metadata(IS_ACTIVE, true)
+                .build();
+        var originalCredential = shortList.getVerifiableCredential();
+        when(store.queryForUpdate(any())).thenReturn(StoreResult.success(List.of(shortList)));
+        when(publisher.publish(any())).thenReturn(Result.failure("publication target unavailable"));
+
+        var entry = manager.getActiveCredential(PARTICIPANT_CONTEXT_ID);
+
+        assertThat(entry).isSucceeded().satisfies(e -> {
+            assertThat(e.statusListCredential().getVerifiableCredential()).isSameAs(originalCredential);
+            assertThat(e.statusListCredential().getMetadata()).containsEntry(BITSTRING_SIZE, 16 * 1024);
+        });
+        verify(store, never()).update(any());
+        verify(monitor).warning(contains("publication target unavailable"));
     }
 
     @Test
@@ -555,10 +685,28 @@ class BitstringStatusListManagerTest {
 
         manager.renewExpiring(Duration.ofDays(30));
 
-        verify(store).update(argThat(r -> r.getId().equals(expiring.getId()) &&
+        var inOrder = inOrder(publisher, store);
+        inOrder.verify(publisher).publish(argThat(r -> r.getId().equals(expiring.getId()) &&
+                r.getVerifiableCredential().credential().getExpirationDate().equals(NOW.plus(VALIDITY))));
+        inOrder.verify(store).update(argThat(r -> r.getId().equals(expiring.getId()) &&
                 r.getVerifiableCredential().credential().getExpirationDate().equals(NOW.plus(VALIDITY))));
         verify(store, never()).queryForUpdate(isIdQuery(notExpiring.getId()));
         verify(generator, times(1)).signCredential(any(), any(), any());
+        verify(publisher, times(1)).publish(any());
+    }
+
+    @Test
+    void renewExpiring_whenPublishingFails_shouldNotStoreIt() {
+        var expiring = statusListResource(MIN_BITSTRING_SIZE, NOW.plus(Duration.ofDays(10))).metadata(BITSTRING_SIZE, MIN_BITSTRING_SIZE).build();
+        when(store.query(any())).thenReturn(StoreResult.success(List.of(expiring)));
+        when(store.queryForUpdate(isIdQuery(expiring.getId()))).thenReturn(StoreResult.success(List.of(expiring)));
+        when(publisher.publish(any())).thenReturn(Result.failure("publication target unavailable"));
+
+        manager.renewExpiring(Duration.ofDays(30));
+
+        // renewed again on the next call
+        verify(store, never()).update(any());
+        verify(monitor).warning(contains("publication target unavailable"));
     }
 
     @Test

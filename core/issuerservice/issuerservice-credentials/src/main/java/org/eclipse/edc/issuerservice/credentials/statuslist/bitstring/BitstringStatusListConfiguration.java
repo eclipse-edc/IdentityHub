@@ -63,7 +63,12 @@ public record BitstringStatusListConfiguration(
     /**
      * Returns this configuration, with the values that cannot be used as they are replaced, and logs a warning for each of
      * them: a length below the minimum is raised to it, a length that is not a multiple of 8 is rounded up, and a validity
-     * that is not positive is replaced by the default.
+     * that is not positive is replaced by the default. If the renewal is active, a renewal threshold that is not positive
+     * is replaced by the default too.
+     * <p>
+     * It also warns about renewal settings that can be used, but have unwanted effects: a renewal period that is not shorter
+     * than the renewal threshold lets status list credentials expire between two renewals, and a renewal threshold that is
+     * not shorter than the validity renews them on every run.
      */
     public BitstringStatusListConfiguration validated(Monitor monitor) {
         var validBitstringSize = bitstringSize;
@@ -83,7 +88,23 @@ public record BitstringStatusListConfiguration(
                     .formatted(validValiditySeconds, DEFAULT_VALIDITY_SECONDS));
             validValiditySeconds = DEFAULT_VALIDITY_SECONDS;
         }
-        return new BitstringStatusListConfiguration(validBitstringSize, validValiditySeconds, renewalPeriodSeconds, renewalThresholdSeconds);
+        var validRenewalThresholdSeconds = renewalThresholdSeconds;
+        if (renewalPeriodSeconds > 0) {
+            if (validRenewalThresholdSeconds <= 0) {
+                monitor.warning("The configured status list credential renewal threshold of %d seconds is not positive, using %d seconds instead"
+                        .formatted(validRenewalThresholdSeconds, DEFAULT_RENEWAL_THRESHOLD_SECONDS));
+                validRenewalThresholdSeconds = DEFAULT_RENEWAL_THRESHOLD_SECONDS;
+            }
+            if (renewalPeriodSeconds >= validRenewalThresholdSeconds) {
+                monitor.warning("Status list credentials are renewed every %d seconds, which is not shorter than the renewal threshold of %d seconds, so they can expire between two renewals"
+                        .formatted(renewalPeriodSeconds, validRenewalThresholdSeconds));
+            }
+            if (validRenewalThresholdSeconds >= validValiditySeconds) {
+                monitor.warning("Status list credentials are renewed %d seconds before they expire, which is not shorter than their validity of %d seconds, so they are renewed on every run"
+                        .formatted(validRenewalThresholdSeconds, validValiditySeconds));
+            }
+        }
+        return new BitstringStatusListConfiguration(validBitstringSize, validValiditySeconds, renewalPeriodSeconds, validRenewalThresholdSeconds);
     }
 
     /**

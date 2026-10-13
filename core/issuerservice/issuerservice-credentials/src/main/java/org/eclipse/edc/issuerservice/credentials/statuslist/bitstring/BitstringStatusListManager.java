@@ -206,25 +206,52 @@ public class BitstringStatusListManager implements StatusListManager {
             statusListCredentials.add(extended.getContent());
         }
         // a status list credential that was full may have been extended, and is used again before newer ones
-        return ServiceResult.success(statusListCredentials.stream()
+        var usable = statusListCredentials.stream()
                 .filter(this::isActive)
                 .filter(this::isNotFull)
-                .findFirst());
+                .findFirst();
+        if (usable.isEmpty()) {
+            return ServiceResult.success(Optional.empty());
+        }
+        return renewIfExpired(usable.get()).map(Optional::of);
     }
 
     /**
      * Extends a status list that is shorter than the configured length, e.g. one that was created before the length was
-     * raised, and stores it. If it cannot be signed, e.g. because the vault is not available for a moment, it is used as
-     * it is, and extended the next time.
+     * raised, c.f. {@link #renewOrKeep(VerifiableCredentialResource, String)}.
      */
     private ServiceResult<VerifiableCredentialResource> extendIfShorter(VerifiableCredentialResource statusListCredential) {
         if (capacity(statusListCredential) >= configuration.bitstringSize()) {
             return ServiceResult.success(statusListCredential);
         }
-        var renewed = renew(statusListCredential);
+        return renewOrKeep(statusListCredential, "extend");
+    }
+
+    /**
+     * Renews the status list credential that new holder credentials are added to if it has expired, e.g. because the
+     * periodic renewal is deactivated or failed, so that their status can be verified, c.f.
+     * {@link #renewOrKeep(VerifiableCredentialResource, String)}. Other expired status list credentials are left to the
+     * periodic renewal.
+     */
+    private ServiceResult<VerifiableCredentialResource> renewIfExpired(VerifiableCredentialResource statusListCredential) {
+        if (!expiresBefore(statusListCredential, clock.instant())) {
+            return ServiceResult.success(statusListCredential);
+        }
+        return renewOrKeep(statusListCredential, "renew");
+    }
+
+    /**
+     * Renews a status list credential, publishes it again and stores it, so that it is only stored once it was published.
+     * If it cannot be signed or published, e.g. because the vault or the publication target is not available for a
+     * moment, it is used as it is, and renewed the next time: issuing a holder credential must not fail because of it.
+     *
+     * @param action what the renewal does to the status list credential, for the warning
+     */
+    private ServiceResult<VerifiableCredentialResource> renewOrKeep(VerifiableCredentialResource statusListCredential, String action) {
+        var renewed = renewAndPublish(statusListCredential);
         if (renewed.failed()) {
-            monitor.warning("Could not extend status list credential '%s', it is used as it is: %s"
-                    .formatted(statusListCredential.getId(), renewed.getFailureDetail()));
+            monitor.warning("Could not %s status list credential '%s', it is used as it is: %s"
+                    .formatted(action, statusListCredential.getId(), renewed.getFailureDetail()));
             return ServiceResult.success(statusListCredential);
         }
         var updateResult = store.update(renewed.getContent());
@@ -244,7 +271,8 @@ public class BitstringStatusListManager implements StatusListManager {
             // renewed by another runtime in the meantime
             return;
         }
-        var renewed = renew(statusListCredential);
+        // not stored if it cannot be published, so that it is renewed again on the next call
+        var renewed = renewAndPublish(statusListCredential);
         if (renewed.failed()) {
             monitor.warning("Could not renew status list credential '%s': %s".formatted(id, renewed.getFailureDetail()));
             return;
@@ -419,6 +447,29 @@ public class BitstringStatusListManager implements StatusListManager {
                 });
     }
 
+    /**
+     * Renews a status list credential, c.f. {@link #renew(VerifiableCredentialResource)}, and publishes it again. It keeps
+     * the URL it was published at first, because the holder credentials that have an entry on it refer to that URL.
+     * <p>
+     * The given resource is left unchanged if signing or publishing fails, so that it can still be used as it is.
+     */
+    private ServiceResult<VerifiableCredentialResource> renewAndPublish(VerifiableCredentialResource statusListCredential) {
+        // renewing changes the given resource itself, c.f. VerifiableCredentialResource#toBuilder
+        var originalCredential = statusListCredential.getVerifiableCredential();
+        var originalMetadata = statusListCredential.getMetadata();
+        var renewed = renew(statusListCredential);
+        if (renewed.failed()) {
+            return renewed;
+        }
+        var published = publisher.publish(renewed.getContent());
+        if (published.failed()) {
+            statusListCredential.toBuilder().credential(originalCredential).metadata(originalMetadata).build();
+            return ServiceResult.unexpected("Could not publish status list credential '%s': %s"
+                    .formatted(statusListCredential.getId(), published.getFailureDetail()));
+        }
+        return renewed;
+    }
+
     private String createEmptyBitstring() {
         var bs = BitString.Builder.newInstance()
                 .size(configuration.bitstringSize())
@@ -472,6 +523,9 @@ public class BitstringStatusListManager implements StatusListManager {
                 // deadlock with a runtime that holds the older ones and is about to use a newer one, c.f. getActiveCredential
                 .sortField("timestamp")
                 .sortOrder(SortOrder.ASC)
+                // all of them, not only as many as by default: otherwise the active one could be missed, and a new one
+                // created on every call
+                .limit(Integer.MAX_VALUE)
                 .build();
     }
 }

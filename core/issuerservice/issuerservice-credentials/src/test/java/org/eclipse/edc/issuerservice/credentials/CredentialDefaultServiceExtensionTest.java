@@ -102,20 +102,22 @@ class CredentialDefaultServiceExtensionTest {
         extension.start();
 
         verifyNoInteractions(executorInstrumentation);
-        verify(monitor).warning(contains("deactivated"));
+        // issuing a credential does not renew the status list it is added to, unless it has expired
+        verify(monitor).warning(contains("only renewed when a credential on it is revoked, or when a new credential is added to it"));
     }
 
     @Test
-    void start_whenThresholdNotShorterThanValidity_shouldWarn(ServiceExtensionContext context, ObjectFactory objectFactory) {
+    void statusListManager_shouldValidateRenewalSettings(ServiceExtensionContext context, ObjectFactory objectFactory) {
         when(context.getConfig()).thenReturn(ConfigFactory.fromMap(Map.of(
-                "edc.issuer.statuslist.validity", "3600",
-                "edc.issuer.statuslist.renewal.threshold", "7200")));
+                "edc.issuer.statuslist.renewal.period", "7200",
+                "edc.issuer.statuslist.renewal.threshold", "0")));
         var extension = objectFactory.constructInstance(CredentialDefaultServiceExtension.class);
-        extension.statusListManager();
 
+        extension.statusListManager();
         extension.start();
 
-        verify(monitor).warning(contains("renewed on every run"));
+        verify(monitor).warning(contains("renewal threshold of 0 seconds is not positive"));
+        verify(renewalExecutor).scheduleAtFixedRate(any(), eq(0L), eq(7200L), eq(TimeUnit.SECONDS));
     }
 
     @Test

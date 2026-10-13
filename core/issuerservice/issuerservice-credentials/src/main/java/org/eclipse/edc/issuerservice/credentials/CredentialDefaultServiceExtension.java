@@ -88,8 +88,8 @@ public class CredentialDefaultServiceExtension implements ServiceExtension {
     }
 
     /**
-     * Renews the status list credentials that are about to expire periodically, so that they do not expire while no
-     * credential is issued or revoked. Only those of the default {@link StatusListManager} are renewed, another one takes
+     * Renews the status list credentials that are about to expire periodically, so that they do not expire while nothing
+     * else renews them. Only those of the default {@link StatusListManager} are renewed, another one takes
      * care of its own.
      */
     @Override
@@ -99,15 +99,10 @@ public class CredentialDefaultServiceExtension implements ServiceExtension {
         }
         var renewalPeriodSeconds = statusListConfiguration.renewalPeriodSeconds();
         if (renewalPeriodSeconds <= 0) {
-            monitor.warning("The renewal of status list credentials is deactivated, so they expire unless a credential is issued or revoked");
+            monitor.warning("The periodic renewal of status list credentials is deactivated, so they expire. An expired one is only renewed when a credential on it is revoked, or when a new credential is added to it");
             return;
         }
         var threshold = statusListConfiguration.renewalThreshold();
-        var validity = statusListConfiguration.validity();
-        if (threshold.compareTo(validity) >= 0) {
-            monitor.warning("Status list credentials are renewed %s before they expire, which is not shorter than their validity of %s, so they are renewed on every run"
-                    .formatted(threshold, validity));
-        }
         renewalExecutor = executorInstrumentation.instrument(Executors.newSingleThreadScheduledExecutor(), "Status List Renewal");
         renewalExecutor.scheduleAtFixedRate(() -> renewExpiring(threshold), 0, renewalPeriodSeconds, TimeUnit.SECONDS);
     }
