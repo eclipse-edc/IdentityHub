@@ -10,11 +10,9 @@ maven/mavencentral/com.apicatalog/titanium-rdf-api/1.0.0, Apache-2.0, approved, 
 maven/mavencentral/com.apicatalog/titanium-rdf-n-quads/1.0.2, Apache-2.0, approved, #20243
 maven/mavencentral/com.ethlo.time/itu/1.14.0, Apache-2.0, approved, #19505
 maven/mavencentral/com.fasterxml.jackson.core/jackson-annotations/2.10.3, Apache-2.0, approved, CQ21280
-maven/mavencentral/com.fasterxml.jackson.core/jackson-annotations/2.18.3, Apache-2.0, approved, #16364
 maven/mavencentral/com.fasterxml.jackson.core/jackson-annotations/2.19.2, Apache-2.0, approved, #21911
 maven/mavencentral/com.fasterxml.jackson.core/jackson-annotations/2.20, Apache-2.0, approved, #23056
 maven/mavencentral/com.fasterxml.jackson.core/jackson-annotations/2.22, Apache-2.0, approved, #28540
-maven/mavencentral/com.fasterxml.jackson.core/jackson-core/2.18.3, Apache-2.0 AND MIT, approved, #16371
 maven/mavencentral/com.fasterxml.jackson.core/jackson-core/2.19.2, Apache-2.0 AND MIT, approved, #21916
 maven/mavencentral/com.fasterxml.jackson.core/jackson-core/2.20.1, MIT AND Apache-2.0, approved, #23054
 maven/mavencentral/com.fasterxml.jackson.core/jackson-core/2.22.1, MIT AND BSD-2-Clause AND BSL-1.0 AND Apache-2.0, approved, #28625
@@ -38,7 +36,6 @@ maven/mavencentral/com.fasterxml.jackson.jaxrs/jackson-jaxrs-json-provider/2.19.
 maven/mavencentral/com.fasterxml.jackson.module/jackson-module-jakarta-xmlbind-annotations/2.19.2, Apache-2.0, approved, #21910
 maven/mavencentral/com.fasterxml.jackson.module/jackson-module-jakarta-xmlbind-annotations/2.22.1, Apache-2.0, approved, #28627
 maven/mavencentral/com.fasterxml.jackson.module/jackson-module-jaxb-annotations/2.19.2, Apache-2.0, approved, #21913
-maven/mavencentral/com.fasterxml.jackson/jackson-bom/2.18.3, Apache-2.0, approved, #16628
 maven/mavencentral/com.fasterxml.jackson/jackson-bom/2.19.2, Apache-2.0, approved, #20843
 maven/mavencentral/com.fasterxml.jackson/jackson-bom/2.20.1, Apache-2.0, approved, #26450
 maven/mavencentral/com.fasterxml.jackson/jackson-bom/2.22.1, Apache-2.0, approved, #28982
@@ -61,8 +58,8 @@ maven/mavencentral/com.google.j2objc/j2objc-annotations/3.1, Apache-2.0, approve
 maven/mavencentral/com.google.protobuf/protobuf-java/4.33.6, BSD-3-Clause, approved, #29831
 maven/mavencentral/com.jayway.jsonpath/json-path/2.10.0, Apache-2.0, approved, clearlydefined
 maven/mavencentral/com.networknt/json-schema-validator/1.5.9, Apache-2.0 AND Unicode-TOU, approved, #15630
-maven/mavencentral/com.networknt/json-schema-validator/2.0.0, Apache-2.0 AND Unicode-TOU, approved, #25988
 maven/mavencentral/com.networknt/json-schema-validator/3.0.7, Apache-2.0 AND Unicode-3.0, approved, #26454
+maven/mavencentral/com.networknt/json-schema-validator/3.0.8, Apache-2.0 AND Unicode-3.0, approved, #26454
 maven/mavencentral/com.nimbusds/nimbus-jose-jwt/10.10, Apache-2.0, approved, #31349
 maven/mavencentral/com.nimbusds/nimbus-jose-jwt/10.9, Apache-2.0, approved, #28183
 maven/mavencentral/com.puppycrawl.tools/checkstyle/12.3.0, LGPL-2.1-or-later, approved, #26456
@@ -330,6 +327,7 @@ maven/mavencentral/org.slf4j/slf4j-api/1.7.32, MIT, approved, CQ13368
 maven/mavencentral/org.slf4j/slf4j-api/1.7.36, MIT, approved, CQ13368
 maven/mavencentral/org.slf4j/slf4j-api/2.0.17, MIT, approved, #5915
 maven/mavencentral/org.slf4j/slf4j-api/2.0.18, MIT, approved, #5915
+maven/mavencentral/org.slf4j/slf4j-api/2.0.19, MIT, approved, #5915
 maven/mavencentral/org.slf4j/slf4j-api/2.0.9, MIT, approved, #5915
 maven/mavencentral/org.slf4j/slf4j-nop/2.0.18, MIT, approved, #10370
 maven/mavencentral/org.slf4j/slf4j-simple/2.0.17, MIT, approved, #10372
