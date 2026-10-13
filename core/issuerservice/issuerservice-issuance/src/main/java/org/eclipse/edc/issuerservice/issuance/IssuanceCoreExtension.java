@@ -97,6 +97,7 @@ public class IssuanceCoreExtension implements ServiceExtension {
     public IssuanceProcessManager createIssuanceProcessManager() {
 
         if (issuanceProcessManager == null) {
+            stateMachineConfiguration.warnIfBatchMayOutlastLease(monitor, "issuance process");
             var waitStrategy = retryStrategy != null ? retryStrategy : stateMachineConfiguration.iterationWaitExponentialWaitStrategy();
             issuanceProcessManager = IssuanceProcessManagerImpl.Builder.newInstance()
                     .store(issuanceProcessStore)

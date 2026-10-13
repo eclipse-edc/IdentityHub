@@ -423,7 +423,19 @@ unavailable. The following settings control this:
 | `edc.issuer.issuance.send.retry.base-delay.ms`  | The base delay of retries in milliseconds                    | `1000`   |
 | `edc.issuer.issuance.send.retry.max-delay.ms`   | The maximum delay between two retries in milliseconds        | `300000` |
 | `edc.issuer.issuance.state-machine.iteration-wait-millis` | How long the state machine waits between iterations in milliseconds | `1000` |
-| `edc.issuer.issuance.state-machine.batch-size`  | How many `IssuanceProcess`es are processed per iteration     | `20`     |
+| `edc.issuer.issuance.state-machine.batch-size`  | How many `IssuanceProcess`es are processed per iteration     | `10`     |
+
+The state machine leases a batch of `IssuanceProcess`es at once, and processes them one by one. The lease must outlast
+the processing of the whole batch, otherwise another IssuerService runtime may process the same `IssuanceProcess`es in
+the meantime, and e.g. issue and deliver their credentials twice. So the credentials are delivered with a call timeout,
+and without retries of the HTTP client, as the state machine retries the delivery anyway. A warning is logged if the
+batch size times the call timeout is not less than the lease duration.
+
+| Setting                                                   | Description                                                                 | Default  |
+|-----------------------------------------------------------|-----------------------------------------------------------------------------|----------|
+| `edc.issuer.issuance.state-machine.lease-duration-millis` | How long the `IssuanceProcess`es of a batch are leased, in milliseconds     | `300000` |
+| `edc.issuer.issuance.send.connect-timeout.ms`             | How long connecting to the holder may take, in milliseconds                 | `5000`   |
+| `edc.issuer.issuance.send.call-timeout.ms`                | How long delivering the credentials may take, in milliseconds              | `15000`  |
 
 A holder whose request does not report the `issuanceProcessId` gives up waiting for its credentials after six hours by
 default (`edc.iam.credential.request.untracked.timeout`), and refuses credentials that arrive later. A longer retry

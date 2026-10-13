@@ -18,6 +18,7 @@ plugins {
 
 dependencies {
     api(project(":spi:holder-credential-request-spi"))
+    implementation(project(":core:lib:common-lib"))
     implementation(libs.edc.lib.core)
     implementation(libs.edc.sql.lease)
     implementation(libs.edc.sql.bootstrapper)

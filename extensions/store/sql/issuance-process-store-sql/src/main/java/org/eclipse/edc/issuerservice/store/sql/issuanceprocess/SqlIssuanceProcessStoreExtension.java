@@ -14,8 +14,10 @@
 
 package org.eclipse.edc.issuerservice.store.sql.issuanceprocess;
 
+import org.eclipse.edc.identityhub.statemachine.IdentityHubStateMachineConfiguration;
 import org.eclipse.edc.issuerservice.spi.issuance.process.store.IssuanceProcessStore;
 import org.eclipse.edc.issuerservice.store.sql.issuanceprocess.schema.postgres.PostgresDialectStatements;
+import org.eclipse.edc.runtime.metamodel.annotation.Configuration;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;
 import org.eclipse.edc.runtime.metamodel.annotation.Provider;
@@ -59,6 +61,10 @@ public class SqlIssuanceProcessStoreExtension implements ServiceExtension {
     @Inject
     private LeaseStatements leaseStatements;
 
+    // the state machine of the issuance processes leases them for as long as it may take to process a batch of them
+    @Configuration(context = "edc.issuer.issuance")
+    private IdentityHubStateMachineConfiguration stateMachineConfiguration;
+
     @Inject
     private Clock clock;
 
@@ -71,7 +77,8 @@ public class SqlIssuanceProcessStoreExtension implements ServiceExtension {
     @Provider
     public IssuanceProcessStore createSqlStore(ServiceExtensionContext context) {
         return new SqlIssuanceProcessStore(dataSourceRegistry, dataSourceName, transactionContext, typemanager::getMapper,
-                queryExecutor, getStatementImpl(), contextBuilderProvider.createContextBuilder(getStatementImpl().getIssuanceProcessTable()));
+                queryExecutor, getStatementImpl(), contextBuilderProvider.createContextBuilder(getStatementImpl().getIssuanceProcessTable())
+                .forTime(stateMachineConfiguration.leaseDuration()));
     }
 
     private IssuanceProcessStoreStatements getStatementImpl() {

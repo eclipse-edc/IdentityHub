@@ -15,7 +15,7 @@
 
 package org.eclipse.edc.identityhub.core;
 
-import org.eclipse.edc.http.spi.EdcHttpClient;
+import okhttp3.OkHttpClient;
 import org.eclipse.edc.iam.decentralizedclaims.spi.verification.SignatureSuiteRegistry;
 import org.eclipse.edc.iam.did.spi.resolution.DidPublicKeyResolver;
 import org.eclipse.edc.iam.did.spi.resolution.DidResolverRegistry;
@@ -145,7 +145,7 @@ public class CoreServicesExtension implements ServiceExtension {
     @Inject
     private ParticipantSecureTokenService secureTokenService;
     @Inject
-    private EdcHttpClient httpClient;
+    private OkHttpClient okHttpClient;
     @Inject
     private HolderCredentialRequestStore holderCredentialRequestStore;
     @Inject
@@ -226,12 +226,13 @@ public class CoreServicesExtension implements ServiceExtension {
     @Provider
     public CredentialRequestManager createDefaultCredentialRequestService(ServiceExtensionContext context) {
         if (credentialRequestService == null) {
+            credentialRequestStateMachineConfiguration.warnIfBatchMayOutlastLease(context.getMonitor(), "credential request");
             credentialRequestService = CredentialRequestManagerImpl.Builder.newInstance()
                     .store(credentialRequestStore)
                     .didResolverRegistry(didResolverRegistry)
                     .typeTransformerRegistry(typeTransformerRegistry.forContext(DCP_SCOPE_V_1_0))
                     .jsonLd(jsonLd)
-                    .httpClient(httpClient)
+                    .httpClient(credentialRequestStateMachineConfiguration.createNoRetryClient(okHttpClient, context.getMonitor()))
                     .secureTokenService(secureTokenService)
                     .transactionContext(transactionContext)
                     .participantContextService(participantContextService)

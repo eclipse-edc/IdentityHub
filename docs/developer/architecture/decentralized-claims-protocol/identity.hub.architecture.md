@@ -412,7 +412,18 @@ request fails right away. The following settings control this:
 | `edc.iam.credential.request.send.retry.base-delay.ms`   | The base delay of retries in milliseconds                    | `1000`   |
 | `edc.iam.credential.request.send.retry.max-delay.ms`    | The maximum delay between two retries in milliseconds        | `300000` |
 | `edc.iam.credential.request.state-machine.iteration-wait-millis` | How long the state machine waits between iterations in milliseconds | `1000` |
-| `edc.iam.credential.request.state-machine.batch-size`   | How many credential requests are processed per iteration     | `20`     |
+| `edc.iam.credential.request.state-machine.batch-size`   | How many credential requests are processed per iteration     | `10`     |
+
+The state machine leases a batch of credential requests at once, and processes them one by one. The lease must outlast
+the processing of the whole batch, otherwise another runtime may send the same credential requests in the meantime. So
+the credential requests are sent with a call timeout, and without retries of the HTTP client, as the state machine
+retries them anyway. A warning is logged if the batch size times the call timeout is not less than the lease duration.
+
+| Setting                                                          | Description                                                          | Default  |
+|------------------------------------------------------------------|----------------------------------------------------------------------|----------|
+| `edc.iam.credential.request.state-machine.lease-duration-millis` | How long the credential requests of a batch are leased, in milliseconds | `300000` |
+| `edc.iam.credential.request.send.connect-timeout.ms`             | How long connecting to the issuer may take, in milliseconds          | `5000`   |
+| `edc.iam.credential.request.send.call-timeout.ms`                | How long sending a credential request may take, in milliseconds      | `15000`  |
 
 Request operations publish events.
 

@@ -14,7 +14,7 @@
 
 package org.eclipse.edc.identityhub.protocols.dcp.issuer;
 
-import org.eclipse.edc.http.spi.EdcHttpClient;
+import okhttp3.OkHttpClient;
 import org.eclipse.edc.iam.decentralizedclaims.spi.CredentialServiceUrlResolver;
 import org.eclipse.edc.iam.did.spi.resolution.DidPublicKeyResolver;
 import org.eclipse.edc.iam.did.spi.resolution.DidResolverRegistry;
@@ -23,6 +23,7 @@ import org.eclipse.edc.identityhub.protocols.dcp.issuer.spi.DcpIssuerService;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.DcpHolderTokenVerifier;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.DcpProfileRegistry;
 import org.eclipse.edc.identityhub.spi.authentication.ParticipantSecureTokenService;
+import org.eclipse.edc.identityhub.statemachine.IdentityHubStateMachineConfiguration;
 import org.eclipse.edc.issuerservice.spi.holder.store.HolderStore;
 import org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationPipeline;
 import org.eclipse.edc.issuerservice.spi.issuance.credentialdefinition.CredentialDefinitionService;
@@ -32,6 +33,7 @@ import org.eclipse.edc.issuerservice.spi.issuance.process.store.IssuanceProcessS
 import org.eclipse.edc.issuerservice.spi.issuance.rule.CredentialRuleDefinitionEvaluator;
 import org.eclipse.edc.jwt.validation.jti.JtiValidationStore;
 import org.eclipse.edc.participantcontext.spi.store.ParticipantContextStore;
+import org.eclipse.edc.runtime.metamodel.annotation.Configuration;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;
 import org.eclipse.edc.runtime.metamodel.annotation.Provider;
@@ -98,7 +100,11 @@ public class DcpIssuerCoreExtension implements ServiceExtension {
     private Clock clock;
 
     @Inject
-    private EdcHttpClient httpClient;
+    private OkHttpClient okHttpClient;
+
+    // the credentials are delivered by the state machine of the issuance processes, while it holds their lease
+    @Configuration(context = "edc.issuer.issuance")
+    private IdentityHubStateMachineConfiguration stateMachineConfiguration;
 
     @Inject
     private ParticipantSecureTokenService secureTokenService;
@@ -154,7 +160,7 @@ public class DcpIssuerCoreExtension implements ServiceExtension {
 
     @Provider
     public CredentialStorageClient createCredentialStorageClient() {
-        return new DcpCredentialStorageClient(httpClient, participantContextStore, holderStore, credentialServiceUrlResolver(), secureTokenService, vault, monitor, typeManager, JSON_LD);
+        return new DcpCredentialStorageClient(stateMachineConfiguration.createNoRetryClient(okHttpClient, monitor), participantContextStore, holderStore, credentialServiceUrlResolver(), secureTokenService, vault, monitor, typeManager, JSON_LD);
     }
 
     @Provider
