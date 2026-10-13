@@ -89,7 +89,9 @@ enum VcStatus {
 On the holder side, `REQUESTED` marks a credential whose automatic renewal is under way: the credential watchdog parks
 it there and links it, via the `renewalRequestId` metadata entry, to the `HolderCredentialRequest` that renews it. A
 renewal that fails releases the credential again, recording the reason under `renewalError`, so that it is tracked as
-before and renewed anew on a later run.
+before and renewed anew on a later run. That run waits for 5 minutes after the first failure, and twice as long after
+every further failure in a row, up to 6 hours, recording the count under `renewalFailures` and the earliest time of the
+next renewal under `renewalNotBefore`.
 
 `ERROR` marks a credential whose status the credential watchdog could not determine, for example because its status
 list credential could not be downloaded. The watchdog keeps checking such a credential, so it returns to the state its

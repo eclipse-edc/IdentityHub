@@ -62,6 +62,8 @@ import static org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStat
 import static org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStatus.REQUESTED;
 import static org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStatus.REVOKED;
 import static org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialResource.METADATA_RENEWAL_ERROR;
+import static org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialResource.METADATA_RENEWAL_FAILURES;
+import static org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialResource.METADATA_RENEWAL_NOT_BEFORE;
 import static org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialResource.METADATA_RENEWAL_REQUEST_ID;
 import static org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialResource.METADATA_SUPERSEDED_BY;
 import static org.mockito.ArgumentMatchers.any;
@@ -400,6 +402,8 @@ class CredentialWatchdogTest {
                 .state(REQUESTED)
                 .metadata(METADATA_RENEWAL_REQUEST_ID, "renewal-request")
                 .metadata(METADATA_RENEWAL_ERROR, "an earlier failure")
+                .metadata(METADATA_RENEWAL_FAILURES, 2L)
+                .metadata(METADATA_RENEWAL_NOT_BEFORE, Instant.now().toEpochMilli())
                 .build();
         storeHolds(cred);
         when(credentialRequestManager.findById("renewal-request")).thenReturn(renewalRequest(HolderRequestState.ISSUED, null));
@@ -409,31 +413,108 @@ class CredentialWatchdogTest {
         assertThat(cred.getStateAsEnum()).isEqualTo(ISSUED);
         assertThat(cred.getMetadata())
                 .doesNotContainKey(METADATA_RENEWAL_REQUEST_ID)
-                .doesNotContainKey(METADATA_RENEWAL_ERROR);
+                .doesNotContainKey(METADATA_RENEWAL_ERROR)
+                .doesNotContainKey(METADATA_RENEWAL_FAILURES)
+                .doesNotContainKey(METADATA_RENEWAL_NOT_BEFORE);
     }
 
     @Test
-    void run_whenReleasedCredentialIsExpiring_shouldRenewAgain() {
-        var cred = createCredentialBuilder()
+    void run_whenReleasedCredentialIsExpiring_shouldWaitBeforeRenewingAgain() {
+        var now = Instant.now();
+        var watchdogWithClock = new CredentialWatchdog(credentialStore, credentialStatusCheckService, monitor, new NoopTransactionContext(),
+                Duration.ofSeconds(GRACE_PERIOD), credentialRequestManager, Clock.fixed(now, ZoneOffset.UTC));
+        var cred = createExpiringCredential()
                 .state(REQUESTED)
                 .metadata(METADATA_RENEWAL_REQUEST_ID, "renewal-request")
-                .metadata(VerifiableCredentialResource.METADATA_CREDENTIAL_OBJECT_ID, "credential-object-id")
-                .credential(new VerifiableCredentialContainer("raw-vc-content", VC1_0_JWT, createVerifiableCredential()
-                        .expirationDate(Instant.now().plusSeconds(GRACE_PERIOD / 2))
-                        .build()))
+                .build();
+        storeHolds(cred);
+        when(credentialRequestManager.findById("renewal-request")).thenReturn(renewalRequest(HolderRequestState.ERROR, "issuer unreachable"));
+
+        watchdogWithClock.run();
+
+        // released in this run, but not renewed anew right away, as the Issuer may still be unreachable
+        verify(credentialRequestManager, never()).initiateRequest(anyString(), anyString(), anyString(), anyList());
+        assertThat(cred.getStateAsEnum()).isEqualTo(ISSUED);
+        assertThat(cred.getMetadata())
+                .containsEntry(METADATA_RENEWAL_ERROR, "issuer unreachable")
+                .containsEntry(METADATA_RENEWAL_FAILURES, 1L)
+                .containsEntry(METADATA_RENEWAL_NOT_BEFORE, now.plus(CredentialWatchdog.RENEWAL_BACKOFF_INITIAL).toEpochMilli());
+    }
+
+    @Test
+    void run_whenRenewalFailsAgain_shouldDoubleTheDelay() {
+        var now = Instant.now();
+        var watchdogWithClock = new CredentialWatchdog(credentialStore, credentialStatusCheckService, monitor, new NoopTransactionContext(),
+                Duration.ofSeconds(GRACE_PERIOD), credentialRequestManager, Clock.fixed(now, ZoneOffset.UTC));
+        var cred = createExpiringCredential()
+                .state(REQUESTED)
+                .metadata(METADATA_RENEWAL_REQUEST_ID, "renewal-request")
+                .metadata(METADATA_RENEWAL_FAILURES, 2)
+                .metadata(METADATA_RENEWAL_NOT_BEFORE, now.minusSeconds(1).toEpochMilli())
+                .build();
+        storeHolds(cred);
+        when(credentialRequestManager.findById("renewal-request")).thenReturn(renewalRequest(HolderRequestState.ERROR, "issuer unreachable"));
+
+        watchdogWithClock.run();
+
+        verify(credentialRequestManager, never()).initiateRequest(anyString(), anyString(), anyString(), anyList());
+        assertThat(cred.getMetadata())
+                .containsEntry(METADATA_RENEWAL_FAILURES, 3L)
+                .containsEntry(METADATA_RENEWAL_NOT_BEFORE, now.plus(CredentialWatchdog.RENEWAL_BACKOFF_INITIAL.multipliedBy(4)).toEpochMilli());
+    }
+
+    @Test
+    void run_whenRenewalKeepsFailing_shouldCapTheDelay() {
+        var now = Instant.now();
+        var watchdogWithClock = new CredentialWatchdog(credentialStore, credentialStatusCheckService, monitor, new NoopTransactionContext(),
+                Duration.ofSeconds(GRACE_PERIOD), credentialRequestManager, Clock.fixed(now, ZoneOffset.UTC));
+        var cred = createExpiringCredential()
+                .state(REQUESTED)
+                .metadata(METADATA_RENEWAL_REQUEST_ID, "renewal-request")
+                .metadata(METADATA_RENEWAL_FAILURES, 100)
+                .build();
+        storeHolds(cred);
+        when(credentialRequestManager.findById("renewal-request")).thenReturn(renewalRequest(HolderRequestState.ERROR, "issuer unreachable"));
+
+        watchdogWithClock.run();
+
+        assertThat(cred.getMetadata())
+                .containsEntry(METADATA_RENEWAL_NOT_BEFORE, now.plus(CredentialWatchdog.RENEWAL_BACKOFF_MAX).toEpochMilli());
+    }
+
+    @Test
+    void run_whenRenewalDelayIsOver_shouldRenewAgain() {
+        var cred = createExpiringCredential()
+                .metadata(METADATA_RENEWAL_ERROR, "issuer unreachable")
+                .metadata(METADATA_RENEWAL_FAILURES, 1L)
+                .metadata(METADATA_RENEWAL_NOT_BEFORE, Instant.now().minusSeconds(1).toEpochMilli())
                 .build();
         storeHolds(cred);
         when(credentialStore.update(any())).thenReturn(StoreResult.success());
-        when(credentialRequestManager.findById("renewal-request")).thenReturn(renewalRequest(HolderRequestState.ERROR, "issuer unreachable"));
+        when(credentialRequestManager.initiateRequest(any(), any(), any(), any())).thenReturn(ServiceResult.success("new-renewal-request"));
 
         watchdog.run();
 
-        // released in this run, and renewed anew in the same run, since it is still about to expire
         verify(credentialRequestManager).initiateRequest(eq(cred.getParticipantContextId()), eq(cred.getIssuerId()), anyString(), anyList());
         assertThat(cred.getStateAsEnum()).isEqualTo(REQUESTED);
+        // the failures are counted on until a renewal succeeds, so that the next failure waits for longer
         assertThat(cred.getMetadata())
                 .doesNotContainKey(METADATA_RENEWAL_ERROR)
-                .hasEntrySatisfying(METADATA_RENEWAL_REQUEST_ID, id -> assertThat(id).isNotEqualTo("renewal-request"));
+                .containsEntry(METADATA_RENEWAL_REQUEST_ID, "new-renewal-request")
+                .containsEntry(METADATA_RENEWAL_FAILURES, 1L);
+    }
+
+    @Test
+    void run_whenRenewalDelayIsNotOver_shouldNotRenew() {
+        var cred = createExpiringCredential()
+                .metadata(METADATA_RENEWAL_FAILURES, 1L)
+                .metadata(METADATA_RENEWAL_NOT_BEFORE, Instant.now().plusSeconds(60).toEpochMilli())
+                .build();
+        storeHolds(cred);
+
+        watchdog.run();
+
+        verify(credentialRequestManager, never()).initiateRequest(anyString(), anyString(), anyString(), anyList());
     }
 
     @Test

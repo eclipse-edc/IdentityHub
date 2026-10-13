@@ -68,6 +68,7 @@ import org.eclipse.edc.runtime.metamodel.annotation.Setting;
 import org.eclipse.edc.security.signature.jws2020.Jws2020SignatureSuite;
 import org.eclipse.edc.spi.event.EventRouter;
 import org.eclipse.edc.spi.monitor.Monitor;
+import org.eclipse.edc.spi.system.ExecutorInstrumentation;
 import org.eclipse.edc.spi.system.ServiceExtension;
 import org.eclipse.edc.spi.system.ServiceExtensionContext;
 import org.eclipse.edc.spi.types.TypeManager;
@@ -160,6 +161,8 @@ public class CoreServicesExtension implements ServiceExtension {
     private CredentialOfferStore credentialOfferStore;
     @Inject
     private EventRouter eventRouter;
+    @Inject
+    private ExecutorInstrumentation executorInstrumentation;
 
     private CredentialRequestManagerImpl credentialRequestService;
     private CredentialOfferObservable credentialOfferObservable;
@@ -246,6 +249,7 @@ public class CoreServicesExtension implements ServiceExtension {
                     .participantContextService(participantContextService)
                     .monitor(context.getMonitor())
                     .clock(clock)
+                    .executorInstrumentation(executorInstrumentation)
                     .configuration(credentialRequestConfiguration)
                     .batchSize(credentialRequestStateMachineConfiguration.batchSize())
                     .waitStrategy(credentialRequestStateMachineConfiguration.iterationWaitExponentialWaitStrategy())
