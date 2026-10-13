@@ -77,6 +77,7 @@ import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.startsWith;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -603,6 +604,43 @@ class DidDocumentServiceImplTest {
         assertThat(doc.getAuthentication()).containsExactly(keyId);
         // DCP v1.0 §4.1: the signing key MUST have capabilityInvocation verification relationship
         assertThat(doc.getCapabilityInvocation()).containsExactly(keyId);
+    }
+
+    @SuppressWarnings("unchecked")
+    @Test
+    void onKeyPairActivated_whenParticipantContextNotActivated_shouldUpdateButNotPublish() throws JOSEException {
+        var keyId = "key-id";
+        var key = new ECKeyGenerator(Curve.P_256).keyID(keyId).generate();
+        var doc = createDidDocument().build();
+        var did = doc.getId();
+        var didResource = DidResource.Builder.newInstance().did(did).state(DidState.GENERATED).document(doc).build();
+
+        // e.g. a participant context that is created as active, whose key pairs are added before it is activated
+        when(participantContextServiceMock.findById(any())).thenReturn(StoreResult.success(ParticipantContext.Builder.newInstance()
+                .participantContextId(TEST_PARTICIPANT_ID)
+                .identity(did)
+                .property(API_TOKEN_ALIAS, "token")
+                .state(ParticipantContextState.CREATED)
+                .build()));
+        when(didResourceStoreMock.queryForUpdate(argThat(byParticipantInDidOrder(TEST_PARTICIPANT_ID)))).thenReturn(List.of(didResource));
+        when(didResourceStoreMock.update(any())).thenReturn(StoreResult.success());
+
+        var event = EventEnvelope.Builder.newInstance()
+                .at(System.currentTimeMillis())
+                .id(UUID.randomUUID().toString())
+                .payload(KeyPairActivated.Builder.newInstance()
+                        .keyId(keyId)
+                        .keyPairResource(KeyPairResource.Builder.newPresentationSigning().id(UUID.randomUUID().toString()).build())
+                        .participantContextId(TEST_PARTICIPANT_ID)
+                        .publicKey(key.toPublicJWK().toJSONString(), JSON_WEB_KEY_2020)
+                        .build())
+                .build();
+
+        service.on(event);
+
+        verify(didResourceStoreMock).update(argThat(dr -> dr.getDocument().getVerificationMethod().stream().anyMatch(vm -> vm.getId().equals(keyId))));
+        verifyNoInteractions(publisherMock);
+        verify(monitorMock, never()).warning(anyString());
     }
 
     @SuppressWarnings("unchecked")

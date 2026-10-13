@@ -310,6 +310,12 @@ public class DidDocumentServiceImpl implements DidDocumentService, EventSubscrib
                 return;
             }
 
+            // a participant context that is not active (yet) must not publish its DID documents. A participant context
+            // that is created as active adds its key pairs first, and publishes its DID documents once it is activated.
+            var isActive = participantContextStore.findById(event.getParticipantContextId())
+                    .map(pc -> pc.getStateAsEnum() == ParticipantContextState.ACTIVATED)
+                    .orElse(f -> false);
+
             var errors = didResources.stream()
                     .map(dd -> {
                         // verifiers reject a DID document whose verification methods do not have unique IDs, which would
@@ -333,7 +339,7 @@ public class DidDocumentServiceImpl implements DidDocumentService, EventSubscrib
                             dd.getDocument().getCapabilityInvocation().add(event.getKeyId());
                         }
                         return ServiceResult.from(didResourceStore.update(dd))
-                                .compose(v -> publish(dd.getDid()));
+                                .compose(v -> isActive ? publish(dd.getDid()) : success());
                     })
                     .filter(ServiceResult::failed)
                     .map(AbstractResult::getFailureDetail)
