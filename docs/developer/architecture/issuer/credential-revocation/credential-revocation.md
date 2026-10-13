@@ -47,10 +47,14 @@ which renews its validity:
   extended to the configured length. The existing entries keep their indexes, so the credentials that reference it are
   not affected. This happens with the next status change, or when the next credential is issued by the same participant
   context. A status list that was full can then take up new credentials again;
-- periodically, when it expires within a configured time, so that it does not expire while no credential is issued or
-  revoked.
+- when it has expired and a new credential is added to it, e.g. because the periodic renewal is deactivated or failed,
+  so that the status of the new credential can be verified. Other expired status lists are not renewed this way;
+- periodically, when it expires within a configured time, so that it does not expire while nothing else renews it.
 
-A status list credential keeps its ID and its URL when it is signed again.
+A status list credential keeps its ID and its URL when it is signed again. Every status list credential that is signed
+again is passed to the `StatusListCredentialPublisher` again, so that a publisher that pushes status lists elsewhere
+serves the new copy. If it cannot be signed or published when a new credential is added to it, it is used as it is. If
+it cannot be published when a credential on it is revoked, the revocation fails.
 
 | Setting                                  | Description                                                                         | Default    |
 |------------------------------------------|-------------------------------------------------------------------------------------|------------|
@@ -60,7 +64,9 @@ A status list credential keeps its ID and its URL when it is signed again.
 | `edc.issuer.statuslist.renewal.threshold` | How long before it expires a status list credential is renewed, in seconds         | `2592000`  |
 
 A warning is logged when a configured value cannot be used as it is, e.g. a length that is below the minimum or not a
-multiple of 8.
+multiple of 8. When the periodic renewal is active, the renewal threshold must be positive, otherwise the default is used,
+and longer than the renewal period, otherwise a warning is logged, because status list credentials can then expire
+between two renewals.
 
 The resulting credential URL and status list index must be added to the `credentialStatus` object of the pending holder
 credential:

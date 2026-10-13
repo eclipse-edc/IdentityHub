@@ -19,6 +19,7 @@ import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCre
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialStore;
 import org.eclipse.edc.issuerservice.credentials.statuslist.bitstring.BitstringConstants;
 import org.eclipse.edc.issuerservice.spi.credentials.CredentialStatusService;
+import org.eclipse.edc.issuerservice.spi.credentials.statuslist.StatusListCredentialPublisher;
 import org.eclipse.edc.issuerservice.spi.credentials.statuslist.StatusListInfo;
 import org.eclipse.edc.issuerservice.spi.credentials.statuslist.StatusListInfoFactoryRegistry;
 import org.eclipse.edc.issuerservice.spi.credentials.statuslist.StatusListManager;
@@ -43,14 +44,17 @@ public class CredentialStatusServiceImpl implements CredentialStatusService {
     private final Monitor monitor;
     private final StatusListInfoFactoryRegistry statusListInfoFactoryRegistry;
     private final StatusListManager statusListManager;
+    private final StatusListCredentialPublisher statusListCredentialPublisher;
 
     public CredentialStatusServiceImpl(CredentialStore credentialStore, TransactionContext transactionContext, Monitor monitor,
-                                       StatusListInfoFactoryRegistry statusListInfoFactoryRegistry, StatusListManager statusListManager) {
+                                       StatusListInfoFactoryRegistry statusListInfoFactoryRegistry, StatusListManager statusListManager,
+                                       StatusListCredentialPublisher statusListCredentialPublisher) {
         this.credentialStore = credentialStore;
         this.transactionContext = transactionContext;
         this.monitor = monitor;
         this.statusListInfoFactoryRegistry = statusListInfoFactoryRegistry;
         this.statusListManager = statusListManager;
+        this.statusListCredentialPublisher = statusListCredentialPublisher;
     }
 
     @Override
@@ -104,6 +108,7 @@ public class CredentialStatusServiceImpl implements CredentialStatusService {
                         .compose(updatedStatusListCredential -> getCredential(holderCredentialId)
                                 .onSuccess(VerifiableCredentialResource::revoke)
                                 .compose(userCredential -> update(updatedStatusListCredential, userCredential))
+                                .compose(v -> publish(updatedStatusListCredential))
                         );
             });
         } catch (UpdateFailedException e) {
@@ -150,6 +155,20 @@ public class CredentialStatusServiceImpl implements CredentialStatusService {
             if (result.failed()) {
                 throw new UpdateFailedException(ServiceResult.from(result));
             }
+        }
+        return success();
+    }
+
+    /**
+     * Publishes the updated status list credential, so that the revocation can be verified. It keeps the URL it was
+     * published at first, because the holder credentials refer to it. If it cannot be published, the revocation is rolled
+     * back by throwing an {@link UpdateFailedException}, c.f. {@link #update(VerifiableCredentialResource...)}.
+     */
+    private ServiceResult<Void> publish(VerifiableCredentialResource statusListCredential) {
+        var result = statusListCredentialPublisher.publish(statusListCredential);
+        if (result.failed()) {
+            throw new UpdateFailedException(unexpected("Could not publish status list credential '%s': %s"
+                    .formatted(statusListCredential.getId(), result.getFailureDetail())));
         }
         return success();
     }

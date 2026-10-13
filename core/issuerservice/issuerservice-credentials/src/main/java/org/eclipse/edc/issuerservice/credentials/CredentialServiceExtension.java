@@ -24,6 +24,7 @@ import org.eclipse.edc.issuerservice.credentials.offers.IssuerCredentialOfferSer
 import org.eclipse.edc.issuerservice.credentials.statuslist.bitstring.BitstringStatusListFactory;
 import org.eclipse.edc.issuerservice.spi.credentials.CredentialStatusService;
 import org.eclipse.edc.issuerservice.spi.credentials.IssuerCredentialOfferService;
+import org.eclipse.edc.issuerservice.spi.credentials.statuslist.StatusListCredentialPublisher;
 import org.eclipse.edc.issuerservice.spi.credentials.statuslist.StatusListInfoFactoryRegistry;
 import org.eclipse.edc.issuerservice.spi.credentials.statuslist.StatusListManager;
 import org.eclipse.edc.issuerservice.spi.holder.store.HolderStore;
@@ -70,6 +71,8 @@ public class CredentialServiceExtension implements ServiceExtension {
     @Inject
     private StatusListManager statusListManager;
     @Inject
+    private StatusListCredentialPublisher statusListCredentialPublisher;
+    @Inject
     private JsonLd jsonLd;
     @Inject
     private Clock clock;
@@ -83,7 +86,8 @@ public class CredentialServiceExtension implements ServiceExtension {
     public CredentialStatusService getStatusListService(ServiceExtensionContext context) {
         statusListInfoFactoryRegistry.register(BITSTRING_STATUS_LIST_ENTRY, new BitstringStatusListFactory(store));
 
-        return new CredentialStatusServiceImpl(store, transactionContext, context.getMonitor(), statusListInfoFactoryRegistry, statusListManager);
+        return new CredentialStatusServiceImpl(store, transactionContext, context.getMonitor(), statusListInfoFactoryRegistry, statusListManager,
+                statusListCredentialPublisher);
     }
 
     @Provider
