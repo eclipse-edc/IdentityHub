@@ -82,6 +82,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.inOrder;
@@ -125,6 +126,7 @@ class CredentialRequestManagerImplTest {
     void setUp() {
         when(configuration.statusPollInterval()).thenReturn(50L);
         when(configuration.untrackedTimeout()).thenReturn(CredentialRequestConfiguration.DEFAULT_UNTRACKED_TIMEOUT);
+        when(configuration.trackedTimeout()).thenReturn(CredentialRequestConfiguration.DEFAULT_TRACKED_TIMEOUT);
         when(configuration.bearerAccessScope()).thenReturn(null);
         when(transformerRegistry.transform(any(CredentialRequestMessage.class), eq(JsonObject.class)))
                 .thenReturn(success(Json.createObjectBuilder().build()));
@@ -308,28 +310,6 @@ class CredentialRequestManagerImplTest {
                 inOrder.verify(resolver).resolve(eq(ISSUER_DID));
                 inOrder.verify(store, times(1)).save(argThat(r -> r.getState() == ERROR.code() && r.getErrorDetail().contains("DID Document does not contain any 'IssuerService' endpoint")));
                 verifyNoInteractions(sts, httpClient);
-            });
-        }
-
-        @Test
-        void processRequesting_whenStsFails_shouldTransitionToError() {
-            when(resolver.resolve(eq(ISSUER_DID))).thenReturn(success(didDocument()));
-            when(sts.createToken(anyString(), anyMap(), ArgumentMatchers.isNull())).thenReturn(Result.failure("sts-failure"));
-
-            var rq = createRequest()
-                    .state(REQUESTING.code())
-                    .build();
-            when(store.nextNotLeased(anyInt(), stateIs(REQUESTING.code())))
-                    .thenReturn(List.of(rq))
-                    .thenReturn(List.of());
-
-            credentialRequestService.start();
-
-            await().atMost(MAX_DURATION).untilAsserted(() -> {
-                var inOrder = inOrder(resolver, store, httpClient, sts);
-                inOrder.verify(resolver).resolve(eq(ISSUER_DID));
-                inOrder.verify(sts).createToken(anyString(), anyMap(), ArgumentMatchers.isNull());
-                inOrder.verify(store, times(1)).save(argThat(r -> r.getState() == ERROR.code() && r.getErrorDetail().equals("sts-failure")));
             });
         }
 
@@ -581,6 +561,65 @@ class CredentialRequestManagerImplTest {
                 Assertions.assertThat(rq.getState()).isEqualTo(REQUESTED.code());
                 verifyNoInteractions(resolver);
             });
+        }
+
+        @Test
+        void processRequested_whenTrackedRequestOverdue_shouldTransitionToError() {
+            when(configuration.trackedTimeout()).thenReturn(60L);
+            var rq = createRequest().state(REQUESTED.code()).issuerPid("issuer-pid").stateTimestamp(Instant.now().minusSeconds(61).toEpochMilli()).build();
+            when(store.query(any())).thenReturn(List.of(rq));
+            when(store.findByIdAndLease(anyString())).thenReturn(StoreResult.success(rq));
+
+            credentialRequestService.start();
+
+            // an Issuer that keeps reporting the request as pending would otherwise keep the Holder waiting forever
+            await().atMost(MAX_DURATION).untilAsserted(() -> {
+                Assertions.assertThat(rq.getState()).isEqualTo(ERROR.code());
+                Assertions.assertThat(rq.getErrorDetail()).contains("No credentials were received");
+            });
+            verifyNoInteractions(httpClient);
+        }
+
+        @Test
+        void processRequested_whenRequestYoungerThanMinAge_shouldNotQueryIssuer() {
+            when(configuration.statusPollMinAge()).thenReturn(60_000L);
+            var rq = createRequest().state(REQUESTED.code()).issuerPid("issuer-pid").stateTimestamp(Instant.now().toEpochMilli()).build();
+            when(store.query(any())).thenReturn(List.of(rq));
+
+            credentialRequestService.start();
+
+            // the credentials are likely to arrive on their own shortly after the Issuer accepted the request
+            await().atMost(MAX_DURATION).untilAsserted(() -> verify(store, atLeast(3)).query(any()));
+            verifyNoInteractions(httpClient);
+            Assertions.assertThat(rq.getState()).isEqualTo(REQUESTED.code());
+        }
+
+        @Test
+        void processRequested_whenRequestWaitingLong_shouldQueryIssuerLessOften() {
+            when(resolver.resolve(eq(ISSUER_DID))).thenReturn(success(didDocument()));
+            when(httpClient.execute(any(), (Function<Response, Result<CredentialRequestStatus>>) any()))
+                    .thenReturn(success(credentialRequestStatus(CredentialRequestStatus.Status.RECEIVED)));
+            when(configuration.statusPollMaxInterval()).thenReturn(Duration.ofMinutes(15).toMillis());
+            // waiting for an hour, the request is asked about every 6 minutes, rather than at every poll interval
+            var rq = createRequest().state(REQUESTED.code()).issuerPid("issuer-pid").stateTimestamp(Instant.now().minus(Duration.ofHours(1)).toEpochMilli()).build();
+            when(store.query(any())).thenReturn(List.of(rq));
+
+            credentialRequestService.start();
+
+            await().atMost(MAX_DURATION).untilAsserted(() -> verify(store, atLeast(5)).query(any()));
+            verify(httpClient, times(1)).execute(any(), (Function<Response, Result<CredentialRequestStatus>>) any());
+        }
+
+        @Test
+        void processRequested_whenPollingDisabled_shouldNotPoll() {
+            when(configuration.statusPollInterval()).thenReturn(0L);
+            var rq = createRequest().state(REQUESTED.code()).issuerPid("issuer-pid").build();
+            when(store.query(any())).thenReturn(List.of(rq));
+
+            credentialRequestService.start();
+
+            await().during(Duration.ofMillis(300)).untilAsserted(() -> verify(store, never()).query(any()));
+            verifyNoInteractions(httpClient);
         }
 
         @Test

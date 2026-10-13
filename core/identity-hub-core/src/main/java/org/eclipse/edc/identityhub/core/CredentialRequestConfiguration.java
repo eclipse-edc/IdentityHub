@@ -20,10 +20,26 @@ import org.eclipse.edc.runtime.metamodel.annotation.Settings;
 @Settings
 public record CredentialRequestConfiguration(
         @Setting(
-                description = "Interval in milliseconds at which the Issuer is asked about the status of credential requests that are still awaiting their credentials",
+                description = "Interval in milliseconds at which the Issuer is asked about the status of credential requests that are still awaiting their credentials. " +
+                        "Each run is delayed by up to a fifth of it at random, so that runtimes do not poll in lockstep. " +
+                        "Configuring a number <= 0 disables polling, and with it the timeouts of requests awaiting their credentials.",
                 defaultValue = DEFAULT_STATUS_POLL_INTERVAL + "", key = "edc.iam.credential.request.status.poll.interval"
         )
         long statusPollInterval,
+
+        @Setting(
+                description = "Time in milliseconds a credential request waits for its credentials before the Issuer is first asked about its status, " +
+                        "as most Issuers deliver them within that time",
+                defaultValue = DEFAULT_STATUS_POLL_MIN_AGE + "", key = "edc.iam.credential.request.status.poll.min.age"
+        )
+        long statusPollMinAge,
+
+        @Setting(
+                description = "Maximum time in milliseconds between two status queries for the same credential request. A request is asked about less often the " +
+                        "longer it waits for its credentials, up to this interval.",
+                defaultValue = DEFAULT_STATUS_POLL_MAX_INTERVAL + "", key = "edc.iam.credential.request.status.poll.max.interval"
+        )
+        long statusPollMaxInterval,
 
         /*
             this setting  has been added only to permit interaction with an external system that's not 100% compliant with DCP v1.0, can be removed after v1.0 release
@@ -39,19 +55,20 @@ public record CredentialRequestConfiguration(
                 description = "Time in seconds after which a credential request is considered failed if its credentials have not arrived, and its status cannot be queried, because the Issuer did not report its issuance process ID",
                 defaultValue = DEFAULT_UNTRACKED_TIMEOUT + "", key = "edc.iam.credential.request.untracked.timeout"
         )
-        long untrackedTimeout
+        long untrackedTimeout,
+
+        @Setting(
+                description = "Time in seconds after which a credential request is considered failed if its credentials have not arrived, although the Issuer keeps reporting it as pending",
+                defaultValue = DEFAULT_TRACKED_TIMEOUT + "", key = "edc.iam.credential.request.tracked.timeout"
+        )
+        long trackedTimeout
 ) {
 
-    public static final int DEFAULT_STATUS_POLL_INTERVAL = 5000;
+    public static final long DEFAULT_STATUS_POLL_INTERVAL = 30_000;
+    public static final long DEFAULT_STATUS_POLL_MIN_AGE = 30_000;
+    public static final long DEFAULT_STATUS_POLL_MAX_INTERVAL = 15 * 60 * 1000;
     public static final long DEFAULT_UNTRACKED_TIMEOUT = 6 * 60 * 60;
-
-    @Override
-    public long statusPollInterval() {
-        if (statusPollInterval == 0) {
-            return DEFAULT_STATUS_POLL_INTERVAL;
-        }
-        return statusPollInterval;
-    }
+    public static final long DEFAULT_TRACKED_TIMEOUT = 24 * 60 * 60;
 
     @Override
     public long untrackedTimeout() {
@@ -59,5 +76,13 @@ public record CredentialRequestConfiguration(
             return DEFAULT_UNTRACKED_TIMEOUT;
         }
         return untrackedTimeout;
+    }
+
+    @Override
+    public long trackedTimeout() {
+        if (trackedTimeout == 0) {
+            return DEFAULT_TRACKED_TIMEOUT;
+        }
+        return trackedTimeout;
     }
 }

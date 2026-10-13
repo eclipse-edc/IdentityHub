@@ -443,9 +443,10 @@ batch size times the call timeout is not less than the lease duration.
 | `edc.issuer.issuance.send.connect-timeout.ms`             | How long connecting to the holder may take, in milliseconds                 | `5000`   |
 | `edc.issuer.issuance.send.call-timeout.ms`                | How long delivering the credentials may take, in milliseconds              | `15000`  |
 
-A holder whose request does not report the `issuanceProcessId` gives up waiting for its credentials after six hours by
-default (`edc.iam.credential.request.untracked.timeout`), and refuses credentials that arrive later. A longer retry
-window is only useful if holders wait longer as well.
+A holder gives up waiting for its credentials after 24 hours by default (`edc.iam.credential.request.tracked.timeout`),
+or after six hours if its request does not report the `issuanceProcessId`
+(`edc.iam.credential.request.untracked.timeout`), and refuses credentials that arrive later. A longer retry window is
+only useful if holders wait longer as well.
 
 ##### The `DELIVERED` State
 

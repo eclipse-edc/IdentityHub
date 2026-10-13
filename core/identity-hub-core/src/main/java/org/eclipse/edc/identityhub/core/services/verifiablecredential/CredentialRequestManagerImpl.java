@@ -61,12 +61,16 @@ import java.io.IOException;
 import java.io.StringReader;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 import static java.util.Objects.requireNonNull;
 import static java.util.Optional.ofNullable;
@@ -93,6 +97,13 @@ public class CredentialRequestManagerImpl extends AbstractStateEntityManager<Hol
     private static final int HTTP_CONFLICT = 409;
     private static final String UNKNOWN_ISSUER_PID = "";
     private static final int STATUS_POLL_PAGE_SIZE = 100;
+    private static final String STATUS_POLLER = "CredentialRequestStatusPoller";
+    // each run of the status poller is delayed by up to this fraction of the interval at random
+    private static final double STATUS_POLL_JITTER = 0.2;
+    // a request is asked about its status at intervals of this fraction of the time it has been waiting for its credentials
+    private static final long STATUS_POLL_BACKOFF_DIVISOR = 10;
+    // when each pending request is due for its next status query. Only the status poller thread accesses it.
+    private final Map<String, Long> nextStatusPoll = new HashMap<>();
     private ScheduledExecutorService statusPollScheduler;
     private DidResolverRegistry didResolverRegistry;
     private TypeTransformerRegistry dcpTypeTransformerRegistry;
@@ -144,12 +155,18 @@ public class CredentialRequestManagerImpl extends AbstractStateEntityManager<Hol
      * issuance can still fail on the Issuer side after it acknowledged the request, and the Holder would otherwise never
      * learn about it. A request that the Issuer reports as {@code REJECTED} is transitioned to
      * {@link HolderRequestState#ERROR}; anything else leaves it untouched so that it is polled again later.
+     * <p>
+     * Polling is disabled if the configured interval is not positive.
      */
     @Override
     public void start() {
         super.start();
-        statusPollScheduler = Executors.newSingleThreadScheduledExecutor();
-        statusPollScheduler.scheduleWithFixedDelay(this::pollPendingRequests, configuration.statusPollInterval(), configuration.statusPollInterval(), MILLISECONDS);
+        if (configuration.statusPollInterval() <= 0) {
+            monitor.info("Polling the status of credential requests is disabled, so requests awaiting their credentials do not time out");
+            return;
+        }
+        statusPollScheduler = executorInstrumentation.instrument(Executors.newSingleThreadScheduledExecutor(), STATUS_POLLER);
+        scheduleStatusPoll();
     }
 
     @Override
@@ -203,17 +220,23 @@ public class CredentialRequestManagerImpl extends AbstractStateEntityManager<Hol
      * @return a StatusResult containing the Issuer-assigned issuance process ID, or {@link #UNKNOWN_ISSUER_PID} if the
      *         Issuer accepted the request without reporting one. This can happen if an issuance request already exists on
      *         the issuer side and HTTP 409 is returned. Fails if the token, the message or the HTTP exchange failed, with
-     *         {@link ResponseStatus#ERROR_RETRY} if another attempt may succeed.
+     *         {@link ResponseStatus#ERROR_RETRY} if another attempt may succeed, i.e. unless the message could not be
+     *         assembled or the Issuer refused it.
      */
     private StatusResult<String> sendCredentialRequest(HolderCredentialRequest request, String endpoint) {
         var issuerDid = request.getIssuerDid();
         var holderPid = request.getId();
         var requestedCredentials = request.getIdsAndFormats();
 
-        // failing to mint the token or to assemble the message is a configuration problem, which another attempt
-        // would run into just the same
-        var httpRequest = getAuthToken(request.getParticipantContextId(), issuerDid)
-                .compose(token -> createCredentialsRequest(token, endpoint, holderPid, requestedCredentials));
+        // minting the token may fail for a moment, e.g. while the Vault is unavailable. Nothing was sent yet, so another
+        // attempt is safe, and one that keeps failing still ends in ERROR once the retry limit is exhausted.
+        var token = getAuthToken(request.getParticipantContextId(), issuerDid);
+        if (token.failed()) {
+            return StatusResult.failure(ERROR_RETRY, "Error creating the Self-Issued ID token: %s".formatted(token.getFailureDetail()));
+        }
+        // failing to assemble the message is a programming or configuration error, which another attempt would run
+        // into just the same
+        var httpRequest = createCredentialsRequest(token.getContent(), endpoint, holderPid, requestedCredentials);
         if (httpRequest.failed()) {
             return StatusResult.failure(FATAL_ERROR, httpRequest.getFailureDetail());
         }
@@ -295,9 +318,10 @@ public class CredentialRequestManagerImpl extends AbstractStateEntityManager<Hol
      * Processes a request in {@link HolderRequestState#REQUESTING} state by sending it to the Issuer. Credential requests
      * that were interrupted before receiving the Issuer's response are in this state as well.
      * <p>
-     * A failure that may resolve itself - an Issuer that is unreachable or answering 5xx - leaves the request in its
-     * current state, so that the state machine attempts it again with a growing delay. Only a failure the Issuer would
-     * repeat, or one that outlives the retry limit, moves the request to {@link HolderRequestState#ERROR}.
+     * A failure that may resolve itself - an Issuer that is unreachable or answering 5xx, a DID document that cannot be
+     * resolved for a moment, a token that cannot be minted, or any unexpected exception - leaves the request in its
+     * current state, so that the state machine attempts it again with a growing delay. Only a failure that would recur
+     * on every attempt, or one that outlives the retry limit, moves the request to {@link HolderRequestState#ERROR}.
      *
      * @return a CompletableFuture containing the result of processing the request.
      */
@@ -305,12 +329,25 @@ public class CredentialRequestManagerImpl extends AbstractStateEntityManager<Hol
         monitor.debug("Processing '%s' request '%s'".formatted(holderCredentialRequest.stateAsString(), holderCredentialRequest.getHolderPid()));
 
         return telemetry.contextPropagationMiddleware(() -> entityRetryProcessFactory.<HolderCredentialRequest, Void>retryProcessor(holderCredentialRequest)
-                .doProcess(Process.result("Resolve the Issuer's CredentialRequest endpoint", (request, unused) -> getCredentialRequestEndpoint(request)))
-                .doProcess(Process.result("Send the DCP CredentialRequestMessage", this::sendCredentialRequest))
+                .doProcess(Process.result("Resolve the Issuer's CredentialRequest endpoint", (request, unused) -> retryOnException(() -> getCredentialRequestEndpoint(request))))
+                .doProcess(Process.result("Send the DCP CredentialRequestMessage", (request, endpoint) -> retryOnException(() -> sendCredentialRequest(request, endpoint))))
                 .onSuccess((request, issuerPid) -> transactionContext.execute(() -> handleCredentialResponse(issuerPid, request)))
                 .onFailure((request, throwable) -> transactionContext.execute(() -> transitionRetry(request)))
                 .onFinalFailure((request, throwable) -> transactionContext.execute(() -> transitionError(request, throwable.getMessage())))
                 .execute(), holderCredentialRequest).get();
+    }
+
+    /**
+     * Runs a step of {@link #processRequesting(HolderCredentialRequest)}, reporting an exception it throws as a failure
+     * another attempt may overcome, e.g. a database that is unavailable for a moment. The state machine would otherwise
+     * move the request to {@link HolderRequestState#ERROR} at once.
+     */
+    private <T> StatusResult<T> retryOnException(Supplier<StatusResult<T>> step) {
+        try {
+            return step.get();
+        } catch (Exception e) {
+            return StatusResult.failure(ERROR_RETRY, "Unexpected error: %s".formatted(e.getMessage()));
+        }
     }
 
     /**
@@ -345,24 +382,70 @@ public class CredentialRequestManagerImpl extends AbstractStateEntityManager<Hol
      * arrive.
      * <p>
      * This deliberately runs outside the state machine: leasing a request for the duration of the status call would
-     * block the Issuer from delivering the credentials for that very request. Only a rejection acquires the request.
+     * block the Issuer from delivering the credentials for that very request. Only a rejection or a timeout acquires the
+     * request.
+     * <p>
+     * Every runtime polls, so a request is only asked about once it had time to be fulfilled, and less often the longer
+     * it has been waiting, see {@link #isDueForStatusPoll(HolderCredentialRequest, long)}. A request that waits for longer
+     * than its timeout is given up on.
      */
     private void pollPendingRequests() {
         try {
+            var now = clock.millis();
+            var pending = new HashSet<String>();
             var query = QuerySpec.Builder.newInstance()
                     .filter(Criterion.criterion("state", "=", REQUESTED.code()))
                     .build();
             forEachPage(query, STATUS_POLL_PAGE_SIZE, page -> transactionContext.execute(() -> store.query(page)), HolderCredentialRequest::getId,
                     requests -> requests.forEach(request -> {
-                        if (isTracked(request)) {
+                        pending.add(request.getId());
+                        if (isOverdue(request)) {
+                            giveUpOnOverdue(request);
+                        } else if (isTracked(request) && isDueForStatusPoll(request, now)) {
                             pollStatus(request);
-                        } else {
-                            timeOutIfOverdue(request);
                         }
                     }));
+            // requests that are no longer pending are not polled again
+            nextStatusPoll.keySet().retainAll(pending);
         } catch (Exception e) {
             monitor.debug("Error while polling the Issuer for credential request states: %s".formatted(e.getMessage()));
         }
+    }
+
+    /**
+     * Schedules the next run of the status poller, delayed at random by up to {@link #STATUS_POLL_JITTER} of the
+     * interval, so that runtimes that started at the same time do not keep polling at the same time.
+     */
+    private void scheduleStatusPoll() {
+        if (statusPollScheduler.isShutdown()) {
+            return;
+        }
+        var interval = configuration.statusPollInterval();
+        var delay = interval + ThreadLocalRandom.current().nextLong((long) (interval * STATUS_POLL_JITTER) + 1);
+        statusPollScheduler.schedule(() -> {
+            pollPendingRequests();
+            scheduleStatusPoll();
+        }, delay, MILLISECONDS);
+    }
+
+    /**
+     * Whether the Issuer should be asked about the status of the request in this run. Most Issuers deliver the
+     * credentials shortly after they accepted the request, so it is only asked about once it waited for the configured
+     * minimum age. After that, the interval between two queries grows with the time the request has been waiting, from
+     * the poll interval up to the configured maximum, as an issuance that is not done yet is unlikely to be done soon.
+     * <p>
+     * When the request is due, its next query is scheduled.
+     */
+    private boolean isDueForStatusPoll(HolderCredentialRequest request, long now) {
+        var waiting = now - request.getStateTimestamp();
+        if (waiting < configuration.statusPollMinAge() || nextStatusPoll.getOrDefault(request.getId(), 0L) > now) {
+            return false;
+        }
+        var interval = configuration.statusPollInterval();
+        var maxInterval = Math.max(configuration.statusPollMaxInterval(), interval);
+        var pollInterval = Math.min(Math.max(waiting / STATUS_POLL_BACKOFF_DIVISOR, interval), maxInterval);
+        nextStatusPoll.put(request.getId(), now + pollInterval);
+        return true;
     }
 
     /**
@@ -373,14 +456,13 @@ public class CredentialRequestManagerImpl extends AbstractStateEntityManager<Hol
     }
 
     /**
-     * Gives up on a request whose status cannot be queried, because the Issuer did not report its issuance process ID, e.g.
-     * an Issuer that answered a re-sent request with 409 and without a {@code Location} header. Otherwise, the request would
-     * wait for its credentials forever if the Issuer failed to issue them, and so would a credential it is meant to renew.
+     * Gives up on a request whose credentials did not arrive within its timeout. Otherwise, the request would wait for its
+     * credentials forever if the Issuer failed to issue them without saying so, and so would a credential it is meant to
+     * renew. That includes requests whose status cannot be queried, because the Issuer did not report its issuance process
+     * ID, e.g. an Issuer that answered a re-sent request with 409 and without a {@code Location} header. Those time out
+     * sooner, as nothing tells the Holder that they are still under way.
      */
-    private void timeOutIfOverdue(HolderCredentialRequest request) {
-        if (!isOverdue(request)) {
-            return;
-        }
+    private void giveUpOnOverdue(HolderCredentialRequest request) {
         transactionContext.execute(() -> {
             // the request is only acquired now: it may be held by an incoming credential delivery, in which case this
             // round is skipped
@@ -390,19 +472,26 @@ public class CredentialRequestManagerImpl extends AbstractStateEntityManager<Hol
                 return null;
             }
             var current = leased.getContent();
-            if (current.stateAsEnum() != REQUESTED || isTracked(current) || !isOverdue(current)) {
+            if (current.stateAsEnum() != REQUESTED || !isOverdue(current)) {
                 // the credentials arrived, or the request changed in the meantime
                 store.breakLease(current);
                 return null;
             }
-            transitionError(current, ("No credentials were received for the request within %s, and its status cannot be queried, " +
-                    "because the Issuer did not report its issuance process ID").formatted(Duration.ofSeconds(configuration.untrackedTimeout())));
+            var reason = isTracked(current)
+                    ? "No credentials were received for the request within %s".formatted(timeoutFor(current))
+                    : ("No credentials were received for the request within %s, and its status cannot be queried, " +
+                    "because the Issuer did not report its issuance process ID").formatted(timeoutFor(current));
+            transitionError(current, reason);
             return null;
         });
     }
 
     private boolean isOverdue(HolderCredentialRequest request) {
-        return clock.millis() - request.getStateTimestamp() > Duration.ofSeconds(configuration.untrackedTimeout()).toMillis();
+        return clock.millis() - request.getStateTimestamp() > timeoutFor(request).toMillis();
+    }
+
+    private Duration timeoutFor(HolderCredentialRequest request) {
+        return Duration.ofSeconds(isTracked(request) ? configuration.trackedTimeout() : configuration.untrackedTimeout());
     }
 
     private void pollStatus(HolderCredentialRequest request) {
@@ -479,7 +568,7 @@ public class CredentialRequestManagerImpl extends AbstractStateEntityManager<Hol
                 // The Issuer already tracks an issuance process for this holderPid, which happens when a request is re-sent
                 // after having been interrupted, e.g. by a restart. It was accepted earlier, so this is not a failure. EDC
                 // Issuers report the existing process in the Location header, like for a new one. Other Issuers may not, in
-                // which case the request is given up on after a while, c.f. #timeOutIfOverdue
+                // which case the request is given up on after a while, c.f. #giveUpOnOverdue
                 monitor.debug("Issuer reports an already existing issuance process, treating the re-sent request as accepted");
                 return StatusResult.success(ofNullable(issuerPidFromLocation(response)).orElse(UNKNOWN_ISSUER_PID));
             }
@@ -551,9 +640,9 @@ public class CredentialRequestManagerImpl extends AbstractStateEntityManager<Hol
      * Extracts the {@code CredentialRequest} service endpoint from the DID document.
      *
      * @param request The request whose Issuer's DID document is resolved
-     * @return A result containing the service endpoint. An unresolvable DID and a document without such an endpoint are
-     *         both terminal: the resolver does not tell a DID that does not exist from one that is momentarily
-     *         unavailable, and a request whose Issuer cannot be found is not going to succeed by being repeated.
+     * @return A result containing the service endpoint. A DID that cannot be resolved may be unavailable for a moment, so
+     *         that failure is retryable. A DID that no resolver supports, and a document without such an endpoint, are
+     *         terminal, as another attempt would fail just the same.
      */
     private StatusResult<String> getCredentialRequestEndpoint(HolderCredentialRequest request) {
         var issuerDid = request.getIssuerDid();

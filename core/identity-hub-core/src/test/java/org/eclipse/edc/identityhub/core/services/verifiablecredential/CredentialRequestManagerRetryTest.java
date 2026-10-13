@@ -36,6 +36,7 @@ import org.eclipse.edc.identityhub.spi.participantcontext.model.IdentityHubParti
 import org.eclipse.edc.jsonld.spi.JsonLd;
 import org.eclipse.edc.query.CriterionOperatorRegistryImpl;
 import org.eclipse.edc.spi.iam.TokenRepresentation;
+import org.eclipse.edc.spi.persistence.EdcPersistenceException;
 import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.spi.result.ServiceResult;
 import org.eclipse.edc.statemachine.retry.EntityRetryProcessConfiguration;
@@ -228,6 +229,65 @@ class CredentialRequestManagerRetryTest {
         await().during(Duration.ofMillis(200)).untilAsserted(() -> verify(resolver, never()).resolve(anyString()));
         verifyNoInteractions(httpClient);
         assertThat(store.findById(holderPid).getErrorDetail()).contains("is not supported by any DID resolver");
+    }
+
+    @Test
+    @DisplayName("a token that cannot be minted is attempted again, and the request fails once the retry limit is exhausted")
+    void tokenNotMinted_isRetriedUntilTheLimit_thenErrors() {
+        when(sts.createToken(anyString(), anyMap(), isNull())).thenReturn(Result.failure("vault unavailable"));
+        var holderPid = initiate();
+
+        manager.start();
+
+        await().atMost(MAX_DURATION).untilAsserted(() -> assertThat(store.findById(holderPid).stateAsEnum()).isEqualTo(ERROR));
+        // the first attempt, then one retry for each unit of the limit
+        verify(sts, times(RETRY_LIMIT + 1)).createToken(anyString(), anyMap(), isNull());
+        verifyNoInteractions(httpClient);
+        assertThat(store.findById(holderPid).getErrorDetail()).contains("vault unavailable");
+    }
+
+    @Test
+    @DisplayName("a request whose token could not be minted goes through once minting works again")
+    void tokenNotMinted_recoversOnLaterAttempt() throws IOException {
+        when(sts.createToken(anyString(), anyMap(), isNull()))
+                .thenReturn(Result.failure("vault unavailable"))
+                .thenReturn(success(TokenRepresentation.Builder.newInstance().token("token").build()));
+        when(httpClient.execute(any(Request.class))).thenReturn(created("https://issuer.com/api/issuance/requests/issuance-process-id"));
+        var holderPid = initiate();
+
+        manager.start();
+
+        await().atMost(MAX_DURATION).untilAsserted(() -> assertThat(store.findById(holderPid).stateAsEnum()).isEqualTo(REQUESTED));
+        verify(httpClient, times(1)).execute(any(Request.class));
+    }
+
+    @Test
+    @DisplayName("an exception while sending the request is attempted again, instead of failing the request at once")
+    void exception_isRetried() throws IOException {
+        when(sts.createToken(anyString(), anyMap(), isNull()))
+                .thenThrow(new EdcPersistenceException("database unavailable"))
+                .thenReturn(success(TokenRepresentation.Builder.newInstance().token("token").build()));
+        when(httpClient.execute(any(Request.class))).thenReturn(created("https://issuer.com/api/issuance/requests/issuance-process-id"));
+        var holderPid = initiate();
+
+        manager.start();
+
+        await().atMost(MAX_DURATION).untilAsserted(() -> assertThat(store.findById(holderPid).stateAsEnum()).isEqualTo(REQUESTED));
+        verify(sts, times(2)).createToken(anyString(), anyMap(), isNull());
+    }
+
+    @Test
+    @DisplayName("a message that cannot be assembled is not attempted again, and nothing is sent")
+    void messageNotAssembled_isTerminal() {
+        when(jsonLd.compact(any(), eq(DCP_SCOPE_V_1_0))).thenReturn(Result.failure("cannot compact"));
+        var holderPid = initiate();
+
+        manager.start();
+
+        await().atMost(MAX_DURATION).untilAsserted(() -> assertThat(store.findById(holderPid).stateAsEnum()).isEqualTo(ERROR));
+        await().during(Duration.ofMillis(200)).untilAsserted(() -> verify(sts, times(1)).createToken(anyString(), anyMap(), isNull()));
+        verifyNoInteractions(httpClient);
+        assertThat(store.findById(holderPid).getErrorDetail()).contains("cannot compact");
     }
 
     private Result<DidDocument> issuerDidDocument() {

@@ -60,6 +60,20 @@ public class VerifiableCredentialResource extends IdentityResource {
     public static final String METADATA_RENEWAL_ERROR = "renewalError";
 
     /**
+     * Metadata key holding how many renewals of this credential in a row ended without delivering a replacement. Each
+     * one doubles the time until the next renewal is started, c.f. {@link #METADATA_RENEWAL_NOT_BEFORE}. Cleared when a
+     * renewal request is fulfilled.
+     */
+    public static final String METADATA_RENEWAL_FAILURES = "renewalFailures";
+
+    /**
+     * Metadata key holding the earliest time, in milliseconds since the epoch, at which the next renewal of this
+     * credential may be started, after the last one ended without delivering a replacement. Cleared when a renewal
+     * request is fulfilled.
+     */
+    public static final String METADATA_RENEWAL_NOT_BEFORE = "renewalNotBefore";
+
+    /**
      * Metadata key holding the ID of the issuance process that issued this credential. Set on the Issuer's
      * {@link CredentialUsage#IssuanceTracking} record, which is stored before the credential is delivered, so that a
      * delivery that has to be repeated delivers the same credential again instead of a new one.

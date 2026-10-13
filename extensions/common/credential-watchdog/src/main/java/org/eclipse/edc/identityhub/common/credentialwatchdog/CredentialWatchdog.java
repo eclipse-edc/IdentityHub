@@ -31,6 +31,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.time.Clock;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -44,6 +45,8 @@ import static org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStat
 import static org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStatus.NOT_YET_VALID;
 import static org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStatus.REQUESTED;
 import static org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStatus.SUSPENDED;
+import static org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialResource.METADATA_RENEWAL_FAILURES;
+import static org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialResource.METADATA_RENEWAL_NOT_BEFORE;
 import static org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialResource.METADATA_RENEWAL_REQUEST_ID;
 import static org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialResource.METADATA_SUPERSEDED_BY;
 import static org.eclipse.edc.identityhub.store.QueryPages.forEachPage;
@@ -62,6 +65,9 @@ import static org.eclipse.edc.identityhub.store.QueryPages.forEachPage;
  */
 public class CredentialWatchdog implements Runnable {
     private static final int PAGE_SIZE = 100;
+    // the delay before a failed renewal is started anew, which doubles with every failure in a row, up to the maximum
+    static final Duration RENEWAL_BACKOFF_INITIAL = Duration.ofMinutes(5);
+    static final Duration RENEWAL_BACKOFF_MAX = Duration.ofHours(6);
     //todo: add more states once we have to check issuance status
     // REQUESTED marks a credential whose renewal is in flight. It is fetched so that a renewal which ended without
     // delivering a replacement can be noticed and the credential released again, c.f. #reconcileRenewal
@@ -144,7 +150,7 @@ public class CredentialWatchdog implements Runnable {
                     return;
                 }
                 updateStatus(current, newStatus);
-                if (isDueForRenewal(current)) {
+                if (isDueForRenewal(current) && !isRenewalBackingOff(current)) {
                     startReissuance(current);
                 }
             });
@@ -210,6 +216,53 @@ public class CredentialWatchdog implements Runnable {
     }
 
     /**
+     * Whether the last renewal of the credential failed so recently that the next one has to wait, c.f.
+     * {@link #recordRenewalFailure(VerifiableCredentialResource)}. Otherwise, a renewal that cannot succeed for the time
+     * being, e.g. while the Issuer is down, would be started anew on every run.
+     */
+    private boolean isRenewalBackingOff(VerifiableCredentialResource credential) {
+        var notBefore = longMetadata(credential, METADATA_RENEWAL_NOT_BEFORE);
+        if (clock.millis() < notBefore) {
+            monitor.debug("Renewal of credential '%s' is not started before %s, because the previous one failed"
+                    .formatted(credential.getId(), Instant.ofEpochMilli(notBefore)));
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Records that a renewal of the credential ended without delivering a replacement, and when the next one may be
+     * started: {@link #RENEWAL_BACKOFF_INITIAL} after the first failure, twice as long after every further one in a row,
+     * but no later than {@link #RENEWAL_BACKOFF_MAX}.
+     */
+    private void recordRenewalFailure(VerifiableCredentialResource credential) {
+        var failures = longMetadata(credential, METADATA_RENEWAL_FAILURES) + 1;
+        var backoff = RENEWAL_BACKOFF_INITIAL.multipliedBy(1L << Math.min(failures - 1, 30));
+        if (backoff.compareTo(RENEWAL_BACKOFF_MAX) > 0) {
+            backoff = RENEWAL_BACKOFF_MAX;
+        }
+        credential.getMetadata().put(METADATA_RENEWAL_FAILURES, failures);
+        credential.getMetadata().put(METADATA_RENEWAL_NOT_BEFORE, clock.millis() + backoff.toMillis());
+    }
+
+    /**
+     * Reads a numeric metadata value, which may have been stored as a number or as text.
+     *
+     * @return the value, or 0 if there is none, or it is not a number
+     */
+    private long longMetadata(VerifiableCredentialResource credential, String key) {
+        var value = credential.getMetadata().get(key);
+        if (value instanceof Number number) {
+            return number.longValue();
+        }
+        try {
+            return value == null ? 0 : Long.parseLong(value.toString());
+        } catch (NumberFormatException e) {
+            return 0;
+        }
+    }
+
+    /**
      * Decides whether a credential may be acted upon in this run, and recovers those whose renewal led nowhere.
      * <p>
      * A credential in {@link VcStatus#REQUESTED} is waiting for the renewal request it is linked to via
@@ -217,7 +270,8 @@ public class CredentialWatchdog implements Runnable {
      * credential is left exactly as it is. Once the request is done without a replacement having been delivered - it
      * failed, or it is no longer on record - the credential is released: staying in {@link VcStatus#REQUESTED} would keep
      * it out of {@link CredentialWatchdog#ALLOWED_STATES} forever, so neither its status nor its expiry would ever be
-     * looked at again. The reason is recorded on the credential, and a later run may renew it anew.
+     * looked at again. The reason is recorded on the credential, and a later run may renew it anew, after a delay that
+     * grows with every renewal that failed in a row.
      *
      * @return true if the credential is not waiting on a renewal, i.e. its status and expiry may be acted upon
      */
@@ -240,15 +294,19 @@ public class CredentialWatchdog implements Runnable {
         if (request == null) {
             var reason = "the renewal request '%s' is no longer on record".formatted(requestId);
             credential.getMetadata().put(VerifiableCredentialResource.METADATA_RENEWAL_ERROR, reason);
+            recordRenewalFailure(credential);
             monitor.warning("Renewal of credential '%s' cannot be tracked, because %s. Releasing it for another attempt."
                     .formatted(credential.getId(), reason));
         } else if (request.stateAsEnum() == HolderRequestState.ERROR) {
             credential.getMetadata().put(VerifiableCredentialResource.METADATA_RENEWAL_ERROR, request.getErrorDetail());
+            recordRenewalFailure(credential);
             monitor.warning("Renewal of credential '%s' failed: %s. Releasing it for another attempt."
                     .formatted(credential.getId(), request.getErrorDetail()));
         } else {
             // the request was fulfilled, but this credential was not superseded by what arrived, so it is simply released
             credential.getMetadata().remove(VerifiableCredentialResource.METADATA_RENEWAL_ERROR);
+            credential.getMetadata().remove(METADATA_RENEWAL_FAILURES);
+            credential.getMetadata().remove(METADATA_RENEWAL_NOT_BEFORE);
         }
 
         credential.getMetadata().remove(VerifiableCredentialResource.METADATA_RENEWAL_REQUEST_ID);
