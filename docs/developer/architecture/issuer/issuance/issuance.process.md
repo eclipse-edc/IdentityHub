@@ -376,6 +376,12 @@ returned to the client.
 
 An `IssuanceProcessManager` will periodically scan and process persisted `IssuanceProcess` instances.
 
+An `IssuanceProcess` is leased while it is processed, so that only one runtime processes it at a time. A runtime whose
+lease expires while it is still processing an `IssuanceProcess` cannot save it anymore once another runtime has saved it:
+the `IssuanceProcessStore` saves an `IssuanceProcess` only if its state timestamp in the store is still the one it was
+read with (`IssuanceProcess#getStoredStateTimestamp`). The runtime then neither emits events for the `IssuanceProcess`,
+nor notifies the holder of it. Stores backed by a shared database must therefore implement that check.
+
 ##### The `SUBMITTED` State
 
 The `IssuanceProcessManager` will ignore the `SUBMITTED` state as it is up to an external approval system to advance the

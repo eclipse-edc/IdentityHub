@@ -106,8 +106,9 @@ public class IssuanceProcessManagerImpl extends AbstractStateEntityManager<Issua
                 .doProcess(result("Sign Credentials", (p, result) -> signRecordedCredentials(p)))
                 .doProcess(result("Deliver Credentials", this::deliverCredentials))
                 .onSuccess((t, credentials) -> {
-                    transitionToDelivered(t);
-                    observable.invokeForEach(l -> l.delivered(process, credentials));
+                    if (transitionToDelivered(t)) {
+                        observable.invokeForEach(l -> l.delivered(process, credentials));
+                    }
                 })
                 .onFailure((t, throwable) -> transitionToDelivering(t))
                 .onFinalFailure(this::transitionToError)
@@ -284,30 +285,48 @@ public class IssuanceProcessManagerImpl extends AbstractStateEntityManager<Issua
         } else return StatusResult.failure(ResponseStatus.ERROR_RETRY);
     }
 
-    private void transitionToDelivered(IssuanceProcess process) {
+    private boolean transitionToDelivered(IssuanceProcess process) {
         process.transitionToDelivered();
-        update(process)
+        return update(process)
                 .onSuccess(v -> discardHolderAccessToken(process))
                 // the process is delivered again, e.g. by the runtime that holds its lease, which needs the access token for that
                 .onFailure(f -> monitor.warning("Issuance process '%s' was delivered, but could not be saved as such: %s"
-                        .formatted(process.getId(), f.getFailureDetail())));
+                        .formatted(process.getId(), f.getFailureDetail())))
+                .succeeded();
     }
 
     private void transitionToApproved(IssuanceProcess process) {
         process.transitionToApproved();
-        update(process);
+        save(process);
     }
 
     private void transitionToDelivering(IssuanceProcess process) {
         process.transitionToDelivering();
-        update(process);
+        save(process);
     }
 
-    private void transitionToError(IssuanceProcess process) {
+    private boolean transitionToError(IssuanceProcess process) {
         process.transitionToError();
-        update(process);
+        if (!save(process)) {
+            return false;
+        }
         notifyHolderOfRejection(process);
         discardHolderAccessToken(process);
+        return true;
+    }
+
+    /**
+     * Saves the process. That fails if the process was saved by someone else since it was read, e.g. by another runtime
+     * that leased it after the lease of this one expired. What follows from the new state is then not done here, as it
+     * may not be the state of the process anymore.
+     *
+     * @return whether the process was saved
+     */
+    private boolean save(IssuanceProcess process) {
+        return update(process)
+                .onFailure(f -> monitor.warning("Issuance process '%s' could not be saved in state %s: %s"
+                        .formatted(process.getId(), process.stateAsString(), f.getFailureDetail())))
+                .succeeded();
     }
 
     /**
@@ -341,10 +360,13 @@ public class IssuanceProcessManagerImpl extends AbstractStateEntityManager<Issua
     }
 
     private void transitionToError(IssuanceProcess process, Throwable throwable) {
-        if (process.getState() == IssuanceProcessStates.DELIVERING.code()) {
+        var delivering = process.getState() == IssuanceProcessStates.DELIVERING.code();
+        if (!transitionToError(process, throwable.getMessage())) {
+            return;
+        }
+        if (delivering) {
             reportUnconfirmedDelivery(process, throwable.getMessage());
         }
-        transitionToError(process, throwable.getMessage());
         observable.invokeForEach(l -> l.errored(process, throwable));
     }
 
@@ -368,10 +390,10 @@ public class IssuanceProcessManagerImpl extends AbstractStateEntityManager<Issua
                 .formatted(process.getId(), process.getHolderId(), process.getHolderPid(), reason, recordIds));
     }
 
-    private void transitionToError(IssuanceProcess process, String message) {
+    private boolean transitionToError(IssuanceProcess process, String message) {
         process.setErrorDetail(message);
         monitor.warning(message);
-        transitionToError(process);
+        return transitionToError(process);
     }
 
     private Processor processIssuanceInState(IssuanceProcessStates state, Function<IssuanceProcess, CompletableFuture<StatusResult<Void>>> function) {

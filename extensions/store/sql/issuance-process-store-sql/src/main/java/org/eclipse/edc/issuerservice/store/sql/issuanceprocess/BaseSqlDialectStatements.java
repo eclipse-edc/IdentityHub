@@ -24,6 +24,7 @@ import org.eclipse.edc.sql.translation.SqlQueryStatement;
 import java.time.Clock;
 
 import static java.lang.String.format;
+import static org.eclipse.edc.spi.query.Criterion.criterion;
 
 public class BaseSqlDialectStatements implements IssuanceProcessStoreStatements {
 
@@ -73,7 +74,11 @@ public class BaseSqlDialectStatements implements IssuanceProcessStoreStatements 
                 .jsonColumn(getClaimsColumn())
                 .jsonColumn(getCredentialDefinitionsColumn())
                 .jsonColumn(getCredentialFormatsColumn())
-                .update(getIssuanceProcessTable(), getIdColumn());
+                .update(getIssuanceProcessTable(),
+                        criterion(getIdColumn(), "=", "?"),
+                        // a process that was saved by someone else since it was read is not overwritten. A row without a state
+                        // timestamp is read with 0
+                        criterion(format("COALESCE(%s, 0)", getStateTimestampColumn()), "=", "?"));
     }
 
     @Override

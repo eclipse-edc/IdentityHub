@@ -469,6 +469,55 @@ public class IssuanceProcessManagerImplTest {
         verify(vault, never()).deleteSecret(any());
     }
 
+    @DisplayName("IS-DELIV-08: a process that another runtime saved in the meantime is not reported as delivered")
+    @Test
+    void delivering_shouldNotReportDelivery_whenProcessWasSavedByOtherRuntime() {
+        var process = deliveringProcess();
+
+        when(issuanceProcessStore.nextNotLeased(anyInt(), stateIs(DELIVERING.code()))).thenReturn(List.of(process)).thenReturn(emptyList());
+        // e.g. the lease of this runtime expired, and another runtime processed the process and saved it
+        when(issuanceProcessStore.save(any())).thenReturn(StoreResult.generalError("changed since it was read"));
+        when(credentialStore.query(any())).thenReturn(StoreResult.success(List.of(recordOf(process, membershipCredential().credential()))));
+        when(credentialStore.update(any())).thenReturn(StoreResult.success());
+        when(credentialGenerator.signCredential(any(), any(), any())).thenAnswer(i -> Result.success(new VerifiableCredentialContainer("signed", VC1_0_JWT, i.getArgument(1))));
+        when(credentialStorageClient.deliverCredentials(any(), any())).thenReturn(Result.success());
+
+        issuanceProcessManager.start();
+
+        await().untilAsserted(() -> verify(issuanceProcessStore).save(argThat(p -> p.getState() == DELIVERED.code())));
+        // waits until the process is done with
+        issuanceProcessManager.stop();
+        // whatever follows from the state of the process is up to the runtime that saved it
+        verify(listener, never()).delivered(any(), any());
+        verify(vault, never()).deleteSecret(any());
+    }
+
+    @DisplayName("IS-DELIV-08: a process that another runtime saved in the meantime is not reported as failed")
+    @Test
+    void delivering_shouldNotReportFailure_whenProcessWasSavedByOtherRuntime() {
+        // stateCount(2): the retry limit is already reached
+        var process = deliveringProcess().toBuilder().stateCount(2).build();
+
+        when(issuanceProcessStore.nextNotLeased(anyInt(), stateIs(DELIVERING.code()))).thenReturn(List.of(process)).thenReturn(emptyList());
+        // e.g. the lease of this runtime expired, and another runtime delivered the process and saved it
+        when(issuanceProcessStore.save(any())).thenReturn(StoreResult.generalError("changed since it was read"));
+        when(credentialStore.query(any())).thenReturn(StoreResult.success(List.of(recordOf(process, membershipCredential().credential()))));
+        when(credentialStore.update(any())).thenReturn(StoreResult.success());
+        when(credentialGenerator.signCredential(any(), any(), any())).thenAnswer(i -> Result.success(new VerifiableCredentialContainer("signed", VC1_0_JWT, i.getArgument(1))));
+        when(credentialStorageClient.deliverCredentials(any(), any())).thenReturn(Result.failure("holder unreachable"));
+
+        issuanceProcessManager.start();
+
+        await().untilAsserted(() -> verify(issuanceProcessStore).save(argThat(p -> p.getState() == ERRORED.code())));
+        // waits until the process is done with
+        issuanceProcessManager.stop();
+        // whatever follows from the state of the process is up to the runtime that saved it
+        verify(listener, never()).errored(any(), any());
+        verify(credentialStorageClient, never()).deliverRejection(any(), any());
+        verify(vault, never()).deleteSecret(any());
+        verify(monitor, never()).severe(argThat((String message) -> message.contains("Manual reconciliation")));
+    }
+
     @DisplayName("B3.7: the state machine honors the configured batch size and retry limit")
     @Test
     void shouldHonorRetryAndBatchConfiguration() {

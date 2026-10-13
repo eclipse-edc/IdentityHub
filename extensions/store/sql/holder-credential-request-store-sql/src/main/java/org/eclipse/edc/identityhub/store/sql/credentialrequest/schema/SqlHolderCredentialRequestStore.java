@@ -37,6 +37,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Supplier;
 
 import static java.lang.String.format;
@@ -131,10 +132,9 @@ public class SqlHolderCredentialRequestStore extends AbstractSqlStore implements
                 if (result.failed()) {
                     return result;
                 }
-                update(conn, issuanceProcess);
-            } else {
-                insert(conn, issuanceProcess);
+                return update(conn, issuanceProcess, existing);
             }
+            insert(conn, issuanceProcess);
             return StoreResult.success();
         } catch (SQLException e) {
             throw new EdcPersistenceException(e);
@@ -178,11 +178,17 @@ public class SqlHolderCredentialRequestStore extends AbstractSqlStore implements
                 process.getIssuerDid(),
                 process.getIssuerPid(),
                 toJson(process.getIdsAndFormats()));
+        process.setStoredStateTimestamp(process.getStateTimestamp());
     }
 
-    private void update(Connection conn, HolderCredentialRequest process) {
+    /**
+     * Updates the request, unless someone else saved it since it was read, e.g. another runtime that leased it after the
+     * lease of this one expired. A request that was not read from the store is compared with the one read before.
+     */
+    private StoreResult<Void> update(Connection conn, HolderCredentialRequest process, HolderCredentialRequest existing) {
+        var storedStateTimestamp = Optional.ofNullable(process.getStoredStateTimestamp()).orElse(existing.getStoredStateTimestamp());
         var updateStmt = statements.getUpdateTemplate();
-        queryExecutor.execute(conn, updateStmt,
+        var updated = queryExecutor.execute(conn, updateStmt,
                 process.getState(),
                 process.getStateCount(),
                 process.getStateTimestamp(),
@@ -192,8 +198,14 @@ public class SqlHolderCredentialRequestStore extends AbstractSqlStore implements
                 process.getIssuerDid(),
                 process.getIssuerPid(),
                 toJson(process.getIdsAndFormats()),
-                process.getId());
-
+                process.getId(),
+                storedStateTimestamp);
+        if (updated == 0) {
+            return StoreResult.generalError(format("HolderCredentialRequest %s is not saved in state %s, because it was changed since it was read, and is in state %s",
+                    process.getId(), process.stateAsString(), existing.stateAsString()));
+        }
+        process.setStoredStateTimestamp(process.getStateTimestamp());
+        return StoreResult.success();
     }
 
     /**
@@ -227,7 +239,7 @@ public class SqlHolderCredentialRequestStore extends AbstractSqlStore implements
 
 
     private HolderCredentialRequest mapResultSet(ResultSet resultSet) throws Exception {
-        return HolderCredentialRequest.Builder.newInstance()
+        var request = HolderCredentialRequest.Builder.newInstance()
                 .id(resultSet.getString(statements.getIdColumn()))
                 .createdAt(resultSet.getLong(statements.getCreatedAtColumn()))
                 .updatedAt(resultSet.getLong(statements.getUpdatedAtColumn()))
@@ -241,5 +253,8 @@ public class SqlHolderCredentialRequestStore extends AbstractSqlStore implements
                 .issuerPid(resultSet.getString(statements.getissuerPidColumn()))
                 .participantContextId(resultSet.getString(statements.getParticipantContextIdColumn()))
                 .build();
+        // the column as it is, whereas the request replaces a missing state timestamp with the current time
+        request.setStoredStateTimestamp(resultSet.getLong(statements.getStateTimestampColumn()));
+        return request;
     }
 }

@@ -397,6 +397,11 @@ requests.
 > The `CredentialRequestManager` is cluster-aware and will guarantee operations are not duplicated across nodes via
 > locking.
 
+A runtime whose lease on a `HolderCredentialRequest` expires while it is still processing it cannot save it anymore once
+another runtime has saved it: the `HolderCredentialRequestStore` saves a `HolderCredentialRequest` only if its state
+timestamp in the store is still the one it was read with (`HolderCredentialRequest#getStoredStateTimestamp`). Stores
+backed by a shared database must therefore implement that check.
+
 The `CredentialRequestManager` will delegate to the EDC `PolicyEngine` to ensure the `issuancePolicy`
 and `reissuancePolicy` are evaluated when a self-issued ID token is generated as part of an issuer request.
 

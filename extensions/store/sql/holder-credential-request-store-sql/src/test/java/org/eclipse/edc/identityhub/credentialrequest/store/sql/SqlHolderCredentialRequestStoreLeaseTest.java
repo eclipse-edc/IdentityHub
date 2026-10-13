@@ -15,6 +15,7 @@
 package org.eclipse.edc.identityhub.credentialrequest.store.sql;
 
 import org.eclipse.edc.identityhub.spi.credential.request.model.HolderCredentialRequest;
+import org.eclipse.edc.identityhub.spi.credential.request.model.HolderRequestState;
 import org.eclipse.edc.identityhub.store.sql.credentialrequest.schema.HolderCredentialRequestStoreStatements;
 import org.eclipse.edc.identityhub.store.sql.credentialrequest.schema.SqlHolderCredentialRequestStore;
 import org.eclipse.edc.identityhub.store.sql.credentialrequest.schema.schema.postgres.PostgresDialectStatements;
@@ -22,6 +23,7 @@ import org.eclipse.edc.json.JacksonTypeManager;
 import org.eclipse.edc.junit.annotations.PostgresqlIntegrationTest;
 import org.eclipse.edc.junit.testfixtures.TestUtils;
 import org.eclipse.edc.spi.monitor.ConsoleMonitor;
+import org.eclipse.edc.spi.result.StoreFailure;
 import org.eclipse.edc.sql.QueryExecutor;
 import org.eclipse.edc.sql.lease.BaseSqlLeaseStatements;
 import org.eclipse.edc.sql.lease.SqlLeaseContextBuilderImpl;
@@ -36,6 +38,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.time.Clock;
+import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -48,12 +51,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.eclipse.edc.identityhub.spi.credential.request.model.HolderRequestState.ISSUED;
 import static org.eclipse.edc.identityhub.spi.credential.request.model.HolderRequestState.REQUESTED;
+import static org.eclipse.edc.identityhub.spi.credential.request.model.HolderRequestState.REQUESTING;
 import static org.eclipse.edc.junit.assertions.AbstractResultAssert.assertThat;
 import static org.eclipse.edc.spi.persistence.StateEntityStore.hasState;
 
 /**
  * Verifies that a leased {@link HolderCredentialRequest} contains the changes of another transaction that held its lease
- * until it completed.
+ * until it completed, and that a runtime whose lease expired cannot overwrite the changes of the runtime that leased the
+ * request after it.
  * <p>
  * This cannot use the transaction context of {@link PostgresqlStoreSetupExtension}: it auto-commits every statement, so a
  * lease would never be held by an open transaction. Each store has its own lease holder, like two replicas.
@@ -72,6 +77,7 @@ class SqlHolderCredentialRequestStoreLeaseTest {
     private LocalTransactionContext transactionContext;
     private SqlHolderCredentialRequestStore store;
     private SqlHolderCredentialRequestStore otherStore;
+    private SqlHolderCredentialRequestStore expiredLeaseStore;
     private LeaseUtil leaseUtil;
 
     @BeforeEach
@@ -81,8 +87,10 @@ class SqlHolderCredentialRequestStoreLeaseTest {
         // DefaultDataSourceRegistry.resolve() hands back the raw DataSource, which the local registry then enlists
         registry.register(extension.getDatasourceName(), extension.getDataSourceRegistry().resolve(extension.getDatasourceName()));
 
-        store = createStore(registry, extension.getDatasourceName(), queryExecutor, RUNTIME_ID);
-        otherStore = createStore(registry, extension.getDatasourceName(), queryExecutor, "other-runtime-id");
+        store = createStore(registry, extension.getDatasourceName(), queryExecutor, RUNTIME_ID, clock);
+        otherStore = createStore(registry, extension.getDatasourceName(), queryExecutor, "other-runtime-id", clock);
+        // its leases start in the past, so they have expired as soon as they are acquired
+        expiredLeaseStore = createStore(registry, extension.getDatasourceName(), queryExecutor, "expired-runtime-id", Clock.offset(clock, Duration.ofMinutes(-2)));
         leaseUtil = new LeaseUtil(transactionContext, extension::getConnection, statements.getHolderCredentialRequestTable(), leaseStatements, clock);
 
         extension.runQuery(TestUtils.getResourceFileContentAsString("holder-credential-request-schema.sql"));
@@ -143,19 +151,39 @@ class SqlHolderCredentialRequestStoreLeaseTest {
         }
     }
 
+    @Test
+    void save_whenLeaseExpiredAndOtherRuntimeSavedRequest_shouldFail() {
+        transactionContext.execute(() -> otherStore.save(createRequest(REQUESTING)));
+        var outdated = leaseNext(expiredLeaseStore);
+        var current = leaseNext(otherStore);
+        current.transitionRequested("issuer-pid");
+        assertThat(transactionContext.execute(() -> otherStore.save(current))).isSucceeded();
+
+        outdated.transitionRetry();
+
+        assertThat(transactionContext.execute(() -> expiredLeaseStore.save(outdated))).isFailed()
+                .extracting(StoreFailure::getReason)
+                .isEqualTo(StoreFailure.Reason.GENERAL_ERROR);
+        assertThat(transactionContext.execute(() -> store.findById(REQUEST_ID)).stateAsEnum()).isEqualTo(REQUESTED);
+    }
+
+    @Test
+    void save_whenLeaseExpiredAndNobodyElseSavedRequest_shouldSucceed() {
+        transactionContext.execute(() -> otherStore.save(createRequest(REQUESTING)));
+        var request = leaseNext(expiredLeaseStore);
+
+        request.transitionRequested("issuer-pid");
+
+        assertThat(transactionContext.execute(() -> expiredLeaseStore.save(request))).isSucceeded();
+        assertThat(transactionContext.execute(() -> store.findById(REQUEST_ID)).stateAsEnum()).isEqualTo(REQUESTED);
+    }
+
     /**
      * Stores a request in state REQUESTED, then leases, changes and saves it in another transaction, which stays open
      * until the returned latch is counted down.
      */
     private CountDownLatch changeInOtherTransaction(Consumer<HolderCredentialRequest> change) throws InterruptedException {
-        transactionContext.execute(() -> otherStore.save(HolderCredentialRequest.Builder.newInstance()
-                .id(REQUEST_ID)
-                .state(REQUESTED.code())
-                .issuerPid("issuer-pid")
-                .requestedCredential("test-credential-id", "TestCredential", "VC1_0_JWT")
-                .participantContextId("test-participant")
-                .issuerDid("did:web:testissuer")
-                .build()));
+        transactionContext.execute(() -> otherStore.save(createRequest(REQUESTED)));
 
         var changed = new CountDownLatch(1);
         var release = new CountDownLatch(1);
@@ -170,12 +198,31 @@ class SqlHolderCredentialRequestStoreLeaseTest {
         return release;
     }
 
+    private HolderCredentialRequest createRequest(HolderRequestState state) {
+        return HolderCredentialRequest.Builder.newInstance()
+                .id(REQUEST_ID)
+                .state(state.code())
+                // older than the state timestamp of any transition in the test, which would otherwise not change it
+                .stateTimestamp(clock.millis() - 1000)
+                .issuerPid("issuer-pid")
+                .requestedCredential("test-credential-id", "TestCredential", "VC1_0_JWT")
+                .participantContextId("test-participant")
+                .issuerDid("did:web:testissuer")
+                .build();
+    }
+
+    private HolderCredentialRequest leaseNext(SqlHolderCredentialRequestStore runtime) {
+        var leased = transactionContext.execute(() -> runtime.nextNotLeased(10, hasState(REQUESTING.code())));
+        assertThat(leased).hasSize(1);
+        return leased.get(0);
+    }
+
     private void assertWaitsForLease(Future<?> result) {
         assertThatThrownBy(() -> result.get(1, TimeUnit.SECONDS)).isInstanceOf(TimeoutException.class);
     }
 
-    private SqlHolderCredentialRequestStore createStore(LocalDataSourceRegistry registry, String datasourceName, QueryExecutor queryExecutor, String leaseHolder) {
-        var leaseContextBuilder = SqlLeaseContextBuilderImpl.with(transactionContext, leaseHolder, statements.getHolderCredentialRequestTable(), leaseStatements, clock, queryExecutor);
+    private SqlHolderCredentialRequestStore createStore(LocalDataSourceRegistry registry, String datasourceName, QueryExecutor queryExecutor, String leaseHolder, Clock leaseClock) {
+        var leaseContextBuilder = SqlLeaseContextBuilderImpl.with(transactionContext, leaseHolder, statements.getHolderCredentialRequestTable(), leaseStatements, leaseClock, queryExecutor);
         return new SqlHolderCredentialRequestStore(registry, datasourceName, transactionContext, new JacksonTypeManager()::getMapper,
                 queryExecutor, statements, leaseContextBuilder);
     }

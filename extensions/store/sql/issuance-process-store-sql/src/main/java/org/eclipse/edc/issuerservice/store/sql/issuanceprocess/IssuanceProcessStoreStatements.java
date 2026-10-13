@@ -65,6 +65,10 @@ public interface IssuanceProcessStoreStatements extends StatefulEntityStatements
 
     String getInsertTemplate();
 
+    /**
+     * Updates a process by its ID, if its state timestamp is still the one it was read with. The ID and that state
+     * timestamp are the last two parameters, after the columns to update.
+     */
     String getUpdateTemplate();
 
     String getDeleteByIdTemplate();
