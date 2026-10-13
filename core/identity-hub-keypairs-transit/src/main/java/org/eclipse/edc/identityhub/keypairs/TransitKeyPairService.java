@@ -49,7 +49,7 @@ import org.eclipse.edc.transaction.spi.TransactionContext;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.time.Instant;
+import java.time.Clock;
 import java.util.Base64;
 import java.util.Collection;
 import java.util.List;
@@ -74,14 +74,17 @@ public class TransitKeyPairService implements KeyPairService, EventSubscriber {
     private final TransactionContext transactionContext;
     private final ParticipantContextStore participantContextService;
     private final TransitEngine transitEngine;
+    private final Clock clock;
 
-    public TransitKeyPairService(KeyPairResourceStore keyPairResourceStore, Monitor monitor, KeyPairObservable observable, TransactionContext transactionContext, ParticipantContextStore participantContextService, TransitEngine transitEngine) {
+    public TransitKeyPairService(KeyPairResourceStore keyPairResourceStore, Monitor monitor, KeyPairObservable observable, TransactionContext transactionContext,
+                                 ParticipantContextStore participantContextService, TransitEngine transitEngine, Clock clock) {
         this.keyPairResourceStore = keyPairResourceStore;
         this.monitor = monitor;
         this.observable = observable;
         this.transactionContext = transactionContext;
         this.participantContextService = participantContextService;
         this.transitEngine = transitEngine;
+        this.clock = clock;
     }
 
     private static @NotNull String generateKeyName(String participantContextId, String keyId) {
@@ -146,7 +149,7 @@ public class TransitKeyPairService implements KeyPairService, EventSubscriber {
                         .isDefaultPair(makeDefault)
                         .privateKeyAlias(keyName)
                         .serializedPublicKey(decodePublicKeyToJwk(publicKey.getContent().getPublicKey()))
-                        .timestamp(Instant.now().toEpochMilli())
+                        .timestamp(clock.millis())
                         .participantContextId(participantContextId)
                         .keyContext(keyDescriptor.getType())
                         .build();
@@ -447,7 +450,7 @@ public class TransitKeyPairService implements KeyPairService, EventSubscriber {
                     .isDefaultPair(true)
                     .privateKeyAlias(oldKey.getPrivateKeyAlias())
                     .serializedPublicKey(decodePublicKeyToJwk(keyVersion.getContent().getPublicKey()))
-                    .timestamp(Instant.now().toEpochMilli())
+                    .timestamp(clock.millis())
                     .participantContextId(oldKey.getParticipantContextId())
                     .keyContext(oldKey.getKeyContext())
                     .build();

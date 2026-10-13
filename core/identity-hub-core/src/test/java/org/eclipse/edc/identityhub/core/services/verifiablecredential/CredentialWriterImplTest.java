@@ -44,6 +44,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
+import java.time.Clock;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -84,7 +85,7 @@ class CredentialWriterImplTest {
     private final Monitor monitor = mock();
     private final TrackingTransactionContext transactionContext = new TrackingTransactionContext();
     private final CredentialWriterImpl credentialWriter = new CredentialWriterImpl(credentialStore, credentialTransformerRegistry, transactionContext,
-            JacksonJsonLd.createObjectMapper(), holderCredentialRequestStore, tokenValidationService, publicKeyResolver, monitor);
+            JacksonJsonLd.createObjectMapper(), holderCredentialRequestStore, tokenValidationService, publicKeyResolver, monitor, Clock.systemUTC());
 
     @BeforeEach
     void setUp() {

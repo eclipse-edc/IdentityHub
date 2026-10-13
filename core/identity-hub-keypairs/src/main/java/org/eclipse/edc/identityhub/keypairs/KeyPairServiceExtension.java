@@ -59,7 +59,7 @@ public class KeyPairServiceExtension implements ServiceExtension {
 
     @Provider(isDefault = true)
     public KeyPairService createParticipantService(ServiceExtensionContext context) {
-        var service = new KeyPairServiceImpl(keyPairResourceStore, vault, context.getMonitor().withPrefix("KeyPairService"), keyPairObservable(), transactionContext, participantContextService);
+        var service = new KeyPairServiceImpl(keyPairResourceStore, vault, context.getMonitor().withPrefix("KeyPairService"), keyPairObservable(), transactionContext, participantContextService, clock);
         eventRouter.registerSync(ParticipantContextDeleted.class, service);
         return service;
     }

@@ -42,6 +42,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
+import java.time.Clock;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -89,7 +90,8 @@ class IssuerCredentialOfferServiceImplTest {
             httpClient, mock(),
             typeTransformerRegistry,
             issuerMetadataService,
-            jsonLd
+            jsonLd,
+            Clock.systemUTC()
     );
 
     @BeforeEach

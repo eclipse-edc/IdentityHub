@@ -48,6 +48,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentMatcher;
 import tools.jackson.databind.ObjectMapper;
 
+import java.time.Clock;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
@@ -92,7 +93,7 @@ class TransitKeyPairServiceTest {
     private final TransitEngine transitEngine = mock();
     private final Monitor monitor = mock();
     private final TrackingTransactionContext transactionContext = new TrackingTransactionContext();
-    private final TransitKeyPairService keyPairService = new TransitKeyPairService(keyPairResourceStore, monitor, observableMock, transactionContext, participantContextServiceMock, transitEngine);
+    private final TransitKeyPairService keyPairService = new TransitKeyPairService(keyPairResourceStore, monitor, observableMock, transactionContext, participantContextServiceMock, transitEngine, Clock.systemUTC());
 
 
     @BeforeEach

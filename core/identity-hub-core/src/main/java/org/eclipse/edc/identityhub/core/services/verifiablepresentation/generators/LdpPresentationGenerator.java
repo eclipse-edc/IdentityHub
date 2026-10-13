@@ -41,7 +41,7 @@ import tools.jackson.core.JacksonException;
 import java.net.URI;
 import java.security.KeyPair;
 import java.security.PrivateKey;
-import java.time.Instant;
+import java.time.Clock;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -69,16 +69,18 @@ public class LdpPresentationGenerator implements PresentationGenerator<JsonObjec
     private final LdpIssuer ldpIssuer;
     private final TypeManager typeManager;
     private final String typeContext;
+    private final Clock clock;
 
     public LdpPresentationGenerator(PrivateKeyResolver privateKeyResolver,
                                     SignatureSuiteRegistry signatureSuiteRegistry, String defaultSignatureSuite, LdpIssuer ldpIssuer,
-                                    TypeManager typeManager, String typeContext) {
+                                    TypeManager typeManager, String typeContext, Clock clock) {
         this.privateKeyResolver = privateKeyResolver;
         this.signatureSuiteRegistry = signatureSuiteRegistry;
         this.defaultSignatureSuite = defaultSignatureSuite;
         this.ldpIssuer = ldpIssuer;
         this.typeManager = typeManager;
         this.typeContext = typeContext;
+        this.clock = clock;
     }
 
     /**
@@ -178,7 +180,7 @@ public class LdpPresentationGenerator implements PresentationGenerator<JsonObjec
         var proofDraft = Jws2020ProofDraft.Builder.newInstance()
                 .proofPurpose(ASSERTION_METHOD)
                 .verificationMethod(new JsonWebKeyPair(keyIdUri, verificationMethodType, controllerUri, null))
-                .created(Instant.now())
+                .created(clock.instant())
                 .mapper(typeManager.getMapper(typeContext))
                 .build();
 

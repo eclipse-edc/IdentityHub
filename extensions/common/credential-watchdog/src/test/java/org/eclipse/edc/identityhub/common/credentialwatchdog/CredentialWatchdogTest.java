@@ -37,8 +37,10 @@ import org.eclipse.edc.transaction.spi.NoopTransactionContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -85,7 +87,7 @@ class CredentialWatchdogTest {
     private final CredentialRequestManager credentialRequestManager = mock();
     private final Monitor monitor = mock();
     private final CredentialWatchdog watchdog = new CredentialWatchdog(credentialStore, credentialStatusCheckService, monitor, new NoopTransactionContext(),
-            Duration.ofSeconds(GRACE_PERIOD), credentialRequestManager);
+            Duration.ofSeconds(GRACE_PERIOD), credentialRequestManager, Clock.systemUTC());
     private final Map<String, VerifiableCredentialResource> storedCredentials = new HashMap<>();
 
     @BeforeEach
@@ -228,6 +230,22 @@ class CredentialWatchdogTest {
         verify(credentialStore).update(argThat(vc -> vc.getStateAsEnum() == REQUESTED && vc.getMetadata().get(METADATA_RENEWAL_REQUEST_ID) != null));
     }
 
+
+    @Test
+    void run_whenCredentialIsExpiringAccordingToClock_shouldInitiateRenewal() {
+        var clock = Clock.fixed(Instant.now().plus(400, ChronoUnit.DAYS), ZoneOffset.UTC);
+        var watchdogWithClock = new CredentialWatchdog(credentialStore, credentialStatusCheckService, monitor, new NoopTransactionContext(),
+                Duration.ofSeconds(GRACE_PERIOD), credentialRequestManager, clock);
+        var cred = createCredentialBuilder()
+                .metadata("credentialObjectId", "cred-object-id")
+                .build();
+        storeHolds(cred);
+        when(credentialStore.update(any())).thenReturn(StoreResult.success());
+
+        watchdogWithClock.run();
+
+        verify(credentialRequestManager).initiateRequest(eq(cred.getParticipantContextId()), eq(cred.getIssuerId()), anyString(), anyList());
+    }
 
     @Test
     void run_whenCredentialIsExpiring_renewalFails() {
@@ -473,7 +491,7 @@ class CredentialWatchdogTest {
     void run_shouldCheckEachCredentialInItsOwnTransaction() {
         var transactionContext = new TrackingTransactionContext();
         var watchdog = new CredentialWatchdog(credentialStore, credentialStatusCheckService, monitor, transactionContext,
-                Duration.ofSeconds(GRACE_PERIOD), credentialRequestManager);
+                Duration.ofSeconds(GRACE_PERIOD), credentialRequestManager, Clock.systemUTC());
         var transactionsOfUpdates = new ArrayList<Integer>();
         storeHolds(createCredentialBuilder().build(), createCredentialBuilder().build());
         when(credentialStatusCheckService.checkStatus(any())).thenReturn(Result.success(REVOKED));
@@ -494,7 +512,7 @@ class CredentialWatchdogTest {
     void run_shouldDetermineStatusOutsideTransaction() {
         var transactionContext = new TrackingTransactionContext();
         var watchdog = new CredentialWatchdog(credentialStore, credentialStatusCheckService, monitor, transactionContext,
-                Duration.ofSeconds(GRACE_PERIOD), credentialRequestManager);
+                Duration.ofSeconds(GRACE_PERIOD), credentialRequestManager, Clock.systemUTC());
         var transactionsOfChecks = new ArrayList<Integer>();
         storeHolds(createCredentialBuilder().build());
         when(credentialStatusCheckService.checkStatus(any())).thenAnswer(i -> {
@@ -513,7 +531,7 @@ class CredentialWatchdogTest {
     void run_shouldLockCredentialInTransactionsThatChangeIt() {
         var transactionContext = new TrackingTransactionContext();
         var watchdog = new CredentialWatchdog(credentialStore, credentialStatusCheckService, monitor, transactionContext,
-                Duration.ofSeconds(GRACE_PERIOD), credentialRequestManager);
+                Duration.ofSeconds(GRACE_PERIOD), credentialRequestManager, Clock.systemUTC());
         var credential = createCredentialBuilder().build();
         storeHolds(credential);
         var transactionsOfLocks = new ArrayList<Integer>();

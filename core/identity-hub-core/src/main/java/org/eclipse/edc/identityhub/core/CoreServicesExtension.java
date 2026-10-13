@@ -64,8 +64,10 @@ import org.eclipse.edc.runtime.metamodel.annotation.Configuration;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;
 import org.eclipse.edc.runtime.metamodel.annotation.Provider;
+import org.eclipse.edc.runtime.metamodel.annotation.Setting;
 import org.eclipse.edc.security.signature.jws2020.Jws2020SignatureSuite;
 import org.eclipse.edc.spi.event.EventRouter;
+import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.spi.system.ServiceExtension;
 import org.eclipse.edc.spi.system.ServiceExtensionContext;
 import org.eclipse.edc.spi.types.TypeManager;
@@ -77,6 +79,7 @@ import org.eclipse.edc.transform.spi.TypeTransformerRegistry;
 import org.eclipse.edc.verifiablecredentials.linkeddata.LdpIssuer;
 
 import java.time.Clock;
+import java.time.Duration;
 
 import static org.eclipse.edc.identityhub.core.CoreServicesExtension.NAME;
 import static org.eclipse.edc.identityhub.protocols.dcp.spi.DcpConstants.DCP_SCOPE_V_1_0;
@@ -89,6 +92,11 @@ import static org.eclipse.edc.spi.constants.CoreConstants.JSON_LD;
 public class CoreServicesExtension implements ServiceExtension {
 
     public static final String NAME = "IdentityHub Core Services Extension";
+    public static final long DEFAULT_PRESENTATION_VALIDITY_SECONDS = 60;
+
+    @Setting(description = "How long a JWT Verifiable Presentation is valid after it was created, in seconds. Determines the presentation's 'exp' claim.",
+            defaultValue = DEFAULT_PRESENTATION_VALIDITY_SECONDS + "", key = "edc.iam.presentation.validity")
+    private long presentationValiditySeconds;
 
     @Configuration
     private CredentialRequestConfiguration credentialRequestConfiguration;
@@ -186,7 +194,7 @@ public class CoreServicesExtension implements ServiceExtension {
 
     @Provider
     public CredentialQueryResolver createCredentialQueryResolver(ServiceExtensionContext context) {
-        return new CredentialQueryResolverImpl(credentialStore, transformer, revocationServiceRegistry, context.getMonitor().withPrefix("Credential Query"));
+        return new CredentialQueryResolverImpl(credentialStore, transformer, revocationServiceRegistry, context.getMonitor().withPrefix("Credential Query"), clock);
     }
 
     @Provider
@@ -194,11 +202,11 @@ public class CoreServicesExtension implements ServiceExtension {
         if (presentationCreatorRegistry == null) {
             presentationCreatorRegistry = new PresentationCreatorRegistryImpl(keyPairService, participantContextService, transactionContext);
             var jwtGenerationService = new JwtGenerationService(jwsSignerProvider);
-            presentationCreatorRegistry.addCreator(new JwtPresentationGenerator(clock, jwtGenerationService), CredentialFormat.VC1_0_JWT);
-
             var monitor = context.getMonitor();
+            presentationCreatorRegistry.addCreator(new JwtPresentationGenerator(clock, jwtGenerationService, presentationValidity(monitor)), CredentialFormat.VC1_0_JWT);
+
             var ldpIssuer = LdpIssuer.Builder.newInstance().jsonLd(jsonLd).monitor(monitor).build();
-            presentationCreatorRegistry.addCreator(new LdpPresentationGenerator(privateKeyResolver, signatureSuiteRegistry, IdentityHubConstants.JWS_2020_SIGNATURE_SUITE, ldpIssuer, typeManager, JSON_LD),
+            presentationCreatorRegistry.addCreator(new LdpPresentationGenerator(privateKeyResolver, signatureSuiteRegistry, IdentityHubConstants.JWS_2020_SIGNATURE_SUITE, ldpIssuer, typeManager, JSON_LD, clock),
                     CredentialFormat.VC1_0_LD);
 
             presentationCreatorRegistry.addCreator(new JwtEnvelopedPresentationGenerator(monitor, jwtGenerationService), CredentialFormat.VC2_0_JOSE);
@@ -215,7 +223,7 @@ public class CoreServicesExtension implements ServiceExtension {
     public CredentialWriter createCredentialWriter(ServiceExtensionContext context) {
         var objectMapper = typeManager.getMapper(JSON_LD);
         return new CredentialWriterImpl(credentialStore, typeTransformerRegistry, transactionContext, objectMapper, holderCredentialRequestStore, tokenValidationService, publicKeyResolver,
-                context.getMonitor());
+                context.getMonitor(), clock);
     }
 
     @Provider
@@ -237,6 +245,7 @@ public class CoreServicesExtension implements ServiceExtension {
                     .transactionContext(transactionContext)
                     .participantContextService(participantContextService)
                     .monitor(context.getMonitor())
+                    .clock(clock)
                     .configuration(credentialRequestConfiguration)
                     .batchSize(credentialRequestStateMachineConfiguration.batchSize())
                     .waitStrategy(credentialRequestStateMachineConfiguration.iterationWaitExponentialWaitStrategy())
@@ -258,5 +267,14 @@ public class CoreServicesExtension implements ServiceExtension {
             credentialOfferObservable.registerListener(new CredentialOfferEventPublisher(clock, eventRouter));
         }
         return credentialOfferObservable;
+    }
+
+    private Duration presentationValidity(Monitor monitor) {
+        if (presentationValiditySeconds <= 0) {
+            monitor.warning("'edc.iam.presentation.validity' must be positive, but was %d. Using the default of %d seconds instead."
+                    .formatted(presentationValiditySeconds, DEFAULT_PRESENTATION_VALIDITY_SECONDS));
+            return Duration.ofSeconds(DEFAULT_PRESENTATION_VALIDITY_SECONDS);
+        }
+        return Duration.ofSeconds(presentationValiditySeconds);
     }
 }

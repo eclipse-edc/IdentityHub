@@ -36,6 +36,8 @@ import org.eclipse.edc.spi.system.ServiceExtensionContext;
 import org.eclipse.edc.transaction.spi.TransactionContext;
 import org.eclipse.edc.transform.spi.TypeTransformerRegistry;
 
+import java.time.Clock;
+
 import static org.eclipse.edc.identityhub.protocols.dcp.spi.DcpConstants.DCP_SCOPE_V_1_0;
 import static org.eclipse.edc.issuerservice.credentials.CredentialServiceExtension.NAME;
 import static org.eclipse.edc.issuerservice.credentials.statuslist.bitstring.BitstringConstants.BITSTRING_STATUS_LIST_ENTRY;
@@ -69,6 +71,8 @@ public class CredentialServiceExtension implements ServiceExtension {
     private StatusListManager statusListManager;
     @Inject
     private JsonLd jsonLd;
+    @Inject
+    private Clock clock;
 
     @Override
     public String name() {
@@ -86,7 +90,7 @@ public class CredentialServiceExtension implements ServiceExtension {
     public IssuerCredentialOfferService credentialOfferService(ServiceExtensionContext context) {
         return new IssuerCredentialOfferServiceImpl(transactionContext, holderStore, credentialServiceUrlResolver, sts, participantContextService, httpClient, context.getMonitor(),
                 transformerRegistry.forContext(DCP_SCOPE_V_1_0),
-                issuerMetadataService, jsonLd);
+                issuerMetadataService, jsonLd, clock);
     }
 
 }

@@ -44,7 +44,7 @@ import org.jetbrains.annotations.Nullable;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.ObjectMapper;
 
-import java.time.Instant;
+import java.time.Clock;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -66,11 +66,13 @@ public class CredentialWriterImpl implements CredentialWriter {
     private final TokenValidationService tokenValidationService;
     private final DidPublicKeyResolver publicKeyResolver;
     private final Monitor monitor;
+    private final Clock clock;
 
     public CredentialWriterImpl(CredentialStore credentialStore, TypeTransformerRegistry credentialTransformerRegistry, TransactionContext transactionContext, ObjectMapper objectMapper,
                                 HolderCredentialRequestStore holderCredentialRequestStore, TokenValidationService tokenValidationService, DidPublicKeyResolver publicKeyResolver,
-                                Monitor monitor) {
+                                Monitor monitor, Clock clock) {
         this.monitor = monitor;
+        this.clock = clock;
         this.credentialStore = credentialStore;
         this.credentialTransformerRegistry = credentialTransformerRegistry;
         this.transactionContext = transactionContext;
@@ -396,7 +398,7 @@ public class CredentialWriterImpl implements CredentialWriter {
                 .state(VcStatus.ISSUED)
                 .holderId(extractHolder(credential))
                 .issuerId(credential.getIssuer().id())
-                .timestamp(Instant.now().toEpochMilli())
+                .timestamp(clock.millis())
                 .participantContextId(participantContextId)
                 .build();
 

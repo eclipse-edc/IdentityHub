@@ -29,8 +29,8 @@ import org.eclipse.edc.spi.result.ServiceResult;
 import org.eclipse.edc.transaction.spi.TransactionContext;
 import org.jetbrains.annotations.Nullable;
 
+import java.time.Clock;
 import java.time.Duration;
-import java.time.Instant;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -75,19 +75,22 @@ public class CredentialWatchdog implements Runnable {
     private final TransactionContext transactionContext;
     private final Duration expiryGracePeriod;
     private final CredentialRequestManager credentialRequestManager;
+    private final Clock clock;
 
     public CredentialWatchdog(CredentialStore credentialStore,
                               CredentialStatusCheckService credentialStatusCheckService,
                               Monitor monitor,
                               TransactionContext transactionContext,
                               Duration expiryGracePeriod,
-                              CredentialRequestManager credentialRequestManager) {
+                              CredentialRequestManager credentialRequestManager,
+                              Clock clock) {
         this.credentialStore = credentialStore;
         this.credentialStatusCheckService = credentialStatusCheckService;
         this.monitor = monitor;
         this.transactionContext = transactionContext;
         this.expiryGracePeriod = expiryGracePeriod;
         this.credentialRequestManager = credentialRequestManager;
+        this.clock = clock;
     }
 
     @Override
@@ -203,7 +206,7 @@ public class CredentialWatchdog implements Runnable {
         var expirationDate = credential.getVerifiableCredential().credential().getExpirationDate();
         return !credential.isSuperseded() &&
                 expirationDate != null &&
-                Instant.now().isAfter(expirationDate.minusSeconds(expiryGracePeriod.toSeconds()));
+                clock.instant().isAfter(expirationDate.minusSeconds(expiryGracePeriod.toSeconds()));
     }
 
     /**

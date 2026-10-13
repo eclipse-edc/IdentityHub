@@ -28,6 +28,8 @@ import org.eclipse.edc.spi.system.ServiceExtension;
 import org.eclipse.edc.spi.system.ServiceExtensionContext;
 import org.eclipse.edc.transaction.spi.TransactionContext;
 
+import java.time.Clock;
+
 import static org.eclipse.edc.identityhub.keypairs.TransitKeyPairServiceExtension.NAME;
 
 @Extension(NAME)
@@ -49,6 +51,8 @@ public class TransitKeyPairServiceExtension implements ServiceExtension {
 
     @Inject
     private TransitEngine transitEngine;
+    @Inject
+    private Clock clock;
 
 
     @Override
@@ -58,7 +62,7 @@ public class TransitKeyPairServiceExtension implements ServiceExtension {
 
     @Provider
     public KeyPairService createKeyPairService(ServiceExtensionContext context) {
-        var service = new TransitKeyPairService(keyPairResourceStore, context.getMonitor().withPrefix("KeyPairService"), keyPairObservable, transactionContext, participantContextService, transitEngine);
+        var service = new TransitKeyPairService(keyPairResourceStore, context.getMonitor().withPrefix("KeyPairService"), keyPairObservable, transactionContext, participantContextService, transitEngine, clock);
         eventRouter.registerSync(ParticipantContextDeleted.class, service);
         return service;
     }

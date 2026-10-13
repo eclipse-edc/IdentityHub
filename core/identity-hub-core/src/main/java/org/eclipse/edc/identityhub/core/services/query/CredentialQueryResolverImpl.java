@@ -31,7 +31,7 @@ import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.AbstractResult;
 import org.eclipse.edc.spi.result.Result;
 
-import java.time.Instant;
+import java.time.Clock;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
@@ -48,12 +48,14 @@ public class CredentialQueryResolverImpl implements CredentialQueryResolver {
     private final ScopeToCriterionTransformer scopeTransformer;
     private final RevocationServiceRegistry revocationServiceRegistry;
     private final Monitor monitor;
+    private final Clock clock;
 
-    public CredentialQueryResolverImpl(CredentialStore credentialStore, ScopeToCriterionTransformer scopeTransformer, RevocationServiceRegistry revocationServiceRegistry, Monitor monitor) {
+    public CredentialQueryResolverImpl(CredentialStore credentialStore, ScopeToCriterionTransformer scopeTransformer, RevocationServiceRegistry revocationServiceRegistry, Monitor monitor, Clock clock) {
         this.credentialStore = credentialStore;
         this.scopeTransformer = scopeTransformer;
         this.revocationServiceRegistry = revocationServiceRegistry;
         this.monitor = monitor;
+        this.clock = clock;
     }
 
     @Override
@@ -126,7 +128,7 @@ public class CredentialQueryResolverImpl implements CredentialQueryResolver {
     }
 
     private boolean filterInvalidCredentials(VerifiableCredentialResource verifiableCredentialResource) {
-        var now = Instant.now();
+        var now = clock.instant();
         var credential = verifiableCredentialResource.getVerifiableCredential().credential();
         // issuance date can not be null, due to builder validation
         if (credential.getIssuanceDate().isAfter(now)) {
