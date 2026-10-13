@@ -95,6 +95,64 @@ class SqlIssuanceProcessStoreTest extends IssuanceProcessStoreTestBase {
         Assertions.assertThat(transactionalStore.findById(other.getId())).isNotNull();
     }
 
+    @Test
+    void save_whenChangedSinceRead_shouldFail() {
+        var process = createIssuanceProcess("holder-pid");
+        store.save(process);
+        var outdated = store.findById(process.getId());
+        var current = store.findById(process.getId());
+        current.transitionToDelivering();
+        assertThat(store.save(current)).isSucceeded();
+
+        outdated.transitionToApproved();
+
+        assertThat(store.save(outdated)).isFailed()
+                .extracting(StoreFailure::getReason)
+                .isEqualTo(StoreFailure.Reason.GENERAL_ERROR);
+        Assertions.assertThat(store.findById(process.getId()).getState()).isEqualTo(IssuanceProcessStates.DELIVERING.code());
+    }
+
+    @Test
+    void save_whenSavedAgain_shouldUpdate() {
+        var process = createIssuanceProcess("holder-pid");
+        store.save(process);
+        var read = store.findById(process.getId());
+        read.transitionToDelivering();
+        assertThat(store.save(read)).isSucceeded();
+
+        read.transitionToDelivered();
+
+        assertThat(store.save(read)).isSucceeded();
+        Assertions.assertThat(store.findById(process.getId()).getState()).isEqualTo(IssuanceProcessStates.DELIVERED.code());
+    }
+
+    @Test
+    void save_whenNotReadFromStore_shouldUpdate() {
+        var process = createIssuanceProcess("holder-pid");
+        store.save(process);
+        var notRead = createIssuanceProcess("holder-pid").toBuilder()
+                .id(process.getId())
+                .state(IssuanceProcessStates.DELIVERING.code())
+                .build();
+
+        assertThat(store.save(notRead)).isSucceeded();
+        Assertions.assertThat(store.findById(process.getId()).getState()).isEqualTo(IssuanceProcessStates.DELIVERING.code());
+    }
+
+    @Test
+    void save_whenStateTimestampMissing_shouldUpdate(PostgresqlStoreSetupExtension extension) {
+        var process = createIssuanceProcess("holder-pid");
+        store.save(process);
+        extension.runQuery("UPDATE %s SET %s = NULL WHERE %s = '%s'".formatted(statements.getIssuanceProcessTable(),
+                statements.getStateTimestampColumn(), statements.getIdColumn(), process.getId()));
+        var read = store.findById(process.getId());
+
+        read.transitionToDelivering();
+
+        assertThat(store.save(read)).isSucceeded();
+        Assertions.assertThat(store.findById(process.getId()).getState()).isEqualTo(IssuanceProcessStates.DELIVERING.code());
+    }
+
     @Override
     protected IssuanceProcessStore getStore() {
         return store;
@@ -130,6 +188,8 @@ class SqlIssuanceProcessStoreTest extends IssuanceProcessStoreTestBase {
                 .credentialFormats(Map.of("format", CredentialFormat.VC1_0_JWT))
                 .holderPid(holderPid)
                 .state(IssuanceProcessStates.APPROVED.code())
+                // older than the state timestamp of any transition in the test, which would otherwise not change it
+                .stateTimestamp(clock.millis() - 1000)
                 .build();
     }
 }

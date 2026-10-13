@@ -235,18 +235,32 @@ public class CredentialRequestManagerImpl extends AbstractStateEntityManager<Hol
 
     private void transitionRequested(HolderCredentialRequest req, String issuerPid) {
         req.transitionRequested(issuerPid);
-        updateRequest(req);
+        save(req);
     }
 
     private void transitionRetry(HolderCredentialRequest request) {
         request.transitionRetry();
-        updateRequest(request);
+        save(request);
     }
 
     private void transitionError(HolderCredentialRequest request, String failureDetail) {
         request.transitionError(failureDetail);
-        updateRequest(request);
-        monitor.warning("A Holder Credential Request has been transitioned to '%s': %s".formatted(ERROR, failureDetail));
+        if (save(request)) {
+            monitor.warning("A Holder Credential Request has been transitioned to '%s': %s".formatted(ERROR, failureDetail));
+        }
+    }
+
+    /**
+     * Saves the request. That fails if the request was saved by someone else since it was read, e.g. by another runtime
+     * that leased it after the lease of this one expired.
+     *
+     * @return whether the request was saved
+     */
+    private boolean save(HolderCredentialRequest request) {
+        return updateRequest(request)
+                .onFailure(f -> monitor.warning("Holder Credential Request '%s' could not be saved in state %s: %s"
+                        .formatted(request.getId(), request.stateAsString(), f.getFailureDetail())))
+                .succeeded();
     }
 
     private StoreResult<?> updateRequest(HolderCredentialRequest request) {
@@ -274,7 +288,7 @@ public class CredentialRequestManagerImpl extends AbstractStateEntityManager<Hol
      */
     private CompletableFuture<StatusResult<Void>> processCreated(HolderCredentialRequest holderCredentialRequest) {
         holderCredentialRequest.transitionRequesting();
-        updateRequest(holderCredentialRequest);
+        save(holderCredentialRequest);
         return CompletableFuture.completedFuture(StatusResult.success());
     }
 

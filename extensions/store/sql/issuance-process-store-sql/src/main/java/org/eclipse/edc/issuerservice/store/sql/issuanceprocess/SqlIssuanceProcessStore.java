@@ -37,6 +37,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
@@ -137,8 +138,7 @@ public class SqlIssuanceProcessStore extends AbstractSqlStore implements Issuanc
                     if (result.failed()) {
                         return result;
                     }
-                    update(conn, issuanceProcess);
-                    return StoreResult.success();
+                    return update(conn, issuanceProcess, existing);
                 }
                 return insert(conn, issuanceProcess);
             } catch (SQLException e) {
@@ -187,14 +187,21 @@ public class SqlIssuanceProcessStore extends AbstractSqlStore implements Issuanc
                 toJson(process.getCredentialDefinitions()),
                 toJson(process.getCredentialFormats())
         );
-        return inserted > 0
-                ? StoreResult.success()
-                : StoreResult.alreadyExists(holderPidConflictMessage(process));
+        if (inserted == 0) {
+            return StoreResult.alreadyExists(holderPidConflictMessage(process));
+        }
+        process.setStoredStateTimestamp(process.getStateTimestamp());
+        return StoreResult.success();
     }
 
-    private void update(Connection conn, IssuanceProcess process) {
+    /**
+     * Updates the process, unless someone else saved it since it was read, e.g. another runtime that leased it after the
+     * lease of this one expired. A process that was not read from the store is compared with the one read before.
+     */
+    private StoreResult<Void> update(Connection conn, IssuanceProcess process, IssuanceProcess existing) {
+        var storedStateTimestamp = Optional.ofNullable(process.getStoredStateTimestamp()).orElse(existing.getStoredStateTimestamp());
         var updateStmt = statements.getUpdateTemplate();
-        queryExecutor.execute(conn, updateStmt,
+        var updated = queryExecutor.execute(conn, updateStmt,
                 process.getState(),
                 process.getStateCount(),
                 process.getStateTimestamp(),
@@ -204,8 +211,14 @@ public class SqlIssuanceProcessStore extends AbstractSqlStore implements Issuanc
                 toJson(process.getClaims()),
                 toJson(process.getCredentialDefinitions()),
                 toJson(process.getCredentialFormats()),
-                process.getId());
-
+                process.getId(),
+                storedStateTimestamp);
+        if (updated == 0) {
+            return StoreResult.generalError(format("IssuanceProcess %s is not saved in state %s, because it was changed since it was read, and is in state %s",
+                    process.getId(), process.stateAsString(), existing.stateAsString()));
+        }
+        process.setStoredStateTimestamp(process.getStateTimestamp());
+        return StoreResult.success();
     }
 
     /**
@@ -239,7 +252,7 @@ public class SqlIssuanceProcessStore extends AbstractSqlStore implements Issuanc
 
 
     private IssuanceProcess mapResultSet(ResultSet resultSet) throws Exception {
-        return IssuanceProcess.Builder.newInstance()
+        var process = IssuanceProcess.Builder.newInstance()
                 .id(resultSet.getString(statements.getIdColumn()))
                 .createdAt(resultSet.getLong(statements.getCreatedAtColumn()))
                 .updatedAt(resultSet.getLong(statements.getUpdatedAtColumn()))
@@ -255,5 +268,8 @@ public class SqlIssuanceProcessStore extends AbstractSqlStore implements Issuanc
                 .credentialDefinitions(fromJson(resultSet.getString(statements.getCredentialDefinitionsColumn()), ATTESTATIONS_LIST_REF))
                 .credentialFormats(fromJson(resultSet.getString(statements.getCredentialFormatsColumn()), CREDENTIAL_FORMATS_REF))
                 .build();
+        // the column as it is, whereas the process replaces a missing state timestamp with the current time
+        process.setStoredStateTimestamp(resultSet.getLong(statements.getStateTimestampColumn()));
+        return process;
     }
 }

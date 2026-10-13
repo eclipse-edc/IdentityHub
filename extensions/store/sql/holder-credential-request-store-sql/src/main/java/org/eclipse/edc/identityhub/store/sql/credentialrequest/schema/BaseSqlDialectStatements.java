@@ -24,6 +24,7 @@ import org.eclipse.edc.sql.translation.SqlQueryStatement;
 import java.time.Clock;
 
 import static java.lang.String.format;
+import static org.eclipse.edc.spi.query.Criterion.criterion;
 
 public class BaseSqlDialectStatements implements HolderCredentialRequestStoreStatements {
 
@@ -67,7 +68,11 @@ public class BaseSqlDialectStatements implements HolderCredentialRequestStoreSta
                 .column(getIssuerDidColumn())
                 .column(getissuerPidColumn())
                 .jsonColumn(getCredentialFormatsColumn())
-                .update(getHolderCredentialRequestTable(), getIdColumn());
+                .update(getHolderCredentialRequestTable(),
+                        criterion(getIdColumn(), "=", "?"),
+                        // a request that was saved by someone else since it was read is not overwritten. A row without a state
+                        // timestamp is read with 0
+                        criterion(format("COALESCE(%s, 0)", getStateTimestampColumn()), "=", "?"));
     }
 
     @Override

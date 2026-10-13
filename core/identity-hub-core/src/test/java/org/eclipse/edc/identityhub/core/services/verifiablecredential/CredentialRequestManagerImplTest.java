@@ -39,6 +39,7 @@ import org.eclipse.edc.identityhub.spi.participantcontext.model.IdentityHubParti
 import org.eclipse.edc.identityhub.transaction.TrackingTransactionContext;
 import org.eclipse.edc.jsonld.spi.JsonLd;
 import org.eclipse.edc.spi.iam.TokenRepresentation;
+import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.spi.persistence.EdcPersistenceException;
 import org.eclipse.edc.spi.query.Criterion;
 import org.eclipse.edc.spi.query.QuerySpec;
@@ -105,6 +106,7 @@ class CredentialRequestManagerImplTest {
     private final JsonLd jsonLd = mock();
     private final CredentialRequestConfiguration configuration = mock();
     private final TrackingTransactionContext transactionContext = new TrackingTransactionContext();
+    private final Monitor monitor = mock();
     private final CredentialRequestManagerImpl credentialRequestService = CredentialRequestManagerImpl.Builder.newInstance()
             .store(store)
             .didResolverRegistry(resolver)
@@ -114,7 +116,7 @@ class CredentialRequestManagerImplTest {
             .secureTokenService(sts)
             .participantContextService(participantContextService)
             .transactionContext(transactionContext)
-            .monitor(mock())
+            .monitor(monitor)
             .waitStrategy(() -> 500L)
             .configuration(configuration)
             .build();
@@ -353,6 +355,29 @@ class CredentialRequestManagerImplTest {
                 inOrder.verify(httpClient).execute(any(Request.class));
                 inOrder.verify(store, times(1)).save(argThat(r -> r.getState() == ERROR.code() && r.getErrorDetail().contains("issuer failure bad request")));
             });
+        }
+
+        @Test
+        void processRequesting_whenRequestWasSavedByOtherRuntime_shouldNotReportError() throws IOException {
+            when(resolver.resolve(eq(ISSUER_DID))).thenReturn(success(didDocument()));
+            when(httpClient.execute(any(Request.class))).thenReturn(response(400, "Bad Request", "issuer failure bad request"));
+            // e.g. the lease of this runtime expired, and another runtime processed the request and saved it
+            when(store.save(any())).thenReturn(StoreResult.generalError("changed since it was read"));
+
+            var rq = createRequest()
+                    .state(REQUESTING.code())
+                    .build();
+            when(store.nextNotLeased(anyInt(), stateIs(REQUESTING.code())))
+                    .thenReturn(List.of(rq))
+                    .thenReturn(List.of());
+
+            credentialRequestService.start();
+
+            await().atMost(MAX_DURATION).untilAsserted(() -> verify(store).save(argThat(r -> r.getState() == ERROR.code())));
+            // waits until the request is done with
+            credentialRequestService.stop();
+            verify(monitor).warning(argThat((String message) -> message.contains("could not be saved")));
+            verify(monitor, never()).warning(argThat((String message) -> message.contains("has been transitioned")));
         }
 
         @Test
