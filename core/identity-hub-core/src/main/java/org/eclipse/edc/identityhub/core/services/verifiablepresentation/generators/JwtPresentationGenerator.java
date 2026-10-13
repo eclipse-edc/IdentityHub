@@ -28,7 +28,7 @@ import org.eclipse.edc.token.spi.TokenDecorator;
 import org.eclipse.edc.token.spi.TokenGenerationService;
 
 import java.time.Clock;
-import java.time.Instant;
+import java.time.Duration;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -44,19 +44,33 @@ import static org.eclipse.edc.identityhub.core.services.verifiablepresentation.g
  */
 public class JwtPresentationGenerator implements PresentationGenerator<String> {
     public static final String VERIFIABLE_PRESENTATION_CLAIM = "vp";
+    public static final Duration DEFAULT_VP_LIFETIME = Duration.ofSeconds(60);
     private final Clock clock;
+    private final Duration vpLifetime;
 
     private final TokenGenerationService tokenGenerationService;
+
+    /**
+     * Creates a JWT presentation based on a list of Verifiable Credential Containers. Presentations are valid for {@link #DEFAULT_VP_LIFETIME}.
+     *
+     * @param clock                  The clock used for generating timestamps.
+     * @param tokenGenerationService service to generate (JWT) tokens
+     */
+    public JwtPresentationGenerator(Clock clock, TokenGenerationService tokenGenerationService) {
+        this(clock, tokenGenerationService, DEFAULT_VP_LIFETIME);
+    }
 
     /**
      * Creates a JWT presentation based on a list of Verifiable Credential Containers.
      *
      * @param clock                  The clock used for generating timestamps.
      * @param tokenGenerationService service to generate (JWT) tokens
+     * @param vpLifetime             how long a presentation is valid after it was issued, i.e. the difference between its {@code exp} and {@code iat} claims
      */
-    public JwtPresentationGenerator(Clock clock, TokenGenerationService tokenGenerationService) {
+    public JwtPresentationGenerator(Clock clock, TokenGenerationService tokenGenerationService, Duration vpLifetime) {
         this.clock = clock;
         this.tokenGenerationService = tokenGenerationService;
+        this.vpLifetime = vpLifetime;
     }
 
     /**
@@ -113,13 +127,13 @@ public class JwtPresentationGenerator implements PresentationGenerator<String> {
     }
 
     private TokenDecorator vpDecorator(List<String> rawVcs, String issuerId) {
-        var now = Date.from(clock.instant());
+        var now = clock.instant();
         return tp -> tp.claims(JwtRegisteredClaimNames.ISSUER, issuerId)
-                .claims(JwtRegisteredClaimNames.ISSUED_AT, now)
-                .claims(JwtRegisteredClaimNames.NOT_BEFORE, now)
+                .claims(JwtRegisteredClaimNames.ISSUED_AT, Date.from(now))
+                .claims(JwtRegisteredClaimNames.NOT_BEFORE, Date.from(now))
                 .claims(JwtRegisteredClaimNames.JWT_ID, UUID.randomUUID().toString())
                 .claims(VERIFIABLE_PRESENTATION_CLAIM, createVpClaim(rawVcs))
-                .claims(JwtRegisteredClaimNames.EXPIRATION_TIME, Date.from(Instant.now().plusSeconds(60)));
+                .claims(JwtRegisteredClaimNames.EXPIRATION_TIME, Date.from(now.plus(vpLifetime)));
     }
 
     private Map<String, Object> createVpClaim(List<String> rawVcs) {

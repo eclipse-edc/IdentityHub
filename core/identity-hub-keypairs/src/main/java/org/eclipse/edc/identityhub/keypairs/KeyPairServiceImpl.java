@@ -44,7 +44,7 @@ import org.eclipse.edc.transaction.spi.TransactionContext;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.time.Instant;
+import java.time.Clock;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -66,14 +66,17 @@ public class KeyPairServiceImpl implements KeyPairService, EventSubscriber {
     private final KeyPairObservable observable;
     private final TransactionContext transactionContext;
     private final ParticipantContextStore participantContextService;
+    private final Clock clock;
 
-    public KeyPairServiceImpl(KeyPairResourceStore keyPairResourceStore, Vault vault, Monitor monitor, KeyPairObservable observable, TransactionContext transactionContext, ParticipantContextStore participantContextService) {
+    public KeyPairServiceImpl(KeyPairResourceStore keyPairResourceStore, Vault vault, Monitor monitor, KeyPairObservable observable, TransactionContext transactionContext,
+                              ParticipantContextStore participantContextService, Clock clock) {
         this.keyPairResourceStore = keyPairResourceStore;
         this.vault = vault;
         this.monitor = monitor;
         this.observable = observable;
         this.transactionContext = transactionContext;
         this.participantContextService = participantContextService;
+        this.clock = clock;
     }
 
     @Override
@@ -418,7 +421,7 @@ public class KeyPairServiceImpl implements KeyPairService, EventSubscriber {
                 .isDefaultPair(makeDefault)
                 .privateKeyAlias(keyDescriptor.getPrivateKeyAlias())
                 .serializedPublicKey(newKey.publicKeySerialized())
-                .timestamp(Instant.now().toEpochMilli())
+                .timestamp(clock.millis())
                 .participantContextId(newKey.participantContextId())
                 .keyContext(keyDescriptor.getType())
                 .build();

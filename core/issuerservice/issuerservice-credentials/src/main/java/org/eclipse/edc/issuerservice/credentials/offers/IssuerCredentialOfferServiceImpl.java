@@ -39,7 +39,7 @@ import org.eclipse.edc.transform.spi.TypeTransformerRegistry;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
-import java.time.Instant;
+import java.time.Clock;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -66,6 +66,7 @@ public class IssuerCredentialOfferServiceImpl implements IssuerCredentialOfferSe
     private final TypeTransformerRegistry dcpTransformerRegistry;
     private final DcpIssuerMetadataService dcpIssuerMetadataService;
     private final JsonLd jsonLd;
+    private final Clock clock;
 
     public IssuerCredentialOfferServiceImpl(TransactionContext transactionContext,
                                             HolderStore holderStore,
@@ -74,7 +75,7 @@ public class IssuerCredentialOfferServiceImpl implements IssuerCredentialOfferSe
                                             IdentityHubParticipantContextService participantContextService,
                                             EdcHttpClient httpClient, Monitor monitor,
                                             TypeTransformerRegistry dcpTransformerRegistry, DcpIssuerMetadataService dcpIssuerMetadataService,
-                                            JsonLd jsonLd) {
+                                            JsonLd jsonLd, Clock clock) {
         this.transactionContext = transactionContext;
         this.holderStore = holderStore;
         this.credentialServiceUrlResolver = credentialServiceUrlResolver;
@@ -85,6 +86,7 @@ public class IssuerCredentialOfferServiceImpl implements IssuerCredentialOfferSe
         this.dcpTransformerRegistry = dcpTransformerRegistry;
         this.dcpIssuerMetadataService = dcpIssuerMetadataService;
         this.jsonLd = jsonLd;
+        this.clock = clock;
     }
 
     @Override
@@ -221,12 +223,13 @@ public class IssuerCredentialOfferServiceImpl implements IssuerCredentialOfferSe
     }
 
     private Result<TokenRepresentation> getAuthToken(String participantContextId, String audience, String myOwnDid) {
+        var now = clock.instant();
         var siTokenClaims = Map.of(
-                ISSUED_AT, Instant.now().toString(),
+                ISSUED_AT, now.toString(),
                 AUDIENCE, audience,
                 ISSUER, myOwnDid,
                 SUBJECT, myOwnDid,
-                EXPIRATION_TIME, Instant.now().plus(5, ChronoUnit.MINUTES).toString());
+                EXPIRATION_TIME, now.plus(5, ChronoUnit.MINUTES).toString());
         return secureTokenService.createToken(participantContextId, siTokenClaims, null);
     }
 

@@ -60,7 +60,6 @@ import org.jetbrains.annotations.Nullable;
 import java.io.IOException;
 import java.io.StringReader;
 import java.time.Duration;
-import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
@@ -526,13 +525,14 @@ public class CredentialRequestManagerImpl extends AbstractStateEntityManager<Hol
      * @return a JWT token that can be used to send DCP messages to the issuer
      */
     private Result<TokenRepresentation> getAuthToken(String participantContextId, String audience) {
+        var now = clock.instant();
         return getParticipantContext(participantContextId)
                 .map(participantContext -> Map.of(
-                        ISSUED_AT, Instant.now().toString(),
+                        ISSUED_AT, now.toString(),
                         AUDIENCE, audience,
                         ISSUER, participantContext.getDid(),
                         SUBJECT, participantContext.getDid(),
-                        EXPIRATION_TIME, Instant.now().plus(5, ChronoUnit.MINUTES).toString())
+                        EXPIRATION_TIME, now.plus(5, ChronoUnit.MINUTES).toString())
                 )
                 .compose(siTokenClaims -> secureTokenService
                         .createToken(participantContextId, siTokenClaims, configuration.bearerAccessScope()));

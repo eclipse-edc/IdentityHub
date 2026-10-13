@@ -41,6 +41,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentMatcher;
 
+import java.time.Clock;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -82,7 +83,7 @@ class KeyPairServiceImplTest {
     private final ParticipantContextStore participantContextServiceMock = mock();
     private final Monitor monitor = mock();
     private final TrackingTransactionContext transactionContext = new TrackingTransactionContext();
-    private final KeyPairServiceImpl keyPairService = new KeyPairServiceImpl(keyPairResourceStore, vault, monitor, observableMock, transactionContext, participantContextServiceMock);
+    private final KeyPairServiceImpl keyPairService = new KeyPairServiceImpl(keyPairResourceStore, vault, monitor, observableMock, transactionContext, participantContextServiceMock, Clock.systemUTC());
 
 
     @BeforeEach

@@ -37,7 +37,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import java.time.Clock;
 import java.time.Instant;
+import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -64,7 +66,7 @@ class CredentialQueryResolverImplTest {
     private final CredentialStore storeMock = mock();
     private final RevocationServiceRegistry revocationServiceRegistry = mock();
     private final Monitor monitor = mock();
-    private final CredentialQueryResolverImpl resolver = new CredentialQueryResolverImpl(storeMock, new EdcScopeToCriterionTransformer(new DiscriminatorMappingRegistryImpl()), revocationServiceRegistry, monitor);
+    private final CredentialQueryResolverImpl resolver = new CredentialQueryResolverImpl(storeMock, new EdcScopeToCriterionTransformer(new DiscriminatorMappingRegistryImpl()), revocationServiceRegistry, monitor, Clock.systemUTC());
 
     @BeforeEach
     void setUp() {
@@ -325,6 +327,24 @@ class CredentialQueryResolverImplTest {
 
         when(storeMock.query(any())).thenAnswer(i -> success(List.of(resource)));
         var res = resolver.query(TEST_PARTICIPANT_CONTEXT_ID,
+                createPresentationQuery("org.eclipse.dspace.dcp.vc.type:TestCredential:read"), List.of("org.eclipse.dspace.dcp.vc.type:TestCredential:read"));
+
+        assertThat(res).isSucceeded();
+        assertThat(res.getContent()).isEmpty();
+        verify(monitor).warning(eq("Credential '%s' is expired.".formatted(credential.getId())));
+    }
+
+    @Test
+    void query_whenExpiredAccordingToClock_doesNotInclude() {
+        var clock = Clock.fixed(Instant.now().plus(1, ChronoUnit.DAYS), ZoneOffset.UTC);
+        var resolverWithClock = new CredentialQueryResolverImpl(storeMock, new EdcScopeToCriterionTransformer(new DiscriminatorMappingRegistryImpl()), revocationServiceRegistry, monitor, clock);
+        var credential = createCredential("TestCredential")
+                .expirationDate(Instant.now().plus(1, ChronoUnit.HOURS))
+                .build();
+        var resource = createCredentialResource(credential).build();
+
+        when(storeMock.query(any())).thenAnswer(i -> success(List.of(resource)));
+        var res = resolverWithClock.query(TEST_PARTICIPANT_CONTEXT_ID,
                 createPresentationQuery("org.eclipse.dspace.dcp.vc.type:TestCredential:read"), List.of("org.eclipse.dspace.dcp.vc.type:TestCredential:read"));
 
         assertThat(res).isSucceeded();

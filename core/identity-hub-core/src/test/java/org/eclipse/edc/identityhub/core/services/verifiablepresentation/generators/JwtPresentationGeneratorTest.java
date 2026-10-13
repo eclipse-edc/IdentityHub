@@ -35,6 +35,10 @@ import org.junit.jupiter.api.Test;
 
 import java.text.ParseException;
 import java.time.Clock;
+import java.time.Duration;
+import java.time.Instant;
+import java.time.ZoneOffset;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
@@ -89,6 +93,37 @@ class JwtPresentationGeneratorTest extends PresentationGeneratorTest {
                     .isInstanceOfSatisfying(List.class, vcs -> assertThat(vcs).containsExactly(jwtVc));
             assertThat(extractJwtHeader(vpJwt).getKeyID()).isEqualTo("did:web:test#%s".formatted(PUBLIC_KEY_ID));
         });
+    }
+
+    @Test
+    @DisplayName("Should take iat, nbf and exp from the injected clock, with the configured lifetime")
+    void createPresentation_shouldUseClockAndLifetime() {
+        var now = Instant.parse("2020-01-01T10:00:00Z");
+        var generator = new JwtPresentationGenerator(Clock.fixed(now, ZoneOffset.UTC), tokenGenerationService, Duration.ofMinutes(5));
+        var vcSigningKey = createKey(Curve.P_256, TestConstants.CENTRAL_ISSUER_KEY_ID);
+        var jwtVc = JwtCreationUtils.createJwt(vcSigningKey, TestConstants.CENTRAL_ISSUER_DID, "degreeSub", TestConstants.VP_HOLDER_ID, Map.of("vc", TestConstants.VC_CONTENT_DEGREE_EXAMPLE));
+        var vcc = new VerifiableCredentialContainer(jwtVc, CredentialFormat.VC1_0_JWT, createDummyCredential());
+
+        var vpJwt = generator.generatePresentation(participantContextId, List.of(vcc), PRIVATE_KEY_ALIAS, PUBLIC_KEY_ID, issuerId, ADDITIONAL_DATA);
+
+        var claims = extractJwtClaims(vpJwt);
+        assertThat(claims.getIssueTime()).isEqualTo(Date.from(now));
+        assertThat(claims.getNotBeforeTime()).isEqualTo(Date.from(now));
+        assertThat(claims.getExpirationTime()).isEqualTo(Date.from(now.plus(Duration.ofMinutes(5))));
+    }
+
+    @Test
+    @DisplayName("Should default to a lifetime of 60 seconds")
+    void createPresentation_shouldDefaultLifetime() {
+        var now = Instant.parse("2020-01-01T10:00:00Z");
+        var generator = new JwtPresentationGenerator(Clock.fixed(now, ZoneOffset.UTC), tokenGenerationService);
+        var vcSigningKey = createKey(Curve.P_256, TestConstants.CENTRAL_ISSUER_KEY_ID);
+        var jwtVc = JwtCreationUtils.createJwt(vcSigningKey, TestConstants.CENTRAL_ISSUER_DID, "degreeSub", TestConstants.VP_HOLDER_ID, Map.of("vc", TestConstants.VC_CONTENT_DEGREE_EXAMPLE));
+        var vcc = new VerifiableCredentialContainer(jwtVc, CredentialFormat.VC1_0_JWT, createDummyCredential());
+
+        var vpJwt = generator.generatePresentation(participantContextId, List.of(vcc), PRIVATE_KEY_ALIAS, PUBLIC_KEY_ID, issuerId, ADDITIONAL_DATA);
+
+        assertThat(extractJwtClaims(vpJwt).getExpirationTime()).isEqualTo(Date.from(now.plusSeconds(60)));
     }
 
     @Override

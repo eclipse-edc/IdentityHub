@@ -37,6 +37,7 @@ import tools.jackson.databind.ObjectMapper;
 
 import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
+import java.time.Clock;
 import java.util.List;
 import java.util.Map;
 
@@ -80,7 +81,7 @@ class LdpPresentationGeneratorTest extends PresentationGeneratorTest {
                 .monitor(mock())
                 .build();
         creator = new LdpPresentationGenerator(privateKeyResolver, signatureSuiteRegistryMock, IdentityHubConstants.JWS_2020_SIGNATURE_SUITE, ldpIssuer,
-                typeManager, "test");
+                typeManager, "test", Clock.systemUTC());
 
         when(typeManager.getMapper("test")).thenReturn(JacksonJsonLd.createObjectMapper());
     }
