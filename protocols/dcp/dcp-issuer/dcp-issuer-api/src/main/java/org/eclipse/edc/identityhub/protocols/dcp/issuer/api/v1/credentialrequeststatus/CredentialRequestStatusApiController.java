@@ -116,7 +116,8 @@ public class CredentialRequestStatusApiController implements CredentialRequestSt
             // the credentials are not delivered to the Holder until DELIVERED, so until then the request is merely received
             case SUBMITTED, APPROVED, DELIVERING -> CredentialRequestStatus.Status.RECEIVED;
             case DELIVERED -> CredentialRequestStatus.Status.ISSUED;
-            case ERRORED -> CredentialRequestStatus.Status.REJECTED;
+            // the issuance has failed for good, even while the Holder is still being notified of it
+            case REJECTING, ERRORED -> CredentialRequestStatus.Status.REJECTED;
         };
     }
 }

@@ -33,6 +33,7 @@ import static org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcessSt
 import static org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcessStates.DELIVERED;
 import static org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcessStates.DELIVERING;
 import static org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcessStates.ERRORED;
+import static org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcessStates.REJECTING;
 import static org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcessStates.from;
 
 
@@ -132,8 +133,12 @@ public class IssuanceProcess extends StatefulEntity<IssuanceProcess> implements 
         transition(APPROVED, APPROVED);
     }
 
+    public void transitionToRejecting() {
+        transition(REJECTING, APPROVED, DELIVERING, REJECTING);
+    }
+
     public void transitionToError() {
-        transition(ERRORED, APPROVED, DELIVERING);
+        transition(ERRORED, REJECTING);
     }
 
     @Override

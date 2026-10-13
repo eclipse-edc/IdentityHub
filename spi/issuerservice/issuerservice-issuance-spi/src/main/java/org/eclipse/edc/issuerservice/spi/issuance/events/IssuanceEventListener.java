@@ -74,8 +74,9 @@ public interface IssuanceEventListener {
     }
 
     /**
-     * A credential issuance request failed. The associated {@link IssuanceProcess} is in the {@link org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcessStates#ERRORED}
-     * state.
+     * A credential issuance request failed. The associated {@link IssuanceProcess} is in the {@link org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcessStates#REJECTING}
+     * state, and moves on to {@link org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcessStates#ERRORED} once the
+     * Holder has been notified.
      */
     default void errored(IssuanceProcess process, Throwable throwable) {
 

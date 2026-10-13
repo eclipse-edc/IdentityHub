@@ -288,7 +288,7 @@ class DcpCredentialStorageClientTest {
 
     // RT-03: an issuance that failed after acceptance is reported to the Holder as a CredentialMessage with status
     // REJECTED, correlating on the same pids as a delivery would, and carrying no credentials
-    @DisplayName("IS-REQ-02: a rejection POSTs a CredentialMessage with status REJECTED, the same pids and no credentials")
+    @DisplayName("IS-REQ-02: a rejection POSTs a CredentialMessage with status REJECTED, the same pids and an empty credentials array")
     @Test
     void deliverRejection_success() throws IOException {
         var process = issuanceProcess();
@@ -311,7 +311,8 @@ class DcpCredentialStorageClientTest {
         assertThat(message.getString(HOLDER_PID_TERM)).isEqualTo(process.getHolderPid());
         assertThat(message.getString(STATUS_TERM)).isEqualTo("REJECTED");
         assertThat(message.getString(REJECTION_REASON_TERM)).isEqualTo("attestation could not be satisfied");
-        assertThat(message).doesNotContainKey(CREDENTIALS_TERM);
+        // the property is required, so Holders that validate it accept the rejection
+        assertThat(message.getJsonArray(CREDENTIALS_TERM)).isEmpty();
     }
 
     @DisplayName("IS-REQ-02: a rejection without a reason omits the rejectionReason property")

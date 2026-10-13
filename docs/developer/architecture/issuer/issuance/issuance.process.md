@@ -340,7 +340,7 @@ complete successfully, an `IssuanceProcess` is created:
 ```java
 public class IssuanceProcess {
     public enum State {
-        SUBMITTED, APPROVED, DELIVERING, DELIVERED, ERRORED
+        SUBMITTED, APPROVED, DELIVERING, DELIVERED, REJECTING, ERRORED
     }
 
     private final State state = State.SUBMITTED;
@@ -397,7 +397,7 @@ receive. The records do not contain the signed credential. They are linked to th
 `issuanceProcessId` metadata entry. Once recorded, the `IssuanceProcess` is transitioned to the `DELIVERING` state.
 
 If the credentials cannot be generated or recorded, this is retried for a configured number of times, and the
-`IssuanceProcess` is transitioned to `ERRORED` if it still does not succeed. If the credentials of the `IssuanceProcess`
+`IssuanceProcess` is transitioned to `REJECTING` if it still does not succeed. If the credentials of the `IssuanceProcess`
 are recorded already, e.g. by an earlier attempt that could not save the `IssuanceProcess`, they are not generated again.
 
 ##### The `DELIVERING` State
@@ -408,7 +408,7 @@ issuance takes. The records are updated accordingly before the credentials are d
 the `IssuanceProcess` is transitioned to the `DELIVERED` state.
 
 If delivery is not successful, it is retried for a configured number of times, always with the same credentials, and
-the `IssuanceProcess` is transitioned to `ERRORED` if it still does not succeed. Until the `IssuanceProcess` is
+the `IssuanceProcess` is transitioned to `REJECTING` if it still does not succeed. Until the `IssuanceProcess` is
 `DELIVERED`, the Credential Request Status API reports the request as `RECEIVED`.
 
 An `IssuanceProcess` that fails in the `DELIVERING` state leaves its credentials recorded as `ISSUED`, although it is
@@ -418,7 +418,7 @@ the affected records, which need manual reconciliation.
 
 ##### Retries
 
-Generating, recording and delivering credentials are retried with a growing delay: the n-th retry waits the base delay
+Generating, recording and delivering credentials, as well as rejections, are retried with a growing delay: the n-th retry waits the base delay
 times 2 to the power of n, but at most the maximum delay. By default, the retries are 2 s, 4 s, ..., 256 s apart, and
 5 min after that, so that an `IssuanceProcess` keeps being retried for about six hours, e.g. while the holder is
 unavailable. The following settings control this:
@@ -451,6 +451,17 @@ only useful if holders wait longer as well.
 ##### The `DELIVERED` State
 
 The `DELIVERED` state is terminal.
+
+##### The `REJECTING` State
+
+The `IssuanceProcess` has failed, and the `IssuanceProcessManager` tells the holder so, so that it stops waiting for
+credentials that are never coming. The holder only gets a generic rejection reason, as the error of the
+`IssuanceProcess` may disclose internal details. The error is kept in the `errorDetail` of the `IssuanceProcess` and in
+the log. The Credential Request Status API reports the request as `REJECTED`.
+
+If the rejection cannot be delivered, it is retried for a configured number of times. Either way, the `IssuanceProcess`
+is then transitioned to `ERRORED`, and the holder's access token is discarded. A holder that has not been notified
+learns about the rejection by polling the Credential Request Status API.
 
 ##### The `ERRORED` State
 
