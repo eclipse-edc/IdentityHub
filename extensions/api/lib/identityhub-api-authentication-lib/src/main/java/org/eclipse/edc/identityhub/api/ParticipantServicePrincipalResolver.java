@@ -22,7 +22,10 @@ import org.eclipse.edc.identityhub.spi.participantcontext.model.IdentityHubParti
 import org.eclipse.edc.spi.security.Vault;
 import org.eclipse.edc.web.spi.exception.AuthenticationFailedException;
 
+import java.security.MessageDigest;
 import java.util.Base64;
+
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
  * For the Identity API of the IdentityHub, a {@link ServicePrincipal} is represented by a {@link IdentityHubParticipantContext}.
@@ -53,13 +56,18 @@ class ParticipantServicePrincipalResolver implements ServicePrincipalResolver {
         if (tokens.length != 2) {
             throw new AuthenticationFailedException("Invalid API token");
         }
-        var principalId = Base64.getDecoder().decode(tokens[0]);
+        byte[] principalId;
+        try {
+            principalId = Base64.getDecoder().decode(tokens[0]);
+        } catch (IllegalArgumentException e) {
+            throw new AuthenticationFailedException("Invalid API token");
+        }
         var user = findByPrincipal(new String(principalId));
-        if (user.getCredential().equals(credential)) {
+        var storedCredential = user.getCredential();
+        if (storedCredential != null && MessageDigest.isEqual(storedCredential.getBytes(UTF_8), credential.getBytes(UTF_8))) {
             return user;
         }
         throw new AuthenticationFailedException("Invalid API token");
-
     }
 
     private ServicePrincipal findByPrincipal(String principal) {

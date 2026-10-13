@@ -26,11 +26,13 @@ import org.eclipse.edc.spi.security.Vault;
 import org.eclipse.edc.transaction.spi.TransactionContext;
 import org.jetbrains.annotations.Nullable;
 
+import java.security.MessageDigest;
 import java.util.Collection;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static java.lang.String.format;
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Optional.ofNullable;
 import static org.eclipse.edc.spi.result.ServiceResult.from;
 import static org.eclipse.edc.spi.result.ServiceResult.fromFailure;
@@ -96,7 +98,7 @@ public class StsAccountServiceImpl implements StsAccountService {
     @Override
     public ServiceResult<StsAccount> authenticate(StsAccount client, String secret) {
         return ofNullable(vault.resolveSecret(client.getParticipantContextId(), client.getSecretAlias()))
-                .filter(vaultSecret -> vaultSecret.equals(secret))
+                .filter(vaultSecret -> secret != null && MessageDigest.isEqual(vaultSecret.getBytes(UTF_8), secret.getBytes(UTF_8)))
                 .map(s -> success(client))
                 .orElseGet(() -> unauthorized(format("Failed to authenticate client with id %s", client.getId())));
     }

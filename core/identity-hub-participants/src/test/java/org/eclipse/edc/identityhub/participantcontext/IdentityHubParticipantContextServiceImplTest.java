@@ -439,10 +439,22 @@ class IdentityHubParticipantContextServiceImplTest {
 
         verify(participantContextStore).deleteById(anyString());
         verify(observableMock, times(3)).invokeForEach(any());
-        verify(vault).deleteSecret(anyString(), anyString());
+        verify(vault).deleteSecret("test-id", "test-alias");
         verifyNoMoreInteractions(vault, observableMock);
     }
 
+    @Test
+    void deleteParticipantContext_whenVaultDeleteFails_shouldSucceed() {
+        when(participantContextStore.findById(anyString())).thenReturn(StoreResult.success(createContext()));
+        when(participantContextStore.findByIdForUpdate(anyString())).thenReturn(StoreResult.success(createContext()));
+        when(participantContextStore.deleteById(anyString())).thenReturn(StoreResult.success());
+        when(participantContextStore.update(any())).thenReturn(StoreResult.success());
+        when(vault.deleteSecret(anyString(), anyString())).thenReturn(Result.failure("vault down"));
+
+        assertThat(participantContextService.deleteParticipantContext("test-id")).isSucceeded();
+
+        verify(vault).deleteSecret("test-id", "test-alias");
+    }
 
     @Test
     void deleteParticipantContext_whenNotExists() {
@@ -460,7 +472,7 @@ class IdentityHubParticipantContextServiceImplTest {
 
         verify(observableMock, times(2)).invokeForEach(any()); //deleting
         verify(participantContextStore).deleteById(anyString());
-        verify(vault).deleteSecret(anyString(), anyString());
+        verify(vault, never()).deleteSecret(anyString(), anyString());
         verifyNoMoreInteractions(vault, observableMock);
     }
 
