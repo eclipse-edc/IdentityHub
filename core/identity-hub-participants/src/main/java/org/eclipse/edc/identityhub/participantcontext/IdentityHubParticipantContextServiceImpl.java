@@ -42,6 +42,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -150,7 +151,8 @@ public class IdentityHubParticipantContextServiceImpl implements IdentityHubPart
 
     @Override
     public ServiceResult<Void> deleteParticipantContext(String participantContextId) {
-        return transactionContext.execute(() -> {
+        var apiTokenAlias = new AtomicReference<String>();
+        ServiceResult<Void> result = transactionContext.execute(() -> {
             var participantContext = findByIdInternal(participantContextId);
             if (participantContext == null) {
                 return ServiceResult.notFound("A ParticipantContext with ID '%s' does not exist.");
@@ -161,15 +163,23 @@ public class IdentityHubParticipantContextServiceImpl implements IdentityHubPart
                     .compose(v -> {
                         observable.invokeForEach(l -> l.deleting(participantContext));
                         var res = participantContextStore.deleteById(participantContextId);
-                        vault.deleteSecret(participantContext.getParticipantContextId(), participantContext.getApiTokenAlias());
                         if (res.failed()) {
                             return fromFailure(res);
                         }
 
+                        apiTokenAlias.set(participantContext.getApiTokenAlias());
                         observable.invokeForEach(l -> l.deleted(participantContext));
                         return ServiceResult.success();
                     });
         });
+
+        // the API key must only be removed once the deletion was committed, otherwise it would be lost on a rollback
+        if (result.succeeded()) {
+            vault.deleteSecret(participantContextId, apiTokenAlias.get())
+                    .onFailure(f -> monitor.warning("Failed to delete the API key of participant context '%s'. It must be deleted manually: %s"
+                            .formatted(participantContextId, f.getFailureDetail())));
+        }
+        return result;
     }
 
     @Override

@@ -20,6 +20,7 @@ import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyDescriptor;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantManifest;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.Result;
+import org.eclipse.edc.spi.result.ServiceFailure;
 import org.eclipse.edc.spi.result.StoreResult;
 import org.eclipse.edc.spi.security.Vault;
 import org.eclipse.edc.transaction.spi.NoopTransactionContext;
@@ -126,6 +127,24 @@ class StsAccountServiceImplTest {
 
         assertThat(inserted).isSucceeded();
         verify(vault).resolveSecret(anyString(), eq(client.getSecretAlias()));
+    }
+
+    @Test
+    void authenticate_whenSecretDoesNotMatch_shouldFail() {
+        var client = createClient("clientId");
+        when(vault.resolveSecret(anyString(), eq(client.getSecretAlias()))).thenReturn("secret");
+
+        assertThat(stsAccountService.authenticate(client, "wrong-secret")).isFailed()
+                .satisfies(f -> assertThat(f.getReason()).isEqualTo(ServiceFailure.Reason.UNAUTHORIZED));
+    }
+
+    @Test
+    void authenticate_whenSecretNotInVault_shouldFail() {
+        var client = createClient("clientId");
+        when(vault.resolveSecret(anyString(), eq(client.getSecretAlias()))).thenReturn(null);
+
+        assertThat(stsAccountService.authenticate(client, "secret")).isFailed()
+                .satisfies(f -> assertThat(f.getReason()).isEqualTo(ServiceFailure.Reason.UNAUTHORIZED));
     }
 
     @Test
