@@ -35,3 +35,4 @@ COMMENT ON COLUMN credential_resource.raw_vc IS 'Representation of the VC exactl
 COMMENT ON COLUMN credential_resource.vc_format IS '0 = JSON-LD, 1 = JWT';
 COMMENT ON COLUMN credential_resource.verifiable_credential IS 'JSON-representation of the VerifiableCredential';
 
+CREATE INDEX IF NOT EXISTS credential_resource_participant_usage_state ON credential_resource (participant_context_id, usage, vc_state);

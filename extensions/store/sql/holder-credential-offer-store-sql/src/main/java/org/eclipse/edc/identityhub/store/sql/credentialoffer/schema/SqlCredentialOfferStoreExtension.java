@@ -34,9 +34,9 @@ import java.time.Clock;
 
 @Extension(value = SqlCredentialOfferStoreExtension.NAME)
 public class SqlCredentialOfferStoreExtension implements ServiceExtension {
-    public static final String NAME = "Issuance Process SQL Store Extension";
+    public static final String NAME = "Holder Credential Offer SQL Store Extension";
 
-    @Setting(description = "The datasource to be used", defaultValue = DataSourceRegistry.DEFAULT_DATASOURCE, key = "edc.sql.store.credentialrequest.datasource")
+    @Setting(description = "The datasource to be used", defaultValue = DataSourceRegistry.DEFAULT_DATASOURCE, key = "edc.sql.store.credentialoffer.datasource")
     private String dataSourceName;
 
     @Inject
