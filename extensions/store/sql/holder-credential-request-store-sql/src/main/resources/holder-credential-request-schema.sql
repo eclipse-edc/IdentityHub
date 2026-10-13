@@ -46,5 +46,5 @@ CREATE TABLE IF NOT EXISTS edc_holder_credentialrequest
 
 
 -- This will help to identify states that need to be transitioned without a table scan when the entries grow
-CREATE INDEX IF NOT EXISTS issuance_process_state ON edc_holder_credentialrequest (state, state_time_stamp);
+CREATE INDEX IF NOT EXISTS holder_credentialrequest_state ON edc_holder_credentialrequest (state, state_time_stamp);
 

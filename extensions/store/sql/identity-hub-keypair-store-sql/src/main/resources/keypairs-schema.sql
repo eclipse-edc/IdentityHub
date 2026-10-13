@@ -30,3 +30,4 @@ CREATE TABLE IF NOT EXISTS keypair_resource
     usage                  VARCHAR             NOT NULL                -- array of usages for this key pair
 );
 
+CREATE INDEX IF NOT EXISTS keypair_resource_participant_context_id ON keypair_resource (participant_context_id);

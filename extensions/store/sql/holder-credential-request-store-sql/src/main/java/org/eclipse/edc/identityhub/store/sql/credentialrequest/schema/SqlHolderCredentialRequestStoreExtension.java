@@ -36,7 +36,7 @@ import java.time.Clock;
 
 @Extension(value = SqlHolderCredentialRequestStoreExtension.NAME)
 public class SqlHolderCredentialRequestStoreExtension implements ServiceExtension {
-    public static final String NAME = "Issuance Process SQL Store Extension";
+    public static final String NAME = "Holder Credential Request SQL Store Extension";
 
     @Setting(description = "The datasource to be used", defaultValue = DataSourceRegistry.DEFAULT_DATASOURCE, key = "edc.sql.store.credentialrequest.datasource")
     private String dataSourceName;
