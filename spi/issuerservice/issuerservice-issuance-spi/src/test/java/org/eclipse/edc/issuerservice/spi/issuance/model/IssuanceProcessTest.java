@@ -54,14 +54,45 @@ class IssuanceProcessTest {
         assertThat(process.getState()).isEqualTo(IssuanceProcessStates.DELIVERED.code());
     }
 
-    @DisplayName("B3.6: DELIVERING -> ERRORED is a legal transition")
+    @DisplayName("B3.6: DELIVERING -> REJECTING is a legal transition")
     @Test
-    void transitionToError_fromDelivering_succeeds() {
+    void transitionToRejecting_fromDelivering_succeeds() {
         var process = createProcess(IssuanceProcessStates.DELIVERING);
+
+        process.transitionToRejecting();
+
+        assertThat(process.getState()).isEqualTo(IssuanceProcessStates.REJECTING.code());
+    }
+
+    @DisplayName("B3.6: REJECTING -> REJECTING (retry) is legal and increments the state count")
+    @Test
+    void transitionToRejecting_fromRejecting_succeeds() {
+        var process = createProcess(IssuanceProcessStates.REJECTING);
+        var stateCountBefore = process.getStateCount();
+
+        process.transitionToRejecting();
+
+        assertThat(process.getState()).isEqualTo(IssuanceProcessStates.REJECTING.code());
+        assertThat(process.getStateCount()).isEqualTo(stateCountBefore + 1);
+    }
+
+    @DisplayName("B3.6: REJECTING -> ERRORED is a legal transition")
+    @Test
+    void transitionToError_fromRejecting_succeeds() {
+        var process = createProcess(IssuanceProcessStates.REJECTING);
 
         process.transitionToError();
 
         assertThat(process.getState()).isEqualTo(IssuanceProcessStates.ERRORED.code());
+    }
+
+    // the Holder is notified of the rejection before the process is ERRORED
+    @DisplayName("B3.6: DELIVERING -> ERRORED throws IllegalStateException")
+    @Test
+    void transitionToError_fromDelivering_throwsIllegalStateException() {
+        var process = createProcess(IssuanceProcessStates.DELIVERING);
+
+        assertThatThrownBy(process::transitionToError).isInstanceOf(IllegalStateException.class);
     }
 
     // credentials are only delivered once they are recorded, which happens on the way to DELIVERING
@@ -94,15 +125,15 @@ class IssuanceProcessTest {
         assertThat(process.getStateCount()).isEqualTo(stateCountBefore + 1);
     }
 
-    // B3.6: legal transition APPROVED -> ERRORED succeeds
-    @DisplayName("B3.6: APPROVED -> ERRORED is a legal transition")
+    // B3.6: legal transition APPROVED -> REJECTING succeeds
+    @DisplayName("B3.6: APPROVED -> REJECTING is a legal transition")
     @Test
-    void transitionToError_fromApproved_succeeds() {
+    void transitionToRejecting_fromApproved_succeeds() {
         var process = createProcess(IssuanceProcessStates.APPROVED);
 
-        process.transitionToError();
+        process.transitionToRejecting();
 
-        assertThat(process.getState()).isEqualTo(IssuanceProcessStates.ERRORED.code());
+        assertThat(process.getState()).isEqualTo(IssuanceProcessStates.REJECTING.code());
     }
 
     // B3.6: illegal transition DELIVERED -> APPROVED throws IllegalStateException
@@ -121,6 +152,14 @@ class IssuanceProcessTest {
         var process = createProcess(IssuanceProcessStates.ERRORED);
 
         assertThatThrownBy(process::transitionToDelivered).isInstanceOf(IllegalStateException.class);
+    }
+
+    @DisplayName("B3.6: DELIVERED -> REJECTING throws IllegalStateException")
+    @Test
+    void transitionToRejecting_fromDelivered_throwsIllegalStateException() {
+        var process = createProcess(IssuanceProcessStates.DELIVERED);
+
+        assertThatThrownBy(process::transitionToRejecting).isInstanceOf(IllegalStateException.class);
     }
 
     // B3.6: illegal transition DELIVERED -> ERRORED throws IllegalStateException

@@ -163,7 +163,8 @@ public class DcpCredentialStorageClient implements CredentialStorageClient {
 
     /**
      * A {@code CredentialMessage} reporting that the request was rejected. It carries the same pids as a successful
-     * delivery would, so the Holder correlates it with the request it is waiting on, and no credentials.
+     * delivery would, so the Holder correlates it with the request it is waiting on, and an empty credentials array, as
+     * the {@code credentials} property is required.
      */
     private JsonObject createRejectionMessage(IssuanceProcess issuanceProcess, @Nullable String rejectionReason) {
         var builder = Json.createObjectBuilder()
@@ -172,6 +173,7 @@ public class DcpCredentialStorageClient implements CredentialStorageClient {
                 .add(TYPE_TERM, CREDENTIAL_MESSAGE_TERM)
                 .add(ISSUER_PID_TERM, issuanceProcess.getId())
                 .add(HOLDER_PID_TERM, issuanceProcess.getHolderPid())
+                .add(CREDENTIALS_TERM, Json.createArrayBuilder())
                 .add(STATUS_TERM, STATUS_REJECTED);
 
         // the reason is OPTIONAL, and the spec requires that it discloses nothing confidential

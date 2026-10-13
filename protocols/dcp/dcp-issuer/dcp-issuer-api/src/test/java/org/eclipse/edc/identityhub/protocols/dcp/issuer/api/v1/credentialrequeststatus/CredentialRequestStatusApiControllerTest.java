@@ -142,6 +142,7 @@ class CredentialRequestStatusApiControllerTest extends RestControllerTestBase {
             "APPROVED, RECEIVED",
             "DELIVERING, RECEIVED",
             "DELIVERED, ISSUED",
+            "REJECTING, REJECTED",
             "ERRORED, REJECTED"
     })
     void credentialStatus_reportsStatusOfProcessState(IssuanceProcessStates processState, CredentialRequestStatus.Status expectedStatus) {

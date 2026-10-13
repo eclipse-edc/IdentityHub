@@ -21,6 +21,7 @@ public enum IssuanceProcessStates {
     APPROVED(100),
     DELIVERING(150),
     DELIVERED(200),
+    REJECTING(250),
     ERRORED(300);
 
     private final int code;

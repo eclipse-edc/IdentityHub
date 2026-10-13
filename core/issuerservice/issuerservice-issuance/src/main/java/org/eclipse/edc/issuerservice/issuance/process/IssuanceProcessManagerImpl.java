@@ -62,6 +62,12 @@ import static org.eclipse.edc.statemachine.retry.processor.Process.result;
 
 public class IssuanceProcessManagerImpl extends AbstractStateEntityManager<IssuanceProcess, IssuanceProcessStore> implements IssuanceProcessManager {
 
+    /**
+     * The reason given to the Holder for a failed issuance. The actual error stays with the Issuer, as it may disclose
+     * internal details.
+     */
+    static final String REJECTION_REASON = "The credentials could not be issued";
+
     private IssuanceObservable observable;
     private Vault vault;
     private CredentialGeneratorRegistry credentialGenerator;
@@ -78,7 +84,8 @@ public class IssuanceProcessManagerImpl extends AbstractStateEntityManager<Issua
     protected StateMachineManager.Builder configureStateMachineManager(StateMachineManager.Builder builder) {
         return builder
                 .processor(processIssuanceInState(IssuanceProcessStates.APPROVED, this::processApproved))
-                .processor(processIssuanceInState(IssuanceProcessStates.DELIVERING, this::processDelivering));
+                .processor(processIssuanceInState(IssuanceProcessStates.DELIVERING, this::processDelivering))
+                .processor(processIssuanceInState(IssuanceProcessStates.REJECTING, this::processRejecting));
     }
 
     /**
@@ -92,7 +99,7 @@ public class IssuanceProcessManagerImpl extends AbstractStateEntityManager<Issua
                 .doProcess(result("Record Credentials", (p, result) -> recordCredentialsOnce(p)))
                 .onSuccess((t, unused) -> transitionToDelivering(t))
                 .onFailure((t, throwable) -> transitionToApproved(t))
-                .onFinalFailure(this::transitionToError)
+                .onFinalFailure(this::transitionToRejecting)
                 .execute();
     }
 
@@ -111,7 +118,26 @@ public class IssuanceProcessManagerImpl extends AbstractStateEntityManager<Issua
                     }
                 })
                 .onFailure((t, throwable) -> transitionToDelivering(t))
-                .onFinalFailure(this::transitionToError)
+                .onFinalFailure(this::transitionToRejecting)
+                .execute();
+    }
+
+    /**
+     * Process REJECTING issuance process: tells the Holder that the issuance has failed, so it stops waiting for credentials
+     * that are never coming. The process is ERRORED once the Holder is notified, or once that has failed too often. A
+     * Holder that is never notified still learns about the failure through the Credential Request Status API.
+     */
+    @WithSpan(value = "issuance.rejecting")
+    private CompletableFuture<StatusResult<Void>> processRejecting(IssuanceProcess process) {
+        return entityRetryProcessFactory.retryProcessor(process)
+                .doProcess(result("Deliver Rejection", (p, unused) -> deliverRejection(p)))
+                .onSuccess((t, unused) -> transitionToError(t))
+                .onFailure((t, throwable) -> transitionToRejecting(t))
+                .onFinalFailure((t, throwable) -> {
+                    monitor.warning("The Holder could not be notified that issuance process '%s' failed, it learns about it by polling: %s"
+                            .formatted(t.getId(), throwable.getMessage()));
+                    transitionToError(t);
+                })
                 .execute();
     }
 
@@ -305,14 +331,16 @@ public class IssuanceProcessManagerImpl extends AbstractStateEntityManager<Issua
         save(process);
     }
 
-    private boolean transitionToError(IssuanceProcess process) {
+    private boolean transitionToRejecting(IssuanceProcess process) {
+        process.transitionToRejecting();
+        return save(process);
+    }
+
+    private void transitionToError(IssuanceProcess process) {
         process.transitionToError();
-        if (!save(process)) {
-            return false;
+        if (save(process)) {
+            discardHolderAccessToken(process);
         }
-        notifyHolderOfRejection(process);
-        discardHolderAccessToken(process);
-        return true;
     }
 
     /**
@@ -330,17 +358,19 @@ public class IssuanceProcessManagerImpl extends AbstractStateEntityManager<Issua
     }
 
     /**
-     * Tells the Holder that the issuance it was told had been accepted has failed, so it stops waiting for credentials
-     * that are never coming. Best effort: the failure is already recorded and is served by the Credential Request Status
-     * API, so a Holder that never receives this still learns about it by polling.
+     * Tells the Holder that the issuance it was told had been accepted has failed. The Holder gets a generic reason, never
+     * the error detail of the process.
      */
-    private void notifyHolderOfRejection(IssuanceProcess process) {
+    @WithSpan(value = "issuance.deliver-rejection")
+    private StatusResult<Void> deliverRejection(IssuanceProcess process) {
         try {
-            credentialStorageClient.deliverRejection(process, process.getErrorDetail())
-                    .onFailure(f -> monitor.debug("Could not notify the Holder that issuance process '%s' was rejected: %s"
-                            .formatted(process.getId(), f.getFailureDetail())));
+            var result = credentialStorageClient.deliverRejection(process, REJECTION_REASON);
+            if (result.succeeded()) {
+                return StatusResult.success();
+            }
+            return StatusResult.failure(ResponseStatus.ERROR_RETRY, result.getFailureDetail());
         } catch (Exception e) {
-            monitor.debug("Could not notify the Holder that issuance process '%s' was rejected: %s".formatted(process.getId(), e.getMessage()));
+            return StatusResult.failure(ResponseStatus.ERROR_RETRY, e.getMessage());
         }
     }
 
@@ -359,9 +389,14 @@ public class IssuanceProcessManagerImpl extends AbstractStateEntityManager<Issua
         }
     }
 
-    private void transitionToError(IssuanceProcess process, Throwable throwable) {
+    /**
+     * The process has failed for good. The error is recorded, and the Holder is notified in the REJECTING state.
+     */
+    private void transitionToRejecting(IssuanceProcess process, Throwable throwable) {
         var delivering = process.getState() == IssuanceProcessStates.DELIVERING.code();
-        if (!transitionToError(process, throwable.getMessage())) {
+        process.setErrorDetail(throwable.getMessage());
+        monitor.warning(throwable.getMessage());
+        if (!transitionToRejecting(process)) {
             return;
         }
         if (delivering) {
@@ -388,12 +423,6 @@ public class IssuanceProcessManagerImpl extends AbstractStateEntityManager<Issua
         monitor.severe(("Issuance process '%s' failed to deliver its credentials to Holder '%s' (holderPid '%s'): %s. The credentials " +
                 "are recorded as ISSUED (%s), but may or may not have reached the Holder. Manual reconciliation is needed.")
                 .formatted(process.getId(), process.getHolderId(), process.getHolderPid(), reason, recordIds));
-    }
-
-    private boolean transitionToError(IssuanceProcess process, String message) {
-        process.setErrorDetail(message);
-        monitor.warning(message);
-        return transitionToError(process);
     }
 
     private Processor processIssuanceInState(IssuanceProcessStates state, Function<IssuanceProcess, CompletableFuture<StatusResult<Void>>> function) {

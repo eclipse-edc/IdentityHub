@@ -35,6 +35,7 @@ import org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcess;
 import org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcessStates;
 import org.eclipse.edc.issuerservice.spi.issuance.process.IssuanceProcessManager;
 import org.eclipse.edc.issuerservice.spi.issuance.process.store.IssuanceProcessStore;
+import org.eclipse.edc.spi.EdcException;
 import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.spi.persistence.EdcPersistenceException;
 import org.eclipse.edc.spi.query.Criterion;
@@ -69,6 +70,7 @@ import static org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcessSt
 import static org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcessStates.DELIVERED;
 import static org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcessStates.DELIVERING;
 import static org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcessStates.ERRORED;
+import static org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcessStates.REJECTING;
 import static org.eclipse.edc.spi.persistence.StateEntityStore.hasState;
 import static org.eclipse.edc.spi.persistence.StateEntityStore.isNotPending;
 import static org.eclipse.edc.spi.query.Criterion.criterion;
@@ -107,7 +109,9 @@ public class IssuanceProcessManagerImplTest {
         // no process is up for processing, and no credentials have been recorded
         when(issuanceProcessStore.nextNotLeased(anyInt(), stateIs(APPROVED.code()))).thenReturn(emptyList());
         when(issuanceProcessStore.nextNotLeased(anyInt(), stateIs(DELIVERING.code()))).thenReturn(emptyList());
+        when(issuanceProcessStore.nextNotLeased(anyInt(), stateIs(REJECTING.code()))).thenReturn(emptyList());
         when(credentialStore.query(any())).thenReturn(StoreResult.success(emptyList()));
+        when(credentialStorageClient.deliverRejection(any(), any())).thenReturn(Result.success());
 
         issuanceProcessManager = createManager(Clock.systemUTC(), new EntityRetryProcessConfiguration(1, () -> new ExponentialWaitStrategy(0L)), 20);
     }
@@ -161,7 +165,7 @@ public class IssuanceProcessManagerImplTest {
         });
     }
 
-    @DisplayName("IS-REQ-02: a generation failure after acceptance moves the process to ERRORED, reported as REJECTED")
+    @DisplayName("IS-REQ-02: a generation failure after acceptance moves the process to ERRORED via REJECTING, reported as REJECTED")
     @Test
     void approved_shouldTransitionToErrored_whenGenerationErrors() {
         var credentialDefinition = membershipCredentialDefinition();
@@ -176,7 +180,7 @@ public class IssuanceProcessManagerImplTest {
         issuanceProcessManager.start();
 
         await().untilAsserted(() -> {
-            assertThat(savedStates).containsExactly(ERRORED.code());
+            assertThat(savedStates).containsExactly(REJECTING.code(), ERRORED.code());
             verify(listener).approved(process);
         });
     }
@@ -198,8 +202,8 @@ public class IssuanceProcessManagerImplTest {
         issuanceProcessManager.start();
 
         await().untilAsserted(() -> {
-            // a FATAL_ERROR must skip the retry path: the only save is the transition to ERRORED, never back to APPROVED
-            assertThat(savedStates).containsExactly(ERRORED.code());
+            // a FATAL_ERROR must skip the retry path: the process is rejected right away, never saved back to APPROVED
+            assertThat(savedStates).containsExactly(REJECTING.code(), ERRORED.code());
             verify(credentialStore, never()).create(any());
             verify(credentialStorageClient, never()).deliverCredentials(any(), any());
             assertThat(process.getErrorDetail()).contains("status list failure");
@@ -212,22 +216,91 @@ public class IssuanceProcessManagerImplTest {
         verify(monitor, never()).severe(argThat((String message) -> message.contains("Manual reconciliation")));
     }
 
-    @DisplayName("IS-REQ-02: a failing rejection notice does not keep the process out of ERRORED")
+    @DisplayName("IS-REQ-02: a failed process keeps the Holder's access token until the Holder is notified of the rejection")
     @Test
-    void error_whenRejectionNoticeFails_stillTransitionsToErrored() {
+    void approved_shouldKeepAccessToken_untilRejectionIsDelivered() {
         var process = approvedProcess(membershipCredentialDefinition());
 
         storeHolds(process);
         var savedStates = recordSavedStates();
+        var statesWhenTokenDeleted = new CopyOnWriteArrayList<Integer>();
+        when(vault.deleteSecret(any())).thenAnswer(i -> {
+            statesWhenTokenDeleted.add(process.getState());
+            return Result.success();
+        });
         // no credential definition -> the process fails outright
         when(credentialDefinitionStore.query(any())).thenReturn(StoreResult.generalError("no definitions"));
+
+        issuanceProcessManager.start();
+
+        await().untilAsserted(() -> {
+            assertThat(savedStates).containsExactly(REJECTING.code(), ERRORED.code());
+            // the rejection is delivered with the access token, which is discarded only afterwards
+            var inOrder = inOrder(credentialStorageClient, vault);
+            inOrder.verify(credentialStorageClient).deliverRejection(eq(process), any());
+            inOrder.verify(vault).deleteSecret(process.getId());
+            assertThat(statesWhenTokenDeleted).containsExactly(ERRORED.code());
+            // the failure is reported when it happens, not when the Holder is notified
+            verify(listener).errored(eq(process), any());
+        });
+    }
+
+    @DisplayName("IS-REQ-02: the Holder gets a generic rejection reason, never the error detail of the process")
+    @Test
+    void rejecting_shouldDeliverGenericRejectionReason_thenTransitionToErrored() {
+        var process = rejectingProcess().toBuilder().errorDetail("connection to jdbc:postgresql://db.internal:5432/issuer refused").build();
+
+        storeHolds(process);
+        var savedStates = recordSavedStates();
+
+        issuanceProcessManager.start();
+
+        await().untilAsserted(() -> {
+            assertThat(savedStates).containsExactly(ERRORED.code());
+            verify(credentialStorageClient).deliverRejection(process, IssuanceProcessManagerImpl.REJECTION_REASON);
+            verify(vault).deleteSecret(process.getId());
+        });
+        verify(credentialStorageClient, never()).deliverRejection(any(), argThat(reason -> reason != null && reason.contains("jdbc")));
+        // the full error stays with the Issuer
+        assertThat(process.getErrorDetail()).contains("jdbc");
+    }
+
+    @DisplayName("IS-REQ-02: a failing rejection notice is retried, and the process is ERRORED once the retry limit is exhausted")
+    @Test
+    void rejecting_shouldRetryAndEventuallyError_whenRejectionNoticeFails() {
+        var process = rejectingProcess();
+
+        storeHolds(process);
+        var savedTransitions = recordSavedTransitions();
         when(credentialStorageClient.deliverRejection(any(), any())).thenReturn(Result.failure("holder unreachable"));
 
         issuanceProcessManager.start();
 
         await().untilAsserted(() -> {
-            verify(credentialStorageClient).deliverRejection(eq(process), any());
-            assertThat(savedStates).contains(ERRORED.code());
+            assertThat(savedTransitions).containsExactly(Map.entry(REJECTING.code(), 2), Map.entry(ERRORED.code(), 1));
+            verify(credentialStorageClient, times(2)).deliverRejection(eq(process), any());
+            // the Holder learns about the failure by polling the Credential Request Status API
+            verify(monitor).warning(argThat((String message) -> message.contains("could not be notified")));
+            verify(vault).deleteSecret(process.getId());
+        });
+    }
+
+    @DisplayName("IS-REQ-02: an exception while notifying the Holder of the rejection is retried, instead of ending the notice")
+    @Test
+    void rejecting_shouldRetry_whenRejectionNoticeThrows() {
+        var process = rejectingProcess();
+
+        storeHolds(process);
+        var savedTransitions = recordSavedTransitions();
+        when(credentialStorageClient.deliverRejection(any(), any()))
+                .thenThrow(new EdcException("holder unreachable"))
+                .thenReturn(Result.success());
+
+        issuanceProcessManager.start();
+
+        await().untilAsserted(() -> {
+            assertThat(savedTransitions).containsExactly(Map.entry(REJECTING.code(), 2), Map.entry(ERRORED.code(), 1));
+            verify(vault).deleteSecret(process.getId());
         });
     }
 
@@ -248,7 +321,7 @@ public class IssuanceProcessManagerImplTest {
         issuanceProcessManager.start();
 
         await().untilAsserted(() -> {
-            assertThat(savedTransitions).extracting(Map.Entry::getKey).containsExactly(APPROVED.code(), ERRORED.code());
+            assertThat(savedTransitions).extracting(Map.Entry::getKey).containsExactly(APPROVED.code(), REJECTING.code(), ERRORED.code());
             assertThat(savedTransitions.get(0).getValue()).isEqualTo(2);
             // a credential the Issuer has no record of must never reach the Holder
             verify(credentialStorageClient, never()).deliverCredentials(any(), any());
@@ -273,7 +346,7 @@ public class IssuanceProcessManagerImplTest {
 
         await().untilAsserted(() -> {
             // retried first, and only given up once the retry limit is reached
-            assertThat(savedTransitions).extracting(Map.Entry::getKey).containsExactly(APPROVED.code(), ERRORED.code());
+            assertThat(savedTransitions).extracting(Map.Entry::getKey).containsExactly(APPROVED.code(), REJECTING.code(), ERRORED.code());
             verify(credentialStorageClient, never()).deliverCredentials(any(), any());
         });
     }
@@ -371,7 +444,7 @@ public class IssuanceProcessManagerImplTest {
         assertThat(updatedRecord.getValue().getVerifiableCredential().rawVc()).isNull();
     }
 
-    @DisplayName("IS-DELIV-05: delivery failure is retried with the same credentials, then transitions to ERRORED once the retry limit is exhausted")
+    @DisplayName("IS-DELIV-05: delivery failure is retried with the same credentials, then transitions to ERRORED via REJECTING once the retry limit is exhausted")
     @Test
     void delivering_shouldRetryAndEventuallyError_whenDeliveryFails() {
         var process = deliveringProcess();
@@ -390,11 +463,11 @@ public class IssuanceProcessManagerImplTest {
 
         await().untilAsserted(() -> {
             // first failure: retry with incremented stateCount, second failure: retry limit exhausted
-            assertThat(savedTransitions).containsExactly(Map.entry(DELIVERING.code(), 2), Map.entry(ERRORED.code(), 1));
+            assertThat(savedTransitions).containsExactly(Map.entry(DELIVERING.code(), 2), Map.entry(REJECTING.code(), 1), Map.entry(ERRORED.code(), 1));
             assertThat(process.getErrorDetail()).isNotNull();
             verify(listener).errored(eq(process), any());
             // RT-03: the holder is told the issuance it was told had been accepted is not coming
-            verify(credentialStorageClient).deliverRejection(eq(process), any());
+            verify(credentialStorageClient).deliverRejection(process, IssuanceProcessManagerImpl.REJECTION_REASON);
         });
 
         // the credential stays ISSUED, although it may have reached the Holder or not, so its record needs reconciliation
@@ -411,7 +484,7 @@ public class IssuanceProcessManagerImplTest {
         verify(credentialGenerator, never()).generateCredentials(any(), any(), any(), any());
     }
 
-    @DisplayName("IS-DELIV-07: a delivering process without recorded credentials transitions to ERRORED")
+    @DisplayName("IS-DELIV-07: a delivering process without recorded credentials transitions to ERRORED via REJECTING")
     @Test
     void delivering_shouldTransitionToErrored_whenNoCredentialsAreRecorded() {
         var process = deliveringProcess();
@@ -422,7 +495,7 @@ public class IssuanceProcessManagerImplTest {
         issuanceProcessManager.start();
 
         await().untilAsserted(() -> {
-            assertThat(savedStates).containsExactly(ERRORED.code());
+            assertThat(savedStates).containsExactly(REJECTING.code(), ERRORED.code());
             verify(credentialStorageClient, never()).deliverCredentials(any(), any());
         });
     }
@@ -440,7 +513,7 @@ public class IssuanceProcessManagerImplTest {
         issuanceProcessManager.start();
 
         await().untilAsserted(() -> {
-            assertThat(savedTransitions).extracting(Map.Entry::getKey).containsExactly(DELIVERING.code(), ERRORED.code());
+            assertThat(savedTransitions).extracting(Map.Entry::getKey).containsExactly(DELIVERING.code(), REJECTING.code(), ERRORED.code());
             verify(credentialGenerator, never()).signCredential(any(), any(), any());
             verify(credentialStorageClient, never()).deliverCredentials(any(), any());
         });
@@ -508,7 +581,7 @@ public class IssuanceProcessManagerImplTest {
 
         issuanceProcessManager.start();
 
-        await().untilAsserted(() -> verify(issuanceProcessStore).save(argThat(p -> p.getState() == ERRORED.code())));
+        await().untilAsserted(() -> verify(issuanceProcessStore).save(argThat(p -> p.getState() == REJECTING.code())));
         // waits until the process is done with
         issuanceProcessManager.stop();
         // whatever follows from the state of the process is up to the runtime that saved it
@@ -544,8 +617,8 @@ public class IssuanceProcessManagerImplTest {
 
         await().untilAsserted(() -> {
             verify(issuanceProcessStore, atLeastOnce()).nextNotLeased(eq(batchSize), stateIs(APPROVED.code()));
-            // the process is retried exactly 'retryLimit' times (saves back to APPROVED) before transitioning to ERRORED
-            assertThat(savedStates).containsExactly(APPROVED.code(), APPROVED.code(), ERRORED.code());
+            // the process is retried exactly 'retryLimit' times (saves back to APPROVED) before it is rejected
+            assertThat(savedStates).containsExactly(APPROVED.code(), APPROVED.code(), REJECTING.code());
         });
     }
 
@@ -572,7 +645,7 @@ public class IssuanceProcessManagerImplTest {
      * Lets the state machine find the process whenever it is in a state that is processed, like a store would.
      */
     private void storeHolds(IssuanceProcess process) {
-        for (var state : List.of(APPROVED, DELIVERING)) {
+        for (var state : List.of(APPROVED, DELIVERING, REJECTING)) {
             when(issuanceProcessStore.nextNotLeased(anyInt(), stateIs(state.code())))
                     .thenAnswer(i -> process.getState() == state.code() ? List.of(process) : emptyList());
         }
@@ -654,6 +727,10 @@ public class IssuanceProcessManagerImplTest {
 
     private IssuanceProcess deliveringProcess() {
         return processIn(DELIVERING).build();
+    }
+
+    private IssuanceProcess rejectingProcess() {
+        return processIn(REJECTING).errorDetail("generation failure").build();
     }
 
     private IssuanceProcess.Builder processIn(IssuanceProcessStates state) {

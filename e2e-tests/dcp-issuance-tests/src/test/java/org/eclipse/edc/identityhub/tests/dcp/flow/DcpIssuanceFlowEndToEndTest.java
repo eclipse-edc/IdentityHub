@@ -113,6 +113,10 @@ public class DcpIssuanceFlowEndToEndTest {
 
         protected static final String ISSUER_ID = "issuer";
         protected static final String PARTICIPANT_ID = "user1";
+        // the reason the Issuer gives the Holder for any failed issuance
+        private static final String GENERIC_REJECTION_REASON = "The credentials could not be issued";
+        // what makes an issuance fail that has no credentials recorded
+        private static final String INTERNAL_ERROR = "No credentials are recorded";
 
         private static String participantToken;
         private static String issuerDid;
@@ -535,6 +539,107 @@ public class DcpIssuanceFlowEndToEndTest {
                             .as("the holder must observe the post-acceptance issuance failure and end in ERROR")
                             .hasSize(1)
                             .allSatisfy(r -> assertThat(r.getState()).isEqualTo(HolderRequestState.ERROR.code())));
+        }
+
+        // IS-REQ-02: an issuance that fails after the Issuer accepted it is rejected towards the Holder with a generic
+        // reason, and the error that made it fail stays with the Issuer
+        @Test
+        @DisplayName("IS-REQ-02: a failed issuance is rejected towards the holder with a generic reason, and ends in ERRORED")
+        void issuanceFlow_failureAfterAcceptance_holderReceivesGenericRejection(IssuerService issuer, IdentityHub identityHub) {
+            var holderPid = UUID.randomUUID().toString();
+            // the Holder is still waiting for the credentials of that issuance
+            storeUntrackedHolderRequest(identityHub, holderPid);
+
+            var issuerProcess = startFailingIssuance(issuer, holderPid);
+
+            await().pollInterval(INTERVAL)
+                    .atMost(TIMEOUT)
+                    .untilAsserted(() -> assertThat(issuer.getService(IssuanceProcessStore.class).findById(issuerProcess.getId()))
+                            .satisfies(process -> {
+                                assertThat(process.getState()).isEqualTo(IssuanceProcessStates.ERRORED.code());
+                                // the full error stays with the Issuer
+                                assertThat(process.getErrorDetail()).contains(INTERNAL_ERROR);
+                            }));
+
+            assertThat(identityHub.getCredentialRequestForParticipant(PARTICIPANT_ID, holderPid))
+                    .singleElement()
+                    .satisfies(request -> assertHolderReceivedGenericRejection(request, issuerProcess));
+        }
+
+        // IS-REQ-02: a rejection that does not reach the Holder is retried
+        @Test
+        @DisplayName("IS-REQ-02: a rejection the holder does not accept is retried, before the process ends in ERRORED")
+        void issuanceFlow_failureAfterAcceptance_rejectionIsRetried(IssuerService issuer, IdentityHub identityHub) {
+            var holderPid = UUID.randomUUID().toString();
+
+            var issuerProcess = startFailingIssuance(issuer, holderPid);
+
+            // the Holder does not know the request yet, so it refuses the first rejection, which the Issuer retries
+            await().pollInterval(Duration.ofMillis(200))
+                    .atMost(TIMEOUT)
+                    .untilAsserted(() -> assertThat(issuer.getService(IssuanceProcessStore.class).findById(issuerProcess.getId()))
+                            .satisfies(process -> {
+                                assertThat(process.getState()).isEqualTo(IssuanceProcessStates.REJECTING.code());
+                                assertThat(process.getStateCount()).isGreaterThan(1);
+                            }));
+
+            storeUntrackedHolderRequest(identityHub, holderPid);
+
+            await().pollInterval(INTERVAL)
+                    .atMost(TIMEOUT)
+                    .untilAsserted(() -> {
+                        assertThat(issuer.getService(IssuanceProcessStore.class).findById(issuerProcess.getId()).getState())
+                                .isEqualTo(IssuanceProcessStates.ERRORED.code());
+                        assertThat(identityHub.getCredentialRequestForParticipant(PARTICIPANT_ID, holderPid))
+                                .singleElement()
+                                .satisfies(request -> assertHolderReceivedGenericRejection(request, issuerProcess));
+                    });
+        }
+
+        /**
+         * Starts an issuance that fails for good as soon as it is processed: it is DELIVERING, but no credentials are
+         * recorded for it.
+         */
+        private IssuanceProcess startFailingIssuance(IssuerService issuer, String holderPid) {
+            // the Holder must be known to the Issuer, so that the Issuer can reach its Credential Service. Creating it
+            // again is harmless, the Issuer keeps the existing one.
+            issuer.getService(HolderService.class).createHolder(Holder.Builder.newInstance()
+                    .holderId(PARTICIPANT_ID)
+                    .did(participantDid)
+                    .holderName("Participant")
+                    .participantContextId(ISSUER_ID)
+                    .build());
+
+            var issuerProcess = IssuanceProcess.Builder.newInstance()
+                    .id(UUID.randomUUID().toString())
+                    .state(IssuanceProcessStates.DELIVERING.code())
+                    .participantContextId(ISSUER_ID)
+                    .holderId(PARTICIPANT_ID)
+                    .holderPid(holderPid)
+                    .build();
+            issuer.getService(IssuanceProcessStore.class).save(issuerProcess);
+            return issuerProcess;
+        }
+
+        /**
+         * Stores a request whose Issuer-assigned process ID the Holder does not know, so that it does not poll the Issuer
+         * for its status, and can only learn about the rejection from the Issuer's message.
+         */
+        private void storeUntrackedHolderRequest(IdentityHub identityHub, String holderPid) {
+            identityHub.storeHolderRequest(HolderCredentialRequest.Builder.newInstance()
+                    .id(holderPid)
+                    .issuerDid(issuerDid)
+                    .participantContextId(PARTICIPANT_ID)
+                    .state(HolderRequestState.REQUESTED.code())
+                    .requestedCredential("membership-id", "MembershipCredential", VC1_0_JWT.toString())
+                    .build());
+        }
+
+        private void assertHolderReceivedGenericRejection(HolderCredentialRequest request, IssuanceProcess issuerProcess) {
+            assertThat(request.getState()).isEqualTo(HolderRequestState.ERROR.code());
+            assertThat(request.getErrorDetail())
+                    .isEqualTo("The Issuer rejected the credential request '%s': %s".formatted(issuerProcess.getId(), GENERIC_REJECTION_REASON))
+                    .doesNotContain(INTERNAL_ERROR);
         }
 
         // RT-06: issuer rotates its signing key between two issuances -> credential 1 remains verifiable (old verificationMethod retained in DID document), credential 2 is signed with the new key
