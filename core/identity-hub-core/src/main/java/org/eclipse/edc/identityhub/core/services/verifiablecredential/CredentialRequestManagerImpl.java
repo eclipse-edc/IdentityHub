@@ -400,7 +400,7 @@ public class CredentialRequestManagerImpl extends AbstractStateEntityManager<Hol
                     requests -> requests.forEach(request -> {
                         pending.add(request.getId());
                         if (isOverdue(request)) {
-                            timeOut(request);
+                            giveUpOnOverdue(request);
                         } else if (isTracked(request) && isDueForStatusPoll(request, now)) {
                             pollStatus(request);
                         }
@@ -462,7 +462,7 @@ public class CredentialRequestManagerImpl extends AbstractStateEntityManager<Hol
      * ID, e.g. an Issuer that answered a re-sent request with 409 and without a {@code Location} header. Those time out
      * sooner, as nothing tells the Holder that they are still under way.
      */
-    private void timeOut(HolderCredentialRequest request) {
+    private void giveUpOnOverdue(HolderCredentialRequest request) {
         transactionContext.execute(() -> {
             // the request is only acquired now: it may be held by an incoming credential delivery, in which case this
             // round is skipped
@@ -478,19 +478,19 @@ public class CredentialRequestManagerImpl extends AbstractStateEntityManager<Hol
                 return null;
             }
             var reason = isTracked(current)
-                    ? "No credentials were received for the request within %s".formatted(timeout(current))
+                    ? "No credentials were received for the request within %s".formatted(timeoutFor(current))
                     : ("No credentials were received for the request within %s, and its status cannot be queried, " +
-                    "because the Issuer did not report its issuance process ID").formatted(timeout(current));
+                    "because the Issuer did not report its issuance process ID").formatted(timeoutFor(current));
             transitionError(current, reason);
             return null;
         });
     }
 
     private boolean isOverdue(HolderCredentialRequest request) {
-        return clock.millis() - request.getStateTimestamp() > timeout(request).toMillis();
+        return clock.millis() - request.getStateTimestamp() > timeoutFor(request).toMillis();
     }
 
-    private Duration timeout(HolderCredentialRequest request) {
+    private Duration timeoutFor(HolderCredentialRequest request) {
         return Duration.ofSeconds(isTracked(request) ? configuration.trackedTimeout() : configuration.untrackedTimeout());
     }
 
@@ -568,7 +568,7 @@ public class CredentialRequestManagerImpl extends AbstractStateEntityManager<Hol
                 // The Issuer already tracks an issuance process for this holderPid, which happens when a request is re-sent
                 // after having been interrupted, e.g. by a restart. It was accepted earlier, so this is not a failure. EDC
                 // Issuers report the existing process in the Location header, like for a new one. Other Issuers may not, in
-                // which case the request is given up on after a while, c.f. #timeOut
+                // which case the request is given up on after a while, c.f. #giveUpOnOverdue
                 monitor.debug("Issuer reports an already existing issuance process, treating the re-sent request as accepted");
                 return StatusResult.success(ofNullable(issuerPidFromLocation(response)).orElse(UNKNOWN_ISSUER_PID));
             }
