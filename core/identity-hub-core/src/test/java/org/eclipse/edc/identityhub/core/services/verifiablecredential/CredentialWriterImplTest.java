@@ -51,6 +51,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.eclipse.edc.identityhub.spi.credential.request.model.HolderRequestState.ISSUED;
 import static org.eclipse.edc.identityhub.spi.credential.request.model.HolderRequestState.REQUESTED;
@@ -91,6 +92,7 @@ class CredentialWriterImplTest {
     void setUp() {
         when(tokenValidationService.validate(anyString(), any(PublicKeyResolver.class), anyList())).thenReturn(Result.success(ClaimToken.Builder.newInstance().build()));
         when(credentialStore.queryForUpdate(any())).thenReturn(StoreResult.success(List.of()));
+        when(holderCredentialRequestStore.save(any())).thenReturn(StoreResult.success());
         storeHolds(HolderCredentialRequest.Builder.newInstance()
                 .issuerDid(ISSUER_DID)
                 .requestedCredential("test-id", TEST_CREDENTIAL_TYPE, TEST_CREDENTIAL_FORMAT)
@@ -110,6 +112,26 @@ class CredentialWriterImplTest {
         var result = credentialWriter.write("holderPid", HOLDER_DID, "issuerPid", ISSUER_DID, Set.of(new CredentialWriteRequest("raw-cred", TEST_CREDENTIAL_FORMAT)), PARTICIPANT_ID);
         assertThat(result).isSucceeded();
         verify(holderCredentialRequestStore).save(argThat(request -> request.getIssuerPid() != null));
+    }
+
+    @Test
+    void write_saveRequestFails_expectFailureAndRollback() {
+        when(credentialTransformerRegistry.transform(isA(String.class), eq(VerifiableCredential.class)))
+                .thenReturn(Result.success(createCredential().build()));
+        when(credentialStore.create(any())).thenReturn(StoreResult.success());
+        var saveTransaction = new AtomicInteger();
+        when(holderCredentialRequestStore.save(any())).thenAnswer(i -> {
+            saveTransaction.set(transactionContext.currentTransaction());
+            return StoreResult.generalError("save failed");
+        });
+
+        var result = credentialWriter.write("holderPid", HOLDER_DID, "issuerPid", ISSUER_DID, Set.of(new CredentialWriteRequest("raw-cred", TEST_CREDENTIAL_FORMAT)), PARTICIPANT_ID);
+
+        assertThat(result).isFailed().detail().isEqualTo("save failed");
+        // the credential was stored already, and must not be committed while the request stays REQUESTED
+        verify(credentialStore).create(any());
+        Assertions.assertThat(saveTransaction.get()).isPositive();
+        Assertions.assertThat(transactionContext.isRolledBack(saveTransaction.get())).isTrue();
     }
 
     @Test
@@ -342,7 +364,8 @@ class CredentialWriterImplTest {
         assertThat(result).isSucceeded();
         verifyNoInteractions(credentialStore, credentialTransformerRegistry);
         // the request must not be transitioned to ISSUED when no credentials were delivered
-        verify(holderCredentialRequestStore, never()).save(argThat(request -> request.getState() == ISSUED.code()));
+        verify(holderCredentialRequestStore, never()).save(any());
+        verify(holderCredentialRequestStore).breakLease(argThat(request -> request.getState() == REQUESTED.code()));
     }
 
     // CS-STOR-07: message issuerPid differs from the issuerPid already stored on the HolderCredentialRequest -> rejected, not silently overwritten
@@ -455,6 +478,24 @@ class CredentialWriterImplTest {
         assertThat(result).isSucceeded();
         Assertions.assertThat(request.stateAsEnum()).isEqualTo(HolderRequestState.ERROR);
         Assertions.assertThat(request.getErrorDetail()).contains("issuerPid");
+    }
+
+    @Test
+    void reject_saveFails_expectFailure() {
+        var request = HolderCredentialRequest.Builder.newInstance()
+                .issuerDid(ISSUER_DID)
+                .requestedCredential("test-id", TEST_CREDENTIAL_TYPE, TEST_CREDENTIAL_FORMAT)
+                .state(REQUESTED.code())
+                .participantContextId(PARTICIPANT_ID)
+                .issuerPid("issuerPid")
+                .build();
+        when(holderCredentialRequestStore.findByIdAndLease(anyString())).thenReturn(StoreResult.success(request));
+        when(holderCredentialRequestStore.save(any())).thenReturn(StoreResult.generalError("save failed"));
+
+        var result = credentialWriter.reject("holderPid", "issuerPid", ISSUER_DID, "attestation not satisfied", PARTICIPANT_ID);
+
+        assertThat(result).isFailed().detail().isEqualTo("save failed");
+        verify(holderCredentialRequestStore).breakLease(request);
     }
 
     @Test

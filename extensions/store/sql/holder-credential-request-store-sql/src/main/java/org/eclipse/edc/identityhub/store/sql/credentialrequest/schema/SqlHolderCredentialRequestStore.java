@@ -124,21 +124,25 @@ public class SqlHolderCredentialRequestStore extends AbstractSqlStore implements
     }
 
     @Override
-    public StoreResult<Void> save(HolderCredentialRequest issuanceProcess) {
-        try (var conn = getConnection()) {
-            var existing = findByIdInternal(conn, issuanceProcess.getId());
-            if (existing != null) {
-                var result = leaseContext.withConnection(conn).breakLease(issuanceProcess.getId());
-                if (result.failed()) {
-                    return result;
+    public StoreResult<Void> save(HolderCredentialRequest request) {
+        return transactionContext.execute(() -> {
+            try (var conn = getConnection()) {
+                var existing = findByIdInternal(conn, request.getId());
+                if (existing != null) {
+                    var result = leaseContext.withConnection(conn).breakLease(request.getId());
+                    if (result.failed()) {
+                        return result;
+                    }
+                    return update(conn, request, existing);
                 }
-                return update(conn, issuanceProcess, existing);
+                if (insert(conn, request) == 0) {
+                    return StoreResult.alreadyExists("A HolderCredentialRequest with ID '%s' already exists.".formatted(request.getId()));
+                }
+                return StoreResult.success();
+            } catch (SQLException e) {
+                throw new EdcPersistenceException(e);
             }
-            insert(conn, issuanceProcess);
-            return StoreResult.success();
-        } catch (SQLException e) {
-            throw new EdcPersistenceException(e);
-        }
+        });
     }
 
     @Override
@@ -164,9 +168,9 @@ public class SqlHolderCredentialRequestStore extends AbstractSqlStore implements
         });
     }
 
-    private void insert(Connection conn, HolderCredentialRequest process) {
+    private int insert(Connection conn, HolderCredentialRequest process) {
         var insertTpStatement = statements.getInsertTemplate();
-        queryExecutor.execute(conn, insertTpStatement, process.getId(),
+        var inserted = queryExecutor.execute(conn, insertTpStatement, process.getId(),
                 process.getState(),
                 process.getStateCount(),
                 process.getStateTimestamp(),
@@ -178,7 +182,10 @@ public class SqlHolderCredentialRequestStore extends AbstractSqlStore implements
                 process.getIssuerDid(),
                 process.getIssuerPid(),
                 toJson(process.getIdsAndFormats()));
-        process.setStoredStateTimestamp(process.getStateTimestamp());
+        if (inserted > 0) {
+            process.setStoredStateTimestamp(process.getStateTimestamp());
+        }
+        return inserted;
     }
 
     /**

@@ -24,7 +24,7 @@ import static java.lang.String.format;
 public class BaseSqlDialectStatements implements HolderStoreStatements {
     @Override
     public String getInsertTemplate() {
-        return executeStatement()
+        var insert = executeStatement()
                 .column(getIdColumn())
                 .column(getParticipantContextIdColumn())
                 .column(getDidColumn())
@@ -34,6 +34,9 @@ public class BaseSqlDialectStatements implements HolderStoreStatements {
                 .column(getAnonymousColumn())
                 .jsonColumn(getPropertiesColumn())
                 .insertInto(getHoldersTable());
+        // a row that conflicts with an existing one is not inserted. Unlike a failed statement, this does not abort the
+        // surrounding transaction
+        return insert.replaceFirst(";\\s*$", "") + " ON CONFLICT DO NOTHING;";
     }
 
     @Override

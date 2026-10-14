@@ -66,7 +66,7 @@ public class SqlCredentialStore extends AbstractSqlStore implements CredentialSt
                 }
 
                 var stmt = statements.getInsertTemplate();
-                queryExecutor.execute(connection, stmt, credentialResource.getId(),
+                var inserted = queryExecutor.execute(connection, stmt, credentialResource.getId(),
                         credentialResource.getTimestamp(),
                         credentialResource.getIssuerId(),
                         credentialResource.getHolderId(),
@@ -79,6 +79,9 @@ public class SqlCredentialStore extends AbstractSqlStore implements CredentialSt
                         toJson(credentialResource.getVerifiableCredential().credential()),
                         credentialResource.getParticipantContextId(),
                         credentialResource.getUsage().toString());
+                if (inserted == 0) {
+                    return alreadyExists(alreadyExistsErrorMessage(id));
+                }
                 return success();
 
             } catch (SQLException e) {

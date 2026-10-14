@@ -24,7 +24,7 @@ import static java.lang.String.format;
 public class BaseSqlDialectStatements implements DidResourceStatements {
     @Override
     public String getInsertTemplate() {
-        return executeStatement()
+        var insert = executeStatement()
                 .column(getIdColumn())
                 .column(getStateColumn())
                 .column(getCreateTimestampColumn())
@@ -32,6 +32,9 @@ public class BaseSqlDialectStatements implements DidResourceStatements {
                 .jsonColumn(getDidDocumentColumn())
                 .column(getParticipantContextId())
                 .insertInto(getDidResourceTableName());
+        // a row that conflicts with an existing one is not inserted. Unlike a failed statement, this does not abort the
+        // surrounding transaction
+        return insert.replaceFirst(";\\s*$", "") + " ON CONFLICT DO NOTHING;";
     }
 
     @Override

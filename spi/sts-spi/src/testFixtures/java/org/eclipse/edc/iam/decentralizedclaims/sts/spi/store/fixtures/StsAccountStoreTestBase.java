@@ -121,6 +121,23 @@ public abstract class StsAccountStoreTestBase {
                     .usingRecursiveFieldByFieldElementComparator()
                     .containsExactly(client);
         }
+
+        @Test
+        @DisplayName("Shouldn't save a client whose client ID is already taken by another client")
+        void clientIdAlreadyExists_shouldNotSave() {
+            var client = createClient("id", "secret-alias", "client-id");
+            getStsClientStore().create(client);
+            var saveResult = getStsClientStore().create(createClient("other-id", "other-secret-alias", "client-id"));
+
+            assertThat(saveResult.failed()).isTrue();
+            assertThat(saveResult.reason()).isEqualTo(ALREADY_EXISTS);
+
+            var result = getStsClientStore().findAll(QuerySpec.max());
+
+            assertThat(result).hasSize(1)
+                    .usingRecursiveFieldByFieldElementComparator()
+                    .containsExactly(client);
+        }
     }
 
     @Nested

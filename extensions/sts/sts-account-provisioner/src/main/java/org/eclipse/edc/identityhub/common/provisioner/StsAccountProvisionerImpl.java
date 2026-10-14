@@ -34,7 +34,6 @@ import org.eclipse.edc.spi.telemetry.Telemetry;
  * AccountProvisioner, that synchronizes the {@link IdentityHubParticipantContext} object
  * to {@link StsAccount} entries. That means, when a participant is created, this provisioner takes care of creating a corresponding
  * {@link StsAccount}, if the embedded STS is used.
- * When key pairs are revoked or rotated, the corresponding {@link StsAccount} entry is updated.
  */
 public class StsAccountProvisionerImpl implements EventSubscriber, StsAccountProvisioner {
 
@@ -76,7 +75,7 @@ public class StsAccountProvisionerImpl implements EventSubscriber, StsAccountPro
         var secretAlias = manifest.clientSecretAlias();
         var createResult = stsAccountService.createAccount(manifest, secretAlias);
         if (createResult.failed()) {
-            return ServiceResult.badRequest(createResult.getFailureDetail());
+            return createResult.mapFailure();
         }
 
         // without its client secret, the account cannot authenticate, so a failure fails the creation of the participant

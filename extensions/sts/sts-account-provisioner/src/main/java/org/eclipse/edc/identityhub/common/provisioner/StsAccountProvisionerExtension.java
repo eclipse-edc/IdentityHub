@@ -16,8 +16,6 @@ package org.eclipse.edc.identityhub.common.provisioner;
 
 import org.eclipse.edc.iam.decentralizedclaims.sts.spi.service.StsAccountService;
 import org.eclipse.edc.iam.decentralizedclaims.sts.spi.service.StsClientSecretGenerator;
-import org.eclipse.edc.identityhub.spi.keypair.events.KeyPairRevoked;
-import org.eclipse.edc.identityhub.spi.keypair.events.KeyPairRotated;
 import org.eclipse.edc.identityhub.spi.participantcontext.StsAccountProvisioner;
 import org.eclipse.edc.identityhub.spi.participantcontext.events.ParticipantContextDeleted;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
@@ -66,8 +64,6 @@ public class StsAccountProvisionerExtension implements ServiceExtension {
             var monitor = context.getMonitor().withPrefix("STS-Account");
             provisioner = new StsAccountProvisionerImpl(monitor, vault, stsClientSecretGenerator(), accountService, telemetry);
             eventRouter.registerSync(ParticipantContextDeleted.class, provisioner);
-            eventRouter.registerSync(KeyPairRevoked.class, provisioner);
-            eventRouter.registerSync(KeyPairRotated.class, provisioner);
         }
         return provisioner;
     }

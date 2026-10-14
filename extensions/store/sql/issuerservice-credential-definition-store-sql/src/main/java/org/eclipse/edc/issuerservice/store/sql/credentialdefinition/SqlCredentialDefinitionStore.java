@@ -86,7 +86,7 @@ public class SqlCredentialDefinitionStore extends AbstractSqlStore implements Cr
                 }
 
                 var stmt = statements.getInsertTemplate();
-                queryExecutor.execute(connection, stmt,
+                var inserted = queryExecutor.execute(connection, stmt,
                         credentialDefinition.getId(),
                         credentialDefinition.getParticipantContextId(),
                         credentialDefinition.getCredentialType(),
@@ -102,6 +102,9 @@ public class SqlCredentialDefinitionStore extends AbstractSqlStore implements Cr
                         credentialDefinition.getCreatedAt(),
                         credentialDefinition.getCreatedAt()
                 );
+                if (inserted == 0) {
+                    return alreadyExists(alreadyExistsErrorMessage(id));
+                }
                 return success();
 
             } catch (SQLException e) {

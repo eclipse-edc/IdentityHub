@@ -30,6 +30,7 @@ import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.CredentialUsa
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStatus;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialResource;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialStore;
+import org.eclipse.edc.spi.EdcException;
 import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.spi.query.Criterion;
 import org.eclipse.edc.spi.query.QuerySpec;
@@ -98,23 +99,27 @@ public class CredentialWriterImpl implements CredentialWriter {
             return proofResult;
         }
 
-        return transactionContext.execute(() -> {
+        try {
+            return transactionContext.execute(() -> {
 
-            // get holder request
-            var holderRequestResult = holderCredentialRequestStore.findByIdAndLease(holderPid);
-            if (holderRequestResult.failed()) {
-                return from(holderRequestResult).mapEmpty();
-            }
+                // get holder request
+                var holderRequestResult = holderCredentialRequestStore.findByIdAndLease(holderPid);
+                if (holderRequestResult.failed()) {
+                    return from(holderRequestResult).mapEmpty();
+                }
 
-            var holderRequest = holderRequestResult.getContent();
+                var holderRequest = holderRequestResult.getContent();
 
-            var result = writeCredentials(holderRequest, holderPid, holderDid, issuerPid, issuerDid, writeRequests, participantContextId);
-            if (result.failed()) {
-                // the request remains open for another delivery attempt, so it must not stay leased
-                holderCredentialRequestStore.breakLease(holderRequest);
-            }
-            return result;
-        });
+                var result = writeCredentials(holderRequest, holderPid, holderDid, issuerPid, issuerDid, writeRequests, participantContextId);
+                if (result.failed()) {
+                    // the request remains open for another delivery attempt, so it must not stay leased
+                    holderCredentialRequestStore.breakLease(holderRequest);
+                }
+                return result;
+            });
+        } catch (RollbackException e) {
+            return e.failure();
+        }
     }
 
     @Override
@@ -166,7 +171,10 @@ public class CredentialWriterImpl implements CredentialWriter {
         holderRequest.transitionError(rejectionReason == null || rejectionReason.isBlank()
                 ? "The Issuer rejected the credential request '%s'".formatted(issuerPid)
                 : "The Issuer rejected the credential request '%s': %s".formatted(issuerPid, rejectionReason));
-        holderCredentialRequestStore.save(holderRequest);
+        var saved = holderCredentialRequestStore.save(holderRequest);
+        if (saved.failed()) {
+            return ServiceResult.fromFailure(saved);
+        }
         return success();
     }
 
@@ -208,9 +216,9 @@ public class CredentialWriterImpl implements CredentialWriter {
         }
 
         // a message without credentials is accepted as a no-op: nothing was issued, so the request stays as it is and
-        // waits for the credentials to arrive. Saving it unchanged releases the lease acquired above.
+        // waits for the credentials to arrive. The lease acquired above must not be held on to.
         if (writeRequests.isEmpty()) {
-            holderCredentialRequestStore.save(holderRequest);
+            holderCredentialRequestStore.breakLease(holderRequest);
             return success();
         }
 
@@ -289,9 +297,13 @@ public class CredentialWriterImpl implements CredentialWriter {
             }
         }
 
-        //update holder request
+        // update holder request. The credentials are stored already, so a failure must roll them back, or they would be
+        // committed while the request stays REQUESTED
         holderRequest.transitionIssued(issuerPid);
-        holderCredentialRequestStore.save(holderRequest);
+        var saved = holderCredentialRequestStore.save(holderRequest);
+        if (saved.failed()) {
+            throw new RollbackException(ServiceResult.fromFailure(saved));
+        }
 
         return success();
     }
@@ -416,5 +428,22 @@ public class CredentialWriterImpl implements CredentialWriter {
 
     private String extractHolder(VerifiableCredential credential) {
         return credential.getCredentialSubject().stream().findFirst().map(CredentialSubject::getId).orElse(null);
+    }
+
+    /**
+     * Rolls back a write whose credentials were stored, but whose request could not be updated, and carries its failure
+     * out of the transaction.
+     */
+    private static class RollbackException extends EdcException {
+        private final ServiceResult<Void> failure;
+
+        RollbackException(ServiceResult<Void> failure) {
+            super(failure.getFailureDetail());
+            this.failure = failure;
+        }
+
+        <T> ServiceResult<T> failure() {
+            return failure.mapFailure();
+        }
     }
 }

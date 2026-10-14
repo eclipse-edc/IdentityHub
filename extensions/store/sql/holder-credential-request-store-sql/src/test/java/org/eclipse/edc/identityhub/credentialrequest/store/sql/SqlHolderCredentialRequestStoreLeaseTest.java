@@ -105,6 +105,15 @@ class SqlHolderCredentialRequestStoreLeaseTest {
     }
 
     @Test
+    void save_outsideTransaction_shouldSucceed() {
+        assertThat(store.save(createRequest(REQUESTED))).isSucceeded();
+
+        var stored = transactionContext.execute(() -> store.findById(REQUEST_ID));
+        assertThat(stored).isNotNull();
+        assertThat(stored.stateAsEnum()).isEqualTo(REQUESTED);
+    }
+
+    @Test
     void findByIdAndLease_whenOtherTransactionHoldsLease_shouldReturnItsChanges() throws Exception {
         var release = changeInOtherTransaction(request -> request.transitionIssued("issuer-pid"));
         try {
