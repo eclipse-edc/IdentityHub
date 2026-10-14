@@ -696,8 +696,8 @@ paths:
     post:
       tags:
       - Issuer Service Credentials Admin API
-      description: Resumes a credential with the given ID for the given participant.
-        Resumed credentials will be removed from the Revocation List.
+      description: "Resuming a credential is not implemented yet, so this endpoint\
+        \ always returns 501."
       operationId: resumeCredential
       parameters:
       - name: participantContextId
@@ -715,17 +715,6 @@ paths:
         schema:
           type: string
       responses:
-        "204":
-          description: The credential was resumed successfully. Check the Revocation
-            List credential to confirm.
-        "400":
-          description: "Request body was malformed, or the request could not be processed"
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/ApiErrorDetail"
         "401":
           description: "The request could not be completed, because either the authentication\
             \ was missing or was not valid."
@@ -735,14 +724,8 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/ApiErrorDetail"
-        "404":
-          description: The credential or the participant was not found.
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/ApiErrorDetail"
+        "501":
+          description: Not implemented
   /v1/participants/{participantContextId}/holders:
     put:
       tags:
@@ -841,9 +824,8 @@ paths:
     post:
       tags:
       - Issuer Service Credentials Admin API
-      description: Suspends a credential with the given ID for the given participant.
-        Suspended credentials will be added to the Revocation List. Suspension is
-        reversible.
+      description: "Suspending a credential is not implemented yet, so this endpoint\
+        \ always returns 501."
       operationId: suspendCredential
       parameters:
       - name: participantContextId
@@ -861,17 +843,6 @@ paths:
         schema:
           type: string
       responses:
-        "204":
-          description: The credential was suspended successfully. Check the Revocation
-            List credential to confirm.
-        "400":
-          description: "Request body was malformed, or the request could not be processed"
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/ApiErrorDetail"
         "401":
           description: "The request could not be completed, because either the authentication\
             \ was missing or was not valid."
@@ -881,14 +852,8 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/ApiErrorDetail"
-        "404":
-          description: The credential or the participant was not found.
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/ApiErrorDetail"
+        "501":
+          description: Not implemented
   /v1/participants/{participantContextId}/holders/query:
     post:
       tags:
