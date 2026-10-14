@@ -37,7 +37,10 @@ import static java.util.stream.IntStream.range;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.eclipse.edc.identityhub.spi.credential.request.model.HolderRequestState.CREATED;
+import static org.eclipse.edc.identityhub.spi.credential.request.model.HolderRequestState.ERROR;
 import static org.eclipse.edc.identityhub.spi.credential.request.model.HolderRequestState.ISSUED;
+import static org.eclipse.edc.identityhub.spi.credential.request.model.HolderRequestState.REQUESTED;
+import static org.eclipse.edc.identityhub.spi.credential.request.model.HolderRequestState.REQUESTING;
 import static org.eclipse.edc.spi.persistence.StateEntityStore.hasState;
 import static org.eclipse.edc.spi.query.Criterion.criterion;
 import static org.hamcrest.Matchers.hasSize;
@@ -438,6 +441,26 @@ public abstract class HolderCredentialRequestStoreTestBase {
 
             var result = getStore().query(query);
             assertThat(result).hasSize(1).usingRecursiveFieldByFieldElementComparator().containsExactly(request);
+        }
+
+        @Test
+        void queryByParticipantIssuerDidAndStates() {
+            getStore().save(createHolderRequestBuilder().id("created").state(CREATED.code()).build());
+            getStore().save(createHolderRequestBuilder().id("requesting").state(REQUESTING.code()).build());
+            getStore().save(createHolderRequestBuilder().id("requested").state(REQUESTED.code()).build());
+            getStore().save(createHolderRequestBuilder().id("issued").state(ISSUED.code()).build());
+            getStore().save(createHolderRequestBuilder().id("error").state(ERROR.code()).build());
+            getStore().save(createHolderRequestBuilder().id("other-issuer").issuerDid("did:web:other").build());
+            getStore().save(createHolderRequestBuilder().id("other-participant").participantContextId("other-participant").build());
+
+            var query = QuerySpec.Builder.newInstance()
+                    .filter(new Criterion("participantContextId", "=", "test-participant"))
+                    .filter(new Criterion("issuerDid", "=", "did:web:testissuer"))
+                    .filter(new Criterion("state", "in", List.of(CREATED.code(), REQUESTING.code(), REQUESTED.code())))
+                    .build();
+
+            var result = getStore().query(query);
+            assertThat(result).extracting(HolderCredentialRequest::getId).containsExactlyInAnyOrder("created", "requesting", "requested");
         }
 
         @Test
