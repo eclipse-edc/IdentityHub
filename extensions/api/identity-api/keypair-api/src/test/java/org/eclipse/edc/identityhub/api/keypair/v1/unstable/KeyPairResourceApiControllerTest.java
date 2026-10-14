@@ -24,6 +24,8 @@ import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairResource;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyDescriptor;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyPairUsage;
 import org.eclipse.edc.junit.annotations.ApiTest;
+import org.eclipse.edc.spi.query.Criterion;
+import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.ServiceResult;
 import org.eclipse.edc.web.jersey.testfixtures.RestControllerTestBase;
 import org.jetbrains.annotations.NotNull;
@@ -31,11 +33,13 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.mockito.ArgumentCaptor;
 
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.IntStream;
 
 import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -45,6 +49,7 @@ import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -158,6 +163,29 @@ class KeyPairResourceApiControllerTest extends RestControllerTestBase {
                     criterion.getOperator().equals("=") &&
                     criterion.getOperandRight().equals(PARTICIPANT_ID);
         }));
+    }
+
+    @Test
+    void findForParticipant_moreThanOnePage() {
+        var firstPage = IntStream.range(0, 100).mapToObj(i -> createKeyPair().id("id-%03d".formatted(i)).build()).toList();
+        var lastKeyPair = createKeyPair().id("id-100").build();
+        when(keyPairService.query(any()))
+                .thenReturn(ServiceResult.success(firstPage))
+                .thenReturn(ServiceResult.success(List.of(lastKeyPair)));
+
+        var found = baseRequest()
+                .get("")
+                .then()
+                .statusCode(200)
+                .log().ifError()
+                .extract().body().as(KeyPairResource[].class);
+        assertThat(found).hasSize(101);
+
+        var captor = ArgumentCaptor.forClass(QuerySpec.class);
+        verify(keyPairService, times(2)).query(captor.capture());
+        assertThat(captor.getAllValues().get(1).getFilterExpression()).containsExactlyInAnyOrder(
+                new Criterion("participantContextId", "=", PARTICIPANT_ID),
+                new Criterion("id", ">", "id-099"));
     }
 
     @ParameterizedTest(name = "Make default: {0}")

@@ -35,6 +35,7 @@ import org.eclipse.edc.identityhub.spi.participantcontext.model.CreateParticipan
 import org.eclipse.edc.identityhub.spi.participantcontext.model.IdentityHubParticipantContext;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantManifest;
 import org.eclipse.edc.spi.query.QuerySpec;
+import org.eclipse.edc.spi.query.SortOrder;
 import org.eclipse.edc.web.spi.exception.ValidationFailureException;
 
 import java.util.Collection;
@@ -120,7 +121,8 @@ public class ParticipantContextApiController implements ParticipantContextApi {
     @Override
     public Collection<IdentityHubParticipantContext> getAllParticipants(@DefaultValue("0") @QueryParam("offset") Integer offset,
                                                                         @DefaultValue("50") @QueryParam("limit") Integer limit) {
-        return participantContextService.query(QuerySpec.Builder.newInstance().offset(offset).limit(limit).build())
+        return participantContextService.query(QuerySpec.Builder.newInstance().offset(offset).limit(limit)
+                        .sortField("createdAt").sortOrder(SortOrder.ASC).build())
                 .orElseThrow(exceptionMapper(IdentityHubParticipantContext.class));
     }
 

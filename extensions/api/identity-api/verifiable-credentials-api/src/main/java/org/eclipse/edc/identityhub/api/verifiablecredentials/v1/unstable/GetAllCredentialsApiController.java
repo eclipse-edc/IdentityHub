@@ -25,6 +25,7 @@ import org.eclipse.edc.identityhub.api.Versions;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialResource;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialStore;
 import org.eclipse.edc.spi.query.QuerySpec;
+import org.eclipse.edc.spi.query.SortOrder;
 import org.eclipse.edc.spi.result.ServiceResult;
 
 import java.util.Collection;
@@ -48,7 +49,8 @@ public class GetAllCredentialsApiController implements GetAllCredentialsApi {
     @Deprecated(forRemoval = true, since = "0.17.0")
     public Collection<VerifiableCredentialResource> getAllCredentials(@DefaultValue("0") @QueryParam("offset") Integer offset,
                                                                       @DefaultValue("50") @QueryParam("limit") Integer limit) {
-        var res = credentialStore.query(QuerySpec.Builder.newInstance().limit(limit).offset(offset).build());
+        var res = credentialStore.query(QuerySpec.Builder.newInstance().limit(limit).offset(offset)
+                .sortField("id").sortOrder(SortOrder.ASC).build());
         return ServiceResult.from(res).orElseThrow(exceptionMapper(VerifiableCredentialResource.class));
     }
 }

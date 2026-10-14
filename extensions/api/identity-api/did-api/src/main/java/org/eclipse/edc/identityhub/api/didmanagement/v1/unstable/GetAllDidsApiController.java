@@ -26,6 +26,7 @@ import org.eclipse.edc.iam.did.spi.document.DidDocument;
 import org.eclipse.edc.identityhub.api.Versions;
 import org.eclipse.edc.identityhub.spi.did.DidDocumentService;
 import org.eclipse.edc.spi.query.QuerySpec;
+import org.eclipse.edc.spi.query.SortOrder;
 import org.eclipse.edc.web.spi.exception.InvalidRequestException;
 
 import java.util.Collection;
@@ -51,7 +52,8 @@ public class GetAllDidsApiController implements GetAllDidsApi {
         if (offset < 0 || limit < 0) {
             throw new InvalidRequestException("offset and limit must be > 0");
         }
-        return documentService.queryDocuments(QuerySpec.Builder.newInstance().offset(offset).limit(limit).build())
+        return documentService.queryDocuments(QuerySpec.Builder.newInstance().offset(offset).limit(limit)
+                        .sortField("did").sortOrder(SortOrder.ASC).build())
                 .orElseThrow(exceptionMapper(DidDocument.class));
     }
 }
