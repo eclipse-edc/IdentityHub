@@ -37,16 +37,20 @@ import org.eclipse.edc.web.spi.exception.ObjectNotFoundException;
 import org.eclipse.edc.web.spi.exception.ValidationFailureException;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
 import java.util.Collection;
 
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 import static org.eclipse.edc.identityhub.spi.authorization.AuthorizationResultHandler.exceptionMapper;
+import static org.eclipse.edc.identityhub.store.QueryPages.forEachPage;
 import static org.eclipse.edc.participantcontext.spi.types.ParticipantResource.queryByParticipantContextId;
 
 @Consumes(APPLICATION_JSON)
 @Produces(APPLICATION_JSON)
 @Path(Versions.STABLE + "/participants/{participantContextId}/keypairs")
 public class KeyPairResourceApiController implements KeyPairResourceApi {
+
+    private static final int PAGE_SIZE = 100;
 
     private final AuthorizationService authorizationService;
     private final KeyPairService keyPairService;
@@ -81,8 +85,11 @@ public class KeyPairResourceApiController implements KeyPairResourceApi {
     @Override
     public Collection<KeyPairResource> queryKeyPairByParticipantContextId(@PathParam("participantContextId") String participantContextId, @Context SecurityContext securityContext) {
 
-        var query = queryByParticipantContextId(participantContextId).build();
-        return keyPairService.query(query).orElseThrow(exceptionMapper(KeyPairResource.class, participantContextId)).stream()
+        var keyPairs = new ArrayList<KeyPairResource>();
+        forEachPage(queryByParticipantContextId(participantContextId).build(), PAGE_SIZE,
+                q -> keyPairService.query(q).orElseThrow(exceptionMapper(KeyPairResource.class, participantContextId)),
+                KeyPairResource::getId, keyPairs::addAll);
+        return keyPairs.stream()
                 .filter(kpr -> authorizationService.authorize(securityContext, participantContextId, kpr.getId(), KeyPairResource.class).succeeded()).toList();
     }
 

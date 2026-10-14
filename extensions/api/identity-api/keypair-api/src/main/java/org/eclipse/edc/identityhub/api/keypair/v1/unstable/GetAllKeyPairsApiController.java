@@ -25,6 +25,7 @@ import org.eclipse.edc.identityhub.api.Versions;
 import org.eclipse.edc.identityhub.spi.keypair.KeyPairService;
 import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairResource;
 import org.eclipse.edc.spi.query.QuerySpec;
+import org.eclipse.edc.spi.query.SortOrder;
 
 import java.util.Collection;
 
@@ -48,7 +49,8 @@ public class GetAllKeyPairsApiController implements GetAllKeyPairsApi {
     @Deprecated(forRemoval = true, since = "0.17.0")
     public Collection<KeyPairResource> getAllKeyPairs(@DefaultValue("0") @QueryParam("offset") Integer offset,
                                                       @DefaultValue("50") @QueryParam("limit") Integer limit) {
-        return keyPairService.query(QuerySpec.Builder.newInstance().offset(offset).limit(limit).build())
+        return keyPairService.query(QuerySpec.Builder.newInstance().offset(offset).limit(limit)
+                        .sortField("id").sortOrder(SortOrder.ASC).build())
                 .orElseThrow(exceptionMapper(KeyPairResource.class));
     }
 }

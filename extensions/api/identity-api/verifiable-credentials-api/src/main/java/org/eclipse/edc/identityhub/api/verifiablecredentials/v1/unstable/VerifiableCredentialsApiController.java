@@ -52,6 +52,7 @@ import org.eclipse.edc.web.spi.exception.ValidationFailureException;
 import org.jetbrains.annotations.Nullable;
 
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
@@ -59,12 +60,16 @@ import java.util.UUID;
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 import static java.util.Optional.ofNullable;
 import static org.eclipse.edc.identityhub.spi.authorization.AuthorizationResultHandler.exceptionMapper;
+import static org.eclipse.edc.identityhub.store.QueryPages.forEachPage;
+import static org.eclipse.edc.participantcontext.spi.types.ParticipantResource.queryByParticipantContextId;
 import static org.eclipse.edc.spi.result.ServiceResult.badRequest;
 
 @Consumes(APPLICATION_JSON)
 @Produces(APPLICATION_JSON)
 @Path(Versions.STABLE + "/participants/{participantContextId}/credentials")
 public class VerifiableCredentialsApiController implements VerifiableCredentialsApi {
+
+    private static final int PAGE_SIZE = 100;
 
     private final CredentialStore credentialStore;
     private final AuthorizationService authorizationService;
@@ -132,15 +137,15 @@ public class VerifiableCredentialsApiController implements VerifiableCredentials
     @RequiredScope("identity-api:credentials:read")
     @Override
     public Collection<VerifiableCredentialResource> queryCredentialsByType(@PathParam("participantContextId") String participantContextId, @Nullable @QueryParam("type") String type, @Context SecurityContext securityContext) {
-        var query = QuerySpec.Builder.newInstance();
+        var query = queryByParticipantContextId(participantContextId);
 
         if (!StringUtils.isNullOrEmpty(type)) {
             query.filter(new Criterion("verifiableCredential.credential.type", "contains", type));
         }
 
-        return credentialStore.query(query.build())
-                .orElseThrow(InvalidRequestException::new)
-                .stream()
+        var credentials = new ArrayList<VerifiableCredentialResource>();
+        forEachPage(query.build(), PAGE_SIZE, q -> credentialStore.query(q).orElseThrow(InvalidRequestException::new), VerifiableCredentialResource::getId, credentials::addAll);
+        return credentials.stream()
                 .filter(vcr -> authorizationService.authorize(securityContext, participantContextId, vcr.getId(), VerifiableCredentialResource.class).succeeded())
                 .toList();
     }

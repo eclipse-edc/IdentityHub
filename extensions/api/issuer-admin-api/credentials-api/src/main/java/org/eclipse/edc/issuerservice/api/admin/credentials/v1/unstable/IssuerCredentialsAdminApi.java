@@ -66,30 +66,22 @@ public interface IssuerCredentialsAdminApi {
     )
     void revokeCredential(String participantContextId, String credentialId, SecurityContext context);
 
-    @Operation(description = "Suspends a credential with the given ID for the given participant. Suspended credentials will be added to the Revocation List. Suspension is reversible.",
+    @Operation(description = "Suspending a credential is not implemented yet, so this endpoint always returns 501.",
             operationId = "suspendCredential",
             responses = {
-                    @ApiResponse(responseCode = "204", description = "The credential was suspended successfully. Check the Revocation List credential to confirm."),
-                    @ApiResponse(responseCode = "400", description = "Request body was malformed, or the request could not be processed",
-                            content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json")),
                     @ApiResponse(responseCode = "401", description = "The request could not be completed, because either the authentication was missing or was not valid.",
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json")),
-                    @ApiResponse(responseCode = "404", description = "The credential or the participant was not found.",
-                            content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json"))
+                    @ApiResponse(responseCode = "501", description = "Not implemented")
             }
     )
     Response suspendCredential(String participantContextId, String credentialId);
 
-    @Operation(description = "Resumes a credential with the given ID for the given participant. Resumed credentials will be removed from the Revocation List.",
+    @Operation(description = "Resuming a credential is not implemented yet, so this endpoint always returns 501.",
             operationId = "resumeCredential",
             responses = {
-                    @ApiResponse(responseCode = "204", description = "The credential was resumed successfully. Check the Revocation List credential to confirm."),
-                    @ApiResponse(responseCode = "400", description = "Request body was malformed, or the request could not be processed",
-                            content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json")),
                     @ApiResponse(responseCode = "401", description = "The request could not be completed, because either the authentication was missing or was not valid.",
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json")),
-                    @ApiResponse(responseCode = "404", description = "The credential or the participant was not found.",
-                            content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json"))
+                    @ApiResponse(responseCode = "501", description = "Not implemented")
             }
     )
     Response resumeCredential(String participantContextId, String credentialId);

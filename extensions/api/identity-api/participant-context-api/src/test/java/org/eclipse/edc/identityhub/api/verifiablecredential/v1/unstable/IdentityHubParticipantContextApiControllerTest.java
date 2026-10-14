@@ -28,6 +28,7 @@ import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyDescriptor;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantManifest;
 import org.eclipse.edc.junit.annotations.ApiTest;
 import org.eclipse.edc.participantcontext.spi.types.ParticipantContextState;
+import org.eclipse.edc.spi.query.SortOrder;
 import org.eclipse.edc.spi.result.ServiceResult;
 import org.eclipse.edc.validator.spi.ValidationResult;
 import org.eclipse.edc.web.jersey.testfixtures.RestControllerTestBase;
@@ -204,7 +205,7 @@ class IdentityHubParticipantContextApiControllerTest extends RestControllerTestB
 
         assertThat(participantContexts).usingRecursiveFieldByFieldElementComparator()
                 .containsExactlyInAnyOrderElementsOf(list);
-        verify(participantContextServiceMock).query(any());
+        verify(participantContextServiceMock).query(argThat(q -> "createdAt".equals(q.getSortField()) && q.getSortOrder() == SortOrder.ASC));
     }
 
     @Override

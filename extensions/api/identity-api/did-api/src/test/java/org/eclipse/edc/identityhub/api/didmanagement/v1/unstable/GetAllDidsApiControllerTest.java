@@ -17,6 +17,7 @@ package org.eclipse.edc.identityhub.api.didmanagement.v1.unstable;
 import org.eclipse.edc.iam.did.spi.document.DidDocument;
 import org.eclipse.edc.identityhub.api.Versions;
 import org.eclipse.edc.identityhub.spi.did.DidDocumentService;
+import org.eclipse.edc.spi.query.SortOrder;
 import org.eclipse.edc.spi.result.ServiceResult;
 import org.eclipse.edc.web.jersey.testfixtures.RestControllerTestBase;
 import org.junit.jupiter.api.Test;
@@ -27,7 +28,9 @@ import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.edc.identityhub.api.didmanagement.v1.unstable.TestFunctions.createDidDocument;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class GetAllDidsApiControllerTest extends RestControllerTestBase {
@@ -49,6 +52,7 @@ class GetAllDidsApiControllerTest extends RestControllerTestBase {
                 .extract().body().as(DidDocument[].class);
 
         assertThat(docs).usingRecursiveFieldByFieldElementComparator().containsExactlyInAnyOrderElementsOf(didDocs);
+        verify(didDocumentServiceMock).queryDocuments(argThat(q -> "did".equals(q.getSortField()) && q.getSortOrder() == SortOrder.ASC));
     }
 
     @Override

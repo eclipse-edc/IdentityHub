@@ -33,6 +33,8 @@ import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCre
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialResource;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialStore;
 import org.eclipse.edc.junit.annotations.ApiTest;
+import org.eclipse.edc.spi.query.Criterion;
+import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.spi.result.ServiceResult;
 import org.eclipse.edc.spi.result.StoreResult;
@@ -45,12 +47,14 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.IntStream;
 
 import static io.restassured.RestAssured.given;
 import static io.restassured.http.ContentType.JSON;
@@ -58,6 +62,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.edc.spi.result.Result.failure;
 import static org.eclipse.edc.spi.result.ServiceResult.unauthorized;
 import static org.eclipse.edc.spi.result.StoreResult.alreadyExists;
+import static org.eclipse.edc.spi.result.StoreResult.generalError;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
@@ -67,6 +72,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -362,6 +368,55 @@ class VerifiableCredentialsApiControllerTest extends RestControllerTestBase {
             assertThat(result).isEmpty();
             verify(credentialStore).query(any());
             verifyNoMoreInteractions(credentialStore);
+        }
+
+        @Test
+        void queriesOnlyCredentialsOfParticipant() {
+            when(credentialStore.query(any())).thenReturn(StoreResult.success(List.of()));
+
+            baseRequest()
+                    .get("?type=test-type")
+                    .then()
+                    .log().ifValidationFails()
+                    .statusCode(200);
+
+            var captor = ArgumentCaptor.forClass(QuerySpec.class);
+            verify(credentialStore).query(captor.capture());
+            assertThat(captor.getValue().getFilterExpression()).containsExactlyInAnyOrder(
+                    new Criterion("participantContextId", "=", PARTICIPANT_ID),
+                    new Criterion("verifiableCredential.credential.type", "contains", "test-type"));
+        }
+
+        @Test
+        void moreThanOnePage_returnsAllCredentials() {
+            var firstPage = IntStream.range(0, 100).mapToObj(i -> createCredentialResource("test-type").id("id-%03d".formatted(i)).build()).toList();
+            var lastCredential = createCredentialResource("test-type").id("id-100").build();
+            when(credentialStore.query(any()))
+                    .thenReturn(StoreResult.success(firstPage))
+                    .thenReturn(StoreResult.success(List.of(lastCredential)));
+
+            var result = baseRequest()
+                    .get("?type=test-type")
+                    .then()
+                    .log().ifValidationFails()
+                    .statusCode(200)
+                    .extract().body().as(VerifiableCredentialResource[].class);
+
+            assertThat(result).hasSize(101);
+            var captor = ArgumentCaptor.forClass(QuerySpec.class);
+            verify(credentialStore, times(2)).query(captor.capture());
+            assertThat(captor.getAllValues().get(1).getFilterExpression()).contains(new Criterion("id", ">", "id-099"));
+        }
+
+        @Test
+        void storeFails_returns400() {
+            when(credentialStore.query(any())).thenReturn(generalError("test-error"));
+
+            baseRequest()
+                    .get("?type=test-type")
+                    .then()
+                    .log().ifValidationFails()
+                    .statusCode(400);
         }
     }
 

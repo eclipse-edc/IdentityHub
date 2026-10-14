@@ -9,6 +9,7 @@ dependencies {
     implementation(project(":extensions:api:identity-api:identity-api-configuration"))
     implementation(project(":extensions:api:identity-api:validators:verifiable-credential-validators"))
     implementation(libs.edc.spi.core)
+    implementation(project(":core:lib:common-lib")) // QueryPages
     implementation(libs.edc.lib.core) // StringUtils
     implementation(libs.jakarta.rsApi)
     implementation(libs.jakarta.annotation)

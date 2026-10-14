@@ -10,6 +10,7 @@ dependencies {
     api(project(":spi:keypair-spi"))
     implementation(project(":extensions:api:identity-api:identity-api-configuration"))
     implementation(project(":extensions:api:identity-api:validators:keypair-validators"))
+    implementation(project(":core:lib:common-lib")) // QueryPages
     implementation(libs.edc.lib.core)
     implementation(libs.jakarta.rsApi)
     implementation(libs.jakarta.annotation)
