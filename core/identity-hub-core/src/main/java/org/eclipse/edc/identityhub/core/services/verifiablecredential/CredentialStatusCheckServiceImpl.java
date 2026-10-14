@@ -42,15 +42,15 @@ public class CredentialStatusCheckServiceImpl implements CredentialStatusCheckSe
 
     @Override
     public Result<VcStatus> checkStatus(VerifiableCredentialResource credential) {
+        // a superseded credential was replaced by a re-issued one and stays EXPIRED permanently, even while its own
+        // validity dates would still make it usable. It is never presented again, so its revocation status is irrelevant.
+        if (credential.isSuperseded()) {
+            return success(VcStatus.EXPIRED);
+        }
 
         try {
             if (isRevoked(credential)) {
                 return success(VcStatus.REVOKED); //irreversible, cannot be overwritten
-            }
-            // a superseded credential was replaced by a re-issued one and stays EXPIRED permanently (unless revoked),
-            // even while its own validity dates would still make it usable
-            if (credential.isSuperseded()) {
-                return success(VcStatus.EXPIRED);
             }
             if (isSuspended(credential)) {
                 return success(VcStatus.SUSPENDED);

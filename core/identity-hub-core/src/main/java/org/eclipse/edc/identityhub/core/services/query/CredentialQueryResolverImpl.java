@@ -38,6 +38,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialResource.METADATA_SUPERSEDED_BY;
 import static org.eclipse.edc.spi.result.Result.failure;
 import static org.eclipse.edc.spi.result.Result.success;
 
@@ -121,13 +122,18 @@ public class CredentialQueryResolverImpl implements CredentialQueryResolver {
 
             credentialResult = requestedCredentials.stream().filter(c -> allowedIds.contains(c.getId()));
         }
-        // filter out any expired, revoked or suspended credentials
+        // filter out any superseded, expired, revoked or suspended credentials
         return QueryResult.success(credentialResult
                 .filter(this::filterInvalidCredentials)
                 .map(VerifiableCredentialResource::getVerifiableCredential));
     }
 
     private boolean filterInvalidCredentials(VerifiableCredentialResource verifiableCredentialResource) {
+        if (verifiableCredentialResource.isSuperseded()) {
+            monitor.warning("Credential '%s' was superseded by '%s'.".formatted(verifiableCredentialResource.getId(),
+                    verifiableCredentialResource.getMetadata().get(METADATA_SUPERSEDED_BY)));
+            return false;
+        }
         var now = clock.instant();
         var credential = verifiableCredentialResource.getVerifiableCredential().credential();
         // issuance date can not be null, due to builder validation
@@ -184,10 +190,11 @@ public class CredentialQueryResolverImpl implements CredentialQueryResolver {
         var filterByParticipant = new Criterion("participantContextId", "=", participantContextId);
         var filterNotRevoked = new Criterion("state", "!=", VcStatus.REVOKED.code());
         var filterNotExpired = new Criterion("state", "!=", VcStatus.EXPIRED.code());
+        var filterNotError = new Criterion("state", "!=", VcStatus.ERROR.code());
         var filterUsageHolder = new Criterion("usage", "=", CredentialUsage.Holder.toString());
 
         var allCriteria = Stream.concat(criteria.stream(),
-                Stream.of(filterByParticipant, filterNotRevoked, filterNotExpired, filterUsageHolder)).toList();
+                Stream.of(filterByParticipant, filterNotRevoked, filterNotExpired, filterNotError, filterUsageHolder)).toList();
 
         // a presentation contains all matching credentials, not just the first page of the default size
         return QuerySpec.Builder.newInstance()

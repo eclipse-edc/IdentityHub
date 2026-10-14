@@ -25,6 +25,7 @@ import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredentialC
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.presentationdefinition.PresentationDefinition;
 import org.eclipse.edc.identityhub.defaults.DiscriminatorMappingRegistryImpl;
 import org.eclipse.edc.identityhub.defaults.EdcScopeToCriterionTransformer;
+import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStatus;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialResource;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.resolution.QueryFailure;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialStore;
@@ -50,6 +51,7 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialResource.METADATA_SUPERSEDED_BY;
 import static org.eclipse.edc.junit.assertions.AbstractResultAssert.assertThat;
 import static org.eclipse.edc.spi.result.StoreResult.success;
 import static org.mockito.ArgumentMatchers.any;
@@ -91,6 +93,17 @@ class CredentialQueryResolverImplTest {
 
         // a presentation contains all matching credentials, not just the first page of the default size
         verify(storeMock, atLeastOnce()).query(argThat(query -> query.getLimit() == Integer.MAX_VALUE));
+    }
+
+    @Test
+    void query_shouldExcludeCredentialsInErrorState() {
+        when(storeMock.query(any())).thenAnswer(i -> success(List.of()));
+
+        resolver.query(TEST_PARTICIPANT_CONTEXT_ID,
+                createPresentationQuery("org.eclipse.dspace.dcp.vc.type:TestCredential:read"), List.of("org.eclipse.dspace.dcp.vc.type:TestCredential:read"));
+
+        verify(storeMock, atLeastOnce()).query(argThat(query -> query.getFilterExpression().stream()
+                .anyMatch(c -> c.getOperandLeft().equals("state") && c.getOperator().equals("!=") && c.getOperandRight().equals(VcStatus.ERROR.code()))));
     }
 
     @Test
@@ -385,6 +398,22 @@ class CredentialQueryResolverImplTest {
         assertThat(res).isSucceeded();
         assertThat(res.getContent()).isEmpty();
         verify(monitor).warning(eq("Credential '%s' not valid: revoked".formatted(credential.getId())));
+    }
+
+    @Test
+    void query_whenSupersededCredential_doesNotInclude() {
+        var credential = createCredential("TestCredential").build();
+        var resource = createCredentialResource(credential)
+                .metadata(METADATA_SUPERSEDED_BY, "new-credential-id")
+                .build();
+
+        when(storeMock.query(any())).thenAnswer(i -> success(List.of(resource)));
+        var res = resolver.query(TEST_PARTICIPANT_CONTEXT_ID,
+                createPresentationQuery("org.eclipse.dspace.dcp.vc.type:TestCredential:read"), List.of("org.eclipse.dspace.dcp.vc.type:TestCredential:read"));
+
+        assertThat(res).isSucceeded();
+        assertThat(res.getContent()).isEmpty();
+        verify(monitor).warning(eq("Credential '%s' was superseded by 'new-credential-id'.".formatted(resource.getId())));
     }
 
     // CS-PRES-12: a mixed set of one type - valid, expired and revoked - must present only the valid credential
