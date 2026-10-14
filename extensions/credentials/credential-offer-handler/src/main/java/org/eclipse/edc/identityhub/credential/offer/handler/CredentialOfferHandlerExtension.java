@@ -15,6 +15,7 @@
 package org.eclipse.edc.identityhub.credential.offer.handler;
 
 import org.eclipse.edc.identityhub.protocols.dcp.spi.DcpProfileRegistry;
+import org.eclipse.edc.identityhub.spi.credential.request.store.HolderCredentialRequestStore;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.CredentialRequestManager;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.events.CredentialOfferReceived;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialOfferStore;
@@ -40,11 +41,13 @@ public class CredentialOfferHandlerExtension implements ServiceExtension {
     @Inject
     private CredentialOfferStore credentialOfferStore;
     @Inject
+    private HolderCredentialRequestStore holderCredentialRequestStore;
+    @Inject
     private TransactionContext transactionContext;
 
     @Override
     public void initialize(ServiceExtensionContext context) {
-        var handler = new CredentialOfferHandler(context.getMonitor(), credentialRequestManager, dcpProfileRegistry, credentialOfferStore, transactionContext);
+        var handler = new CredentialOfferHandler(context.getMonitor(), credentialRequestManager, dcpProfileRegistry, credentialOfferStore, holderCredentialRequestStore, transactionContext);
         eventRouter.registerSync(CredentialOfferReceived.class, handler);
     }
 

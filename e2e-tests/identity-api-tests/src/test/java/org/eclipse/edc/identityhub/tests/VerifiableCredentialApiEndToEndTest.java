@@ -20,6 +20,7 @@ import org.eclipse.edc.api.authentication.OauthServerEndToEndExtension;
 import org.eclipse.edc.iam.decentralizedclaims.sts.spi.store.StsAccountStore;
 import org.eclipse.edc.iam.did.spi.document.DidDocument;
 import org.eclipse.edc.iam.did.spi.document.Service;
+import org.eclipse.edc.iam.did.spi.resolution.DidResolver;
 import org.eclipse.edc.iam.did.spi.resolution.DidResolverRegistry;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredential;
@@ -55,13 +56,16 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.post;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
 import static io.restassured.http.ContentType.JSON;
+import static java.util.Optional.ofNullable;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 import static org.eclipse.edc.identityhub.tests.fixtures.TestData.IH_RUNTIME_NAME;
@@ -73,19 +77,37 @@ import static org.eclipse.edc.util.io.Ports.getFreePort;
 import static org.hamcrest.Matchers.endsWith;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.notNullValue;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 public class VerifiableCredentialApiEndToEndTest {
 
     @SuppressWarnings("JUnitMalformedDeclaration")
     abstract static class Tests {
-        protected static final DidResolverRegistry DID_RESOLVER_REGISTRY = mock();
+        protected static final Map<String, DidDocument> DID_DOCUMENTS = new ConcurrentHashMap<>();
+        /**
+         * Resolves the DID documents in {@link #DID_DOCUMENTS}. This is not a mock, because re-stubbing a mock while runtime threads call it is not thread-safe.
+         */
+        protected static final DidResolverRegistry DID_RESOLVER_REGISTRY = new DidResolverRegistry() {
+            @Override
+            public void register(DidResolver resolver) {
+            }
 
+            @Override
+            public Result<DidDocument> resolve(String didKey) {
+                return ofNullable(DID_DOCUMENTS.get(didKey))
+                        .map(Result::success)
+                        .orElseGet(() -> Result.failure("DID '%s' could not be resolved".formatted(didKey)));
+            }
+
+            @Override
+            public boolean isSupported(String didKey) {
+                return DID_DOCUMENTS.containsKey(didKey);
+            }
+        };
 
         @AfterEach
         void tearDown(IdentityHubParticipantContextService pcService, DidResourceStore didResourceStore, KeyPairResourceStore keyPairResourceStore, StsAccountStore stsAccountStore) {
+            DID_DOCUMENTS.clear();
+
             // purge all users, dids, keypairs
 
             pcService.query(QuerySpec.max()).getContent()
@@ -323,12 +345,10 @@ public class VerifiableCredentialApiEndToEndTest {
                                 .withStatus(200)));
 
 
-                when(DID_RESOLVER_REGISTRY.isSupported(eq("did:web:issuer"))).thenReturn(true);
-                when(DID_RESOLVER_REGISTRY.resolve(eq("did:web:issuer")))
-                        .thenReturn(Result.success(DidDocument.Builder.newInstance()
-                                .service(List.of(new Service(UUID.randomUUID().toString(),
-                                        "IssuerService",
-                                        "http://localhost:%s/api/issuance".formatted(port)))).build()));
+                DID_DOCUMENTS.put("did:web:issuer", DidDocument.Builder.newInstance()
+                        .service(List.of(new Service(UUID.randomUUID().toString(),
+                                "IssuerService",
+                                "http://localhost:%s/api/issuance".formatted(port)))).build());
                 identityHub.createSuperUser();
                 var user = "user1";
                 var auth = authorizeUser(user, identityHub);
@@ -438,12 +458,10 @@ public class VerifiableCredentialApiEndToEndTest {
                                 .withBody("Invalid credentialObjectId")
                                 .withStatus(400)));
 
-                when(DID_RESOLVER_REGISTRY.isSupported(eq("did:web:issuer"))).thenReturn(true);
-                when(DID_RESOLVER_REGISTRY.resolve(eq("did:web:issuer")))
-                        .thenReturn(Result.success(DidDocument.Builder.newInstance()
-                                .service(List.of(new Service(UUID.randomUUID().toString(),
-                                        "IssuerService",
-                                        "http://localhost:%s/api/issuance".formatted(port)))).build()));
+                DID_DOCUMENTS.put("did:web:issuer", DidDocument.Builder.newInstance()
+                        .service(List.of(new Service(UUID.randomUUID().toString(),
+                                "IssuerService",
+                                "http://localhost:%s/api/issuance".formatted(port)))).build());
                 identityHub.createSuperUser();
                 var user = "user1";
                 var auth = authorizeUser(user, identityHub);
