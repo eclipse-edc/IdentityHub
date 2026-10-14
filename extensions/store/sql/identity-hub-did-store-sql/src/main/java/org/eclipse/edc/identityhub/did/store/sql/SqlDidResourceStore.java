@@ -57,13 +57,16 @@ public class SqlDidResourceStore extends AbstractSqlStore implements DidResource
                 }
 
                 var stmt = statements.getInsertTemplate();
-                queryExecutor.execute(connection, stmt,
+                var inserted = queryExecutor.execute(connection, stmt,
                         did,
                         resource.getState(),
                         resource.getCreateTimestamp(),
                         resource.getStateTimestamp(),
                         toJson(resource.getDocument()),
                         resource.getParticipantContextId());
+                if (inserted == 0) {
+                    return StoreResult.alreadyExists(alreadyExistsErrorMessage(did));
+                }
                 return StoreResult.success();
             } catch (SQLException e) {
                 throw new EdcPersistenceException(e);

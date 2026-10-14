@@ -24,6 +24,9 @@ dependencies {
     implementation(project(":spi:sts-spi"))
     testImplementation(libs.edc.junit)
     testImplementation(testFixtures(libs.edc.sql.test.fixtures))
+    // needed by the concurrency tests: the standard test fixture auto-commits every statement, so a row is never held by
+    // an open transaction
+    testImplementation(libs.edc.transaction.local)
     testImplementation(testFixtures(project(":spi:sts-spi")))
 
 }

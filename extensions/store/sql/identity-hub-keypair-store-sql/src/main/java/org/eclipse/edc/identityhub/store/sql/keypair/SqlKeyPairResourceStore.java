@@ -58,11 +58,12 @@ public class SqlKeyPairResourceStore extends AbstractSqlStore implements KeyPair
         Objects.requireNonNull(keyPairResource);
         return transactionContext.execute(() -> {
             try (var connection = getConnection()) {
+                var alreadyExistsMessage = "A KeyPairResource with ID '%s' already exists.".formatted(keyPairResource.getId());
                 if (findByIdInternal(connection, keyPairResource.getId()) != null) {
-                    return alreadyExists("A KeyPairResource with ID '%s' already exists.".formatted(keyPairResource.getId()));
+                    return alreadyExists(alreadyExistsMessage);
                 }
                 var stmt = statements.getInsertTemplate();
-                queryExecutor.execute(connection, stmt, keyPairResource.getId(),
+                var inserted = queryExecutor.execute(connection, stmt, keyPairResource.getId(),
                         keyPairResource.getParticipantContextId(),
                         keyPairResource.getTimestamp(),
                         keyPairResource.getKeyId(),
@@ -75,6 +76,9 @@ public class SqlKeyPairResourceStore extends AbstractSqlStore implements KeyPair
                         keyPairResource.getState(),
                         keyPairResource.getKeyContext(),
                         toJson(keyPairResource.getUsage()));
+                if (inserted == 0) {
+                    return alreadyExists(alreadyExistsMessage);
+                }
 
                 return success();
             } catch (SQLException e) {

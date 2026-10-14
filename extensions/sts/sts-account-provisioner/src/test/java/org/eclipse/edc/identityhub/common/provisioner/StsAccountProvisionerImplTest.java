@@ -100,6 +100,7 @@ class StsAccountProvisionerImplTest {
 
         var res = accountProvisioner.create(createManifest().build());
         assertThat(res).isFailed()
+                .satisfies(f -> assertThat(f.getReason()).isEqualTo(ServiceFailure.Reason.CONFLICT))
                 .detail().isEqualTo("foo");
 
         verify(accountServiceMock).createAccount(any(), anyString());

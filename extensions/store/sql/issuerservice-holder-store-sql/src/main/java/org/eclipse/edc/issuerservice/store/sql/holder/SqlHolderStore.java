@@ -79,7 +79,7 @@ public class SqlHolderStore extends AbstractSqlStore implements HolderStore {
                 }
 
                 var stmt = statements.getInsertTemplate();
-                queryExecutor.execute(connection, stmt,
+                var inserted = queryExecutor.execute(connection, stmt,
                         holder.getHolderId(),
                         holder.getParticipantContextId(),
                         holder.getDid(),
@@ -89,6 +89,9 @@ public class SqlHolderStore extends AbstractSqlStore implements HolderStore {
                         holder.isAnonymous(),
                         toJson(holder.getProperties())
                 );
+                if (inserted == 0) {
+                    return alreadyExists(alreadyExistsErrorMessage(id));
+                }
                 return success();
 
             } catch (SQLException e) {

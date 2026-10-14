@@ -50,12 +50,11 @@ public class SqlStsAccountStore extends AbstractSqlStore implements StsAccountSt
     public StoreResult<StsAccount> create(StsAccount client) {
         return transactionContext.execute(() -> {
             try (var connection = getConnection()) {
-                if (findById(connection, client.getId()) != null) {
-                    var msg = format(CLIENT_EXISTS_TEMPLATE, client.getId());
-                    return StoreResult.alreadyExists(msg);
+                if (findById(connection, client.getId()) != null || findByClientIdId(connection, client.getClientId()) != null) {
+                    return StoreResult.alreadyExists(alreadyExistsMessage(client));
                 }
 
-                queryExecutor.execute(connection, statements.getInsertTemplate(),
+                var inserted = queryExecutor.execute(connection, statements.getInsertTemplate(),
                         client.getId(),
                         client.getName(),
                         client.getClientId(),
@@ -64,6 +63,9 @@ public class SqlStsAccountStore extends AbstractSqlStore implements StsAccountSt
                         client.getCreatedAt(),
                         client.getParticipantContextId()
                 );
+                if (inserted == 0) {
+                    return StoreResult.alreadyExists(alreadyExistsMessage(client));
+                }
 
                 return StoreResult.success(client);
             } catch (Exception e) {
@@ -160,6 +162,10 @@ public class SqlStsAccountStore extends AbstractSqlStore implements StsAccountSt
                 stsAccount.getCreatedAt(),
                 stsAccount.getParticipantContextId(),
                 stsAccount.getId());
+    }
+
+    private String alreadyExistsMessage(StsAccount client) {
+        return "An STS account with ID '%s' or client ID '%s' already exists.".formatted(client.getId(), client.getClientId());
     }
 
     private StsAccount findById(Connection connection, String id) {

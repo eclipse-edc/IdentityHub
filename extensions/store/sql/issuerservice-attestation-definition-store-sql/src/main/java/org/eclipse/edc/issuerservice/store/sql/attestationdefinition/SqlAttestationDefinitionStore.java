@@ -79,7 +79,7 @@ public class SqlAttestationDefinitionStore extends AbstractSqlStore implements A
                 }
 
                 var stmt = statements.getInsertTemplate();
-                queryExecutor.execute(connection, stmt,
+                var inserted = queryExecutor.execute(connection, stmt,
                         id,
                         attestationDefinition.getParticipantContextId(),
                         attestationDefinition.getAttestationType(),
@@ -88,6 +88,9 @@ public class SqlAttestationDefinitionStore extends AbstractSqlStore implements A
                         attestationDefinition.getCreatedAt(),
                         attestationDefinition.getLastModifiedAt()
                 );
+                if (inserted == 0) {
+                    return alreadyExists(alreadyExistsErrorMessage(id));
+                }
                 return success();
 
             } catch (SQLException e) {

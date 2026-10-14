@@ -40,7 +40,7 @@ public class BaseSqlDialectStatements implements HolderCredentialRequestStoreSta
 
     @Override
     public String getInsertTemplate() {
-        return executeStatement()
+        var insert = executeStatement()
                 .column(getIdColumn())
                 .column(getStateColumn())
                 .column(getStateCountColumn())
@@ -54,6 +54,9 @@ public class BaseSqlDialectStatements implements HolderCredentialRequestStoreSta
                 .column(getissuerPidColumn())
                 .jsonColumn(getCredentialFormatsColumn())
                 .insertInto(getHolderCredentialRequestTable());
+        // a row that conflicts with an existing one is not inserted. Unlike a failed statement, this does not abort the
+        // surrounding transaction
+        return insert.replaceFirst(";\\s*$", "") + " ON CONFLICT DO NOTHING;";
     }
 
     @Override
