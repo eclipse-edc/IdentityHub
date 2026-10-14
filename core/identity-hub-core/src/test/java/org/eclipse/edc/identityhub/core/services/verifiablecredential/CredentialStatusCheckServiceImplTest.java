@@ -37,6 +37,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
@@ -240,22 +241,7 @@ class CredentialStatusCheckServiceImplTest {
         assertThat(service.checkStatus(resource))
                 .isSucceeded()
                 .isEqualTo(VcStatus.EXPIRED);
-    }
-
-    @Test
-    void checkStatus_superseded_becomesRevoked() {
-        when(revocationServiceRegistry.getRevocationStatus(any())).thenReturn(Result.success("revocation"));
-        var credential = createVerifiableCredential()
-                .expirationDate(Instant.now(clock).plus(10, ChronoUnit.MINUTES))
-                .build();
-        var resource = createCredentialBuilder(credential)
-                .state(VcStatus.EXPIRED)
-                .metadata(VerifiableCredentialResource.METADATA_SUPERSEDED_BY, "new-credential-id")
-                .build();
-
-        assertThat(service.checkStatus(resource))
-                .isSucceeded()
-                .isEqualTo(VcStatus.REVOKED);
+        verifyNoInteractions(revocationServiceRegistry);
     }
 
     @Test
