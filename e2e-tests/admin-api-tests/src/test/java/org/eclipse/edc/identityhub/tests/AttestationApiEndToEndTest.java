@@ -18,6 +18,7 @@ import io.restassured.http.Header;
 import org.eclipse.edc.api.authentication.OauthServerEndToEndExtension;
 import org.eclipse.edc.identityhub.spi.participantcontext.IdentityHubParticipantContextService;
 import org.eclipse.edc.identityhub.tests.fixtures.DefaultRuntimes;
+import org.eclipse.edc.identityhub.tests.fixtures.SharedPostgresqlEndToEndExtension;
 import org.eclipse.edc.identityhub.tests.fixtures.issuerservice.IssuerService;
 import org.eclipse.edc.issuerservice.spi.holder.model.Holder;
 import org.eclipse.edc.issuerservice.spi.holder.store.HolderStore;
@@ -233,7 +234,7 @@ public class AttestationApiEndToEndTest {
 
         @Order(0)
         @RegisterExtension
-        static final PostgresqlEndToEndExtension POSTGRESQL_EXTENSION = new PostgresqlEndToEndExtension();
+        static final PostgresqlEndToEndExtension POSTGRESQL_EXTENSION = new SharedPostgresqlEndToEndExtension();
         @Order(1)
         @RegisterExtension
         static final BeforeAllCallback POSTGRES_CONTAINER_STARTER = context -> {
@@ -302,7 +303,7 @@ public class AttestationApiEndToEndTest {
 
         @Order(0)
         @RegisterExtension
-        static final PostgresqlEndToEndExtension POSTGRESQL_EXTENSION = new PostgresqlEndToEndExtension();
+        static final PostgresqlEndToEndExtension POSTGRESQL_EXTENSION = new SharedPostgresqlEndToEndExtension();
         @Order(2)
         @RegisterExtension
         static final RuntimeExtension ISSUER_EXTENSION = ComponentRuntimeExtension.Builder.newInstance()

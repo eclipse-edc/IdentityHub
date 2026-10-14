@@ -25,6 +25,10 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - uses: eclipse-edc/.github/.github/actions/setup-build@main
+      - uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
+        with:
+          cache-provider: basic
+          cache-read-only: true
       - name: Run Checkstyle
         run: ./gradlew checkstyleMain checkstyleTest checkstyleTestFixtures
 
@@ -33,6 +37,10 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - uses: eclipse-edc/.github/.github/actions/setup-build@main
+      - uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
+        with:
+          cache-provider: basic
+          cache-read-only: true
       - name: Run Javadoc
         run: ./gradlew javadoc
 
@@ -41,32 +49,75 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - uses: eclipse-edc/.github/.github/actions/setup-build@main
+      - uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
+        with:
+          cache-provider: basic
       - name: Unit tests
         run: ./gradlew test
 
   Integration-Tests:
+    name: Integration-Tests (${{ matrix.name }})
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # the slow end-to-end test modules get runners of their own: run side by side on one runner, they compete for its
+        # CPUs and take as long as running them one after another
+        include:
+          - name: dcp-issuance
+            tests: :e2e-tests:dcp-issuance-tests:test
+          - name: identity-api
+            tests: :e2e-tests:identity-api-tests:test
+          - name: launcher
+            tests: :e2e-tests:launcher-tests:test
+          - name: admin-sts-bom
+            tests: :e2e-tests:admin-api-tests:test :e2e-tests:sts-api-tests:test :e2e-tests:bom-tests:test
+          # every other test task. These are light enough to run in parallel.
+          - name: modules
+            tests: >-
+              --parallel test
+              -x :e2e-tests:dcp-issuance-tests:test
+              -x :e2e-tests:identity-api-tests:test
+              -x :e2e-tests:launcher-tests:test
+              -x :e2e-tests:admin-api-tests:test
+              -x :e2e-tests:sts-api-tests:test
+              -x :e2e-tests:bom-tests:test
     steps:
       - uses: actions/checkout@v7
       - uses: eclipse-edc/.github/.github/actions/setup-build@main
+      - uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
+        with:
+          cache-provider: basic
+          cache-read-only: true
+
+      - name: Compile
+        run: ./gradlew --parallel compileJava compileTestJava
 
       - name: Component Tests
-        run: ./gradlew compileJava compileTestJava test -DincludeTags="ComponentTest,ApiTest,EndToEndTest"
+        run: ./gradlew --continue ${{ matrix.tests }} -DincludeTags="ComponentTest,ApiTest,EndToEndTest"
 
   Postgresql-Integration-Tests:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
       - uses: eclipse-edc/.github/.github/actions/setup-build@main
+      - uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
+        with:
+          cache-provider: basic
+          cache-read-only: true
 
       - name: Postgresql Tests
-        run: ./gradlew compileJava compileTestJava test -DincludeTags="PostgresqlIntegrationTest"
+        run: ./gradlew --parallel compileJava compileTestJava test -DincludeTags="PostgresqlIntegrationTest"
 
   TCK-Tests:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
       - uses: eclipse-edc/.github/.github/actions/setup-build@main
+      - uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
+        with:
+          cache-provider: basic
+          cache-read-only: true
 
       - name: TCK Tests
         run: ./gradlew compileJava compileTestJava test -DincludeTags="TckTest" -PverboseTest=true

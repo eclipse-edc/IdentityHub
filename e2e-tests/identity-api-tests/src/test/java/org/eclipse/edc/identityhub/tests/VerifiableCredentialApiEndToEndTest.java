@@ -32,6 +32,7 @@ import org.eclipse.edc.identityhub.spi.keypair.store.KeyPairResourceStore;
 import org.eclipse.edc.identityhub.spi.participantcontext.IdentityHubParticipantContextService;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialManifest;
 import org.eclipse.edc.identityhub.tests.fixtures.DefaultRuntimes;
+import org.eclipse.edc.identityhub.tests.fixtures.SharedPostgresqlEndToEndExtension;
 import org.eclipse.edc.identityhub.tests.fixtures.credentialservice.IdentityHub;
 import org.eclipse.edc.junit.annotations.EndToEndTest;
 import org.eclipse.edc.junit.annotations.PostgresqlIntegrationTest;
@@ -351,8 +352,7 @@ public class VerifiableCredentialApiEndToEndTest {
                         .header("Location", endsWith("/v1/participants/%s/credentials/request/%s".formatted(user, holderPid)));
 
                 // wait until the state machine has progress to the REQUESTED state
-                await().pollInterval(Duration.ofSeconds(1))
-                        .atMost(Duration.ofSeconds(10))
+                await().atMost(Duration.ofSeconds(10))
                         .untilAsserted(() -> {
                             var result = store.findById(holderPid);
                             assertThat(result).isNotNull();
@@ -371,12 +371,14 @@ public class VerifiableCredentialApiEndToEndTest {
             var header = authorizeUser(userId, identityHub);
 
             var holderPid = UUID.randomUUID().toString();
+            // not CREATED, which the state machine would move on before the request is read
             var holderRequest = HolderCredentialRequest.Builder.newInstance()
                     .id(holderPid)
                     .participantContextId(userId)
                     .issuerDid("did:web:issuer")
                     .issuerPid("dummy-issuance-id")
                     .requestedCredential("test-credential-id", "TestCredential", CredentialFormat.VC2_0_JOSE.toString())
+                    .state(HolderRequestState.REQUESTED.code())
                     .build();
 
             trx.execute(() -> store.save(holderRequest));
@@ -391,7 +393,7 @@ public class VerifiableCredentialApiEndToEndTest {
                     .body("holderPid", equalTo(holderPid))
                     .body("issuerDid", equalTo("did:web:issuer"))
                     .body("issuerPid", equalTo("dummy-issuance-id"))
-                    .body("status", equalTo("CREATED"));
+                    .body("status", equalTo("REQUESTED"));
         }
 
         @Test
@@ -467,8 +469,7 @@ public class VerifiableCredentialApiEndToEndTest {
                         .header("Location", endsWith("/v1/participants/%s/credentials/request/%s".formatted(user, holderPid)));
 
                 // the request transitions to ERROR asynchronously, carrying the issuer's error in errorDetail
-                await().pollInterval(Duration.ofSeconds(1))
-                        .atMost(Duration.ofSeconds(15))
+                await().atMost(Duration.ofSeconds(15))
                         .untilAsserted(() -> {
                             var result = store.findById(holderPid);
                             assertThat(result).isNotNull();
@@ -615,7 +616,7 @@ public class VerifiableCredentialApiEndToEndTest {
         static final String DB_NAME = "runtime";
         @Order(0)
         @RegisterExtension
-        static final PostgresqlEndToEndExtension POSTGRESQL_EXTENSION = new PostgresqlEndToEndExtension();
+        static final PostgresqlEndToEndExtension POSTGRESQL_EXTENSION = new SharedPostgresqlEndToEndExtension();
         @Order(1)
         @RegisterExtension
         static final BeforeAllCallback POSTGRES_CONTAINER_STARTER = context -> {
@@ -683,7 +684,7 @@ public class VerifiableCredentialApiEndToEndTest {
                 .build();
         @Order(0)
         @RegisterExtension
-        static final PostgresqlEndToEndExtension POSTGRESQL_EXTENSION = new PostgresqlEndToEndExtension();
+        static final PostgresqlEndToEndExtension POSTGRESQL_EXTENSION = new SharedPostgresqlEndToEndExtension();
         @Order(1)
         @RegisterExtension
         static final BeforeAllCallback POSTGRES_CONTAINER_STARTER = context -> {

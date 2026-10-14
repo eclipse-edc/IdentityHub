@@ -19,6 +19,7 @@ import com.nimbusds.jose.jwk.ECKey;
 import org.eclipse.edc.iam.did.spi.resolution.DidPublicKeyResolver;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat;
 import org.eclipse.edc.identityhub.tests.fixtures.DefaultRuntimes;
+import org.eclipse.edc.identityhub.tests.fixtures.SharedPostgresqlEndToEndExtension;
 import org.eclipse.edc.identityhub.tests.fixtures.issuerservice.IssuerService;
 import org.eclipse.edc.issuerservice.spi.holder.HolderService;
 import org.eclipse.edc.issuerservice.spi.holder.model.Holder;
@@ -169,7 +170,7 @@ public class DcpIssuerMetadataApiEndToEndTest {
 
         @Order(0)
         @RegisterExtension
-        static final PostgresqlEndToEndExtension POSTGRESQL_EXTENSION = new PostgresqlEndToEndExtension();
+        static final PostgresqlEndToEndExtension POSTGRESQL_EXTENSION = new SharedPostgresqlEndToEndExtension();
         @Order(1)
         @RegisterExtension
         static final BeforeAllCallback POSTGRES_CONTAINER_STARTER = context -> {

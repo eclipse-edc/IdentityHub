@@ -42,6 +42,7 @@ import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStatus;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialResource;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialStore;
 import org.eclipse.edc.identityhub.tests.fixtures.DefaultRuntimes;
+import org.eclipse.edc.identityhub.tests.fixtures.SharedPostgresqlEndToEndExtension;
 import org.eclipse.edc.identityhub.tests.fixtures.TestData;
 import org.eclipse.edc.identityhub.tests.fixtures.credentialservice.IdentityHub;
 import org.eclipse.edc.jsonld.util.JacksonJsonLd;
@@ -918,7 +919,7 @@ public class PresentationApiEndToEndTest {
 
         @Order(0)
         @RegisterExtension
-        static final PostgresqlEndToEndExtension POSTGRESQL_EXTENSION = new PostgresqlEndToEndExtension();
+        static final PostgresqlEndToEndExtension POSTGRESQL_EXTENSION = new SharedPostgresqlEndToEndExtension();
         private static final String DB_NAME = "runtime";
 
         @Order(1)

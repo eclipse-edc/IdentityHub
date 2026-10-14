@@ -186,7 +186,7 @@ public class KeyPairResource extends AbstractParticipantResource {
                 throw new IllegalStateException("KeyPair must have at least one usage"); // backwards compatibility should be handled elsewhere
             }
             if (entity.timestamp <= 0) {
-                entity.timestamp = entity.clock.millis();
+                entity.timestamp = entity.createdAt;
             }
             if (entity.useDuration == 0) {
                 entity.useDuration = Duration.ofDays(6 * 30).toMillis();

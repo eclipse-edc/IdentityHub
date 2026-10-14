@@ -25,6 +25,7 @@ import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyDescriptor;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyPairUsage;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStatus;
 import org.eclipse.edc.identityhub.tests.fixtures.DefaultRuntimes;
+import org.eclipse.edc.identityhub.tests.fixtures.SharedPostgresqlEndToEndExtension;
 import org.eclipse.edc.identityhub.tests.fixtures.credentialservice.IdentityHub;
 import org.eclipse.edc.identityhub.tests.fixtures.issuerservice.IssuerService;
 import org.eclipse.edc.issuerservice.spi.holder.HolderService;
@@ -101,7 +102,7 @@ public class DcpIssuanceFlowEndToEndTest {
 
     protected static final AttestationSourceFactory ATTESTATION_SOURCE_FACTORY = mock();
     protected static final Duration TIMEOUT = Duration.ofSeconds(60);
-    protected static final Duration INTERVAL = Duration.ofSeconds(1);
+    protected static final Duration INTERVAL = Duration.ofMillis(100);
     private static final String ISSUER = "issuer";
     private static final String IDENTITY_HUB = "identityhub";
 
@@ -858,7 +859,7 @@ public class DcpIssuanceFlowEndToEndTest {
 
         @Order(0)
         @RegisterExtension
-        static final PostgresqlEndToEndExtension POSTGRESQL_EXTENSION = new PostgresqlEndToEndExtension();
+        static final PostgresqlEndToEndExtension POSTGRESQL_EXTENSION = new SharedPostgresqlEndToEndExtension();
         @Order(2)
         @RegisterExtension
         static final RuntimeExtension ISSUER_EXTENSION = ComponentRuntimeExtension.Builder.newInstance()

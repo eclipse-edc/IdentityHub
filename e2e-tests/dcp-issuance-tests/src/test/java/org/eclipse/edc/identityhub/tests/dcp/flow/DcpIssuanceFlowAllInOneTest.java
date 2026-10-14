@@ -39,6 +39,7 @@ import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStatus;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialResource;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialStore;
 import org.eclipse.edc.identityhub.tests.fixtures.DefaultRuntimes;
+import org.eclipse.edc.identityhub.tests.fixtures.SharedPostgresqlEndToEndExtension;
 import org.eclipse.edc.identityhub.tests.fixtures.credentialservice.IdentityHub;
 import org.eclipse.edc.identityhub.tests.fixtures.issuerservice.IssuerService;
 import org.eclipse.edc.issuerservice.spi.holder.HolderService;
@@ -116,7 +117,7 @@ public class DcpIssuanceFlowAllInOneTest {
     protected static final AttestationSourceFactory ATTESTATION_SOURCE_FACTORY = mock();
 
     protected static final Duration TIMEOUT = Duration.ofSeconds(60);
-    protected static final Duration INTERVAL = Duration.ofSeconds(1);
+    protected static final Duration INTERVAL = Duration.ofMillis(100);
     private static final ObjectMapper OBJECT_MAPPER = JacksonJsonLd.createObjectMapper().rebuild()
             .enable(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
             .enable(DeserializationFeature.ACCEPT_EMPTY_ARRAY_AS_NULL_OBJECT)
@@ -692,7 +693,7 @@ public class DcpIssuanceFlowAllInOneTest {
 
         @Order(0)
         @RegisterExtension
-        static final PostgresqlEndToEndExtension POSTGRESQL_EXTENSION = new PostgresqlEndToEndExtension();
+        static final PostgresqlEndToEndExtension POSTGRESQL_EXTENSION = new SharedPostgresqlEndToEndExtension();
         @Order(2)
         @RegisterExtension
         static final RuntimeExtension RUNTIME_EXTENSION = ComponentRuntimeExtension.Builder.newInstance()

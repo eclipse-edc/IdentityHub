@@ -34,6 +34,7 @@ import org.eclipse.edc.identityhub.spi.participantcontext.events.ParticipantCont
 import org.eclipse.edc.identityhub.spi.participantcontext.events.ParticipantContextUpdated;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.IdentityHubParticipantContext;
 import org.eclipse.edc.identityhub.tests.fixtures.DefaultRuntimes;
+import org.eclipse.edc.identityhub.tests.fixtures.SharedPostgresqlEndToEndExtension;
 import org.eclipse.edc.identityhub.tests.fixtures.credentialservice.IdentityHub;
 import org.eclipse.edc.junit.annotations.EndToEndTest;
 import org.eclipse.edc.junit.annotations.PostgresqlIntegrationTest;
@@ -691,7 +692,7 @@ public class IdentityHubParticipantContextApiEndToEndTest {
 
         @Order(0)
         @RegisterExtension
-        static final PostgresqlEndToEndExtension POSTGRESQL_EXTENSION = new PostgresqlEndToEndExtension();
+        static final PostgresqlEndToEndExtension POSTGRESQL_EXTENSION = new SharedPostgresqlEndToEndExtension();
         @Order(1)
         @RegisterExtension
         static final BeforeAllCallback POSTGRES_CONTAINER_STARTER = context -> {
@@ -819,7 +820,7 @@ public class IdentityHubParticipantContextApiEndToEndTest {
 
         @Order(0)
         @RegisterExtension
-        static final PostgresqlEndToEndExtension POSTGRESQL_EXTENSION = new PostgresqlEndToEndExtension();
+        static final PostgresqlEndToEndExtension POSTGRESQL_EXTENSION = new SharedPostgresqlEndToEndExtension();
         @Order(1)
         @RegisterExtension
         static final BeforeAllCallback POSTGRES_CONTAINER_STARTER = context -> {
