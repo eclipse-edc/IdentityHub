@@ -24,7 +24,7 @@ import static java.lang.String.format;
 public class BaseSqlDialectStatements implements CredentialStoreStatements {
     @Override
     public String getInsertTemplate() {
-        return executeStatement()
+        var insert = executeStatement()
                 .column(getIdColumn())
                 .column(getCreateTimestampColumn())
                 .column(getIssuerIdColumn())
@@ -39,6 +39,9 @@ public class BaseSqlDialectStatements implements CredentialStoreStatements {
                 .column(getParticipantContextIdColumn())
                 .column(getUsageColumn())
                 .insertInto(getCredentialResourceTable());
+        // a row that conflicts with an existing one is not inserted. Unlike a failed statement, this does not abort the
+        // surrounding transaction
+        return insert.replaceFirst(";\\s*$", "") + " ON CONFLICT DO NOTHING;";
     }
 
     @Override

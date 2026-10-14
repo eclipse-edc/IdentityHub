@@ -24,5 +24,8 @@ dependencies {
 
     testImplementation(testFixtures(project(":spi:issuerservice:issuerservice-holder-spi")))
     testImplementation(testFixtures(libs.edc.sql.test.fixtures))
+    // needed by the concurrency tests: the standard test fixture auto-commits every statement, so a row is never held by
+    // an open transaction
+    testImplementation(libs.edc.transaction.local)
     testImplementation(libs.edc.junit)
 }
