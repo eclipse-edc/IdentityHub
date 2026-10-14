@@ -87,7 +87,7 @@ public abstract class AbstractIdentityHub {
     protected Function<Class<?>, ?> serviceLocator;
     protected Vault vault;
 
-    protected Duration interval = Duration.ofSeconds(1);
+    protected Duration interval = Duration.ofMillis(100);
     protected Duration timeout = Duration.ofSeconds(60);
 
     public Endpoint getStsEndpoint() {

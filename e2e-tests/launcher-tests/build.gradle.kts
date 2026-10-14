@@ -24,3 +24,18 @@ dependencies {
 edcBuild {
     publish.set(false)
 }
+
+tasks.test {
+    // the tests build the launchers with a nested Gradle build. Building them here first makes that nested build find
+    // everything up-to-date, so it does not build the same modules as this build at the same time when tasks run in
+    // parallel. Only needed when the end-to-end tests run, so other test runs do not build the launchers for nothing.
+    val includeTags = System.getProperty("includeTags").orEmpty().split(",")
+    if ("EndToEndTest" in includeTags || System.getProperty("runAllTests").toBoolean()) {
+        dependsOn(
+            ":launcher:identityhub:shadowJar",
+            ":launcher:identityhub-oauth2:shadowJar",
+            ":launcher:issuer-service:shadowJar",
+            ":launcher:issuer-service-oauth2:shadowJar"
+        )
+    }
+}

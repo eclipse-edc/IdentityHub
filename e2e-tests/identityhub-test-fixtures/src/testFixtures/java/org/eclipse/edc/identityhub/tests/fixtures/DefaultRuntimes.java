@@ -55,6 +55,7 @@ public interface DefaultRuntimes {
                     put("edc.iam.accesstoken.jti.validation", String.valueOf(true));
                     put("edc.iam.did.web.use.https", "false");
                     put("edc.encryption.strict", "false");
+                    put("edc.issuer.issuance.state-machine.iteration-wait-millis", "100");
                 }
             });
         }
@@ -84,7 +85,8 @@ public interface DefaultRuntimes {
                     put("edc.iam.credential.revocation.mimetype", "*/*");
                     put("edc.iam.credential.status.check.period", "1");
                     put("edc.iam.credential.status.check.delay", "0");
-                    put("edc.iam.credential.request.status.poll.interval", "1000");
+                    put("edc.iam.credential.request.status.poll.interval", "100");
+                    put("edc.iam.credential.request.state-machine.iteration-wait-millis", "100");
                     put("edc.iam.credential.request.status.poll.min.age", "0");
                     put("edc.did.resolver.cache.expiry", "0"); // disable DID cache which would bite us when testing issuer key rotation
                 }

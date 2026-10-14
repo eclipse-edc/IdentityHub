@@ -20,6 +20,7 @@ import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.CredentialOff
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStatus;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialOfferStore;
 import org.eclipse.edc.identityhub.tests.fixtures.DefaultRuntimes;
+import org.eclipse.edc.identityhub.tests.fixtures.SharedPostgresqlEndToEndExtension;
 import org.eclipse.edc.identityhub.tests.fixtures.credentialservice.IdentityHub;
 import org.eclipse.edc.identityhub.tests.fixtures.issuerservice.IssuerService;
 import org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationDefinitionValidatorRegistry;
@@ -88,7 +89,7 @@ public class DcpCredentialOfferFlowEndToEndTest {
         protected static final String PARTICIPANT_ID = "user1";
         protected static final String TEST_PROFILE = "vc20-bssl/jwt";
         protected static final Duration TIMEOUT = Duration.ofSeconds(60);
-        protected static final Duration INTERVAL = Duration.ofSeconds(1);
+        protected static final Duration INTERVAL = Duration.ofMillis(100);
 
         private static String issuerDid;
         private static String participantDid;
@@ -322,7 +323,7 @@ public class DcpCredentialOfferFlowEndToEndTest {
 
         @Order(0)
         @RegisterExtension
-        static final PostgresqlEndToEndExtension POSTGRESQL_EXTENSION = new PostgresqlEndToEndExtension();
+        static final PostgresqlEndToEndExtension POSTGRESQL_EXTENSION = new SharedPostgresqlEndToEndExtension();
         @Order(1) // must be evaluated before the runtimes, since it creates the databases
         @RegisterExtension
         static final BeforeAllCallback POSTGRES_CONTAINER_STARTER = context -> {

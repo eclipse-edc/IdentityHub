@@ -44,6 +44,7 @@ import org.eclipse.edc.spi.event.EventSubscriber;
 import org.eclipse.edc.spi.query.Criterion;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.security.Vault;
+import org.eclipse.edc.spi.system.configuration.ConfigFactory;
 import org.eclipse.edc.store.InMemoryStatefulEntityStore;
 import org.eclipse.edc.test.e2e.tck.TckTest;
 import org.junit.jupiter.api.BeforeEach;
@@ -54,6 +55,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import java.net.URI;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -73,6 +75,9 @@ public class DcpIssuerIssuanceFlowTest {
             .modules(DefaultRuntimes.Issuer.MODULES)
             .endpoints(DefaultRuntimes.Issuer.ENDPOINTS.build())
             .configurationProvider(DefaultRuntimes.Issuer::config)
+            // keep the default 1 s iteration wait: the TCK's duplicate holderPid test only passes while the issuance that the
+            // IssuanceReceived hook below triggers again has not delivered its credential yet
+            .configurationProvider(() -> ConfigFactory.fromMap(Map.of("edc.issuer.issuance.state-machine.iteration-wait-millis", "1000")))
             .paramProvider(IssuerService.class, IssuerService::forContext)
             .modules(DefaultRuntimes.Issuer.MODULES)
             .modules(":e2e-tests:tck-tests:test-attestations")

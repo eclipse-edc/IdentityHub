@@ -36,6 +36,18 @@ allprojects {
         configDirectory.set(rootProject.file("resources"))
     }
 
+    tasks.withType<Test>().configureEach {
+        // tests use Docker containers and other resources that are not task inputs, so they always run instead of being
+        // taken from the build cache
+        outputs.doNotCacheIf("tests depend on resources that are not task inputs") { true }
+        if (project.path.startsWith(":e2e-tests")) {
+            // these tests start runtimes through nested Gradle builds in this checkout (e.g. EDC's ClasspathReader), which
+            // compile the modules they need. Running the tests after this build has compiled everything keeps the two
+            // builds from compiling the same modules at the same time when tasks run in parallel.
+            mustRunAfter(rootProject.allprojects.map { it.tasks.withType<JavaCompile>() })
+        }
+    }
+
     configurations.all {
         // io.nats:jnats, pulled in transitively via EDC's core-lib, ships the BouncyCastle LTS provider. It contains the
         // same org.bouncycastle packages as bcprov-jdk18on, so having both on the classpath makes provider
