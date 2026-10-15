@@ -150,6 +150,17 @@ class IdentityHubParticipantContextApiControllerTest extends RestControllerTestB
     }
 
     @Test
+    void delete_notAuthorized() {
+        when(authService.authorize(any(), anyString(), anyString(), any())).thenReturn(ServiceResult.unauthorized("test message"));
+        baseRequest()
+                .delete("/%s".formatted(PARTICIPANT_ID))
+                .then()
+                .statusCode(403);
+        verify(authService).authorize(any(), eq(PARTICIPANT_ID), eq(PARTICIPANT_ID), eq(IdentityHubParticipantContext.class));
+        verifyNoInteractions(participantContextServiceMock);
+    }
+
+    @Test
     void delete_notFound() {
         when(participantContextServiceMock.deleteParticipantContext(any())).thenReturn(ServiceResult.notFound("foo bar"));
         baseRequest()

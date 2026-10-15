@@ -83,7 +83,7 @@ public interface ParticipantContextApi {
     )
     String regenerateParticipantToken(String participantContextId, SecurityContext securityContext);
 
-    @Operation(description = "Activates a ParticipantContext. This operation is idempotent, i.e. activating an already active ParticipantContext is a NOOP.",
+    @Operation(description = "Activates or deactivates a ParticipantContext. This operation is idempotent, i.e. activating an already active ParticipantContext is a NOOP. Requires elevated access.",
             operationId = "activateParticipant",
             requestBody = @RequestBody(content = @Content(schema = @Schema(implementation = ParticipantManifest.class), mediaType = "application/json")),
             parameters = {@Parameter(name = "isActive", description = "Whether the participantContext should be activated or deactivated. Defaults to 'false'")},
@@ -99,7 +99,7 @@ public interface ParticipantContextApi {
     )
     void activateParticipant(String participantContextId, boolean isActive);
 
-    @Operation(description = "Delete a ParticipantContext.",
+    @Operation(description = "Delete a ParticipantContext. A participant can only delete its own ParticipantContext, deleting any other requires elevated access.",
             operationId = "deleteParticipant",
             responses = {
                     @ApiResponse(responseCode = "204", description = "The ParticipantContext was deleted successfully"),

@@ -55,6 +55,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.Arrays;
@@ -538,6 +539,62 @@ public class IdentityHubParticipantContextApiEndToEndTest {
             assertThat(identityHub.getKeyPairsForParticipant(participantContextId)).isEmpty();
             assertThat(vault.resolveSecret(alias)).isNull();
             assertThat(vault.resolveSecret(apiTokenAlias)).isNull();
+        }
+
+        @ParameterizedTest(name = "Expect 403, target = {0}, isActive = {1}")
+        @CsvSource({"victim,false", "victim,true", SUPER_USER + ",false", "attacker,false", "attacker,true"})
+        void updateParticipantState_whenNotSuperuser_expect403(String target, boolean isActive, IdentityHub identityHub) {
+            var attackerAuth = authorizeUser("attacker", identityHub);
+            identityHub.createParticipant("victim");
+            identityHub.createSuperUser();
+            var stateBefore = identityHub.getParticipant(target).getState();
+
+            identityHub.getIdentityEndpoint().baseRequest()
+                    .header(attackerAuth)
+                    .contentType(ContentType.JSON)
+                    .post("/v1/participants/%s/state?isActive=%s".formatted(target, isActive))
+                    .then()
+                    .log().ifValidationFails()
+                    .statusCode(403);
+
+            assertThat(identityHub.getParticipant(target).getState()).isEqualTo(stateBefore);
+        }
+
+        @ParameterizedTest(name = "Expect 403, target = {0}")
+        @ValueSource(strings = {"victim", SUPER_USER})
+        void deleteParticipant_whenNotOwner_expect403(String target, IdentityHub identityHub) {
+            var attackerAuth = authorizeUser("attacker", identityHub);
+            identityHub.createParticipant("victim");
+            identityHub.createSuperUser();
+
+            identityHub.getIdentityEndpoint().baseRequest()
+                    .header(attackerAuth)
+                    .contentType(ContentType.JSON)
+                    .delete("/v1/participants/%s".formatted(target))
+                    .then()
+                    .log().ifValidationFails()
+                    .statusCode(403);
+
+            assertThat(identityHub.getParticipant(target)).isNotNull();
+            assertThat(identityHub.getDidForParticipant(target)).hasSize(1);
+        }
+
+        @Test
+        void deleteParticipant_whenOwner(IdentityHub identityHub, IdentityHubParticipantContextService participantContextService) {
+            var participantContextId = "some-user";
+            var userAuth = authorizeUser(participantContextId, identityHub);
+
+            identityHub.getIdentityEndpoint().baseRequest()
+                    .header(userAuth)
+                    .contentType(ContentType.JSON)
+                    .delete("/v1/participants/%s".formatted(participantContextId))
+                    .then()
+                    .log().ifValidationFails()
+                    .statusCode(204);
+
+            assertThat(participantContextService.getParticipantContext(participantContextId).succeeded()).isFalse();
+            assertThat(identityHub.getDidForParticipant(participantContextId)).isEmpty();
+            assertThat(identityHub.getKeyPairsForParticipant(participantContextId)).isEmpty();
         }
 
         @Test
