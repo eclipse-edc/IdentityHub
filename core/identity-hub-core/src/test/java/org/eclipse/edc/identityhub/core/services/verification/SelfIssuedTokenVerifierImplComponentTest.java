@@ -33,7 +33,9 @@ import org.eclipse.edc.spi.result.ServiceResult;
 import org.eclipse.edc.spi.result.StoreResult;
 import org.eclipse.edc.token.TokenValidationRulesRegistryImpl;
 import org.eclipse.edc.token.TokenValidationServiceImpl;
+import org.eclipse.edc.token.rules.ExpirationIssuedAtValidationRule;
 import org.eclipse.edc.token.rules.JtiValidationRule;
+import org.eclipse.edc.token.rules.NotBeforeValidationRule;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -43,6 +45,9 @@ import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.spec.ECGenParameterSpec;
+import java.time.Clock;
+import java.time.Instant;
+import java.util.Date;
 import java.util.UUID;
 
 import static org.eclipse.edc.identityhub.spi.verification.SelfIssuedTokenConstants.ACCESS_TOKEN_SCOPE_CLAIM;
@@ -85,6 +90,8 @@ class SelfIssuedTokenVerifierImplComponentTest {
 
         var scopeIsPresentRule = new ClaimIsPresentRule(ACCESS_TOKEN_SCOPE_CLAIM);
         ruleRegistry.addRule(DCP_PRESENTATION_ACCESS_TOKEN_CONTEXT, scopeIsPresentRule);
+        ruleRegistry.addRule(DCP_PRESENTATION_ACCESS_TOKEN_CONTEXT, new ExpirationIssuedAtValidationRule(Clock.systemUTC(), 5, false));
+        ruleRegistry.addRule(DCP_PRESENTATION_ACCESS_TOKEN_CONTEXT, new NotBeforeValidationRule(Clock.systemUTC(), 5, true));
 
         var entry = new JtiValidationEntry("test-jti", null);
         jtiValidationStore = mock(JtiValidationStore.class);
@@ -169,6 +176,7 @@ class SelfIssuedTokenVerifierImplComponentTest {
     void selfIssuedToken_noAccessTokenAudienceClaim() {
         var accessToken = createSignedJwt(stsKeyPair.getPrivate(), new JWTClaimsSet.Builder()
                 .claim("scope", "foobar")
+                .expirationTime(inOneHour())
                 .build());
         var selfIssuedIdToken = createSignedJwt(providerKeyPair.getPrivate(), new JWTClaimsSet.Builder().claim("token", accessToken)
                 .issuer(PARTICIPANT_DID)
@@ -185,6 +193,7 @@ class SelfIssuedTokenVerifierImplComponentTest {
 
         var accessToken = createSignedJwt(stsKeyPair.getPrivate(), new JWTClaimsSet.Builder()
                 .claim("scope", "foobar")
+                .expirationTime(inOneHour())
                 .audience(PARTICIPANT_DID)
                 .claim("jti", UUID.randomUUID().toString())
                 .build());
@@ -200,6 +209,7 @@ class SelfIssuedTokenVerifierImplComponentTest {
     void accessToken_audClaimDoesNotBelongToParticipant() {
         var accessToken = createSignedJwt(stsKeyPair.getPrivate(), new JWTClaimsSet.Builder()
                 .claim("scope", "foobar")
+                .expirationTime(inOneHour())
                 .audience(PARTICIPANT_DID)
                 .build());
         var selfIssuedIdToken = createSignedJwt(providerKeyPair.getPrivate(), new JWTClaimsSet.Builder().claim("token", accessToken)
@@ -254,6 +264,7 @@ class SelfIssuedTokenVerifierImplComponentTest {
         var accessToken = createSignedJwt(stsKeyPair.getPrivate(), new JWTClaimsSet.Builder()
                 /* missing: .claim("scope", "foobar") */
                 .claim("foo", "bar")
+                .expirationTime(inOneHour())
                 .issuer(PARTICIPANT_DID)
                 .audience(PARTICIPANT_DID)
                 .build());
@@ -271,6 +282,7 @@ class SelfIssuedTokenVerifierImplComponentTest {
         var accessToken = createSignedJwt(stsKeyPair.getPrivate(), new JWTClaimsSet.Builder()
                 .issuer("did:web:test_participant")
                 .claim("scope", "foobar")
+                .expirationTime(inOneHour())
                 .claim("foo", "bar")
                 /*missing: .audience("did:web:test_participant") */
                 .build());
@@ -290,6 +302,7 @@ class SelfIssuedTokenVerifierImplComponentTest {
 
         var accessToken = createSignedJwt(stsKeyPair.getPrivate(), new JWTClaimsSet.Builder()
                 .claim("scope", "foobar")
+                .expirationTime(inOneHour())
                 .audience(PARTICIPANT_DID)
                 .claim("jti", UUID.randomUUID().toString())
                 .build());
@@ -303,9 +316,63 @@ class SelfIssuedTokenVerifierImplComponentTest {
     }
 
     @Test
+    void accessToken_expired() {
+        var accessToken = createSignedJwt(stsKeyPair.getPrivate(), new JWTClaimsSet.Builder()
+                .claim("scope", "foobar")
+                .audience(PARTICIPANT_DID)
+                .issueTime(Date.from(Instant.now().minusSeconds(7200)))
+                .expirationTime(Date.from(Instant.now().minusSeconds(3600)))
+                .build());
+        var siToken = createSignedJwt(providerKeyPair.getPrivate(), new JWTClaimsSet.Builder()
+                .claim("token", accessToken)
+                .issuer(PARTICIPANT_DID)
+                .audience(PARTICIPANT_DID)
+                .build());
+
+        assertThat(verifier.verify(siToken, PARTICIPANT_CONTEXT_ID)).isFailed()
+                .detail().isEqualTo("Token has expired (exp)");
+    }
+
+    @Test
+    void accessToken_noExpClaim() {
+        var accessToken = createSignedJwt(stsKeyPair.getPrivate(), new JWTClaimsSet.Builder()
+                .claim("scope", "foobar")
+                .audience(PARTICIPANT_DID)
+                /* missing: .expirationTime(...) */
+                .build());
+        var siToken = createSignedJwt(providerKeyPair.getPrivate(), new JWTClaimsSet.Builder()
+                .claim("token", accessToken)
+                .issuer(PARTICIPANT_DID)
+                .audience(PARTICIPANT_DID)
+                .build());
+
+        assertThat(verifier.verify(siToken, PARTICIPANT_CONTEXT_ID)).isFailed()
+                .detail().isEqualTo("Required expiration time (exp) claim is missing in token");
+    }
+
+    @Test
+    void accessToken_notYetValid() {
+        var accessToken = createSignedJwt(stsKeyPair.getPrivate(), new JWTClaimsSet.Builder()
+                .claim("scope", "foobar")
+                .audience(PARTICIPANT_DID)
+                .expirationTime(Date.from(Instant.now().plusSeconds(7200)))
+                .notBeforeTime(Date.from(Instant.now().plusSeconds(3600)))
+                .build());
+        var siToken = createSignedJwt(providerKeyPair.getPrivate(), new JWTClaimsSet.Builder()
+                .claim("token", accessToken)
+                .issuer(PARTICIPANT_DID)
+                .audience(PARTICIPANT_DID)
+                .build());
+
+        assertThat(verifier.verify(siToken, PARTICIPANT_CONTEXT_ID)).isFailed()
+                .detail().isEqualTo("Current date/time with leeway before the not before (nbf) claim in token");
+    }
+
+    @Test
     void assertWarning_whenSubjectClaimsMismatch() {
         var accessToken = createSignedJwt(stsKeyPair.getPrivate(), new JWTClaimsSet.Builder()
                 .claim("scope", "foobar")
+                .expirationTime(inOneHour())
                 .audience(PARTICIPANT_DID)
                 .subject("test-subject")
                 .build());
@@ -319,6 +386,10 @@ class SelfIssuedTokenVerifierImplComponentTest {
                 .startsWith("ID token [sub] claim is not equal to [token.sub] claim");
     }
 
+
+    private Date inOneHour() {
+        return Date.from(Instant.now().plusSeconds(3600));
+    }
 
     private String createSignedJwt(PrivateKey signingKey, JWTClaimsSet claimsSet) {
         try {

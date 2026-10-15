@@ -71,6 +71,8 @@ class DefaultServicesExtensionTest {
         verify(registry).addRule(eq("dcp-si"), isA(ExpirationIssuedAtValidationRule.class));
         verify(registry).addRule(eq("dcp-si"), isA(NotBeforeValidationRule.class));
         verify(registry).addRule(eq("dcp-access-token"), isA(ClaimIsPresentRule.class));
+        verify(registry).addRule(eq("dcp-access-token"), isA(ExpirationIssuedAtValidationRule.class));
+        verify(registry).addRule(eq("dcp-access-token"), isA(NotBeforeValidationRule.class));
         verifyNoMoreInteractions(registry);
     }
 
@@ -85,6 +87,8 @@ class DefaultServicesExtensionTest {
         verify(registry).addRule(eq("dcp-si"), isA(NotBeforeValidationRule.class));
         verify(registry).addRule(eq("dcp-si"), isA(JtiValidationRule.class));
         verify(registry).addRule(eq("dcp-access-token"), isA(ClaimIsPresentRule.class));
+        verify(registry).addRule(eq("dcp-access-token"), isA(ExpirationIssuedAtValidationRule.class));
+        verify(registry).addRule(eq("dcp-access-token"), isA(NotBeforeValidationRule.class));
         verify(registry).addRule(eq("dcp-access-token"), isA(JtiValidationRule.class));
         verifyNoMoreInteractions(registry);
     }

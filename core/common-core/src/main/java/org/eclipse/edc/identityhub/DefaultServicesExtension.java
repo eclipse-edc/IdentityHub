@@ -126,6 +126,8 @@ public class DefaultServicesExtension implements ServiceExtension {
 
         var scopeIsPresentRule = new ClaimIsPresentRule(ACCESS_TOKEN_SCOPE_CLAIM);
         registry.addRule(DCP_PRESENTATION_ACCESS_TOKEN_CONTEXT, scopeIsPresentRule);
+        registry.addRule(DCP_PRESENTATION_ACCESS_TOKEN_CONTEXT, new ExpirationIssuedAtValidationRule(clock, 5, false));
+        registry.addRule(DCP_PRESENTATION_ACCESS_TOKEN_CONTEXT, new NotBeforeValidationRule(clock, 5, true));
 
         if (activateJtiCheck) {
             registry.addRule(DCP_PRESENTATION_SELF_ISSUED_TOKEN_CONTEXT, new JtiValidationRule(jtiValidationStore, context.getMonitor()));
