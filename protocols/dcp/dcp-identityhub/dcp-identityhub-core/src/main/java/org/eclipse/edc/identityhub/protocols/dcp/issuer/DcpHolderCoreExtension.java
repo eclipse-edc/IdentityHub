@@ -16,6 +16,7 @@ package org.eclipse.edc.identityhub.protocols.dcp.issuer;
 
 import org.eclipse.edc.iam.did.spi.resolution.DidPublicKeyResolver;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.DcpIssuerTokenVerifier;
+import org.eclipse.edc.identityhub.verification.IssuerKeyIdRule;
 import org.eclipse.edc.identityhub.verification.SelfIssuedTokenPrecheck;
 import org.eclipse.edc.jwt.validation.jti.JtiValidationStore;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
@@ -32,7 +33,6 @@ import org.eclipse.edc.token.rules.NotBeforeValidationRule;
 import org.eclipse.edc.token.spi.TokenValidationRule;
 import org.eclipse.edc.token.spi.TokenValidationService;
 import org.eclipse.edc.verifiablecredentials.jwt.rules.IssuerEqualsSubjectRule;
-import org.eclipse.edc.verifiablecredentials.jwt.rules.IssuerKeyIdValidationRule;
 
 import java.time.Clock;
 import java.util.ArrayList;
@@ -84,9 +84,10 @@ public class DcpHolderCoreExtension implements ServiceExtension {
                 return precheck.mapFailure();
             }
 
-            var newRules = new ArrayList<>(rules);
+            var newRules = new ArrayList<TokenValidationRule>();
+            newRules.add(new IssuerKeyIdRule(precheck.getContent().keyId()));
+            newRules.addAll(rules);
             newRules.add(new AudienceValidationRule(participantContext.getDid()));
-            newRules.add(new IssuerKeyIdValidationRule(precheck.getContent().keyId()));
             return tokenValidationService.validate(tokenRepresentation.getToken(), didPublicKeyResolver, newRules);
         };
     }

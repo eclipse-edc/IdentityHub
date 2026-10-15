@@ -23,6 +23,7 @@ import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.DcpHolderTokenVerifier;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.IdentityHubParticipantContext;
+import org.eclipse.edc.identityhub.verification.IssuerKeyIdRule;
 import org.eclipse.edc.issuerservice.spi.holder.model.Holder;
 import org.eclipse.edc.issuerservice.spi.holder.store.HolderStore;
 import org.eclipse.edc.keys.spi.PublicKeyResolver;
@@ -30,6 +31,7 @@ import org.eclipse.edc.spi.iam.ClaimToken;
 import org.eclipse.edc.spi.iam.TokenRepresentation;
 import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.spi.result.StoreResult;
+import org.eclipse.edc.token.spi.TokenValidationRule;
 import org.eclipse.edc.token.spi.TokenValidationRulesRegistry;
 import org.eclipse.edc.token.spi.TokenValidationService;
 import org.junit.jupiter.api.DisplayName;
@@ -203,6 +205,52 @@ public class DcpHolderTokenVerifierImplTest {
         //  so a holder of issuer context A can authenticate against issuer context B (cross-tenant authentication).
         //  Once scoping is implemented, the query must also filter on the addressed issuer's participantContextId.
         assertThat(result).isFailed();
+    }
+
+    @Test
+    void verify_keyBindingRuleRunsFirst() {
+        var token = TokenRepresentation.Builder.newInstance().token(generateToken()).build();
+
+        when(holderStore.query(any())).thenReturn(StoreResult.success(List.of(createHolder(PARTICIPANT_DID, PARTICIPANT_DID, PARTICIPANT_DID))));
+        when(tokenValidationService.validate(anyString(), any(), anyList())).thenReturn(Result.success(ClaimToken.Builder.newInstance().build()));
+
+        dcpIssuerTokenVerifier.verify(participantContext, token);
+
+        Mockito.verify(tokenValidationService).validate(anyString(), any(), argThat((List<TokenValidationRule> rules) -> rules.get(0) instanceof IssuerKeyIdRule));
+    }
+
+    @Test
+    void verify_issuerInvalidDid_shouldBeRejectedBeforeHolderLookup() throws JOSEException {
+        var token = TokenRepresentation.Builder.newInstance().token(signedToken("(a+)+$", "(a+)+$#key1")).build();
+
+        var result = dcpIssuerTokenVerifier.verify(participantContext, token);
+
+        assertThat(result).isFailed().detail().isEqualTo("Claim 'iss' is not a valid DID.");
+        verifyNoInteractions(holderStore, tokenValidationService);
+    }
+
+    @Test
+    void verify_issuerTooLong_shouldBeRejectedBeforeHolderLookup() throws JOSEException {
+        var issuer = "did:web:" + "a".repeat(IssuerKeyIdRule.MAX_LENGTH);
+        var token = TokenRepresentation.Builder.newInstance().token(signedToken(issuer, issuer + "#key1")).build();
+
+        var result = dcpIssuerTokenVerifier.verify(participantContext, token);
+
+        assertThat(result).isFailed();
+        verifyNoInteractions(holderStore, tokenValidationService);
+    }
+
+    private String signedToken(String issuer, String kid) throws JOSEException {
+        var claims = new JWTClaimsSet.Builder()
+                .audience(ISSUER_DID)
+                .issuer(issuer)
+                .subject(issuer)
+                .jwtID(UUID.randomUUID().toString())
+                .expirationTime(Date.from(Instant.now().plusSeconds(3600)))
+                .build();
+        var jwt = new SignedJWT(new JWSHeader.Builder(JWSAlgorithm.ES256).keyID(kid).build(), claims);
+        jwt.sign(new ECDSASigner(PARTICIPANT_KEY.toECPrivateKey()));
+        return jwt.serialize();
     }
 
     private Holder createHolder(String id, String did, String name) {

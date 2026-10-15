@@ -176,6 +176,18 @@ class SelfIssuedTokenVerifierImplComponentTest {
     }
 
     @Test
+    void selfIssuedToken_issuerIsComparedLiterally() {
+        // the '.' in the issuer must not match the '_' in the 'kid' header
+        var selfIssuedIdToken = createSignedJwt(providerKeyPair.getPrivate(), new JWTClaimsSet.Builder()
+                .issuer("did:web:test.participant")
+                .audience(PARTICIPANT_DID)
+                .claim("token", "accessToken")
+                .build());
+        assertThat(verifier.verify(selfIssuedIdToken, PARTICIPANT_CONTEXT_ID)).isFailed()
+                .detail().startsWith("kid header");
+    }
+
+    @Test
     void selfIssuedToken_noAudience() {
         var selfIssuedIdToken = createSignedJwt(providerKeyPair.getPrivate(), new JWTClaimsSet.Builder().claim("token", validAccessToken())
                 .issuer(PARTICIPANT_DID)
