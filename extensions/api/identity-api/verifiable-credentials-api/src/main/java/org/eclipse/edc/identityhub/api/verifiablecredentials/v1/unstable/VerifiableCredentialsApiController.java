@@ -110,6 +110,9 @@ public class VerifiableCredentialsApiController implements VerifiableCredentials
     @Override
     public void addCredential(@PathParam("participantContextId") String participantContextId, VerifiableCredentialManifest manifest, @Context SecurityContext securityContext) {
         validator.validate(manifest).orElseThrow(ValidationFailureException::new);
+        if (!participantContextId.equals(manifest.getParticipantContextId())) {
+            throw new InvalidRequestException(PARTICIPANT_CONTEXT_ID_MISMATCH);
+        }
 
         authorizationService.authorize(securityContext, participantContextId, participantContextId, IdentityHubParticipantContext.class)
                 .compose(u -> typeTransformerRegistry.transform(manifest, VerifiableCredentialResource.class)
@@ -124,6 +127,9 @@ public class VerifiableCredentialsApiController implements VerifiableCredentials
     @Override
     public void updateCredential(@PathParam("participantContextId") String participantContextId, VerifiableCredentialManifest manifest, @Context SecurityContext securityContext) {
         validator.validate(manifest).orElseThrow(ValidationFailureException::new);
+        if (!participantContextId.equals(manifest.getParticipantContextId())) {
+            throw new InvalidRequestException(PARTICIPANT_CONTEXT_ID_MISMATCH);
+        }
 
         authorizationService.authorize(securityContext, participantContextId, manifest.getId(), VerifiableCredentialResource.class)
                 .compose(u -> typeTransformerRegistry.transform(manifest, VerifiableCredentialResource.class)

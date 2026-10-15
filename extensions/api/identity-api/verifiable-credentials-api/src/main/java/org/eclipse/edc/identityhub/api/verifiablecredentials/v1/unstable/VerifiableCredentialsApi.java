@@ -39,6 +39,8 @@ import java.util.Map;
 @Tag(name = "Verifiable Credentials")
 public interface VerifiableCredentialsApi {
 
+    String PARTICIPANT_CONTEXT_ID_MISMATCH = "participantContextId in the request body must match the participantContextId in the path";
+
 
     @Operation(description = "Finds a VerifiableCredential by ID.",
             operationId = "getCredential",
@@ -55,7 +57,7 @@ public interface VerifiableCredentialsApi {
     )
     VerifiableCredentialResource getCredential(String participantContextId, String id, SecurityContext securityContext);
 
-    @Operation(description = "Adds a new VerifiableCredential into the system.",
+    @Operation(description = "Adds a new VerifiableCredential into the system. The participantContextId in the request body must match the one in the path.",
             operationId = "addCredential",
             requestBody = @RequestBody(content = @Content(schema = @Schema(implementation = VerifiableCredentialManifest.class))),
             responses = {
@@ -70,7 +72,7 @@ public interface VerifiableCredentialsApi {
     )
     void addCredential(String participantContextId, VerifiableCredentialManifest manifest, SecurityContext securityContext);
 
-    @Operation(description = "Update an existing VerifiableCredential.",
+    @Operation(description = "Update an existing VerifiableCredential. The participantContextId in the request body must match the one in the path.",
             operationId = "updateCredential",
             requestBody = @RequestBody(content = @Content(schema = @Schema(implementation = VerifiableCredentialManifest.class))),
             responses = {

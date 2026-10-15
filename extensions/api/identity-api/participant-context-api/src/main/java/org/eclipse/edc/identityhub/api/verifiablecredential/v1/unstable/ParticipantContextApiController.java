@@ -91,7 +91,7 @@ public class ParticipantContextApiController implements ParticipantContextApi {
 
     @Override
     @POST
-    @RequiredScope("identity-api:participants:write")
+    @RequiredScope("identity-api:admin")
     @Path("/{participantContextId}/state")
     public void activateParticipant(@PathParam("participantContextId") String participantContextId, @QueryParam("isActive") boolean isActive) {
         participantContextService.updateParticipant(participantContextId, isActive ? IdentityHubParticipantContext::activate : IdentityHubParticipantContext::deactivate)
@@ -103,7 +103,8 @@ public class ParticipantContextApiController implements ParticipantContextApi {
     @Path("/{participantContextId}")
     @RequiredScope("identity-api:participants:write")
     public void deleteParticipant(@PathParam("participantContextId") String participantContextId, @Context SecurityContext securityContext) {
-        participantContextService.deleteParticipantContext(participantContextId)
+        authorizationService.authorize(securityContext, participantContextId, participantContextId, IdentityHubParticipantContext.class)
+                .compose(u -> participantContextService.deleteParticipantContext(participantContextId))
                 .orElseThrow(exceptionMapper(IdentityHubParticipantContext.class, participantContextId));
     }
 
