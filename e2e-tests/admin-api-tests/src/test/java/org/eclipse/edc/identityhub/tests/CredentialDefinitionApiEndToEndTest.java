@@ -71,7 +71,7 @@ public class CredentialDefinitionApiEndToEndTest {
         @Test
         void createCredentialDefinition(IssuerService issuer, CredentialDefinitionService service, AttestationDefinitionStore store) {
 
-            store.create(AttestationDefinition.Builder.newInstance().id("test-attestation").attestationType("type").participantContextId("participantContextId").build());
+            store.create(AttestationDefinition.Builder.newInstance().id("user-attestation").attestationType("type").participantContextId(USER).build());
 
             Map<String, Object> credentialRuleConfiguration = Map.of(
                     "claim", "onboarding.signedDocuments",
@@ -86,7 +86,7 @@ public class CredentialDefinitionApiEndToEndTest {
                     .mapping(new MappingDefinition("input", "output", true))
                     .validity(1000)
                     .rule(new CredentialRuleDefinition("expression", credentialRuleConfiguration))
-                    .attestation("test-attestation")
+                    .attestation("user-attestation")
                     .participantContextId(USER)
                     .formatFrom(VC1_0_JWT)
                     .additionalContext(List.of("https://www.w3.org/2018/credentials/examples/v1"))
