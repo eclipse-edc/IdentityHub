@@ -31,7 +31,7 @@ public class InMemoryHolderCredentialRequestStore extends InMemoryStatefulEntity
     }
 
     public InMemoryHolderCredentialRequestStore(String leaserId, Clock clock, CriterionOperatorRegistry criterionOperatorRegistry) {
-        super(HolderCredentialRequest.class, leaserId, clock, criterionOperatorRegistry, state -> HolderRequestState.valueOf(state).code());
+        super(HolderCredentialRequest.class, leaserId, clock, criterionOperatorRegistry, state -> HolderRequestState.valueOf(state).code(), true);
     }
 
     @Override

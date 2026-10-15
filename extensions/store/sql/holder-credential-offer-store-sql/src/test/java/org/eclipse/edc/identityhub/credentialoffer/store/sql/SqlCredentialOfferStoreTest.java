@@ -14,6 +14,9 @@
 
 package org.eclipse.edc.identityhub.credentialoffer.store.sql;
 
+import org.assertj.core.api.Assertions;
+import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.CredentialOffer;
+import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.CredentialOfferStatus;
 import org.eclipse.edc.identityhub.store.sql.credentialoffer.schema.CredentialOfferStoreStatements;
 import org.eclipse.edc.identityhub.store.sql.credentialoffer.schema.SqlCredentialOfferStore;
 import org.eclipse.edc.identityhub.store.sql.credentialoffer.schema.schema.postgres.PostgresDialectStatements;
@@ -22,39 +25,35 @@ import org.eclipse.edc.json.JacksonTypeManager;
 import org.eclipse.edc.junit.annotations.PostgresqlIntegrationTest;
 import org.eclipse.edc.junit.testfixtures.TestUtils;
 import org.eclipse.edc.sql.QueryExecutor;
-import org.eclipse.edc.sql.lease.BaseSqlLeaseStatements;
-import org.eclipse.edc.sql.lease.SqlLeaseContextBuilderImpl;
-import org.eclipse.edc.sql.lease.spi.LeaseStatements;
-import org.eclipse.edc.sql.testfixtures.LeaseUtil;
 import org.eclipse.edc.sql.testfixtures.PostgresqlStoreSetupExtension;
+import org.eclipse.edc.sql.testfixtures.RowLeaseUtil;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.time.Duration;
+
+import static org.eclipse.edc.junit.assertions.AbstractResultAssert.assertThat;
 
 @PostgresqlIntegrationTest
 @ExtendWith(PostgresqlStoreSetupExtension.class)
 class SqlCredentialOfferStoreTest extends CredentialOfferStoreTestBase {
 
-    private final LeaseStatements leaseStatements = new BaseSqlLeaseStatements();
-
     private CredentialOfferStoreStatements statements;
     private SqlCredentialOfferStore store;
-    private LeaseUtil leaseUtil;
+    private RowLeaseUtil leaseUtil;
 
     @BeforeEach
     void setup(PostgresqlStoreSetupExtension extension, QueryExecutor queryExecutor) {
         var typeManager = new JacksonTypeManager();
 
-        statements = new PostgresDialectStatements(leaseStatements, clock);
-        var leaseContextBuilder = SqlLeaseContextBuilderImpl.with(extension.getTransactionContext(), RUNTIME_ID, statements.getCredentialOffersTable(), leaseStatements, clock, queryExecutor);
+        statements = new PostgresDialectStatements(clock);
 
         store = new SqlCredentialOfferStore(extension.getDataSourceRegistry(), extension.getDatasourceName(),
-                extension.getTransactionContext(), typeManager::getMapper, queryExecutor, statements, leaseContextBuilder);
+                extension.getTransactionContext(), typeManager::getMapper, queryExecutor, statements, RUNTIME_ID, clock);
 
-
-        leaseUtil = new LeaseUtil(extension.getTransactionContext(), extension::getConnection, statements.getCredentialOffersTable(), leaseStatements, clock);
+        leaseUtil = new RowLeaseUtil(extension.getTransactionContext(), extension::getConnection, statements, statements.getCredentialOffersTable(), clock);
 
         var schema = TestUtils.getResourceFileContentAsString("credential-offer-schema.sql");
         extension.runQuery(schema);
@@ -63,7 +62,24 @@ class SqlCredentialOfferStoreTest extends CredentialOfferStoreTestBase {
     @AfterEach
     void tearDown(PostgresqlStoreSetupExtension extension) {
         extension.runQuery("DROP TABLE " + statements.getCredentialOffersTable() + " CASCADE");
-        extension.runQuery("DROP TABLE " + leaseStatements.getLeaseTableName() + " CASCADE");
+    }
+
+    @Test
+    void schema_shouldAddLeaseAndVersionColumnsToExistingTable(PostgresqlStoreSetupExtension extension) {
+        extension.runQuery("ALTER TABLE %s DROP COLUMN leased_by, DROP COLUMN leased_at, DROP COLUMN lease_duration, DROP COLUMN version"
+                .formatted(statements.getCredentialOffersTable()));
+
+        extension.runQuery(TestUtils.getResourceFileContentAsString("credential-offer-schema.sql"));
+
+        var offer = CredentialOffer.Builder.newInstance()
+                .id("offer-id")
+                .state(CredentialOfferStatus.RECEIVED.code())
+                .participantContextId("test-participant")
+                .issuer("did:web:issuer")
+                .build();
+        assertThat(store.save(offer)).isSucceeded();
+        Assertions.assertThat(store.nextNotLeased(1)).extracting(CredentialOffer::getId).containsExactly(offer.getId());
+        Assertions.assertThat(leaseUtil.isLeased(offer.getId(), RUNTIME_ID)).isTrue();
     }
 
     @Override

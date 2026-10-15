@@ -23,11 +23,8 @@ import org.eclipse.edc.junit.annotations.PostgresqlIntegrationTest;
 import org.eclipse.edc.junit.testfixtures.TestUtils;
 import org.eclipse.edc.spi.monitor.ConsoleMonitor;
 import org.eclipse.edc.sql.QueryExecutor;
-import org.eclipse.edc.sql.lease.BaseSqlLeaseStatements;
-import org.eclipse.edc.sql.lease.SqlLeaseContextBuilderImpl;
-import org.eclipse.edc.sql.lease.spi.LeaseStatements;
-import org.eclipse.edc.sql.testfixtures.LeaseUtil;
 import org.eclipse.edc.sql.testfixtures.PostgresqlStoreSetupExtension;
+import org.eclipse.edc.sql.testfixtures.RowLeaseUtil;
 import org.eclipse.edc.transaction.local.LocalDataSourceRegistry;
 import org.eclipse.edc.transaction.local.LocalTransactionContext;
 import org.junit.jupiter.api.AfterEach;
@@ -46,6 +43,7 @@ import java.util.function.Consumer;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.awaitility.Awaitility.await;
 import static org.eclipse.edc.identityhub.spi.verifiablecredentials.model.CredentialOfferStatus.PROCESSED;
 import static org.eclipse.edc.identityhub.spi.verifiablecredentials.model.CredentialOfferStatus.RECEIVED;
 import static org.eclipse.edc.junit.assertions.AbstractResultAssert.assertThat;
@@ -53,7 +51,7 @@ import static org.eclipse.edc.spi.persistence.StateEntityStore.hasState;
 
 /**
  * Verifies that a leased {@link CredentialOffer} contains the changes of another transaction that held its lease
- * until it completed.
+ * until it completed, and that an offer locked by another transaction is skipped instead of waited for.
  * <p>
  * This cannot use the transaction context of {@link PostgresqlStoreSetupExtension}: it auto-commits every statement, so a
  * lease would never be held by an open transaction. Each store has its own lease holder, like two replicas.
@@ -65,14 +63,13 @@ class SqlCredentialOfferStoreLeaseTest {
     private static final String OFFER_ID = "offer-id";
     private static final String RUNTIME_ID = "runtime-id";
     private final Clock clock = Clock.systemUTC();
-    private final LeaseStatements leaseStatements = new BaseSqlLeaseStatements();
-    private final CredentialOfferStoreStatements statements = new PostgresDialectStatements(leaseStatements, clock);
+    private final CredentialOfferStoreStatements statements = new PostgresDialectStatements(clock);
     private final ExecutorService executor = Executors.newFixedThreadPool(2);
 
     private LocalTransactionContext transactionContext;
     private SqlCredentialOfferStore store;
     private SqlCredentialOfferStore otherStore;
-    private LeaseUtil leaseUtil;
+    private RowLeaseUtil leaseUtil;
 
     @BeforeEach
     void setup(PostgresqlStoreSetupExtension extension, QueryExecutor queryExecutor) {
@@ -83,7 +80,7 @@ class SqlCredentialOfferStoreLeaseTest {
 
         store = createStore(registry, extension.getDatasourceName(), queryExecutor, RUNTIME_ID);
         otherStore = createStore(registry, extension.getDatasourceName(), queryExecutor, "other-runtime-id");
-        leaseUtil = new LeaseUtil(transactionContext, extension::getConnection, statements.getCredentialOffersTable(), leaseStatements, clock);
+        leaseUtil = new RowLeaseUtil(transactionContext, extension::getConnection, statements, statements.getCredentialOffersTable(), clock);
 
         extension.runQuery(TestUtils.getResourceFileContentAsString("credential-offer-schema.sql"));
     }
@@ -93,7 +90,6 @@ class SqlCredentialOfferStoreLeaseTest {
         executor.shutdownNow();
         assertThat(executor.awaitTermination(30, TimeUnit.SECONDS)).isTrue();
         extension.runQuery("DROP TABLE " + statements.getCredentialOffersTable() + " CASCADE");
-        extension.runQuery("DROP TABLE " + leaseStatements.getLeaseTableName() + " CASCADE");
     }
 
     @Test
@@ -112,15 +108,12 @@ class SqlCredentialOfferStoreLeaseTest {
     }
 
     @Test
-    void nextNotLeased_whenOtherTransactionChangesEntityToNotMatch_shouldNotReturnIt() throws Exception {
-        var release = changeInOtherTransaction(offer -> offer.transition(PROCESSED));
+    void nextNotLeased_whenOtherTransactionHoldsEntity_shouldSkipItWithoutWaiting() throws Exception {
+        var release = changeInOtherTransaction(offer -> offer.setErrorDetail("changed"));
         try {
             var result = executor.submit(() -> transactionContext.execute(() -> store.nextNotLeased(10, hasState(RECEIVED.code()))));
 
-            assertWaitsForLease(result);
-            release.countDown();
             assertThat(result.get(30, TimeUnit.SECONDS)).isEmpty();
-            // the lease is broken again, so that the offer is not blocked until the lease expires
             assertThat(leaseUtil.isLeased(OFFER_ID, RUNTIME_ID)).isFalse();
         } finally {
             release.countDown();
@@ -128,19 +121,14 @@ class SqlCredentialOfferStoreLeaseTest {
     }
 
     @Test
-    void nextNotLeased_whenOtherTransactionChangesEntity_shouldReturnItsChanges() throws Exception {
+    void nextNotLeased_whenOtherTransactionCompleted_shouldReturnItsChanges() throws Exception {
         var release = changeInOtherTransaction(offer -> offer.setErrorDetail("changed"));
-        try {
-            var result = executor.submit(() -> transactionContext.execute(() -> store.nextNotLeased(10, hasState(RECEIVED.code()))));
+        release.countDown();
 
-            assertWaitsForLease(result);
-            release.countDown();
-            assertThat(result.get(30, TimeUnit.SECONDS)).singleElement()
-                    .satisfies(offer -> assertThat(offer.getErrorDetail()).isEqualTo("changed"));
-            assertThat(leaseUtil.isLeased(OFFER_ID, RUNTIME_ID)).isTrue();
-        } finally {
-            release.countDown();
-        }
+        await().untilAsserted(() -> assertThat(transactionContext.execute(() -> store.nextNotLeased(10, hasState(RECEIVED.code()))))
+                .singleElement()
+                .satisfies(offer -> assertThat(offer.getErrorDetail()).isEqualTo("changed")));
+        assertThat(leaseUtil.isLeased(OFFER_ID, RUNTIME_ID)).isTrue();
     }
 
     /**
@@ -173,9 +161,8 @@ class SqlCredentialOfferStoreLeaseTest {
     }
 
     private SqlCredentialOfferStore createStore(LocalDataSourceRegistry registry, String datasourceName, QueryExecutor queryExecutor, String leaseHolder) {
-        var leaseContextBuilder = SqlLeaseContextBuilderImpl.with(transactionContext, leaseHolder, statements.getCredentialOffersTable(), leaseStatements, clock, queryExecutor);
         return new SqlCredentialOfferStore(registry, datasourceName, transactionContext, new JacksonTypeManager()::getMapper,
-                queryExecutor, statements, leaseContextBuilder);
+                queryExecutor, statements, leaseHolder, clock);
     }
 
     private void awaitUninterruptibly(CountDownLatch latch) {

@@ -17,7 +17,6 @@ package org.eclipse.edc.identityhub.spi.credential.request.model;
 import org.eclipse.edc.spi.entity.Entity;
 import org.eclipse.edc.spi.entity.StatefulEntity;
 import org.eclipse.edc.spi.telemetry.TraceCarrier;
-import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -44,7 +43,6 @@ public class HolderCredentialRequest extends StatefulEntity<HolderCredentialRequ
     private String issuerDid;
     private List<RequestedCredential> idsAndFormats = new ArrayList<>();
     private String issuerPid;
-    private Long storedStateTimestamp;
 
     private HolderCredentialRequest() {
         this.state = CREATED.code();
@@ -104,25 +102,9 @@ public class HolderCredentialRequest extends StatefulEntity<HolderCredentialRequ
         return idsAndFormats;
     }
 
-    /**
-     * The state timestamp of this request as it was read from the store, or last saved to it. It is not persisted itself:
-     * the store saves the request only if its state timestamp there is still this one, so that a runtime cannot overwrite
-     * the request with an outdated copy, e.g. after its lease expired and another runtime processed it in the meantime.
-     *
-     * @return the state timestamp in the store, or null if the request was not read from a store
-     */
-    @Nullable
-    public Long getStoredStateTimestamp() {
-        return storedStateTimestamp;
-    }
-
-    public void setStoredStateTimestamp(@Nullable Long storedStateTimestamp) {
-        this.storedStateTimestamp = storedStateTimestamp;
-    }
-
     @Override
     public HolderCredentialRequest copy() {
-        var copy = Builder.newInstance()
+        return Builder.newInstance()
                 .state(state)
                 .id(id)
                 .requestedCredentials(List.copyOf(idsAndFormats))
@@ -137,9 +119,8 @@ public class HolderCredentialRequest extends StatefulEntity<HolderCredentialRequ
                 .stateTimestamp(stateTimestamp)
                 .clock(clock)
                 .traceContext(Map.copyOf(traceContext))
+                .version(version)
                 .build();
-        copy.storedStateTimestamp = storedStateTimestamp;
-        return copy;
     }
 
     @Override

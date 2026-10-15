@@ -134,6 +134,71 @@ public abstract class IssuanceProcessStoreTestBase {
             AbstractResultAssert.assertThat(getStore().save(issuanceProcess)).isSucceeded();
             assertThat(getStore().findById(issuanceProcess.getId()).getState()).isEqualTo(IssuanceProcessStates.DELIVERING.code());
         }
+
+        @Test
+        void withSameIdExists_shouldFailWithConflict() {
+            var issuanceProcess = createIssuanceProcess("id", APPROVED);
+            getStore().save(issuanceProcess);
+            var newProcess = createIssuanceProcess("id", DELIVERED);
+
+            AbstractResultAssert.assertThat(getStore().save(newProcess)).isFailed()
+                    .extracting(StoreFailure::getReason)
+                    .isEqualTo(StoreFailure.Reason.CONFLICT);
+            assertThat(getStore().findById("id").getState()).isEqualTo(APPROVED.code());
+        }
+    }
+
+    @Nested
+    class Version {
+
+        @Test
+        void save_shouldIncrementVersion() {
+            var issuanceProcess = createIssuanceProcess();
+            assertThat(issuanceProcess.getVersion()).isZero();
+
+            getStore().save(issuanceProcess);
+
+            assertThat(issuanceProcess.getVersion()).isEqualTo(1);
+            assertThat(getStore().findById(issuanceProcess.getId()).getVersion()).isEqualTo(1);
+
+            issuanceProcess.transitionToDelivering();
+            getStore().save(issuanceProcess);
+
+            assertThat(issuanceProcess.getVersion()).isEqualTo(2);
+            assertThat(getStore().findById(issuanceProcess.getId()).getVersion()).isEqualTo(2);
+        }
+
+        @Test
+        void save_shouldFailWithConflict_whenEntityIsStale() {
+            var issuanceProcess = createIssuanceProcess();
+            getStore().save(issuanceProcess);
+            var first = getStore().findById(issuanceProcess.getId());
+            var stale = getStore().findById(issuanceProcess.getId());
+            first.transitionToDelivering();
+            AbstractResultAssert.assertThat(getStore().save(first)).isSucceeded();
+
+            stale.transitionToRejecting();
+
+            AbstractResultAssert.assertThat(getStore().save(stale)).isFailed()
+                    .extracting(StoreFailure::getReason)
+                    .isEqualTo(StoreFailure.Reason.CONFLICT);
+            assertThat(getStore().findById(issuanceProcess.getId()).getState()).isEqualTo(IssuanceProcessStates.DELIVERING.code());
+        }
+
+        @Test
+        void findByIdAndLease_shouldReturnLatestVersion() {
+            var issuanceProcess = createIssuanceProcess();
+            getStore().save(issuanceProcess);
+            issuanceProcess.transitionToDelivering();
+            getStore().save(issuanceProcess);
+
+            var leased = getStore().findByIdAndLease(issuanceProcess.getId());
+
+            AbstractResultAssert.assertThat(leased).isSucceeded().satisfies(process -> {
+                assertThat(process.getVersion()).isEqualTo(2);
+                assertThat(process.getState()).isEqualTo(IssuanceProcessStates.DELIVERING.code());
+            });
+        }
     }
 
     @Nested

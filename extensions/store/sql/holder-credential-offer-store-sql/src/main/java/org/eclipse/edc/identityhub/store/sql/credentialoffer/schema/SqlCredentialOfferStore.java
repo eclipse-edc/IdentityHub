@@ -14,7 +14,6 @@
 
 package org.eclipse.edc.identityhub.store.sql.credentialoffer.schema;
 
-import org.eclipse.edc.identityhub.spi.credential.request.model.HolderCredentialRequest;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.CredentialObject;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.CredentialOffer;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialOfferStore;
@@ -23,7 +22,7 @@ import org.eclipse.edc.spi.query.Criterion;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.StoreResult;
 import org.eclipse.edc.sql.QueryExecutor;
-import org.eclipse.edc.sql.lease.spi.SqlLeaseContextBuilder;
+import org.eclipse.edc.sql.lease.StatefulEntityWriteCheck;
 import org.eclipse.edc.sql.store.AbstractSqlStore;
 import org.eclipse.edc.transaction.datasource.spi.DataSourceRegistry;
 import org.eclipse.edc.transaction.spi.TransactionContext;
@@ -34,7 +33,8 @@ import tools.jackson.databind.ObjectMapper;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.ArrayList;
+import java.time.Clock;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
@@ -45,14 +45,19 @@ import static java.util.stream.Collectors.toList;
 
 
 /**
- * SQL-based {@link HolderCredentialRequest} store intended for use with PostgreSQL
+ * SQL-based {@link CredentialOffer} store intended for use with PostgreSQL
  */
 public class SqlCredentialOfferStore extends AbstractSqlStore implements CredentialOfferStore {
 
+    public static final Duration DEFAULT_LEASE_DURATION = Duration.ofSeconds(60);
+
     private static final TypeReference<Collection<CredentialObject>> LIST_TYPE_REF = new TypeReference<>() {
     };
-    private final SqlLeaseContextBuilder leaseContext;
     private final CredentialOfferStoreStatements statements;
+    private final String leaseHolder;
+    private final Clock clock;
+    private final Duration leaseDuration;
+    private final StatefulEntityWriteCheck writeCheck;
 
     public SqlCredentialOfferStore(DataSourceRegistry dataSourceRegistry,
                                    String dataSourceName,
@@ -60,10 +65,26 @@ public class SqlCredentialOfferStore extends AbstractSqlStore implements Credent
                                    Supplier<ObjectMapper> objectMapperSupplier,
                                    QueryExecutor queryExecutor,
                                    CredentialOfferStoreStatements statements,
-                                   SqlLeaseContextBuilder leaseContext) {
+                                   String leaseHolder,
+                                   Clock clock) {
+        this(dataSourceRegistry, dataSourceName, transactionContext, objectMapperSupplier, queryExecutor, statements, leaseHolder, clock, DEFAULT_LEASE_DURATION);
+    }
+
+    public SqlCredentialOfferStore(DataSourceRegistry dataSourceRegistry,
+                                   String dataSourceName,
+                                   TransactionContext transactionContext,
+                                   Supplier<ObjectMapper> objectMapperSupplier,
+                                   QueryExecutor queryExecutor,
+                                   CredentialOfferStoreStatements statements,
+                                   String leaseHolder,
+                                   Clock clock,
+                                   Duration leaseDuration) {
         super(dataSourceRegistry, dataSourceName, transactionContext, objectMapperSupplier, queryExecutor);
         this.statements = statements;
-        this.leaseContext = leaseContext;
+        this.leaseHolder = leaseHolder;
+        this.clock = clock;
+        this.leaseDuration = leaseDuration;
+        this.writeCheck = new StatefulEntityWriteCheck(queryExecutor, statements, statements.getCredentialOffersTable(), leaseHolder, clock);
     }
 
     @Override
@@ -83,14 +104,12 @@ public class SqlCredentialOfferStore extends AbstractSqlStore implements Credent
             var filter = Arrays.stream(criteria).collect(toList());
             var querySpec = QuerySpec.Builder.newInstance().filter(filter).sortField("stateTimestamp").limit(max).build();
             var statement = statements.createNextNotLeaseQuery(querySpec);
-            try (var connection = getConnection()) {
-                List<String> leasedIds;
-                try (var stream = queryExecutor.query(connection, false, this::mapResultSet, statement.getQueryAsString(), statement.getParameters())) {
-                    leasedIds = stream.map(CredentialOffer::getId)
-                            .filter(id -> leaseContext.withConnection(connection).acquireLease(id).succeeded())
-                            .toList();
-                }
-                return readLeased(connection, leasedIds, filter);
+            try (var connection = getConnection();
+                 var stream = queryExecutor.query(connection, false, this::mapResultSet, statement.getQueryAsString(), statement.getParameters())) {
+                // rows are locked until the end of the transaction, so the lease can be safely acquired on them
+                return stream.toList().stream()
+                        .filter(offer -> acquireLease(connection, offer.getId()))
+                        .collect(toList());
             } catch (SQLException e) {
                 throw new EdcPersistenceException(e);
             }
@@ -101,22 +120,14 @@ public class SqlCredentialOfferStore extends AbstractSqlStore implements Credent
     public StoreResult<CredentialOffer> findByIdAndLease(String id) {
         return transactionContext.execute(() -> {
             try (var connection = getConnection()) {
-                if (findByIdInternal(connection, id) == null) {
-                    return StoreResult.notFound(format("HolderCredentialRequest %s not found", id));
+                // the lease is acquired before reading, so that the returned entity cannot be outdated by a concurrent save
+                if (!acquireLease(connection, id)) {
+                    if (findByIdInternal(connection, id) == null) {
+                        return StoreResult.notFound(format("CredentialOffer %s not found", id));
+                    }
+                    return StoreResult.alreadyLeased(format("CredentialOffer %s is currently leased!", id));
                 }
-
-                var leaseResult = leaseContext.withConnection(connection).acquireLease(id);
-                if (leaseResult.failed()) {
-                    return leaseResult.mapFailure();
-                }
-                // acquiring the lease waits for another transaction that holds a lease on the entity, which may have changed
-                // it in the meantime. Every statement reads what was committed when it starts, so the entity is read again.
-                var entity = findByIdInternal(connection, id);
-                if (entity == null) {
-                    leaseContext.withConnection(connection).breakLease(id);
-                    return StoreResult.notFound(format("HolderCredentialRequest %s not found", id));
-                }
-                return StoreResult.success(entity);
+                return StoreResult.success(findByIdInternal(connection, id));
             } catch (SQLException e) {
                 throw new EdcPersistenceException(e);
             }
@@ -127,17 +138,11 @@ public class SqlCredentialOfferStore extends AbstractSqlStore implements Credent
     public StoreResult<Void> save(CredentialOffer offer) {
         return transactionContext.execute(() -> {
             try (var conn = getConnection()) {
-                var existing = findByIdInternal(conn, offer.getId());
-                if (existing != null) {
-                    var result = leaseContext.withConnection(conn).breakLease(offer.getId());
-                    if (result.failed()) {
-                        return result;
-                    }
-                    update(conn, offer);
-                } else {
-                    insert(conn, offer);
+                var result = offer.getVersion() == 0 ? insert(conn, offer) : update(conn, offer);
+                if (result.succeeded()) {
+                    offer.setVersion(offer.getVersion() + 1);
                 }
-                return StoreResult.success();
+                return result;
             } catch (SQLException e) {
                 throw new EdcPersistenceException(e);
             }
@@ -149,7 +154,12 @@ public class SqlCredentialOfferStore extends AbstractSqlStore implements Credent
     public StoreResult<Void> breakLease(CredentialOffer entity) {
         return transactionContext.execute(() -> {
             try (var connection = getConnection()) {
-                return leaseContext.withConnection(connection).breakLease(entity.getId());
+                var updated = queryExecutor.execute(connection, statements.getBreakLeaseTemplate(statements.getCredentialOffersTable()),
+                        entity.getId(), leaseHolder, clock.millis());
+                if (updated == 0 && findByIdInternal(connection, entity.getId()) != null) {
+                    return StoreResult.alreadyLeased(format("CredentialOffer %s is leased by another holder, cannot break the lease!", entity.getId()));
+                }
+                return StoreResult.success();
             } catch (SQLException e) {
                 throw new EdcPersistenceException(e);
             }
@@ -172,22 +182,26 @@ public class SqlCredentialOfferStore extends AbstractSqlStore implements Credent
     public StoreResult<Void> deleteById(String id) {
         return transactionContext.execute(() -> {
             try (var connection = getConnection()) {
-                if (findByIdInternal(connection, id) != null) {
-                    var stmt = statements.getDeleteByIdTemplate();
-
-                    queryExecutor.execute(connection, stmt, id);
-                    return leaseContext.withConnection(connection).breakLease(id);
+                if (findByIdInternal(connection, id) == null) {
+                    return StoreResult.notFound(format("CredentialOffer '%s' not found", id));
                 }
-                return StoreResult.notFound(format("CredentialOffer '%s' not found", id));
+                if (!acquireLease(connection, id)) {
+                    return StoreResult.alreadyLeased(format("CredentialOffer %s is currently leased!", id));
+                }
+                queryExecutor.execute(connection, statements.getDeleteByIdTemplate(), id);
+                return StoreResult.success();
             } catch (SQLException e) {
                 throw new EdcPersistenceException(e);
             }
         });
     }
 
-    private void insert(Connection conn, CredentialOffer offer) {
-        var insertTpStatement = statements.getInsertTemplate();
-        queryExecutor.execute(conn, insertTpStatement,
+    /**
+     * Inserts an offer that was never stored. It is not inserted if an offer with the same ID exists: unlike a failed
+     * statement, this does not abort the surrounding transaction.
+     */
+    private StoreResult<Void> insert(Connection conn, CredentialOffer offer) {
+        var inserted = queryExecutor.execute(conn, statements.getInsertTemplate(),
                 offer.getId(),
                 offer.getState(),
                 offer.getStateCount(),
@@ -198,46 +212,43 @@ public class SqlCredentialOfferStore extends AbstractSqlStore implements Credent
                 offer.getErrorDetail(),
                 offer.getParticipantContextId(),
                 offer.issuer(),
-                toJson(offer.getCredentialObjects()));
-    }
-
-    private void update(Connection conn, CredentialOffer offer) {
-        var updateStmt = statements.getUpdateTemplate();
-        queryExecutor.execute(conn, updateStmt,
-                offer.getState(),
-                offer.getStateCount(),
-                offer.getStateTimestamp(),
-                offer.getCreatedAt(),
-                offer.getUpdatedAt(),
-                toJson(offer.getTraceContext()),
-                offer.getErrorDetail(),
-                offer.getParticipantContextId(),
-                offer.issuer(),
                 toJson(offer.getCredentialObjects()),
-                offer.getId());
-
+                offer.getVersion() + 1);
+        if (inserted == 0) {
+            return StoreResult.conflict(format("CredentialOffer %s already exists", offer.getId()));
+        }
+        return StoreResult.success();
     }
 
     /**
-     * Reads entities again after their leases were acquired: acquiring a lease waits for another transaction that holds a
-     * lease on the same entity, which may have changed it in the meantime. The leases of entities that no longer match the
-     * criteria are broken again.
+     * Updates the offer, unless someone else saved it since it was read, or unless someone else holds its lease. Saving
+     * the offer breaks its lease.
      */
-    private List<CredentialOffer> readLeased(Connection connection, List<String> leasedIds, List<Criterion> criteria) {
-        if (leasedIds.isEmpty()) {
-            return List.of();
+    private StoreResult<Void> update(Connection conn, CredentialOffer offer) {
+        var updated = queryExecutor.execute(conn, statements.getUpdateTemplate(),
+                offer.getState(),
+                offer.getStateCount(),
+                offer.getStateTimestamp(),
+                offer.getUpdatedAt(),
+                toJson(offer.getTraceContext()),
+                offer.getErrorDetail(),
+                toJson(offer.getCredentialObjects()),
+                null, null, null,
+                offer.getVersion() + 1,
+                offer.getId(),
+                offer.getVersion(),
+                leaseHolder,
+                clock.millis());
+        if (updated == 0) {
+            return writeCheck.explainNotWritten(conn, offer.getId(), offer.getVersion());
         }
-        var filter = new ArrayList<>(criteria);
-        filter.add(new Criterion("id", "in", leasedIds));
-        var querySpec = QuerySpec.Builder.newInstance().filter(filter).sortField("stateTimestamp").limit(leasedIds.size()).build();
-        var statement = statements.createQuery(querySpec);
-        try (var stream = queryExecutor.query(connection, false, this::mapResultSet, statement.getQueryAsString(), statement.getParameters())) {
-            var entities = stream.toList();
-            leasedIds.stream()
-                    .filter(id -> entities.stream().noneMatch(entity -> entity.getId().equals(id)))
-                    .forEach(id -> leaseContext.withConnection(connection).breakLease(id));
-            return entities;
-        }
+        return StoreResult.success();
+    }
+
+    private boolean acquireLease(Connection connection, String id) {
+        var now = clock.millis();
+        var sql = statements.getAcquireLeaseTemplate(statements.getCredentialOffersTable());
+        return queryExecutor.execute(connection, sql, leaseHolder, now, leaseDuration.toMillis(), id, now) > 0;
     }
 
     private CredentialOffer findByIdInternal(Connection connection, String id) {
@@ -262,6 +273,7 @@ public class SqlCredentialOfferStore extends AbstractSqlStore implements Credent
                 .issuer(resultSet.getString(statements.getIssuerColumn()))
                 .participantContextId(resultSet.getString(statements.getParticipantContextIdColumn()))
                 .credentialObjects(fromJson(resultSet.getString(statements.getCredentialsColumn()), LIST_TYPE_REF))
+                .version(resultSet.getLong(statements.getVersionColumn()))
                 .build();
 
     }

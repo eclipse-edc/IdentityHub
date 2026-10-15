@@ -141,7 +141,9 @@ public class CredentialOfferHandler implements EventSubscriber {
 
     private void save(CredentialOffer offer) {
         try {
-            credentialOfferStore.save(offer);
+            credentialOfferStore.save(offer)
+                    .onFailure(f -> monitor.warning("Could not persist CredentialOffer '%s' in state %s: %s"
+                            .formatted(offer.getId(), offer.stateAsString(), f.getFailureDetail())));
         } catch (EdcPersistenceException ex) {
             monitor.warning("Could not persist CredentialOffer in database: %s".formatted(ex.getMessage()));
         }

@@ -46,8 +46,15 @@ public interface CredentialOfferStoreStatements extends StatefulEntityStatements
         return "issuer_did";
     }
 
+    /**
+     * Inserts a new offer with its version. The offer is not inserted if one with the same ID exists.
+     */
     String getInsertTemplate();
 
+    /**
+     * Updates an offer by its ID, if its version is still the one it was read with and its lease is owned by the caller
+     * or free. The parameters are the columns to update, the ID, the version, the lease holder and the current time.
+     */
     String getUpdateTemplate();
 
     String getDeleteByIdTemplate();

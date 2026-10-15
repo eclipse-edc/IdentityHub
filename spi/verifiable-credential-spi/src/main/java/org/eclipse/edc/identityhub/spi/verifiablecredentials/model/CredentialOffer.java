@@ -62,6 +62,7 @@ public class CredentialOffer extends StatefulEntity<CredentialOffer> {
                 .stateTimestamp(stateTimestamp)
                 .traceContext(Map.copyOf(traceContext))
                 .issuer(issuer)
+                .version(version)
                 .build();
     }
 

@@ -112,11 +112,8 @@ public class IssuanceProcessManagerImpl extends AbstractStateEntityManager<Issua
         return entityRetryProcessFactory.retryProcessor(process)
                 .doProcess(result("Sign Credentials", (p, result) -> signRecordedCredentials(p)))
                 .doProcess(result("Deliver Credentials", this::deliverCredentials))
-                .onSuccess((t, credentials) -> {
-                    if (transitionToDelivered(t)) {
-                        observable.invokeForEach(l -> l.delivered(process, credentials));
-                    }
-                })
+                .onSuccess((t, credentials) -> transitionToDelivered(t)
+                        .onSuccess(v -> observable.invokeForEach(l -> l.delivered(t, credentials))))
                 .onFailure((t, throwable) -> transitionToDelivering(t))
                 .onFinalFailure(this::transitionToRejecting)
                 .execute();
@@ -312,50 +309,43 @@ public class IssuanceProcessManagerImpl extends AbstractStateEntityManager<Issua
         } else return StatusResult.failure(ResponseStatus.ERROR_RETRY);
     }
 
-    private boolean transitionToDelivered(IssuanceProcess process) {
+    private StatusResult<Void> transitionToDelivered(IssuanceProcess process) {
         process.transitionToDelivered();
-        return update(process)
+        return save(process)
                 .onSuccess(v -> discardHolderAccessToken(process))
                 // the process is delivered again, e.g. by the runtime that holds its lease, which needs the access token for that
                 .onFailure(f -> monitor.warning("Issuance process '%s' was delivered, but could not be saved as such: %s"
-                        .formatted(process.getId(), f.getFailureDetail())))
-                .succeeded();
+                        .formatted(process.getId(), f.getFailureDetail())));
     }
 
-    private void transitionToApproved(IssuanceProcess process) {
+    private StatusResult<Void> transitionToApproved(IssuanceProcess process) {
         process.transitionToApproved();
-        save(process);
+        return save(process);
     }
 
-    private void transitionToDelivering(IssuanceProcess process) {
+    private StatusResult<Void> transitionToDelivering(IssuanceProcess process) {
         process.transitionToDelivering();
-        save(process);
+        return save(process);
     }
 
-    private boolean transitionToRejecting(IssuanceProcess process) {
+    private StatusResult<Void> transitionToRejecting(IssuanceProcess process) {
         process.transitionToRejecting();
         return save(process);
     }
 
-    private void transitionToError(IssuanceProcess process) {
+    private StatusResult<Void> transitionToError(IssuanceProcess process) {
         process.transitionToError();
-        if (save(process)) {
-            discardHolderAccessToken(process);
-        }
+        return save(process).onSuccess(v -> discardHolderAccessToken(process));
     }
 
     /**
      * Saves the process. That fails if the process was saved by someone else since it was read, e.g. by another runtime
-     * that leased it after the lease of this one expired. What follows from the new state is then not done here, as it
-     * may not be the state of the process anymore.
-     *
-     * @return whether the process was saved
+     * that leased it after the lease of this one expired, or if someone else holds its lease. What follows from the new
+     * state must then not be done, as it may not be the state of the process anymore: callers act on the new state only
+     * if the result succeeded.
      */
-    private boolean save(IssuanceProcess process) {
-        return update(process)
-                .onFailure(f -> monitor.warning("Issuance process '%s' could not be saved in state %s: %s"
-                        .formatted(process.getId(), process.stateAsString(), f.getFailureDetail())))
-                .succeeded();
+    private StatusResult<Void> save(IssuanceProcess process) {
+        return StatusResult.from(update(process));
     }
 
     /**
@@ -397,7 +387,7 @@ public class IssuanceProcessManagerImpl extends AbstractStateEntityManager<Issua
         var delivering = process.getState() == IssuanceProcessStates.DELIVERING.code();
         process.setErrorDetail(throwable.getMessage());
         monitor.warning(throwable.getMessage());
-        if (!transitionToRejecting(process)) {
+        if (transitionToRejecting(process).failed()) {
             return;
         }
         if (delivering) {

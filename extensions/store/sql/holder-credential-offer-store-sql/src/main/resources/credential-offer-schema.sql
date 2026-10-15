@@ -13,20 +13,6 @@
  */
 
 -- only intended for and tested with Postgres!
-CREATE TABLE IF NOT EXISTS edc_lease
-(
-    leased_by         VARCHAR NOT NULL,
-    leased_at         BIGINT,
-    lease_duration    INTEGER NOT NULL,
-    resource_id       VARCHAR NOT NULL,
-    resource_kind     VARCHAR NOT NULL,
-    PRIMARY KEY(resource_id, resource_kind)
-);
-
-COMMENT ON COLUMN edc_lease.leased_at IS 'posix timestamp of lease';
-COMMENT ON COLUMN edc_lease.lease_duration IS 'duration of lease in milliseconds';
-
-
 CREATE TABLE IF NOT EXISTS edc_credential_offers
 (
     id                     VARCHAR NOT NULL PRIMARY KEY, -- this is also the holderPid
@@ -39,8 +25,23 @@ CREATE TABLE IF NOT EXISTS edc_credential_offers
     error_detail           VARCHAR,
     participant_context_id VARCHAR NOT NULL,
     issuer_did             VARCHAR NOT NULL,
-    credentials            JSON    NOT NULL DEFAULT '{}'
+    credentials            JSON    NOT NULL DEFAULT '{}',
+    leased_by              VARCHAR,
+    leased_at              BIGINT,
+    lease_duration         INTEGER,
+    version                BIGINT  NOT NULL DEFAULT 0
 );
+
+-- Add lease columns to tables created before the lease was moved from edc_lease to the credential offer row
+ALTER TABLE edc_credential_offers ADD COLUMN IF NOT EXISTS leased_by VARCHAR;
+ALTER TABLE edc_credential_offers ADD COLUMN IF NOT EXISTS leased_at BIGINT;
+ALTER TABLE edc_credential_offers ADD COLUMN IF NOT EXISTS lease_duration INTEGER;
+-- Add the version column to tables created before optimistic locking was introduced
+ALTER TABLE edc_credential_offers ADD COLUMN IF NOT EXISTS version BIGINT DEFAULT 0 NOT NULL;
+
+COMMENT ON COLUMN edc_credential_offers.leased_at IS 'posix timestamp of lease';
+COMMENT ON COLUMN edc_credential_offers.lease_duration IS 'duration of lease in milliseconds';
+COMMENT ON COLUMN edc_credential_offers.version IS 'version of the entity, incremented on every save, used for optimistic locking';
 
 
 -- This will help to identify states that need to be transitioned without a table scan when the entries grow

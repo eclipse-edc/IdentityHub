@@ -34,7 +34,7 @@ public class InMemoryIssuanceProcessStore extends InMemoryStatefulEntityStore<Is
     }
 
     public InMemoryIssuanceProcessStore(String leaserId, Clock clock, CriterionOperatorRegistry criterionOperatorRegistry) {
-        super(IssuanceProcess.class, leaserId, clock, criterionOperatorRegistry, state -> IssuanceProcessStates.valueOf(state).code());
+        super(IssuanceProcess.class, leaserId, clock, criterionOperatorRegistry, state -> IssuanceProcessStates.valueOf(state).code(), true);
     }
 
     @Override

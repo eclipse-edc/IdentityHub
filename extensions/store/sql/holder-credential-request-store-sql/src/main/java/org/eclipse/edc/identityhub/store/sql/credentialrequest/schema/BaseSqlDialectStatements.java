@@ -16,7 +16,6 @@ package org.eclipse.edc.identityhub.store.sql.credentialrequest.schema;
 
 import org.eclipse.edc.identityhub.store.sql.credentialrequest.schema.schema.postgres.HolderCredentialRequestMapping;
 import org.eclipse.edc.spi.query.QuerySpec;
-import org.eclipse.edc.sql.lease.spi.LeaseStatements;
 import org.eclipse.edc.sql.translation.PostgresqlOperatorTranslator;
 import org.eclipse.edc.sql.translation.SqlOperatorTranslator;
 import org.eclipse.edc.sql.translation.SqlQueryStatement;
@@ -24,17 +23,14 @@ import org.eclipse.edc.sql.translation.SqlQueryStatement;
 import java.time.Clock;
 
 import static java.lang.String.format;
-import static org.eclipse.edc.spi.query.Criterion.criterion;
 
 public class BaseSqlDialectStatements implements HolderCredentialRequestStoreStatements {
 
     protected final SqlOperatorTranslator operatorTranslator;
-    protected final LeaseStatements leaseStatements;
     protected final Clock clock;
 
-    public BaseSqlDialectStatements(SqlOperatorTranslator operatorTranslator, LeaseStatements leaseStatements, Clock clock) {
+    public BaseSqlDialectStatements(SqlOperatorTranslator operatorTranslator, Clock clock) {
         this.operatorTranslator = operatorTranslator;
-        this.leaseStatements = leaseStatements;
         this.clock = clock;
     }
 
@@ -53,6 +49,7 @@ public class BaseSqlDialectStatements implements HolderCredentialRequestStoreSta
                 .column(getIssuerDidColumn())
                 .column(getissuerPidColumn())
                 .jsonColumn(getCredentialFormatsColumn())
+                .column(getVersionColumn())
                 .insertInto(getHolderCredentialRequestTable());
         // a row that conflicts with an existing one is not inserted. Unlike a failed statement, this does not abort the
         // surrounding transaction
@@ -61,7 +58,7 @@ public class BaseSqlDialectStatements implements HolderCredentialRequestStoreSta
 
     @Override
     public String getUpdateTemplate() {
-        return executeStatement()
+        var update = executeStatement()
                 .column(getStateColumn())
                 .column(getStateCountColumn())
                 .column(getStateTimestampColumn())
@@ -71,11 +68,13 @@ public class BaseSqlDialectStatements implements HolderCredentialRequestStoreSta
                 .column(getIssuerDidColumn())
                 .column(getissuerPidColumn())
                 .jsonColumn(getCredentialFormatsColumn())
-                .update(getHolderCredentialRequestTable(),
-                        criterion(getIdColumn(), "=", "?"),
-                        // a request that was saved by someone else since it was read is not overwritten. A row without a state
-                        // timestamp is read with 0
-                        criterion(format("COALESCE(%s, 0)", getStateTimestampColumn()), "=", "?"));
+                .column(getLeasedByColumn())
+                .column(getLeasedAtColumn())
+                .column(getLeaseDurationColumn())
+                .column(getVersionColumn())
+                .update(getHolderCredentialRequestTable(), getIdColumn());
+        // a request that was saved by someone else since it was read, or that is leased by someone else, is not overwritten
+        return update.replaceFirst(";\\s*$", "") + " AND " + getVersionAndLeaseFilter(getHolderCredentialRequestTable()) + ";";
     }
 
     @Override
@@ -98,19 +97,14 @@ public class BaseSqlDialectStatements implements HolderCredentialRequestStoreSta
 
     @Override
     public SqlQueryStatement createNextNotLeaseQuery(QuerySpec querySpec) {
-        var queryTemplate = "%s LEFT JOIN %s l ON %s.%s = l.%s".formatted(getSelectStatement(), leaseStatements.getLeaseTableName(), getHolderCredentialRequestTable(), getIdColumn(), leaseStatements.getResourceIdColumn());
-        return new SqlQueryStatement(queryTemplate, querySpec, new HolderCredentialRequestMapping(this), operatorTranslator)
-                .addWhereClause(getNotLeasedFilter(), clock.millis(), getHolderCredentialRequestTable());
+        return new SqlQueryStatement(getSelectStatement(), querySpec, new HolderCredentialRequestMapping(this), operatorTranslator)
+                .addWhereClause(getNotLeasedFilter(getHolderCredentialRequestTable()), clock.millis())
+                .forUpdate(true);
     }
 
     @Override
     public String getSelectStatement() {
         return format("SELECT * FROM %s", getHolderCredentialRequestTable());
-    }
-
-    private String getNotLeasedFilter() {
-        return format("(l.%s IS NULL OR (? > (%s + %s) AND ? = l.%s))",
-                leaseStatements.getResourceIdColumn(), leaseStatements.getLeasedAtColumn(), leaseStatements.getLeaseDurationColumn(), leaseStatements.getResourceKindColumn());
     }
 
 }

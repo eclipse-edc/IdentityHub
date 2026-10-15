@@ -16,7 +16,6 @@ package org.eclipse.edc.identityhub.store.sql.credentialoffer.schema.schema.post
 
 import org.eclipse.edc.identityhub.store.sql.credentialoffer.schema.BaseSqlDialectStatements;
 import org.eclipse.edc.sql.dialect.PostgresDialect;
-import org.eclipse.edc.sql.lease.spi.LeaseStatements;
 import org.eclipse.edc.sql.translation.PostgresqlOperatorTranslator;
 
 import java.time.Clock;
@@ -26,8 +25,8 @@ import java.time.Clock;
  */
 public class PostgresDialectStatements extends BaseSqlDialectStatements {
 
-    public PostgresDialectStatements(LeaseStatements leaseStatements, Clock clock) {
-        super(new PostgresqlOperatorTranslator(), leaseStatements, clock);
+    public PostgresDialectStatements(Clock clock) {
+        super(new PostgresqlOperatorTranslator(), clock);
     }
 
 

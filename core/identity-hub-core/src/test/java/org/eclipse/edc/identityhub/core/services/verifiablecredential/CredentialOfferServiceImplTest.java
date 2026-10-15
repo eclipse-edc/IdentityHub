@@ -20,6 +20,7 @@ import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.CredentialOff
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialOfferStore;
 import org.eclipse.edc.spi.persistence.EdcPersistenceException;
 import org.eclipse.edc.spi.result.ServiceFailure;
+import org.eclipse.edc.spi.result.StoreResult;
 import org.eclipse.edc.transaction.spi.NoopTransactionContext;
 import org.junit.jupiter.api.Test;
 
@@ -30,6 +31,7 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
 
 class CredentialOfferServiceImplTest {
 
@@ -44,10 +46,28 @@ class CredentialOfferServiceImplTest {
                 .participantContextId("participantContextId")
                 .state(CredentialOfferStatus.RECEIVED.code())
                 .build();
+        when(store.save(any())).thenReturn(StoreResult.success());
+
         service.create(offer);
 
         verify(store).save(offer);
         verify(observable).invokeForEach(any());
+    }
+
+    @Test
+    void create_whenSaveFails_shouldNotEmitEvent() {
+        when(store.save(any())).thenReturn(StoreResult.conflict("already exists"));
+
+        var offer = CredentialOffer.Builder.newInstance()
+                .issuer("issuer")
+                .participantContextId("participantContextId")
+                .state(CredentialOfferStatus.RECEIVED.code())
+                .build();
+        var actual = service.create(offer);
+        assertThat(actual).isFailed();
+        assertThat(actual.reason()).isEqualTo(ServiceFailure.Reason.CONFLICT);
+
+        verifyNoInteractions(observable);
     }
 
     @Test
