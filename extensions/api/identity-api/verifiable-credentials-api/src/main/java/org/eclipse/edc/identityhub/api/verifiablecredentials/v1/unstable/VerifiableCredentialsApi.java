@@ -146,12 +146,16 @@ public interface VerifiableCredentialsApi {
     )
     HolderCredentialRequestDto getCredentialRequest(String participantContextId, String holderPid, SecurityContext securityContext);
 
-    @Operation(description = "Define a scope discriminator mapping (=short-hand) for the fully-qualified credential type",
+    @Operation(description = "Define a scope discriminator mapping (=short-hand) for the fully-qualified credential type. " +
+            "Discriminator mappings are not scoped to a participant context, they apply to all participant contexts of this runtime. " +
+            "Therefore, this endpoint requires elevated access rights (admin).",
             operationId = "addDiscriminatorMapping",
             requestBody = @RequestBody(description = "Mapping between alias (short-hand) and discriminator (fully-qualified credential type)", required = true),
             responses = {
                     @ApiResponse(responseCode = "204", description = "Discriminator mapping added successfully"),
                     @ApiResponse(responseCode = "400", description = "Request body was malformed, or the request could not be processed",
+                            content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json")),
+                    @ApiResponse(responseCode = "403", description = "The request could not be completed, because either the authentication was missing or was not valid, or the caller does not have elevated access rights.",
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json")),
             })
     void addDiscriminatorMapping(String participantContextId, Map<String, String> mappings, SecurityContext securityContext);

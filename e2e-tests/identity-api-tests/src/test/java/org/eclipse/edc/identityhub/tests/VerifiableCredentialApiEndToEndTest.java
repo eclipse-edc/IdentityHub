@@ -31,6 +31,7 @@ import org.eclipse.edc.identityhub.spi.credential.request.store.HolderCredential
 import org.eclipse.edc.identityhub.spi.did.store.DidResourceStore;
 import org.eclipse.edc.identityhub.spi.keypair.store.KeyPairResourceStore;
 import org.eclipse.edc.identityhub.spi.participantcontext.IdentityHubParticipantContextService;
+import org.eclipse.edc.identityhub.spi.transformation.DiscriminatorMappingRegistry;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialManifest;
 import org.eclipse.edc.identityhub.tests.fixtures.DefaultRuntimes;
 import org.eclipse.edc.identityhub.tests.fixtures.SharedPostgresqlEndToEndExtension;
@@ -596,6 +597,43 @@ public class VerifiableCredentialApiEndToEndTest {
                     .then()
                     .log().ifValidationFails()
                     .statusCode(403);
+        }
+
+        @Test
+        void addDiscriminatorMapping_whenAdmin(IdentityHub identityHub, DiscriminatorMappingRegistry mappingRegistry) {
+            var superUserAuth = authorizeUser(SUPER_USER, identityHub);
+            // the registry is shared by all tests of a runtime, so aliases and discriminators must be unique
+            var alias = "AdminAlias-" + UUID.randomUUID();
+            var discriminator = "https://example.com/credentials/v1#" + UUID.randomUUID();
+
+            identityHub.getIdentityEndpoint().baseRequest()
+                    .contentType(JSON)
+                    .header(superUserAuth)
+                    .body(Map.of(alias, discriminator))
+                    .post("/v1/participants/%s/credentials/discriminator".formatted(SUPER_USER))
+                    .then()
+                    .log().ifValidationFails()
+                    .statusCode(204);
+
+            assertThat(mappingRegistry.getMapping(alias)).isEqualTo(discriminator);
+        }
+
+        @Test
+        void addDiscriminatorMapping_whenNotAdmin_expect403(IdentityHub identityHub, DiscriminatorMappingRegistry mappingRegistry) {
+            var user = "user1";
+            var userAuth = authorizeUser(user, identityHub);
+            var alias = "UserAlias-" + UUID.randomUUID();
+
+            identityHub.getIdentityEndpoint().baseRequest()
+                    .contentType(JSON)
+                    .header(userAuth)
+                    .body(Map.of(alias, "https://example.com/credentials/v1#" + UUID.randomUUID()))
+                    .post("/v1/participants/%s/credentials/discriminator".formatted(user))
+                    .then()
+                    .log().ifValidationFails()
+                    .statusCode(403);
+
+            assertThat(mappingRegistry.getMapping(alias)).isEqualTo(alias);
         }
 
         protected abstract Header authorizeUser(String participantContextId, IdentityHub identityHub);

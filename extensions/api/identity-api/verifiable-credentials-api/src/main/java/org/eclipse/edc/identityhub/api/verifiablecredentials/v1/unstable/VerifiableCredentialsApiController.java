@@ -201,7 +201,8 @@ public class VerifiableCredentialsApiController implements VerifiableCredentials
 
     @POST
     @Path("/discriminator")
-    @RequiredScope("identity-api:credentials:write")
+    // the mappings are not scoped to a participant context, they apply to the entire runtime
+    @RequiredScope("identity-api:admin")
     @Override
     public void addDiscriminatorMapping(@PathParam("participantContextId") String participantContextId,
                                         Map<String, String> discriminatorMappings,
