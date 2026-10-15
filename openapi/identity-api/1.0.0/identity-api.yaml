@@ -966,7 +966,9 @@ paths:
       tags:
       - Verifiable Credentials
       description: Define a scope discriminator mapping (=short-hand) for the fully-qualified
-        credential type
+        credential type. The mapping only applies to presentation queries of this
+        participant context and takes precedence over mappings defined in the runtime
+        configuration.
       operationId: addDiscriminatorMapping
       parameters:
       - name: participantContextId
@@ -985,6 +987,15 @@ paths:
           description: Discriminator mapping added successfully
         "400":
           description: "Request body was malformed, or the request could not be processed"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiErrorDetail"
+        "403":
+          description: "The request could not be completed, because either the authentication\
+            \ was missing or was not valid."
           content:
             application/json:
               schema:
