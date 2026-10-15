@@ -46,4 +46,13 @@ public class RegexScopeToCriterionTransformer implements ScopeToCriterionTransfo
         }
         return fallback.transformScope(scope);
     }
+
+    @Override
+    public Result<List<Criterion>> transformScope(String participantContextId, String scope) {
+        var criteria = scopeMappingRegistry.map(scope);
+        if (!criteria.isEmpty()) {
+            return success(criteria);
+        }
+        return fallback.transformScope(participantContextId, scope);
+    }
 }

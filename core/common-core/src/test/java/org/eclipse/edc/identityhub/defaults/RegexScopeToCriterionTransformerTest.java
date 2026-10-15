@@ -62,6 +62,30 @@ class RegexScopeToCriterionTransformerTest {
     }
 
     @Test
+    void transformScope_withParticipantContext_shouldDelegateToFallback_whenNoMappingMatches() {
+        registry.addMapping("nomatch:(.+)", new Criterion("type", "contains", "$1"));
+        when(fallback.transformScope("participant1", "org.eclipse.dspace.dcp.vc.type:TestCredential:read"))
+                .thenReturn(failure("some failure"));
+
+        var result = transformer.transformScope("participant1", "org.eclipse.dspace.dcp.vc.type:TestCredential:read");
+
+        assertThat(result).isFailed();
+        verify(fallback).transformScope("participant1", "org.eclipse.dspace.dcp.vc.type:TestCredential:read");
+    }
+
+    @Test
+    void transformScope_withParticipantContext_shouldUseRegistry_whenMappingMatches() {
+        registry.addMapping("org\\.eclipse\\.custom\\.vc\\.type:(.+):(read|\\*|all)",
+                new Criterion("verifiableCredential.credential.type", "contains", "$1"));
+
+        var result = transformer.transformScope("participant1", "org.eclipse.custom.vc.type:MembershipCredential:read");
+
+        assertThat(result).isSucceeded().satisfies(criteria -> assertThat(criteria).singleElement()
+                .satisfies(c -> assertThat(c.getOperandRight()).isEqualTo("MembershipCredential")));
+        verifyNoInteractions(fallback);
+    }
+
+    @Test
     void transformScope_shouldDelegateToFallback_whenRegistryEmpty() {
         when(fallback.transformScope("any:scope:read")).thenReturn(failure("fallback used"));
 

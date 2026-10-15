@@ -804,6 +804,68 @@ public class PresentationApiEndToEndTest {
                                     }));
         }
 
+        @Test
+        void query_withDiscriminatorAlias_ofParticipant(IdentityHub identityHub, CredentialStore store, DiscriminatorMappingRegistry mappingRegistry) throws JacksonException, JOSEException {
+            var credResource = storeCredential(TestData.VC_EXAMPLE_OTHER_NAMESPACE, CredentialFormat.VC1_0_JWT, store);
+
+            when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq("did:web:consumer#key1"))).thenReturn(Result.success(CONSUMER_KEY.toPublicKey()));
+            when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq("did:web:provider#key1"))).thenReturn(Result.success(PROVIDER_KEY.toPublicKey()));
+
+            var credential = credResource.getVerifiableCredential().credential();
+            var fqct = credential.getContext().get(0) + "#" + credential.getType().get(0);
+            var alias = "MyParticipantCred";
+
+            // the alias is only defined for the participant context that is queried
+            mappingRegistry.addMapping(TEST_PARTICIPANT_CONTEXT_ID, alias, fqct);
+            var scope = "org.eclipse.dspace.dcp.vc.type:%s:read".formatted(alias);
+            var token = generateSiToken(scope);
+
+            var response = identityHub.getCredentialsEndpoint().baseRequest()
+                    .contentType(JSON)
+                    .header(AUTHORIZATION, "Bearer " + token)
+                    .body(VALID_QUERY_WITH_FQCT_SCOPE_TEMPLATE.formatted(DSPACE_DCP_V_1_0_CONTEXT, scope))
+                    .post("/v1/participants/%s/presentations/query".formatted(TEST_PARTICIPANT_CONTEXT_ID))
+                    .then()
+                    .statusCode(200)
+                    .log().ifValidationFails()
+                    .extract().body().as(JsonObject.class);
+
+            assertThat(response)
+                    .hasEntrySatisfying("presentation", jsonValue ->
+                            assertThat(vpTokensExtractor(jsonValue)).hasSize(1)
+                                    .first()
+                                    .satisfies(vpToken -> assertThat(extractCredentials(vpToken)).hasSize(1)));
+        }
+
+        @Test
+        void query_withDiscriminatorAlias_ofOtherParticipant_shouldNotResolve(IdentityHub identityHub, CredentialStore store, DiscriminatorMappingRegistry mappingRegistry) throws JacksonException, JOSEException {
+            var credResource = storeCredential(TestData.VC_EXAMPLE_OTHER_NAMESPACE, CredentialFormat.VC1_0_JWT, store);
+
+            when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq("did:web:consumer#key1"))).thenReturn(Result.success(CONSUMER_KEY.toPublicKey()));
+            when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq("did:web:provider#key1"))).thenReturn(Result.success(PROVIDER_KEY.toPublicKey()));
+
+            var credential = credResource.getVerifiableCredential().credential();
+            var fqct = credential.getContext().get(0) + "#" + credential.getType().get(0);
+            var alias = "OtherParticipantCred";
+
+            // the alias is defined by a different participant context, so it must not apply to the queried one
+            mappingRegistry.addMapping("some-other-participant", alias, fqct);
+            var scope = "org.eclipse.dspace.dcp.vc.type:%s:read".formatted(alias);
+            var token = generateSiToken(scope);
+
+            var response = identityHub.getCredentialsEndpoint().baseRequest()
+                    .contentType(JSON)
+                    .header(AUTHORIZATION, "Bearer " + token)
+                    .body(VALID_QUERY_WITH_FQCT_SCOPE_TEMPLATE.formatted(DSPACE_DCP_V_1_0_CONTEXT, scope))
+                    .post("/v1/participants/%s/presentations/query".formatted(TEST_PARTICIPANT_CONTEXT_ID))
+                    .then()
+                    .statusCode(200)
+                    .log().ifValidationFails()
+                    .extract().body().as(JsonObject.class);
+
+            assertThat(vpTokensExtractor(response)).hasSize(0);
+        }
+
         /**
          * extracts a (potentially empty) list of verifiable credentials from a JWT-VP
          */

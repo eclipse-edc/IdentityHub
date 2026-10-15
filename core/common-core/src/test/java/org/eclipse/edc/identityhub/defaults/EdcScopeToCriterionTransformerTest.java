@@ -50,6 +50,41 @@ class EdcScopeToCriterionTransformerTest {
                 });
     }
 
+    @Test
+    void transform_withParticipantAlias() {
+        discriminatorMappingRegistry.addMapping("participant1", "SomeFancyCredential", "https://example.com/contexts/v1#TestCredential");
+
+        assertThat(transformer.transformScope("participant1", "org.eclipse.dspace.dcp.vc.type:SomeFancyCredential:read")).isSucceeded()
+                .satisfies(criteria -> {
+                    assertThat(criteria).hasSize(2);
+                    assertThat(criteria).anyMatch(c -> c.getOperandRight().equals("https://example.com/contexts/v1"));
+                    assertThat(criteria).anyMatch(c -> c.getOperandRight().equals("TestCredential"));
+                });
+    }
+
+    @Test
+    void transform_withParticipantAlias_ofOtherParticipant_shouldNotApply() {
+        discriminatorMappingRegistry.addMapping("participant1", "SomeFancyCredential", "https://example.com/contexts/v1#TestCredential");
+
+        assertThat(transformer.transformScope("participant2", "org.eclipse.dspace.dcp.vc.type:SomeFancyCredential:read")).isSucceeded()
+                .satisfies(criteria -> assertThat(criteria).singleElement()
+                        .satisfies(c -> assertThat(c.getOperandRight()).isEqualTo("SomeFancyCredential")));
+    }
+
+    @Test
+    void transform_withParticipantAlias_shouldTakePrecedenceOverRuntimeAlias() {
+        discriminatorMappingRegistry.addMapping("SomeFancyCredential", "https://example.com/contexts/v1#TestCredential");
+        discriminatorMappingRegistry.addMapping("participant1", "SomeFancyCredential", "https://other.com/contexts/v2#OtherCredential");
+
+        assertThat(transformer.transformScope("participant1", "org.eclipse.dspace.dcp.vc.type:SomeFancyCredential:read")).isSucceeded()
+                .satisfies(criteria -> {
+                    assertThat(criteria).anyMatch(c -> c.getOperandRight().equals("https://other.com/contexts/v2"));
+                    assertThat(criteria).anyMatch(c -> c.getOperandRight().equals("OtherCredential"));
+                });
+        assertThat(transformer.transformScope("participant2", "org.eclipse.dspace.dcp.vc.type:SomeFancyCredential:read")).isSucceeded()
+                .satisfies(criteria -> assertThat(criteria).anyMatch(c -> c.getOperandRight().equals("TestCredential")));
+    }
+
     @ParameterizedTest
     @ValueSource(strings = {
             "invalidAlias:TestCredential:read",

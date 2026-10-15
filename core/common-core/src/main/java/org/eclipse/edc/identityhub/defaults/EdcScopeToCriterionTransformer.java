@@ -21,6 +21,7 @@ import org.eclipse.edc.spi.result.Result;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.UnaryOperator;
 
 import static org.eclipse.edc.spi.result.Result.failure;
 import static org.eclipse.edc.spi.result.Result.success;
@@ -57,8 +58,21 @@ public class EdcScopeToCriterionTransformer implements ScopeToCriterionTransform
         this.discriminatorMappingRegistry = discriminatorMappingRegistry;
     }
 
+    /**
+     * Transforms the scope using only the runtime-wide discriminator mappings. Prefer {@link #transformScope(String, String)}
+     * whenever the participant context is known, so that its own mappings are taken into account.
+     */
     @Override
     public Result<List<Criterion>> transformScope(String scope) {
+        return transformScope(scope, discriminatorMappingRegistry::getMapping);
+    }
+
+    @Override
+    public Result<List<Criterion>> transformScope(String participantContextId, String scope) {
+        return transformScope(scope, alias -> discriminatorMappingRegistry.getMapping(participantContextId, alias));
+    }
+
+    private Result<List<Criterion>> transformScope(String scope, UnaryOperator<String> discriminatorResolver) {
         if (scope == null) {
             return failure("Scope was null");
         }
@@ -75,7 +89,7 @@ public class EdcScopeToCriterionTransformer implements ScopeToCriterionTransform
         var discriminator = tokens.getContent()[1];
 
         // see if there's a mapping for the discriminator
-        var mappedDiscriminator = discriminatorMappingRegistry.getMapping(discriminator);
+        var mappedDiscriminator = discriminatorResolver.apply(discriminator);
 
         return convertDiscriminator(mappedDiscriminator);
     }

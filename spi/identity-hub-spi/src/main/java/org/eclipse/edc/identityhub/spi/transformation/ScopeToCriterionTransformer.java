@@ -37,4 +37,16 @@ public interface ScopeToCriterionTransformer {
      * @return A list of {@link Result} with the converted {@link Criterion}.
      */
     Result<List<Criterion>> transformScope(String scope);
+
+    /**
+     * Converts a scope string to a {@link Criterion} object in the context of a particular participant context, for example
+     * to take aliases into account that the participant context has defined. Defaults to {@link #transformScope(String)}.
+     *
+     * @param participantContextId The ID of the participant context whose credentials are queried.
+     * @param scope                The scope string to convert.
+     * @return A list of {@link Result} with the converted {@link Criterion}.
+     */
+    default Result<List<Criterion>> transformScope(String participantContextId, String scope) {
+        return transformScope(scope);
+    }
 }

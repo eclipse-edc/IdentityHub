@@ -600,40 +600,74 @@ public class VerifiableCredentialApiEndToEndTest {
         }
 
         @Test
-        void addDiscriminatorMapping_whenAdmin(IdentityHub identityHub, DiscriminatorMappingRegistry mappingRegistry) {
-            var superUserAuth = authorizeUser(SUPER_USER, identityHub);
+        void addDiscriminatorMapping(IdentityHub identityHub, DiscriminatorMappingRegistry mappingRegistry, IdentityHubParticipantContextService participantContextService) {
+            var user = "user1";
+            var userAuth = authorizeUser(user, identityHub);
+            var otherUser = "user2";
+            identityHub.createParticipant(otherUser);
             // the registry is shared by all tests of a runtime, so aliases and discriminators must be unique
-            var alias = "AdminAlias-" + UUID.randomUUID();
+            var alias = "UserAlias-" + UUID.randomUUID();
+            var discriminator = "https://example.com/credentials/v1#" + UUID.randomUUID();
+
+            identityHub.getIdentityEndpoint().baseRequest()
+                    .contentType(JSON)
+                    .header(userAuth)
+                    .body(Map.of(alias, discriminator))
+                    .post("/v1/participants/%s/credentials/discriminator".formatted(user))
+                    .then()
+                    .log().ifValidationFails()
+                    .statusCode(204);
+
+            assertThat(mappingRegistry.getMapping(user, alias)).isEqualTo(discriminator);
+            // the mapping must not leak into other participant contexts, nor into the runtime-wide mappings
+            assertThat(mappingRegistry.getMapping(otherUser, alias)).isEqualTo(alias);
+            assertThat(mappingRegistry.getMapping(alias)).isEqualTo(alias);
+
+            // deleting the participant context removes its mappings
+            participantContextService.deleteParticipantContext(user).orElseThrow(f -> new AssertionError(f.getFailureDetail()));
+
+            assertThat(mappingRegistry.getMapping(user, alias)).isEqualTo(alias);
+        }
+
+        @Test
+        void addDiscriminatorMapping_whenSuperUser(IdentityHub identityHub, DiscriminatorMappingRegistry mappingRegistry) {
+            var superUserAuth = authorizeUser(SUPER_USER, identityHub);
+            var user = "user1";
+            identityHub.createParticipant(user);
+            var alias = "SuperUserAlias-" + UUID.randomUUID();
             var discriminator = "https://example.com/credentials/v1#" + UUID.randomUUID();
 
             identityHub.getIdentityEndpoint().baseRequest()
                     .contentType(JSON)
                     .header(superUserAuth)
                     .body(Map.of(alias, discriminator))
-                    .post("/v1/participants/%s/credentials/discriminator".formatted(SUPER_USER))
+                    .post("/v1/participants/%s/credentials/discriminator".formatted(user))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(204);
 
-            assertThat(mappingRegistry.getMapping(alias)).isEqualTo(discriminator);
+            assertThat(mappingRegistry.getMapping(user, alias)).isEqualTo(discriminator);
+            assertThat(mappingRegistry.getMapping(SUPER_USER, alias)).isEqualTo(alias);
         }
 
         @Test
-        void addDiscriminatorMapping_whenNotAdmin_expect403(IdentityHub identityHub, DiscriminatorMappingRegistry mappingRegistry) {
-            var user = "user1";
-            var userAuth = authorizeUser(user, identityHub);
-            var alias = "UserAlias-" + UUID.randomUUID();
+        void addDiscriminatorMapping_forOtherParticipant_expect403(IdentityHub identityHub, DiscriminatorMappingRegistry mappingRegistry) {
+            var user1 = "user1";
+            identityHub.createParticipant(user1);
+            var auth2 = authorizeUser("user2", identityHub);
+            var alias = "OtherAlias-" + UUID.randomUUID();
 
             identityHub.getIdentityEndpoint().baseRequest()
                     .contentType(JSON)
-                    .header(userAuth)
+                    .header(auth2) // user 2 tries to define a mapping for user 1 -> not allowed!
                     .body(Map.of(alias, "https://example.com/credentials/v1#" + UUID.randomUUID()))
-                    .post("/v1/participants/%s/credentials/discriminator".formatted(user))
+                    .post("/v1/participants/%s/credentials/discriminator".formatted(user1))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(403);
 
-            assertThat(mappingRegistry.getMapping(alias)).isEqualTo(alias);
+            assertThat(mappingRegistry.getMapping(user1, alias)).isEqualTo(alias);
+            assertThat(mappingRegistry.getMapping("user2", alias)).isEqualTo(alias);
         }
 
         protected abstract Header authorizeUser(String participantContextId, IdentityHub identityHub);
