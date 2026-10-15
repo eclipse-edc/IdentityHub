@@ -285,6 +285,7 @@ public class IssuanceProcessManagerImpl extends AbstractStateEntityManager<Issua
     private StoreResult<Collection<CredentialDefinition>> fetchCredentialDefinitions(IssuanceProcess process) {
         var query = QuerySpec.Builder.newInstance()
                 .filter(Criterion.criterion("id", "in", process.getCredentialDefinitions()))
+                .filter(Criterion.criterion("participantContextId", "=", process.getParticipantContextId()))
                 .build();
         return credentialDefinitionStore.query(query);
     }

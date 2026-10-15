@@ -156,6 +156,10 @@ public class IssuanceProcessManagerImplTest {
             inOrder.verify(credentialStore).create(any());
             inOrder.verify(credentialStorageClient).deliverCredentials(any(), any());
 
+            // only the credential definitions of the process's own participant context are used
+            verify(credentialDefinitionStore).query(argThat(query -> query.getFilterExpression()
+                    .contains(Criterion.criterion("participantContextId", "=", "participantContextId"))));
+
             verify(listener).approved(process);
             verify(listener).generated(eq(process), any());
             verify(listener).delivered(eq(process), any());

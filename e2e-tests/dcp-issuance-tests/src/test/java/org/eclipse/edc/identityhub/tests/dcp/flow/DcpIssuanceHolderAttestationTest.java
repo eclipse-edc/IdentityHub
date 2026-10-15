@@ -107,7 +107,7 @@ public class DcpIssuanceHolderAttestationTest {
                             "claim", "onboarding.signedDocuments",
                             "operator", "eq",
                             "value", true)))
-                    .participantContextId(participantId)
+                    .participantContextId(issuerId)
                     .formatFrom(VC1_0_JWT)
                     .build());
 

@@ -205,7 +205,7 @@ public class DcpIssuanceFlowAllInOneTest {
 
             var attestationDefinition = AttestationDefinition.Builder.newInstance().id("attestation-id")
                     .attestationType("Attestation")
-                    .participantContextId("participantContextId")
+                    .participantContextId(ISSUER_ID)
                     .configuration(Map.of())
                     .build();
             attestationDefinitionService.createAttestation(attestationDefinition);
@@ -219,7 +219,7 @@ public class DcpIssuanceFlowAllInOneTest {
                     .validity(Duration.ofHours(1).toSeconds())
                     .mapping(mappingDefinition)
                     .rule(new CredentialRuleDefinition("expression", ruleConfiguration))
-                    .participantContextId("participantContextId")
+                    .participantContextId(ISSUER_ID)
                     .formatFrom(VC1_0_JWT)
                     .build();
 
@@ -236,7 +236,7 @@ public class DcpIssuanceFlowAllInOneTest {
                     .validity(Duration.ofSeconds(5).toSeconds()) // expires quickly - triggers renewal
                     .mapping(mappingDefinition)
                     .rule(new CredentialRuleDefinition("expression", ruleConfiguration))
-                    .participantContextId("participantContextId")
+                    .participantContextId(ISSUER_ID)
                     .formatFrom(VC1_0_JWT)
                     .build();
 

@@ -40,6 +40,8 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static java.util.Optional.ofNullable;
@@ -80,7 +82,7 @@ public class DcpIssuerServiceImpl implements DcpIssuerService {
             observable.invokeForEach(l -> l.rejected(message.getHolderPid(), participantContextId, "No credentials requested"));
             return ServiceResult.badRequest("No credentials requested");
         }
-        var credentialFormats = parseCredentialFormats(message);
+        var credentialFormats = parseCredentialFormats(participantContextId, message);
 
         if (credentialFormats.failed()) {
             observable.invokeForEach(l -> l.rejected(message.getHolderPid(), participantContextId, credentialFormats.getFailureDetail()));
@@ -88,7 +90,7 @@ public class DcpIssuerServiceImpl implements DcpIssuerService {
         }
 
         observable.invokeForEach(l -> l.received(message.getHolderPid(), participantContextId, credentialFormats.getContent()));
-        return transactionContext.execute(() -> getCredentialsDefinitions(message, credentialFormats.getContent())
+        return transactionContext.execute(() -> getCredentialsDefinitions(participantContextId, message, credentialFormats.getContent())
                 .compose(credentialDefinitions -> evaluateAttestations(context, credentialDefinitions))
                 .compose(this::evaluateRules)
                 .compose(evaluation -> createIssuanceProcess(participantContextId, message.getHolderPid(), credentialFormats.getContent(), context, evaluation))
@@ -106,17 +108,13 @@ public class DcpIssuerServiceImpl implements DcpIssuerService {
     }
 
 
-    private ServiceResult<Collection<CredentialDefinition>> getCredentialsDefinitions(CredentialRequestMessage message, Map<String, CredentialFormat> credentialFormats) {
+    private ServiceResult<Collection<CredentialDefinition>> getCredentialsDefinitions(String participantContextId, CredentialRequestMessage message, Map<String, CredentialFormat> credentialFormats) {
 
         var ids = message.getCredentials().stream()
                 .map(CredentialRequestSpecifier::credentialObjectId)
                 .collect(Collectors.toSet());
 
-        var query = QuerySpec.Builder.newInstance()
-                .filter(Criterion.criterion("id", "in", ids))
-                .build();
-
-        return credentialDefinitionService.queryCredentialDefinitions(query)
+        return queryCredentialDefinitions(participantContextId, ids)
                 .compose(credentialDefinitions -> validateCredentialDefinitions(message, credentialDefinitions, credentialFormats));
     }
 
@@ -235,17 +233,38 @@ public class DcpIssuerServiceImpl implements DcpIssuerService {
 
     }
 
-    private ServiceResult<Map<String, CredentialFormat>> parseCredentialFormats(CredentialRequestMessage message) {
+    /**
+     * Only the credential definitions of the participant context that the request was sent to can be requested. Those of
+     * other participant contexts are treated as if they did not exist.
+     */
+    private ServiceResult<Collection<CredentialDefinition>> queryCredentialDefinitions(String participantContextId, Set<String> ids) {
+        var query = QuerySpec.Builder.newInstance()
+                .filter(Criterion.criterion("id", "in", ids))
+                .filter(Criterion.criterion("participantContextId", "=", participantContextId))
+                .build();
+        return credentialDefinitionService.queryCredentialDefinitions(query);
+    }
+
+    private ServiceResult<Map<String, CredentialFormat>> parseCredentialFormats(String participantContextId, CredentialRequestMessage message) {
+        var ids = message.getCredentials().stream()
+                .map(CredentialRequestSpecifier::credentialObjectId)
+                .collect(Collectors.toSet());
+        var credentialDefinitions = queryCredentialDefinitions(participantContextId, ids);
+        if (credentialDefinitions.failed()) {
+            return credentialDefinitions.mapFailure();
+        }
+        var definitionsById = credentialDefinitions.getContent().stream()
+                .collect(Collectors.toMap(CredentialDefinition::getId, Function.identity()));
+
         var credentialFormats = new HashMap<String, CredentialFormat>();
         for (var credential : message.getCredentials()) {
             try {
                 var id = credential.credentialObjectId();
-                var credentialDefinition = credentialDefinitionService.findCredentialDefinitionById(id);
-                if (credentialDefinition.failed()) {
-                    return credentialDefinition.mapFailure();
+                var credentialDefinition = definitionsById.get(id);
+                if (credentialDefinition == null) {
+                    return ServiceResult.notFound("A Credential definition ID '%s' does not exist.".formatted(id));
                 }
-                var format = credentialDefinition.getContent().getFormatAsEnum();
-                credentialFormats.put(credential.credentialObjectId(), format);
+                credentialFormats.put(id, credentialDefinition.getFormatAsEnum());
             } catch (IllegalArgumentException e) {
                 return ServiceResult.badRequest("Credential format not supported for credential object ID: %s".formatted(credential.credentialObjectId()));
             }
