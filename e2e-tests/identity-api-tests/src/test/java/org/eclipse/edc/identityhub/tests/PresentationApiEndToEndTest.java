@@ -284,8 +284,8 @@ public class PresentationApiEndToEndTest {
         @Test
         void query_proofOfPossessionFails_shouldReturn401(IdentityHub identityHub) throws JOSEException {
 
-            var accessToken = generateJwt(CONSUMER_DID, CONSUMER_DID, PROVIDER_DID, Map.of("scope", TEST_SCOPE), CONSUMER_KEY);
-            var token = generateJwt(CONSUMER_DID, PROVIDER_DID, "mismatching", Map.of("client_id", PROVIDER_DID, "token", accessToken), PROVIDER_KEY);
+            var accessToken = generateJwt(CONSUMER_DID, CONSUMER_DID, "mismatching", Map.of("scope", TEST_SCOPE), CONSUMER_KEY);
+            var token = generateJwt(CONSUMER_DID, PROVIDER_DID, PROVIDER_DID, Map.of("client_id", PROVIDER_DID, "token", accessToken), PROVIDER_KEY);
 
             when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq("did:web:consumer#key1"))).thenReturn(Result.success(CONSUMER_KEY.toPublicKey()));
             when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq("did:web:provider#key1"))).thenReturn(Result.success(PROVIDER_KEY.toPublicKey()));

@@ -26,10 +26,11 @@ public interface SelfIssuedTokenVerifier {
     /**
      * Performs the verification on a self-issued ID token, asserting the following aspects:
      * <ul>
-     *     <li>iss == aud</li>
+     *     <li>iss == sub</li>
+     *     <li>the token contains an {@code exp} claim and no {@code sub_jwk} claim</li>
      *     <li>aud == the Verifiers own DID. In practice, this will be the DID of the participant agent (i.e. the connector)</li>
      *     <li>the token contains an {@code access_token} claim, and that it is also in JWT format</li>
-     *     <li>access_token.sub == sub</li>
+     *     <li>access_token.sub == iss</li>
      *     <li>that the access_token contains >1 scope strings</li>
      * </ul>
      *

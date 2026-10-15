@@ -25,7 +25,9 @@ import org.eclipse.edc.token.rules.AudienceValidationRule;
 import org.eclipse.edc.token.spi.TokenValidationRule;
 import org.eclipse.edc.token.spi.TokenValidationRulesRegistry;
 import org.eclipse.edc.token.spi.TokenValidationService;
+import org.eclipse.edc.verifiablecredentials.jwt.rules.IssuerEqualsSubjectRule;
 import org.eclipse.edc.verifiablecredentials.jwt.rules.IssuerKeyIdValidationRule;
+import org.eclipse.edc.verifiablecredentials.jwt.rules.SubJwkIsNullRule;
 
 import java.text.ParseException;
 import java.util.ArrayList;
@@ -79,6 +81,8 @@ public class SelfIssuedTokenVerifierImpl implements SelfIssuedTokenVerifier {
         var res = getKid(token).compose(kid -> {
             var rules = new ArrayList<>(tokenValidationRulesRegistry.getRules(DCP_PRESENTATION_SELF_ISSUED_TOKEN_CONTEXT));
             rules.add(new IssuerKeyIdValidationRule(kid));
+            rules.add(new IssuerEqualsSubjectRule());
+            rules.add(new SubJwkIsNullRule());
             rules.add(new AudienceValidationRule(participantDid));
             return tokenValidationService.validate(token, publicKeyResolver, rules);
         });
@@ -89,7 +93,7 @@ public class SelfIssuedTokenVerifierImpl implements SelfIssuedTokenVerifier {
 
         var claimToken = res.getContent();
         var accessTokenString = claimToken.getStringClaim(TOKEN_CLAIM);
-        var subClaim = claimToken.getStringClaim(JwtRegisteredClaimNames.SUBJECT);
+        var issClaim = claimToken.getStringClaim(JwtRegisteredClaimNames.ISSUER);
 
         TokenValidationRule audMustMatchParticipantDidRule = (at, additional) -> {
             var aud = at.getListClaim(JwtRegisteredClaimNames.AUDIENCE);
@@ -104,9 +108,9 @@ public class SelfIssuedTokenVerifierImpl implements SelfIssuedTokenVerifier {
 
         TokenValidationRule subClaimsMatch = (at, additional) -> {
             var atSub = at.getStringClaim(JwtRegisteredClaimNames.SUBJECT);
-            // correlate sub and access_token.sub
-            if (!Objects.equals(subClaim, atSub)) {
-                return Result.failure("ID token [sub] claim is not equal to [%s.sub] claim: expected '%s', got '%s'.".formatted(TOKEN_CLAIM, subClaim, atSub));
+            // correlate the verified issuer of the ID token (iss == sub) with access_token.sub
+            if (atSub == null || !atSub.equals(issClaim)) {
+                return Result.failure("ID token [sub] claim is not equal to [%s.sub] claim: expected '%s', got '%s'.".formatted(TOKEN_CLAIM, issClaim, atSub));
             }
             return Result.success();
         };
