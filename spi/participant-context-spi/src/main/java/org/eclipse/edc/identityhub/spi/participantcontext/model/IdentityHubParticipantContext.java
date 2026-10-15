@@ -139,7 +139,7 @@ public class IdentityHubParticipantContext extends ParticipantContext {
             Objects.requireNonNull(entity.getDid(), "DID cannot be null");
 
             if (entity.getLastModified() == 0L) {
-                entity.lastModified = entity.clock.millis();
+                entity.lastModified = entity.getCreatedAt();
             }
             if (entity.state == 0) {
                 entity.state = CREATED.code();

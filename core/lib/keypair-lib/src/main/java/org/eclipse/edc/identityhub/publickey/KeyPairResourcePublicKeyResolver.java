@@ -14,8 +14,10 @@
 
 package org.eclipse.edc.identityhub.publickey;
 
+import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairState;
 import org.eclipse.edc.identityhub.spi.keypair.store.KeyPairResourceStore;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.IdentityHubParticipantContext;
+import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyPairUsage;
 import org.eclipse.edc.keys.spi.KeyParserRegistry;
 import org.eclipse.edc.keys.spi.LocalPublicKeyService;
 import org.eclipse.edc.spi.monitor.Monitor;
@@ -54,6 +56,9 @@ public class KeyPairResourcePublicKeyResolver {
      * that are known to this runtime, i.e. this only works for public keys that belong to one of the {@link IdentityHubParticipantContext} objects
      * that are managed by this IdentityHub!
      * <p>
+     * Only key pairs with the {@link KeyPairUsage#TOKEN_SIGNING} usage are considered. Revoked key pairs are rejected, as are ambiguous matches,
+     * i.e. if more than one non-revoked key pair has the same key ID.
+     * <p>
      * As a fallback, if the PublicKey is not found in storage, the resolver falls back to the {@link LocalPublicKeyService}.
      *
      * @param publicKeyId          The fully-qualified ID of the public key. For example: {@code did:web:someparticipant#key-123}.
@@ -70,16 +75,28 @@ public class KeyPairResourcePublicKeyResolver {
         }
 
         var resources = result.getContent();
-        if (resources.size() > 1) {
-            monitor.warning("Expected exactly 1 KeyPairResource with keyId '%s' but found '%d'. This indicates a database inconsistency. Will return the first one.".formatted(publicKeyId, resources.size()));
+        if (resources.isEmpty()) {
+            monitor.warning("No KeyPairResource with keyId '%s' was found for participant '%s' in the store. Will attempt to resolve from the Vault. ".formatted(publicKeyId, participantContextId) +
+                    "This could be an indication of a data inconsistency, it is recommended to revoke and regenerate keys!");
+            return fallbackResolver.resolveKey(publicKeyId); // attempt to resolve from vault
         }
-        return resources.stream().findAny()
-                .map(kpr -> parseKey(kpr.getSerializedPublicKey()))
-                .orElseGet(() -> {
-                    monitor.warning("No KeyPairResource with keyId '%s' was found for participant '%s' in the store. Will attempt to resolve from the Vault. ".formatted(publicKeyId, participantContextId) +
-                            "This could be an indication of a data inconsistency, it is recommended to revoke and regenerate keys!");
-                    return fallbackResolver.resolveKey(publicKeyId); // attempt to resolve from vault
-                });
+
+        var candidates = resources.stream()
+                .filter(kpr -> kpr.getState() != KeyPairState.REVOKED.code())
+                .toList();
+        if (candidates.isEmpty()) {
+            return Result.failure("The KeyPairResource with keyId '%s' is revoked.".formatted(publicKeyId));
+        }
+        if (candidates.size() > 1) {
+            monitor.warning("Expected exactly 1 non-revoked KeyPairResource with keyId '%s' but found '%d'. This indicates a database inconsistency.".formatted(publicKeyId, candidates.size()));
+            return Result.failure("Multiple KeyPairResources with keyId '%s' were found.".formatted(publicKeyId));
+        }
+
+        var keyPair = candidates.get(0);
+        if (!keyPair.getUsage().contains(KeyPairUsage.TOKEN_SIGNING)) {
+            return Result.failure("The KeyPairResource with keyId '%s' is not intended for token signing.".formatted(publicKeyId));
+        }
+        return parseKey(keyPair.getSerializedPublicKey());
     }
 
     private Result<PublicKey> parseKey(String encodedKey) {

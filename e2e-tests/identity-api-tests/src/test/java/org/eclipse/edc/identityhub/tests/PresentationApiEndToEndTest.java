@@ -32,6 +32,7 @@ import org.eclipse.edc.iam.verifiablecredentials.spi.model.RevocationServiceRegi
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredential;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredentialContainer;
 import org.eclipse.edc.identityhub.spi.did.store.DidResourceStore;
+import org.eclipse.edc.identityhub.spi.keypair.KeyPairService;
 import org.eclipse.edc.identityhub.spi.keypair.store.KeyPairResourceStore;
 import org.eclipse.edc.identityhub.spi.participantcontext.IdentityHubParticipantContextService;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyDescriptor;
@@ -50,6 +51,7 @@ import org.eclipse.edc.junit.annotations.EndToEndTest;
 import org.eclipse.edc.junit.annotations.PostgresqlIntegrationTest;
 import org.eclipse.edc.junit.extensions.ComponentRuntimeExtension;
 import org.eclipse.edc.junit.extensions.RuntimeExtension;
+import org.eclipse.edc.spi.query.Criterion;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.spi.security.Vault;
@@ -567,6 +569,32 @@ public class PresentationApiEndToEndTest {
         }
 
         @Test
+        void query_accessTokenSignedWithRevokedKey_shouldReturn401(IdentityHub identityHub, KeyPairService keyPairService, KeyPairResourceStore keyPairResourceStore, CredentialStore store) throws JacksonException, JOSEException {
+
+            storeCredential(VC_EXAMPLE, CredentialFormat.VC1_0_JWT, store);
+
+            var keyPair = keyPairResourceStore.query(QuerySpec.Builder.newInstance()
+                            .filter(new Criterion("keyId", "=", CONSUMER_KEY.getKeyID()))
+                            .build())
+                    .orElseThrow(f -> new AssertionError(f.getFailureDetail()))
+                    .stream().findFirst().orElseThrow();
+            keyPairService.revokeKey(keyPair.getId(), null).orElseThrow(f -> new AssertionError(f.getFailureDetail()));
+
+            var token = generateSiToken();
+            when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq("did:web:consumer#key1"))).thenReturn(Result.success(CONSUMER_KEY.toPublicKey()));
+            when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq("did:web:provider#key1"))).thenReturn(Result.success(PROVIDER_KEY.toPublicKey()));
+
+            identityHub.getCredentialsEndpoint().baseRequest()
+                    .contentType(JSON)
+                    .header(AUTHORIZATION, "Bearer " + token)
+                    .body(VALID_QUERY_WITH_SCOPE)
+                    .post("/v1/participants/%s/presentations/query".formatted(TEST_PARTICIPANT_CONTEXT_ID))
+                    .then()
+                    .statusCode(401)
+                    .log().ifValidationFails();
+        }
+
+        @Test
         void query_accessTokenAudienceDoesNotBelongToParticipant_shouldReturn401(IdentityHub identityHub, CredentialStore store) throws JacksonException, JOSEException {
 
             var cred = OBJECT_MAPPER.readValue(TestData.VC_EXAMPLE, VerifiableCredential.class);
@@ -915,7 +943,7 @@ public class PresentationApiEndToEndTest {
                             .publicKeyJwk(participantKey.toPublicJWK().toJSONObject())
                             .privateKeyAlias(privateKeyAlias)
                             .keyId(participantKey.getKeyID())
-                            .usage(Set.of(KeyPairUsage.PRESENTATION_SIGNING))
+                            .usage(Set.of(KeyPairUsage.PRESENTATION_SIGNING, KeyPairUsage.TOKEN_SIGNING))
                             .build())
                     .build();
             service.createParticipantContext(manifest)
