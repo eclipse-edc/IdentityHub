@@ -109,8 +109,9 @@ class KeyPairServiceImplTest {
 
         // the key ID of the new key is checked to not be in use already
         verify(keyPairResourceStore).query(argThat(isKeyIdQuery(key.getKeyId())));
+        // the private key of an imported key pair was not stored by IdentityHub
         verify(keyPairResourceStore).create(argThat(kpr -> kpr.isDefaultPair() == makeDefault && kpr.getParticipantContextId().equals(PARTICIPANT_ID) &&
-                kpr.getState() == KeyPairState.ACTIVATED.code()));
+                kpr.getState() == KeyPairState.ACTIVATED.code() && !kpr.isPrivateKeyManaged()));
         // the key pair is written in its final state, and announced as added and activated at once
         verify(observableMock).invokeForEach(any());
         verifyNoMoreInteractions(keyPairResourceStore, vault, observableMock);
@@ -135,7 +136,7 @@ class KeyPairServiceImplTest {
         verify(keyPairResourceStore).query(argThat(isKeyIdQuery(key.getKeyId())));
         verify(keyPairResourceStore).create(argThat(kpr -> kpr.isDefaultPair() == makeDefault &&
                 kpr.getParticipantContextId().equals(PARTICIPANT_ID) &&
-                kpr.getState() == KeyPairState.ACTIVATED.code()));
+                kpr.getState() == KeyPairState.ACTIVATED.code() && kpr.isPrivateKeyManaged()));
         // the key pair is written in its final state, and announced as added and activated at once
         verify(observableMock).invokeForEach(any());
         verifyNoMoreInteractions(keyPairResourceStore, vault, observableMock);
@@ -678,6 +679,30 @@ class KeyPairServiceImplTest {
     }
 
     @Test
+    void revokeKey_whenImported_shouldNotDeletePrivateKey() {
+        var oldId = "old-id";
+        storeFinds(createKeyPairResource().id(oldId).privateKeyAlias("participant-apikey").privateKeyManaged(false).build());
+
+        assertThat(keyPairService.revokeKey(oldId, null)).isSucceeded();
+
+        // the alias of an imported key pair may refer to any secret, which IdentityHub must not delete
+        verify(keyPairResourceStore).update(argThat(kpr -> kpr.getState() == KeyPairState.REVOKED.code()));
+        verifyNoInteractions(vault);
+    }
+
+    @Test
+    void rotateKeyPair_whenImported_shouldNotDeletePrivateKey() {
+        var oldId = "old-id";
+        storeFinds(createKeyPairResource().id(oldId).privateKeyAlias("participant-apikey").privateKeyManaged(false).build());
+        when(keyPairResourceStore.create(any())).thenReturn(success());
+
+        assertThat(keyPairService.rotateKeyPair(oldId, createKey().build(), Duration.ofDays(1).toMillis())).isSucceeded();
+
+        verify(keyPairResourceStore).update(argThat(kpr -> kpr.getState() == KeyPairState.ROTATED.code()));
+        verify(vault, never()).deleteSecret(anyString(), anyString());
+    }
+
+    @Test
     void revokeKey_whenKeyWasRotated_shouldNotDeletePrivateKeyAgain() {
         var oldId = "old-id";
         storeFinds(createKeyPairResource().id(oldId).state(KeyPairState.ROTATED).build());
@@ -857,6 +882,7 @@ class KeyPairServiceImplTest {
                 .id(UUID.randomUUID().toString())
                 .keyId("test-key-1")
                 .privateKeyAlias("private-key-alias")
+                .privateKeyManaged(true)
                 .participantContextId(PARTICIPANT_ID)
                 .serializedPublicKey("this-is-a-pem-string")
                 .useDuration(Duration.ofDays(6).toMillis());

@@ -67,6 +67,10 @@ public interface KeyPairResourceStoreStatements extends SqlStatements {
         return "private_key_alias";
     }
 
+    default String getPrivateKeyManagedColumn() {
+        return "private_key_managed";
+    }
+
     default String getStateColumn() {
         return "state";
     }

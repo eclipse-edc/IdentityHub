@@ -160,6 +160,21 @@ public abstract class KeyPairResourceStoreTestBase {
     }
 
     @Test
+    void update_shouldKeepPrivateKeyManaged() {
+        var keyPairResource = createKeyPairResource().privateKeyManaged(true);
+        getStore().create(keyPairResource.build());
+
+        var revoked = keyPairResource.state(KeyPairState.REVOKED).build();
+        assertThat(getStore().update(revoked)).isSucceeded();
+
+        assertThat(getStore().query(KeyPairResource.queryById(revoked.getId()).build())).isSucceeded()
+                .satisfies(keyPairResources -> assertThat(keyPairResources)
+                        .usingRecursiveFieldByFieldElementComparator()
+                        .containsExactly(revoked)
+                        .allSatisfy(kp -> assertThat(kp.isPrivateKeyManaged()).isTrue()));
+    }
+
+    @Test
     void update_whenIdChanges_fails() {
         var keyPairResource = createKeyPairResource();
         getStore().create(keyPairResource.build());
