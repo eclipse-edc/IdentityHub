@@ -17,7 +17,6 @@ package org.eclipse.edc.issuerservice.spi.issuance.model;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat;
 import org.eclipse.edc.participantcontext.spi.types.ParticipantResource;
 import org.eclipse.edc.spi.entity.StatefulEntity;
-import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -53,7 +52,6 @@ public class IssuanceProcess extends StatefulEntity<IssuanceProcess> implements 
     private String holderId;
     private String participantContextId;
     private String holderPid;
-    private Long storedStateTimestamp;
 
     private IssuanceProcess() {
     }
@@ -67,9 +65,7 @@ public class IssuanceProcess extends StatefulEntity<IssuanceProcess> implements 
                 .credentialFormats(credentialFormats)
                 .participantContextId(participantContextId)
                 .holderPid(holderPid);
-        var copy = copy(builder);
-        copy.storedStateTimestamp = storedStateTimestamp;
-        return copy;
+        return copy(builder);
     }
 
     @Override
@@ -95,22 +91,6 @@ public class IssuanceProcess extends StatefulEntity<IssuanceProcess> implements 
 
     public Map<String, CredentialFormat> getCredentialFormats() {
         return credentialFormats;
-    }
-
-    /**
-     * The state timestamp of this process as it was read from the store, or last saved to it. It is not persisted itself:
-     * the store saves the process only if its state timestamp there is still this one, so that a runtime cannot overwrite
-     * the process with an outdated copy, e.g. after its lease expired and another runtime processed it in the meantime.
-     *
-     * @return the state timestamp in the store, or null if the process was not read from a store
-     */
-    @Nullable
-    public Long getStoredStateTimestamp() {
-        return storedStateTimestamp;
-    }
-
-    public void setStoredStateTimestamp(@Nullable Long storedStateTimestamp) {
-        this.storedStateTimestamp = storedStateTimestamp;
     }
 
     public Builder toBuilder() {

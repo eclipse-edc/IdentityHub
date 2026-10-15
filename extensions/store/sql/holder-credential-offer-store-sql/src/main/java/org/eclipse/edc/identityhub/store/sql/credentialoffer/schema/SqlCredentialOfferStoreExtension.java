@@ -25,8 +25,6 @@ import org.eclipse.edc.spi.system.ServiceExtensionContext;
 import org.eclipse.edc.spi.types.TypeManager;
 import org.eclipse.edc.sql.QueryExecutor;
 import org.eclipse.edc.sql.bootstrapper.SqlSchemaBootstrapper;
-import org.eclipse.edc.sql.lease.spi.LeaseStatements;
-import org.eclipse.edc.sql.lease.spi.SqlLeaseContextBuilderProvider;
 import org.eclipse.edc.transaction.datasource.spi.DataSourceRegistry;
 import org.eclipse.edc.transaction.spi.TransactionContext;
 
@@ -53,11 +51,6 @@ public class SqlCredentialOfferStoreExtension implements ServiceExtension {
     private SqlSchemaBootstrapper sqlSchemaBootstrapper;
 
     @Inject
-    private SqlLeaseContextBuilderProvider contextBuilderProvider;
-    @Inject
-    private LeaseStatements leaseStatements;
-
-    @Inject
     private Clock clock;
 
 
@@ -69,11 +62,11 @@ public class SqlCredentialOfferStoreExtension implements ServiceExtension {
     @Provider
     public CredentialOfferStore createSqlStore(ServiceExtensionContext context) {
         return new SqlCredentialOfferStore(dataSourceRegistry, dataSourceName, transactionContext, typemanager::getMapper,
-                queryExecutor, getStatementImpl(), contextBuilderProvider.createContextBuilder(getStatementImpl().getCredentialOffersTable()));
+                queryExecutor, getStatementImpl(), context.getRuntimeId(), clock);
     }
 
     private CredentialOfferStoreStatements getStatementImpl() {
-        return statements != null ? statements : new PostgresDialectStatements(leaseStatements, clock);
+        return statements != null ? statements : new PostgresDialectStatements(clock);
     }
 
 }

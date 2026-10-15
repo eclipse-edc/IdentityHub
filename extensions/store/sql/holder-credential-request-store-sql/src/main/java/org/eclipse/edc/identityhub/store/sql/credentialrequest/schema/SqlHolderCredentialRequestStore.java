@@ -22,7 +22,7 @@ import org.eclipse.edc.spi.query.Criterion;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.StoreResult;
 import org.eclipse.edc.sql.QueryExecutor;
-import org.eclipse.edc.sql.lease.spi.SqlLeaseContextBuilder;
+import org.eclipse.edc.sql.lease.StatefulEntityWriteCheck;
 import org.eclipse.edc.sql.store.AbstractSqlStore;
 import org.eclipse.edc.transaction.datasource.spi.DataSourceRegistry;
 import org.eclipse.edc.transaction.spi.TransactionContext;
@@ -33,11 +33,11 @@ import tools.jackson.databind.ObjectMapper;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.ArrayList;
+import java.time.Clock;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
-import java.util.Optional;
 import java.util.function.Supplier;
 
 import static java.lang.String.format;
@@ -49,10 +49,15 @@ import static java.util.stream.Collectors.toList;
  */
 public class SqlHolderCredentialRequestStore extends AbstractSqlStore implements HolderCredentialRequestStore {
 
+    public static final Duration DEFAULT_LEASE_DURATION = Duration.ofSeconds(60);
+
     private static final TypeReference<List<RequestedCredential>> LIST_REF = new TypeReference<>() {
     };
-    private final SqlLeaseContextBuilder leaseContext;
     private final HolderCredentialRequestStoreStatements statements;
+    private final String leaseHolder;
+    private final Clock clock;
+    private final Duration leaseDuration;
+    private final StatefulEntityWriteCheck writeCheck;
 
     public SqlHolderCredentialRequestStore(DataSourceRegistry dataSourceRegistry,
                                            String dataSourceName,
@@ -60,10 +65,26 @@ public class SqlHolderCredentialRequestStore extends AbstractSqlStore implements
                                            Supplier<ObjectMapper> objectMapperSupplier,
                                            QueryExecutor queryExecutor,
                                            HolderCredentialRequestStoreStatements statements,
-                                           SqlLeaseContextBuilder leaseContext) {
+                                           String leaseHolder,
+                                           Clock clock) {
+        this(dataSourceRegistry, dataSourceName, transactionContext, objectMapperSupplier, queryExecutor, statements, leaseHolder, clock, DEFAULT_LEASE_DURATION);
+    }
+
+    public SqlHolderCredentialRequestStore(DataSourceRegistry dataSourceRegistry,
+                                           String dataSourceName,
+                                           TransactionContext transactionContext,
+                                           Supplier<ObjectMapper> objectMapperSupplier,
+                                           QueryExecutor queryExecutor,
+                                           HolderCredentialRequestStoreStatements statements,
+                                           String leaseHolder,
+                                           Clock clock,
+                                           Duration leaseDuration) {
         super(dataSourceRegistry, dataSourceName, transactionContext, objectMapperSupplier, queryExecutor);
         this.statements = statements;
-        this.leaseContext = leaseContext;
+        this.leaseHolder = leaseHolder;
+        this.clock = clock;
+        this.leaseDuration = leaseDuration;
+        this.writeCheck = new StatefulEntityWriteCheck(queryExecutor, statements, statements.getHolderCredentialRequestTable(), leaseHolder, clock);
     }
 
     @Override
@@ -83,14 +104,12 @@ public class SqlHolderCredentialRequestStore extends AbstractSqlStore implements
             var filter = Arrays.stream(criteria).collect(toList());
             var querySpec = QuerySpec.Builder.newInstance().filter(filter).sortField("stateTimestamp").limit(max).build();
             var statement = statements.createNextNotLeaseQuery(querySpec);
-            try (var connection = getConnection()) {
-                List<String> leasedIds;
-                try (var stream = queryExecutor.query(connection, false, this::mapResultSet, statement.getQueryAsString(), statement.getParameters())) {
-                    leasedIds = stream.map(HolderCredentialRequest::getId)
-                            .filter(id -> leaseContext.withConnection(connection).acquireLease(id).succeeded())
-                            .toList();
-                }
-                return readLeased(connection, leasedIds, filter);
+            try (var connection = getConnection();
+                 var stream = queryExecutor.query(connection, false, this::mapResultSet, statement.getQueryAsString(), statement.getParameters())) {
+                // rows are locked until the end of the transaction, so the lease can be safely acquired on them
+                return stream.toList().stream()
+                        .filter(request -> acquireLease(connection, request.getId()))
+                        .collect(toList());
             } catch (SQLException e) {
                 throw new EdcPersistenceException(e);
             }
@@ -101,22 +120,14 @@ public class SqlHolderCredentialRequestStore extends AbstractSqlStore implements
     public StoreResult<HolderCredentialRequest> findByIdAndLease(String id) {
         return transactionContext.execute(() -> {
             try (var connection = getConnection()) {
-                if (findByIdInternal(connection, id) == null) {
-                    return StoreResult.notFound(format("HolderCredentialRequest %s not found", id));
+                // the lease is acquired before reading, so that the returned entity cannot be outdated by a concurrent save
+                if (!acquireLease(connection, id)) {
+                    if (findByIdInternal(connection, id) == null) {
+                        return StoreResult.notFound(format("HolderCredentialRequest %s not found", id));
+                    }
+                    return StoreResult.alreadyLeased(format("HolderCredentialRequest %s is currently leased!", id));
                 }
-
-                var leaseResult = leaseContext.withConnection(connection).acquireLease(id);
-                if (leaseResult.failed()) {
-                    return leaseResult.mapFailure();
-                }
-                // acquiring the lease waits for another transaction that holds a lease on the entity, which may have changed
-                // it in the meantime. Every statement reads what was committed when it starts, so the entity is read again.
-                var entity = findByIdInternal(connection, id);
-                if (entity == null) {
-                    leaseContext.withConnection(connection).breakLease(id);
-                    return StoreResult.notFound(format("HolderCredentialRequest %s not found", id));
-                }
-                return StoreResult.success(entity);
+                return StoreResult.success(findByIdInternal(connection, id));
             } catch (SQLException e) {
                 throw new EdcPersistenceException(e);
             }
@@ -127,18 +138,11 @@ public class SqlHolderCredentialRequestStore extends AbstractSqlStore implements
     public StoreResult<Void> save(HolderCredentialRequest request) {
         return transactionContext.execute(() -> {
             try (var conn = getConnection()) {
-                var existing = findByIdInternal(conn, request.getId());
-                if (existing != null) {
-                    var result = leaseContext.withConnection(conn).breakLease(request.getId());
-                    if (result.failed()) {
-                        return result;
-                    }
-                    return update(conn, request, existing);
+                var result = request.getVersion() == 0 ? insert(conn, request) : update(conn, request);
+                if (result.succeeded()) {
+                    request.setVersion(request.getVersion() + 1);
                 }
-                if (insert(conn, request) == 0) {
-                    return StoreResult.alreadyExists("A HolderCredentialRequest with ID '%s' already exists.".formatted(request.getId()));
-                }
-                return StoreResult.success();
+                return result;
             } catch (SQLException e) {
                 throw new EdcPersistenceException(e);
             }
@@ -149,7 +153,12 @@ public class SqlHolderCredentialRequestStore extends AbstractSqlStore implements
     public StoreResult<Void> breakLease(HolderCredentialRequest entity) {
         return transactionContext.execute(() -> {
             try (var connection = getConnection()) {
-                return leaseContext.withConnection(connection).breakLease(entity.getId());
+                var updated = queryExecutor.execute(connection, statements.getBreakLeaseTemplate(statements.getHolderCredentialRequestTable()),
+                        entity.getId(), leaseHolder, clock.millis());
+                if (updated == 0 && findByIdInternal(connection, entity.getId()) != null) {
+                    return StoreResult.alreadyLeased(format("HolderCredentialRequest %s is leased by another holder, cannot break the lease!", entity.getId()));
+                }
+                return StoreResult.success();
             } catch (SQLException e) {
                 throw new EdcPersistenceException(e);
             }
@@ -168,7 +177,11 @@ public class SqlHolderCredentialRequestStore extends AbstractSqlStore implements
         });
     }
 
-    private int insert(Connection conn, HolderCredentialRequest process) {
+    /**
+     * Inserts a request that was never stored. It is not inserted if a request with the same ID exists: unlike a failed
+     * statement, this does not abort the surrounding transaction.
+     */
+    private StoreResult<Void> insert(Connection conn, HolderCredentialRequest process) {
         var insertTpStatement = statements.getInsertTemplate();
         var inserted = queryExecutor.execute(conn, insertTpStatement, process.getId(),
                 process.getState(),
@@ -181,19 +194,19 @@ public class SqlHolderCredentialRequestStore extends AbstractSqlStore implements
                 process.getParticipantContextId(),
                 process.getIssuerDid(),
                 process.getIssuerPid(),
-                toJson(process.getIdsAndFormats()));
-        if (inserted > 0) {
-            process.setStoredStateTimestamp(process.getStateTimestamp());
+                toJson(process.getIdsAndFormats()),
+                process.getVersion() + 1);
+        if (inserted == 0) {
+            return StoreResult.conflict("A HolderCredentialRequest with ID '%s' already exists.".formatted(process.getId()));
         }
-        return inserted;
+        return StoreResult.success();
     }
 
     /**
      * Updates the request, unless someone else saved it since it was read, e.g. another runtime that leased it after the
-     * lease of this one expired. A request that was not read from the store is compared with the one read before.
+     * lease of this one expired, or unless someone else holds its lease. Saving the request breaks its lease.
      */
-    private StoreResult<Void> update(Connection conn, HolderCredentialRequest process, HolderCredentialRequest existing) {
-        var storedStateTimestamp = Optional.ofNullable(process.getStoredStateTimestamp()).orElse(existing.getStoredStateTimestamp());
+    private StoreResult<Void> update(Connection conn, HolderCredentialRequest process) {
         var updateStmt = statements.getUpdateTemplate();
         var updated = queryExecutor.execute(conn, updateStmt,
                 process.getState(),
@@ -205,36 +218,22 @@ public class SqlHolderCredentialRequestStore extends AbstractSqlStore implements
                 process.getIssuerDid(),
                 process.getIssuerPid(),
                 toJson(process.getIdsAndFormats()),
+                null, null, null,
+                process.getVersion() + 1,
                 process.getId(),
-                storedStateTimestamp);
+                process.getVersion(),
+                leaseHolder,
+                clock.millis());
         if (updated == 0) {
-            return StoreResult.generalError(format("HolderCredentialRequest %s is not saved in state %s, because it was changed since it was read, and is in state %s",
-                    process.getId(), process.stateAsString(), existing.stateAsString()));
+            return writeCheck.explainNotWritten(conn, process.getId(), process.getVersion());
         }
-        process.setStoredStateTimestamp(process.getStateTimestamp());
         return StoreResult.success();
     }
 
-    /**
-     * Reads entities again after their leases were acquired: acquiring a lease waits for another transaction that holds a
-     * lease on the same entity, which may have changed it in the meantime. The leases of entities that no longer match the
-     * criteria are broken again.
-     */
-    private List<HolderCredentialRequest> readLeased(Connection connection, List<String> leasedIds, List<Criterion> criteria) {
-        if (leasedIds.isEmpty()) {
-            return List.of();
-        }
-        var filter = new ArrayList<>(criteria);
-        filter.add(new Criterion("id", "in", leasedIds));
-        var querySpec = QuerySpec.Builder.newInstance().filter(filter).sortField("stateTimestamp").limit(leasedIds.size()).build();
-        var statement = statements.createQuery(querySpec);
-        try (var stream = queryExecutor.query(connection, false, this::mapResultSet, statement.getQueryAsString(), statement.getParameters())) {
-            var entities = stream.toList();
-            leasedIds.stream()
-                    .filter(id -> entities.stream().noneMatch(entity -> entity.getId().equals(id)))
-                    .forEach(id -> leaseContext.withConnection(connection).breakLease(id));
-            return entities;
-        }
+    private boolean acquireLease(Connection connection, String id) {
+        var now = clock.millis();
+        var sql = statements.getAcquireLeaseTemplate(statements.getHolderCredentialRequestTable());
+        return queryExecutor.execute(connection, sql, leaseHolder, now, leaseDuration.toMillis(), id, now) > 0;
     }
 
     private HolderCredentialRequest findByIdInternal(Connection connection, String id) {
@@ -246,7 +245,7 @@ public class SqlHolderCredentialRequestStore extends AbstractSqlStore implements
 
 
     private HolderCredentialRequest mapResultSet(ResultSet resultSet) throws Exception {
-        var request = HolderCredentialRequest.Builder.newInstance()
+        return HolderCredentialRequest.Builder.newInstance()
                 .id(resultSet.getString(statements.getIdColumn()))
                 .createdAt(resultSet.getLong(statements.getCreatedAtColumn()))
                 .updatedAt(resultSet.getLong(statements.getUpdatedAtColumn()))
@@ -259,9 +258,7 @@ public class SqlHolderCredentialRequestStore extends AbstractSqlStore implements
                 .issuerDid(resultSet.getString(statements.getIssuerDidColumn()))
                 .issuerPid(resultSet.getString(statements.getissuerPidColumn()))
                 .participantContextId(resultSet.getString(statements.getParticipantContextIdColumn()))
+                .version(resultSet.getLong(statements.getVersionColumn()))
                 .build();
-        // the column as it is, whereas the request replaces a missing state timestamp with the current time
-        request.setStoredStateTimestamp(resultSet.getLong(statements.getStateTimestampColumn()));
-        return request;
     }
 }

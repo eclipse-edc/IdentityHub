@@ -27,11 +27,8 @@ import org.eclipse.edc.junit.testfixtures.TestUtils;
 import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.spi.result.StoreFailure;
 import org.eclipse.edc.sql.QueryExecutor;
-import org.eclipse.edc.sql.lease.BaseSqlLeaseStatements;
-import org.eclipse.edc.sql.lease.SqlLeaseContextBuilderImpl;
-import org.eclipse.edc.sql.lease.spi.LeaseStatements;
-import org.eclipse.edc.sql.testfixtures.LeaseUtil;
 import org.eclipse.edc.sql.testfixtures.PostgresqlStoreSetupExtension;
+import org.eclipse.edc.sql.testfixtures.RowLeaseUtil;
 import org.eclipse.edc.transaction.local.LocalDataSourceRegistry;
 import org.eclipse.edc.transaction.local.LocalTransactionContext;
 import org.junit.jupiter.api.AfterEach;
@@ -49,22 +46,20 @@ import static org.mockito.Mockito.mock;
 @PostgresqlIntegrationTest
 @ExtendWith(PostgresqlStoreSetupExtension.class)
 class SqlIssuanceProcessStoreTest extends IssuanceProcessStoreTestBase {
-    private final LeaseStatements leaseStatements = new BaseSqlLeaseStatements();
     private final JacksonTypeManager typeManager = new JacksonTypeManager();
 
     private IssuanceProcessStoreStatements statements;
     private SqlIssuanceProcessStore store;
-    private LeaseUtil leaseUtil;
+    private RowLeaseUtil leaseUtil;
 
     @BeforeEach
     void setup(PostgresqlStoreSetupExtension extension, QueryExecutor queryExecutor) {
-        statements = new PostgresDialectStatements(leaseStatements, clock);
-        var leaseContextBuilder = SqlLeaseContextBuilderImpl.with(extension.getTransactionContext(), RUNTIME_ID, statements.getIssuanceProcessTable(), leaseStatements, clock, queryExecutor);
+        statements = new PostgresDialectStatements(clock);
 
         store = new SqlIssuanceProcessStore(extension.getDataSourceRegistry(), extension.getDatasourceName(),
-                extension.getTransactionContext(), typeManager::getMapper, queryExecutor, statements, leaseContextBuilder);
+                extension.getTransactionContext(), typeManager::getMapper, queryExecutor, statements, RUNTIME_ID, clock);
 
-        leaseUtil = new LeaseUtil(extension.getTransactionContext(), extension::getConnection, statements.getIssuanceProcessTable(), leaseStatements, clock);
+        leaseUtil = new RowLeaseUtil(extension.getTransactionContext(), extension::getConnection, statements, statements.getIssuanceProcessTable(), clock);
 
         var schema = TestUtils.getResourceFileContentAsString("issuance-process-schema.sql");
         extension.runQuery(schema);
@@ -73,7 +68,19 @@ class SqlIssuanceProcessStoreTest extends IssuanceProcessStoreTestBase {
     @AfterEach
     void tearDown(PostgresqlStoreSetupExtension extension) {
         extension.runQuery("DROP TABLE " + statements.getIssuanceProcessTable() + " CASCADE");
-        extension.runQuery("DROP TABLE " + leaseStatements.getLeaseTableName() + " CASCADE");
+    }
+
+    @Test
+    void schema_shouldAddLeaseAndVersionColumnsToExistingTable(PostgresqlStoreSetupExtension extension) {
+        extension.runQuery("ALTER TABLE %s DROP COLUMN leased_by, DROP COLUMN leased_at, DROP COLUMN lease_duration, DROP COLUMN version"
+                .formatted(statements.getIssuanceProcessTable()));
+
+        extension.runQuery(TestUtils.getResourceFileContentAsString("issuance-process-schema.sql"));
+
+        var process = createIssuanceProcess("holder-pid");
+        assertThat(store.save(process)).isSucceeded();
+        Assertions.assertThat(store.nextNotLeased(1)).extracting(IssuanceProcess::getId).containsExactly(process.getId());
+        Assertions.assertThat(leaseUtil.isLeased(process.getId(), RUNTIME_ID)).isTrue();
     }
 
     @Test
@@ -108,7 +115,7 @@ class SqlIssuanceProcessStoreTest extends IssuanceProcessStoreTestBase {
 
         assertThat(store.save(outdated)).isFailed()
                 .extracting(StoreFailure::getReason)
-                .isEqualTo(StoreFailure.Reason.GENERAL_ERROR);
+                .isEqualTo(StoreFailure.Reason.CONFLICT);
         Assertions.assertThat(store.findById(process.getId()).getState()).isEqualTo(IssuanceProcessStates.DELIVERING.code());
     }
 
@@ -124,33 +131,6 @@ class SqlIssuanceProcessStoreTest extends IssuanceProcessStoreTestBase {
 
         assertThat(store.save(read)).isSucceeded();
         Assertions.assertThat(store.findById(process.getId()).getState()).isEqualTo(IssuanceProcessStates.DELIVERED.code());
-    }
-
-    @Test
-    void save_whenNotReadFromStore_shouldUpdate() {
-        var process = createIssuanceProcess("holder-pid");
-        store.save(process);
-        var notRead = createIssuanceProcess("holder-pid").toBuilder()
-                .id(process.getId())
-                .state(IssuanceProcessStates.DELIVERING.code())
-                .build();
-
-        assertThat(store.save(notRead)).isSucceeded();
-        Assertions.assertThat(store.findById(process.getId()).getState()).isEqualTo(IssuanceProcessStates.DELIVERING.code());
-    }
-
-    @Test
-    void save_whenStateTimestampMissing_shouldUpdate(PostgresqlStoreSetupExtension extension) {
-        var process = createIssuanceProcess("holder-pid");
-        store.save(process);
-        extension.runQuery("UPDATE %s SET %s = NULL WHERE %s = '%s'".formatted(statements.getIssuanceProcessTable(),
-                statements.getStateTimestampColumn(), statements.getIdColumn(), process.getId()));
-        var read = store.findById(process.getId());
-
-        read.transitionToDelivering();
-
-        assertThat(store.save(read)).isSucceeded();
-        Assertions.assertThat(store.findById(process.getId()).getState()).isEqualTo(IssuanceProcessStates.DELIVERING.code());
     }
 
     @Override
@@ -175,9 +155,8 @@ class SqlIssuanceProcessStoreTest extends IssuanceProcessStoreTestBase {
                                                              LocalTransactionContext transactionContext) {
         var dataSourceRegistry = new LocalDataSourceRegistry(transactionContext);
         dataSourceRegistry.register(extension.getDatasourceName(), extension.getDataSourceRegistry().resolve(extension.getDatasourceName()));
-        var leaseContextBuilder = SqlLeaseContextBuilderImpl.with(transactionContext, RUNTIME_ID, statements.getIssuanceProcessTable(), leaseStatements, clock, queryExecutor);
         return new SqlIssuanceProcessStore(dataSourceRegistry, extension.getDatasourceName(), transactionContext, typeManager::getMapper,
-                queryExecutor, statements, leaseContextBuilder);
+                queryExecutor, statements, RUNTIME_ID, clock);
     }
 
     private IssuanceProcess createIssuanceProcess(String holderPid) {

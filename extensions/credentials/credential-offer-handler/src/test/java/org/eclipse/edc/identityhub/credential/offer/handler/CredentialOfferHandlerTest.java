@@ -84,6 +84,7 @@ class CredentialOfferHandlerTest {
     @BeforeEach
     void setUp() {
         when(credentialOfferStore.findById(anyString())).thenReturn(createOffer());
+        when(credentialOfferStore.save(any())).thenReturn(StoreResult.success());
         when(requestManager.initiateRequest(anyString(), anyString(), anyString(), anyList())).thenReturn(ServiceResult.success(UUID.randomUUID().toString()));
         when(profileRegistry.getProfile(startsWith("test-profile")))
                 .thenReturn(new DcpProfile("test-profile", CredentialFormat.VC1_0_JWT, "BitStringStatusList"));

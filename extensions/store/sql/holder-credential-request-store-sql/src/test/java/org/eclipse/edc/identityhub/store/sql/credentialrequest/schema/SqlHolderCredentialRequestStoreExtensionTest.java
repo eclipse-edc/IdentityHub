@@ -20,8 +20,6 @@ import org.eclipse.edc.junit.extensions.DependencyInjectionExtension;
 import org.eclipse.edc.spi.system.ServiceExtensionContext;
 import org.eclipse.edc.spi.system.configuration.ConfigFactory;
 import org.eclipse.edc.spi.types.TypeManager;
-import org.eclipse.edc.sql.lease.spi.SqlLeaseContextBuilder;
-import org.eclipse.edc.sql.lease.spi.SqlLeaseContextBuilderProvider;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -29,22 +27,14 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import java.time.Duration;
 import java.util.Map;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(DependencyInjectionExtension.class)
 class SqlHolderCredentialRequestStoreExtensionTest {
 
-    private final SqlLeaseContextBuilder leaseContextBuilder = mock();
-
     @BeforeEach
     void setUp(ServiceExtensionContext context) {
-        SqlLeaseContextBuilderProvider leaseContextBuilderProvider = mock();
-        when(leaseContextBuilderProvider.createContextBuilder(any())).thenReturn(leaseContextBuilder);
-        when(leaseContextBuilder.forTime(any())).thenReturn(leaseContextBuilder);
-        context.registerService(SqlLeaseContextBuilderProvider.class, leaseContextBuilderProvider);
         context.registerService(TypeManager.class, new JacksonTypeManager());
     }
 
@@ -53,9 +43,9 @@ class SqlHolderCredentialRequestStoreExtensionTest {
         when(context.getConfig()).thenReturn(ConfigFactory.fromMap(Map.of("edc.iam.credential.request.state-machine.lease-duration-millis", "123000")));
         var extension = objectFactory.constructInstance(SqlHolderCredentialRequestStoreExtension.class);
 
-        extension.createSqlStore(context);
+        var store = extension.createSqlStore(context);
 
-        verify(leaseContextBuilder).forTime(Duration.ofMillis(123_000));
+        assertThat(store).extracting("leaseDuration").isEqualTo(Duration.ofMillis(123_000));
     }
 
     @Test
@@ -63,8 +53,8 @@ class SqlHolderCredentialRequestStoreExtensionTest {
         when(context.getConfig()).thenReturn(ConfigFactory.fromMap(Map.of()));
         var extension = objectFactory.constructInstance(SqlHolderCredentialRequestStoreExtension.class);
 
-        extension.createSqlStore(context);
+        var store = extension.createSqlStore(context);
 
-        verify(leaseContextBuilder).forTime(Duration.ofMinutes(5));
+        assertThat(store).extracting("leaseDuration").isEqualTo(Duration.ofMinutes(5));
     }
 }

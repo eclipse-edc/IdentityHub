@@ -13,20 +13,6 @@
  */
 
 -- only intended for and tested with Postgres!
-CREATE TABLE IF NOT EXISTS edc_lease
-(
-    leased_by         VARCHAR NOT NULL,
-    leased_at         BIGINT,
-    lease_duration    INTEGER NOT NULL,
-    resource_id       VARCHAR NOT NULL,
-    resource_kind     VARCHAR NOT NULL,
-    PRIMARY KEY(resource_id, resource_kind)
-);
-
-COMMENT ON COLUMN edc_lease.leased_at IS 'posix timestamp of lease';
-COMMENT ON COLUMN edc_lease.lease_duration IS 'duration of lease in milliseconds';
-
-
 CREATE TABLE IF NOT EXISTS edc_holder_credentialrequest
 (
     id                     VARCHAR           NOT NULL PRIMARY KEY, -- this is also the holderPid
@@ -41,8 +27,23 @@ CREATE TABLE IF NOT EXISTS edc_holder_credentialrequest
     participant_context_id VARCHAR           NOT NULL,
     issuer_did             VARCHAR           NOT NULL,
     ids_and_formats        JSON              NOT NULL,
-    issuer_pid             VARCHAR
+    issuer_pid             VARCHAR,
+    leased_by              VARCHAR,
+    leased_at              BIGINT,
+    lease_duration         INTEGER,
+    version                BIGINT  DEFAULT 0 NOT NULL
 );
+
+-- Add lease columns to tables created before the lease was moved from edc_lease to the credential request row
+ALTER TABLE edc_holder_credentialrequest ADD COLUMN IF NOT EXISTS leased_by VARCHAR;
+ALTER TABLE edc_holder_credentialrequest ADD COLUMN IF NOT EXISTS leased_at BIGINT;
+ALTER TABLE edc_holder_credentialrequest ADD COLUMN IF NOT EXISTS lease_duration INTEGER;
+-- Add the version column to tables created before optimistic locking was introduced
+ALTER TABLE edc_holder_credentialrequest ADD COLUMN IF NOT EXISTS version BIGINT DEFAULT 0 NOT NULL;
+
+COMMENT ON COLUMN edc_holder_credentialrequest.leased_at IS 'posix timestamp of lease';
+COMMENT ON COLUMN edc_holder_credentialrequest.lease_duration IS 'duration of lease in milliseconds';
+COMMENT ON COLUMN edc_holder_credentialrequest.version IS 'version of the entity, incremented on every save, used for optimistic locking';
 
 
 -- This will help to identify states that need to be transitioned without a table scan when the entries grow

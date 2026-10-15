@@ -38,7 +38,10 @@ public class CredentialOfferServiceImpl implements CredentialOfferService {
     public ServiceResult<Void> create(CredentialOffer credentialOffer) {
         return transactionContext.execute(() -> {
             try {
-                credentialOfferStore.save(credentialOffer);
+                var saved = credentialOfferStore.save(credentialOffer);
+                if (saved.failed()) {
+                    return ServiceResult.fromFailure(saved);
+                }
                 credentialOfferObservable.invokeForEach(l -> l.received(credentialOffer));
                 return ServiceResult.success();
             } catch (EdcException ex) {

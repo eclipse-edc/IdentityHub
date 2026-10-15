@@ -17,7 +17,6 @@ package org.eclipse.edc.identityhub.store.sql.credentialrequest.schema.schema.po
 import org.eclipse.edc.identityhub.store.sql.credentialrequest.schema.BaseSqlDialectStatements;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.sql.dialect.PostgresDialect;
-import org.eclipse.edc.sql.lease.spi.LeaseStatements;
 import org.eclipse.edc.sql.translation.PostgresqlOperatorTranslator;
 import org.eclipse.edc.sql.translation.SqlQueryStatement;
 
@@ -33,8 +32,8 @@ import static org.eclipse.edc.sql.dialect.PostgresDialect.getSelectFromJsonArray
 public class PostgresDialectStatements extends BaseSqlDialectStatements {
 
 
-    public PostgresDialectStatements(LeaseStatements leaseStatements, Clock clock) {
-        super(new PostgresqlOperatorTranslator(), leaseStatements, clock);
+    public PostgresDialectStatements(Clock clock) {
+        super(new PostgresqlOperatorTranslator(), clock);
     }
 
 

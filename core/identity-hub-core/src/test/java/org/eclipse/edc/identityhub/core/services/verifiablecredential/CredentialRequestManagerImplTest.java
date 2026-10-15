@@ -342,7 +342,7 @@ class CredentialRequestManagerImplTest {
             when(resolver.resolve(eq(ISSUER_DID))).thenReturn(success(didDocument()));
             when(httpClient.execute(any(Request.class))).thenReturn(response(400, "Bad Request", "issuer failure bad request"));
             // e.g. the lease of this runtime expired, and another runtime processed the request and saved it
-            when(store.save(any())).thenReturn(StoreResult.generalError("changed since it was read"));
+            when(store.save(any())).thenReturn(StoreResult.conflict("changed since it was read"));
 
             var rq = createRequest()
                     .state(REQUESTING.code())

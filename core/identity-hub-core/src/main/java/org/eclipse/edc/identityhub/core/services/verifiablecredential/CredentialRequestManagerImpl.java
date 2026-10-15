@@ -196,11 +196,11 @@ public class CredentialRequestManagerImpl extends AbstractStateEntityManager<Hol
      *                   report one
      * @param newRequest the request that was sent to the Issuer
      */
-    private void handleCredentialResponse(String issuerPid, HolderCredentialRequest newRequest) {
+    private StatusResult<Void> handleCredentialResponse(String issuerPid, HolderCredentialRequest newRequest) {
         var effectiveIssuerPid = UNKNOWN_ISSUER_PID.equals(issuerPid) && newRequest.getIssuerPid() != null
                 ? newRequest.getIssuerPid()
                 : issuerPid;
-        transitionRequested(newRequest, effectiveIssuerPid);
+        return transitionRequested(newRequest, effectiveIssuerPid);
     }
 
     /**
@@ -255,37 +255,32 @@ public class CredentialRequestManagerImpl extends AbstractStateEntityManager<Hol
         }
     }
 
-    private void transitionRequested(HolderCredentialRequest req, String issuerPid) {
+    private StatusResult<Void> transitionRequested(HolderCredentialRequest req, String issuerPid) {
         req.transitionRequested(issuerPid);
-        save(req);
+        return save(req);
     }
 
-    private void transitionRetry(HolderCredentialRequest request) {
+    private StatusResult<Void> transitionRetry(HolderCredentialRequest request) {
         request.transitionRetry();
-        save(request);
+        return save(request);
     }
 
-    private void transitionError(HolderCredentialRequest request, String failureDetail) {
+    private StatusResult<Void> transitionError(HolderCredentialRequest request, String failureDetail) {
         request.transitionError(failureDetail);
-        if (save(request)) {
-            monitor.warning("A Holder Credential Request has been transitioned to '%s': %s".formatted(ERROR, failureDetail));
-        }
+        return save(request)
+                .onSuccess(v -> monitor.warning("A Holder Credential Request has been transitioned to '%s': %s".formatted(ERROR, failureDetail)));
     }
 
     /**
      * Saves the request. That fails if the request was saved by someone else since it was read, e.g. by another runtime
-     * that leased it after the lease of this one expired.
-     *
-     * @return whether the request was saved
+     * that leased it after the lease of this one expired, or if someone else holds its lease. Callers act on the new
+     * state only if the result succeeded.
      */
-    private boolean save(HolderCredentialRequest request) {
-        return updateRequest(request)
-                .onFailure(f -> monitor.warning("Holder Credential Request '%s' could not be saved in state %s: %s"
-                        .formatted(request.getId(), request.stateAsString(), f.getFailureDetail())))
-                .succeeded();
+    private StatusResult<Void> save(HolderCredentialRequest request) {
+        return StatusResult.from(updateRequest(request));
     }
 
-    private StoreResult<?> updateRequest(HolderCredentialRequest request) {
+    private StoreResult<Void> updateRequest(HolderCredentialRequest request) {
         return transactionContext.execute(() -> update(request));
     }
 
@@ -310,8 +305,7 @@ public class CredentialRequestManagerImpl extends AbstractStateEntityManager<Hol
      */
     private CompletableFuture<StatusResult<Void>> processCreated(HolderCredentialRequest holderCredentialRequest) {
         holderCredentialRequest.transitionRequesting();
-        save(holderCredentialRequest);
-        return CompletableFuture.completedFuture(StatusResult.success());
+        return CompletableFuture.completedFuture(save(holderCredentialRequest));
     }
 
     /**

@@ -63,11 +63,15 @@ public interface IssuanceProcessStoreStatements extends StatefulEntityStatements
         return "holder_pid";
     }
 
+    /**
+     * Inserts a new process with its version. The process is not inserted if it conflicts with an existing one, either by
+     * its ID or by its holderPid.
+     */
     String getInsertTemplate();
 
     /**
-     * Updates a process by its ID, if its state timestamp is still the one it was read with. The ID and that state
-     * timestamp are the last two parameters, after the columns to update.
+     * Updates a process by its ID, if its version is still the one it was read with and its lease is owned by the caller
+     * or free. The parameters are the columns to update, the ID, the version, the lease holder and the current time.
      */
     String getUpdateTemplate();
 

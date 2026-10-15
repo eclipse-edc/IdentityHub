@@ -46,11 +46,14 @@ public interface HolderCredentialRequestStoreStatements extends StatefulEntitySt
         return "issuer_did";
     }
 
+    /**
+     * Inserts a new request with its version. The request is not inserted if one with the same ID exists.
+     */
     String getInsertTemplate();
 
     /**
-     * Updates a request by its ID, if its state timestamp is still the one it was read with. The ID and that state
-     * timestamp are the last two parameters, after the columns to update.
+     * Updates a request by its ID, if its version is still the one it was read with and its lease is owned by the caller
+     * or free. The parameters are the columns to update, the ID, the version, the lease holder and the current time.
      */
     String getUpdateTemplate();
 

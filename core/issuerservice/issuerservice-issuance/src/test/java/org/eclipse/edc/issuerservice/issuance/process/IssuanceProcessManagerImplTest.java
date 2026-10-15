@@ -540,7 +540,7 @@ public class IssuanceProcessManagerImplTest {
 
         await().untilAsserted(() -> {
             verify(issuanceProcessStore).save(argThat(p -> p.getState() == DELIVERED.code()));
-            verify(monitor).warning(argThat((String message) -> message.contains("could not be saved")));
+            verify(monitor).warning(argThat((String message) -> message.contains("was delivered, but could not be saved")));
         });
         // whoever delivers the process again needs the token
         verify(vault, never()).deleteSecret(any());
@@ -553,7 +553,7 @@ public class IssuanceProcessManagerImplTest {
 
         when(issuanceProcessStore.nextNotLeased(anyInt(), stateIs(DELIVERING.code()))).thenReturn(List.of(process)).thenReturn(emptyList());
         // e.g. the lease of this runtime expired, and another runtime processed the process and saved it
-        when(issuanceProcessStore.save(any())).thenReturn(StoreResult.generalError("changed since it was read"));
+        when(issuanceProcessStore.save(any())).thenReturn(StoreResult.conflict("changed since it was read"));
         when(credentialStore.query(any())).thenReturn(StoreResult.success(List.of(recordOf(process, membershipCredential().credential()))));
         when(credentialStore.update(any())).thenReturn(StoreResult.success());
         when(credentialGenerator.signCredential(any(), any(), any())).thenAnswer(i -> Result.success(new VerifiableCredentialContainer("signed", VC1_0_JWT, i.getArgument(1))));
@@ -577,7 +577,7 @@ public class IssuanceProcessManagerImplTest {
 
         when(issuanceProcessStore.nextNotLeased(anyInt(), stateIs(DELIVERING.code()))).thenReturn(List.of(process)).thenReturn(emptyList());
         // e.g. the lease of this runtime expired, and another runtime delivered the process and saved it
-        when(issuanceProcessStore.save(any())).thenReturn(StoreResult.generalError("changed since it was read"));
+        when(issuanceProcessStore.save(any())).thenReturn(StoreResult.conflict("changed since it was read"));
         when(credentialStore.query(any())).thenReturn(StoreResult.success(List.of(recordOf(process, membershipCredential().credential()))));
         when(credentialStore.update(any())).thenReturn(StoreResult.success());
         when(credentialGenerator.signCredential(any(), any(), any())).thenAnswer(i -> Result.success(new VerifiableCredentialContainer("signed", VC1_0_JWT, i.getArgument(1))));

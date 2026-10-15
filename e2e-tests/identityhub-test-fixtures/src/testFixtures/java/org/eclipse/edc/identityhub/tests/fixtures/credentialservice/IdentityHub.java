@@ -93,9 +93,20 @@ public class IdentityHub extends AbstractIdentityHub {
         return getCredentialRequestForParticipant(participantContextId, null);
     }
 
+    /**
+     * Stores the request, replacing a stored one with the same ID: the request takes over the version of the stored one, so
+     * that saving it is not rejected as a conflict.
+     */
     public void storeHolderRequest(HolderCredentialRequest request) {
         transactionContext.execute(() -> {
-            credentialRequestStore.save(request);
+            var existing = credentialRequestStore.findById(request.getId());
+            if (existing != null) {
+                request.setVersion(existing.getVersion());
+            }
+            var result = credentialRequestStore.save(request);
+            if (result.failed()) {
+                throw new IllegalStateException("Cannot store holder request %s: %s".formatted(request.getId(), result.getFailureDetail()));
+            }
         });
     }
 

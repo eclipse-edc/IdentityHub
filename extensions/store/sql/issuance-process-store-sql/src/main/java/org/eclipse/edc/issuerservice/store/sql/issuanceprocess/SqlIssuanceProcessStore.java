@@ -22,7 +22,7 @@ import org.eclipse.edc.spi.query.Criterion;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.StoreResult;
 import org.eclipse.edc.sql.QueryExecutor;
-import org.eclipse.edc.sql.lease.spi.SqlLeaseContextBuilder;
+import org.eclipse.edc.sql.lease.StatefulEntityWriteCheck;
 import org.eclipse.edc.sql.store.AbstractSqlStore;
 import org.eclipse.edc.transaction.datasource.spi.DataSourceRegistry;
 import org.eclipse.edc.transaction.spi.TransactionContext;
@@ -33,11 +33,11 @@ import tools.jackson.databind.ObjectMapper;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.ArrayList;
+import java.time.Clock;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
@@ -50,14 +50,19 @@ import static java.util.stream.Collectors.toList;
  */
 public class SqlIssuanceProcessStore extends AbstractSqlStore implements IssuanceProcessStore {
 
+    public static final Duration DEFAULT_LEASE_DURATION = Duration.ofSeconds(60);
+
     private static final TypeReference<List<String>> ATTESTATIONS_LIST_REF = new TypeReference<>() {
     };
 
     private static final TypeReference<Map<String, CredentialFormat>> CREDENTIAL_FORMATS_REF = new TypeReference<>() {
     };
-    private final SqlLeaseContextBuilder leaseContext;
 
     private final IssuanceProcessStoreStatements statements;
+    private final String leaseHolder;
+    private final Clock clock;
+    private final Duration leaseDuration;
+    private final StatefulEntityWriteCheck writeCheck;
 
     public SqlIssuanceProcessStore(DataSourceRegistry dataSourceRegistry,
                                    String dataSourceName,
@@ -65,10 +70,26 @@ public class SqlIssuanceProcessStore extends AbstractSqlStore implements Issuanc
                                    Supplier<ObjectMapper> objectMapperSupplier,
                                    QueryExecutor queryExecutor,
                                    IssuanceProcessStoreStatements statements,
-                                   SqlLeaseContextBuilder leaseContext) {
+                                   String leaseHolder,
+                                   Clock clock) {
+        this(dataSourceRegistry, dataSourceName, transactionContext, objectMapperSupplier, queryExecutor, statements, leaseHolder, clock, DEFAULT_LEASE_DURATION);
+    }
+
+    public SqlIssuanceProcessStore(DataSourceRegistry dataSourceRegistry,
+                                   String dataSourceName,
+                                   TransactionContext transactionContext,
+                                   Supplier<ObjectMapper> objectMapperSupplier,
+                                   QueryExecutor queryExecutor,
+                                   IssuanceProcessStoreStatements statements,
+                                   String leaseHolder,
+                                   Clock clock,
+                                   Duration leaseDuration) {
         super(dataSourceRegistry, dataSourceName, transactionContext, objectMapperSupplier, queryExecutor);
         this.statements = statements;
-        this.leaseContext = leaseContext;
+        this.leaseHolder = leaseHolder;
+        this.clock = clock;
+        this.leaseDuration = leaseDuration;
+        this.writeCheck = new StatefulEntityWriteCheck(queryExecutor, statements, statements.getIssuanceProcessTable(), leaseHolder, clock);
     }
 
     @Override
@@ -88,14 +109,12 @@ public class SqlIssuanceProcessStore extends AbstractSqlStore implements Issuanc
             var filter = Arrays.stream(criteria).collect(toList());
             var querySpec = QuerySpec.Builder.newInstance().filter(filter).sortField("stateTimestamp").limit(max).build();
             var statement = statements.createNextNotLeaseQuery(querySpec);
-            try (var connection = getConnection()) {
-                List<String> leasedIds;
-                try (var stream = queryExecutor.query(connection, false, this::mapResultSet, statement.getQueryAsString(), statement.getParameters())) {
-                    leasedIds = stream.map(IssuanceProcess::getId)
-                            .filter(id -> leaseContext.withConnection(connection).acquireLease(id).succeeded())
-                            .toList();
-                }
-                return readLeased(connection, leasedIds, filter);
+            try (var connection = getConnection();
+                 var stream = queryExecutor.query(connection, false, this::mapResultSet, statement.getQueryAsString(), statement.getParameters())) {
+                // rows are locked until the end of the transaction, so the lease can be safely acquired on them
+                return stream.toList().stream()
+                        .filter(process -> acquireLease(connection, process.getId()))
+                        .collect(toList());
             } catch (SQLException e) {
                 throw new EdcPersistenceException(e);
             }
@@ -106,22 +125,14 @@ public class SqlIssuanceProcessStore extends AbstractSqlStore implements Issuanc
     public StoreResult<IssuanceProcess> findByIdAndLease(String id) {
         return transactionContext.execute(() -> {
             try (var connection = getConnection()) {
-                if (findByIdInternal(connection, id) == null) {
-                    return StoreResult.notFound(format("IssuanceProcess %s not found", id));
+                // the lease is acquired before reading, so that the returned entity cannot be outdated by a concurrent save
+                if (!acquireLease(connection, id)) {
+                    if (findByIdInternal(connection, id) == null) {
+                        return StoreResult.notFound(format("IssuanceProcess %s not found", id));
+                    }
+                    return StoreResult.alreadyLeased(format("IssuanceProcess %s is currently leased!", id));
                 }
-
-                var leaseResult = leaseContext.withConnection(connection).acquireLease(id);
-                if (leaseResult.failed()) {
-                    return leaseResult.mapFailure();
-                }
-                // acquiring the lease waits for another transaction that holds a lease on the entity, which may have changed
-                // it in the meantime. Every statement reads what was committed when it starts, so the entity is read again.
-                var entity = findByIdInternal(connection, id);
-                if (entity == null) {
-                    leaseContext.withConnection(connection).breakLease(id);
-                    return StoreResult.notFound(format("IssuanceProcess %s not found", id));
-                }
-                return StoreResult.success(entity);
+                return StoreResult.success(findByIdInternal(connection, id));
             } catch (SQLException e) {
                 throw new EdcPersistenceException(e);
             }
@@ -132,15 +143,11 @@ public class SqlIssuanceProcessStore extends AbstractSqlStore implements Issuanc
     public StoreResult<Void> save(IssuanceProcess issuanceProcess) {
         return transactionContext.execute(() -> {
             try (var conn = getConnection()) {
-                var existing = findByIdInternal(conn, issuanceProcess.getId());
-                if (existing != null) {
-                    var result = leaseContext.withConnection(conn).breakLease(issuanceProcess.getId());
-                    if (result.failed()) {
-                        return result;
-                    }
-                    return update(conn, issuanceProcess, existing);
+                var result = issuanceProcess.getVersion() == 0 ? insert(conn, issuanceProcess) : update(conn, issuanceProcess);
+                if (result.succeeded()) {
+                    issuanceProcess.setVersion(issuanceProcess.getVersion() + 1);
                 }
-                return insert(conn, issuanceProcess);
+                return result;
             } catch (SQLException e) {
                 throw new EdcPersistenceException(e);
             }
@@ -151,7 +158,12 @@ public class SqlIssuanceProcessStore extends AbstractSqlStore implements Issuanc
     public StoreResult<Void> breakLease(IssuanceProcess entity) {
         return transactionContext.execute(() -> {
             try (var connection = getConnection()) {
-                return leaseContext.withConnection(connection).breakLease(entity.getId());
+                var updated = queryExecutor.execute(connection, statements.getBreakLeaseTemplate(statements.getIssuanceProcessTable()),
+                        entity.getId(), leaseHolder, clock.millis());
+                if (updated == 0 && findByIdInternal(connection, entity.getId()) != null) {
+                    return StoreResult.alreadyLeased(format("IssuanceProcess %s is leased by another holder, cannot break the lease!", entity.getId()));
+                }
+                return StoreResult.success();
             } catch (SQLException e) {
                 throw new EdcPersistenceException(e);
             }
@@ -170,9 +182,12 @@ public class SqlIssuanceProcessStore extends AbstractSqlStore implements Issuanc
         });
     }
 
+    /**
+     * Inserts a process that was never stored. It is not inserted if a process with the same ID or holderPid exists: unlike
+     * a failed statement, this does not abort the surrounding transaction.
+     */
     private StoreResult<Void> insert(Connection conn, IssuanceProcess process) {
-        var insertTpStatement = statements.getInsertTemplate();
-        var inserted = queryExecutor.execute(conn, insertTpStatement, process.getId(),
+        var inserted = queryExecutor.execute(conn, statements.getInsertTemplate(), process.getId(),
                 process.getState(),
                 process.getStateCount(),
                 process.getStateTimestamp(),
@@ -185,23 +200,24 @@ public class SqlIssuanceProcessStore extends AbstractSqlStore implements Issuanc
                 process.getHolderPid(),
                 toJson(process.getClaims()),
                 toJson(process.getCredentialDefinitions()),
-                toJson(process.getCredentialFormats())
+                toJson(process.getCredentialFormats()),
+                process.getVersion() + 1
         );
         if (inserted == 0) {
+            if (findByIdInternal(conn, process.getId()) != null) {
+                return StoreResult.conflict(format("IssuanceProcess %s already exists", process.getId()));
+            }
             return StoreResult.alreadyExists(holderPidConflictMessage(process));
         }
-        process.setStoredStateTimestamp(process.getStateTimestamp());
         return StoreResult.success();
     }
 
     /**
      * Updates the process, unless someone else saved it since it was read, e.g. another runtime that leased it after the
-     * lease of this one expired. A process that was not read from the store is compared with the one read before.
+     * lease of this one expired, or unless someone else holds its lease. Saving the process breaks its lease.
      */
-    private StoreResult<Void> update(Connection conn, IssuanceProcess process, IssuanceProcess existing) {
-        var storedStateTimestamp = Optional.ofNullable(process.getStoredStateTimestamp()).orElse(existing.getStoredStateTimestamp());
-        var updateStmt = statements.getUpdateTemplate();
-        var updated = queryExecutor.execute(conn, updateStmt,
+    private StoreResult<Void> update(Connection conn, IssuanceProcess process) {
+        var updated = queryExecutor.execute(conn, statements.getUpdateTemplate(),
                 process.getState(),
                 process.getStateCount(),
                 process.getStateTimestamp(),
@@ -211,36 +227,22 @@ public class SqlIssuanceProcessStore extends AbstractSqlStore implements Issuanc
                 toJson(process.getClaims()),
                 toJson(process.getCredentialDefinitions()),
                 toJson(process.getCredentialFormats()),
+                null, null, null,
+                process.getVersion() + 1,
                 process.getId(),
-                storedStateTimestamp);
+                process.getVersion(),
+                leaseHolder,
+                clock.millis());
         if (updated == 0) {
-            return StoreResult.generalError(format("IssuanceProcess %s is not saved in state %s, because it was changed since it was read, and is in state %s",
-                    process.getId(), process.stateAsString(), existing.stateAsString()));
+            return writeCheck.explainNotWritten(conn, process.getId(), process.getVersion());
         }
-        process.setStoredStateTimestamp(process.getStateTimestamp());
         return StoreResult.success();
     }
 
-    /**
-     * Reads entities again after their leases were acquired: acquiring a lease waits for another transaction that holds a
-     * lease on the same entity, which may have changed it in the meantime. The leases of entities that no longer match the
-     * criteria are broken again.
-     */
-    private List<IssuanceProcess> readLeased(Connection connection, List<String> leasedIds, List<Criterion> criteria) {
-        if (leasedIds.isEmpty()) {
-            return List.of();
-        }
-        var filter = new ArrayList<>(criteria);
-        filter.add(new Criterion("id", "in", leasedIds));
-        var querySpec = QuerySpec.Builder.newInstance().filter(filter).sortField("stateTimestamp").limit(leasedIds.size()).build();
-        var statement = statements.createQuery(querySpec);
-        try (var stream = queryExecutor.query(connection, false, this::mapResultSet, statement.getQueryAsString(), statement.getParameters())) {
-            var entities = stream.toList();
-            leasedIds.stream()
-                    .filter(id -> entities.stream().noneMatch(entity -> entity.getId().equals(id)))
-                    .forEach(id -> leaseContext.withConnection(connection).breakLease(id));
-            return entities;
-        }
+    private boolean acquireLease(Connection connection, String id) {
+        var now = clock.millis();
+        var sql = statements.getAcquireLeaseTemplate(statements.getIssuanceProcessTable());
+        return queryExecutor.execute(connection, sql, leaseHolder, now, leaseDuration.toMillis(), id, now) > 0;
     }
 
     private IssuanceProcess findByIdInternal(Connection connection, String id) {
@@ -252,7 +254,7 @@ public class SqlIssuanceProcessStore extends AbstractSqlStore implements Issuanc
 
 
     private IssuanceProcess mapResultSet(ResultSet resultSet) throws Exception {
-        var process = IssuanceProcess.Builder.newInstance()
+        return IssuanceProcess.Builder.newInstance()
                 .id(resultSet.getString(statements.getIdColumn()))
                 .createdAt(resultSet.getLong(statements.getCreatedAtColumn()))
                 .updatedAt(resultSet.getLong(statements.getUpdatedAtColumn()))
@@ -267,9 +269,7 @@ public class SqlIssuanceProcessStore extends AbstractSqlStore implements Issuanc
                 .claims(fromJson(resultSet.getString(statements.getClaimsColumn()), getTypeRef()))
                 .credentialDefinitions(fromJson(resultSet.getString(statements.getCredentialDefinitionsColumn()), ATTESTATIONS_LIST_REF))
                 .credentialFormats(fromJson(resultSet.getString(statements.getCredentialFormatsColumn()), CREDENTIAL_FORMATS_REF))
+                .version(resultSet.getLong(statements.getVersionColumn()))
                 .build();
-        // the column as it is, whereas the process replaces a missing state timestamp with the current time
-        process.setStoredStateTimestamp(resultSet.getLong(statements.getStateTimestampColumn()));
-        return process;
     }
 }

@@ -27,5 +27,6 @@ dependencies {
     testImplementation(testFixtures(project(":spi:issuerservice:issuerservice-issuance-spi")))
     testImplementation(testFixtures(libs.edc.sql.test.fixtures))
     testImplementation(libs.edc.junit)
+    testImplementation(libs.awaitility)
     testImplementation(libs.edc.transaction.local)
 }

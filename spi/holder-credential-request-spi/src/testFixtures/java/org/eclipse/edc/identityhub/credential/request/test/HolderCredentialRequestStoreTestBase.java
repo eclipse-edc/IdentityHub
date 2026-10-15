@@ -99,13 +99,87 @@ public abstract class HolderCredentialRequestStoreTestBase {
     class Save {
 
         @Test
-        void save() {
+        void save_whenNotExists_shouldCreate() {
+            var request = createHolderRequest();
 
+            AbstractResultAssert.assertThat(getStore().save(request)).isSucceeded();
+
+            assertThat(getStore().findById(request.getId())).usingRecursiveComparison().isEqualTo(request);
         }
 
         @Test
-        void save_whenAlreadyExists_expectUpdate() {
+        void save_whenSavedAgain_shouldUpdate() {
+            var request = createHolderRequest();
+            getStore().save(request);
+            request.transitionRequesting();
 
+            AbstractResultAssert.assertThat(getStore().save(request)).isSucceeded();
+
+            assertThat(getStore().findById(request.getId()).stateAsEnum()).isEqualTo(REQUESTING);
+        }
+
+        @Test
+        void save_withSameIdExists_shouldFailWithConflict() {
+            getStore().save(createHolderRequest("id", CREATED));
+            var newRequest = createHolderRequest("id", REQUESTED);
+
+            AbstractResultAssert.assertThat(getStore().save(newRequest)).isFailed()
+                    .extracting(StoreFailure::getReason)
+                    .isEqualTo(StoreFailure.Reason.CONFLICT);
+            assertThat(getStore().findById("id").stateAsEnum()).isEqualTo(CREATED);
+        }
+    }
+
+    @Nested
+    class Version {
+
+        @Test
+        void save_shouldIncrementVersion() {
+            var request = createHolderRequest();
+            assertThat(request.getVersion()).isZero();
+
+            getStore().save(request);
+
+            assertThat(request.getVersion()).isEqualTo(1);
+            assertThat(getStore().findById(request.getId()).getVersion()).isEqualTo(1);
+
+            request.transitionRequesting();
+            getStore().save(request);
+
+            assertThat(request.getVersion()).isEqualTo(2);
+            assertThat(getStore().findById(request.getId()).getVersion()).isEqualTo(2);
+        }
+
+        @Test
+        void save_shouldFailWithConflict_whenEntityIsStale() {
+            var request = createHolderRequest();
+            getStore().save(request);
+            var first = getStore().findById(request.getId());
+            var stale = getStore().findById(request.getId());
+            first.transitionRequesting();
+            AbstractResultAssert.assertThat(getStore().save(first)).isSucceeded();
+
+            stale.transitionError("stale");
+
+            AbstractResultAssert.assertThat(getStore().save(stale)).isFailed()
+                    .extracting(StoreFailure::getReason)
+                    .isEqualTo(StoreFailure.Reason.CONFLICT);
+            assertThat(getStore().findById(request.getId()).stateAsEnum()).isEqualTo(REQUESTING);
+        }
+
+        @Test
+        void findByIdAndLease_shouldReturnLatestVersion() {
+            var request = createHolderRequest();
+            getStore().save(request);
+            request.transitionRequesting();
+            getStore().save(request);
+
+            var leased = getStore().findByIdAndLease(request.getId());
+
+            AbstractResultAssert.assertThat(leased).isSucceeded().satisfies(r -> {
+                assertThat(r.getVersion()).isEqualTo(2);
+                assertThat(r.stateAsEnum()).isEqualTo(REQUESTING);
+            });
         }
     }
 

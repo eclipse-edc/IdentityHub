@@ -16,7 +16,6 @@ package org.eclipse.edc.issuerservice.store.sql.issuanceprocess;
 
 import org.eclipse.edc.issuerservice.store.sql.issuanceprocess.schema.postgres.IssuanceProcessMapping;
 import org.eclipse.edc.spi.query.QuerySpec;
-import org.eclipse.edc.sql.lease.spi.LeaseStatements;
 import org.eclipse.edc.sql.translation.PostgresqlOperatorTranslator;
 import org.eclipse.edc.sql.translation.SqlOperatorTranslator;
 import org.eclipse.edc.sql.translation.SqlQueryStatement;
@@ -24,17 +23,14 @@ import org.eclipse.edc.sql.translation.SqlQueryStatement;
 import java.time.Clock;
 
 import static java.lang.String.format;
-import static org.eclipse.edc.spi.query.Criterion.criterion;
 
 public class BaseSqlDialectStatements implements IssuanceProcessStoreStatements {
 
     protected final SqlOperatorTranslator operatorTranslator;
-    protected final LeaseStatements leaseStatements;
     protected final Clock clock;
 
-    public BaseSqlDialectStatements(SqlOperatorTranslator operatorTranslator, LeaseStatements leaseStatements, Clock clock) {
+    public BaseSqlDialectStatements(SqlOperatorTranslator operatorTranslator, Clock clock) {
         this.operatorTranslator = operatorTranslator;
-        this.leaseStatements = leaseStatements;
         this.clock = clock;
     }
 
@@ -55,6 +51,7 @@ public class BaseSqlDialectStatements implements IssuanceProcessStoreStatements 
                 .jsonColumn(getClaimsColumn())
                 .jsonColumn(getCredentialDefinitionsColumn())
                 .jsonColumn(getCredentialFormatsColumn())
+                .column(getVersionColumn())
                 .insertInto(getIssuanceProcessTable());
         // a process that conflicts with an existing one, e.g. by its holderPid, is not inserted. Unlike a failed statement,
         // this does not abort the surrounding transaction. Without a conflict target, it also works on a schema that lacks
@@ -64,7 +61,7 @@ public class BaseSqlDialectStatements implements IssuanceProcessStoreStatements 
 
     @Override
     public String getUpdateTemplate() {
-        return executeStatement()
+        var update = executeStatement()
                 .column(getStateColumn())
                 .column(getStateCountColumn())
                 .column(getStateTimestampColumn())
@@ -74,11 +71,13 @@ public class BaseSqlDialectStatements implements IssuanceProcessStoreStatements 
                 .jsonColumn(getClaimsColumn())
                 .jsonColumn(getCredentialDefinitionsColumn())
                 .jsonColumn(getCredentialFormatsColumn())
-                .update(getIssuanceProcessTable(),
-                        criterion(getIdColumn(), "=", "?"),
-                        // a process that was saved by someone else since it was read is not overwritten. A row without a state
-                        // timestamp is read with 0
-                        criterion(format("COALESCE(%s, 0)", getStateTimestampColumn()), "=", "?"));
+                .column(getLeasedByColumn())
+                .column(getLeasedAtColumn())
+                .column(getLeaseDurationColumn())
+                .column(getVersionColumn())
+                .update(getIssuanceProcessTable(), getIdColumn());
+        // a process that was saved by someone else since it was read, or that is leased by someone else, is not overwritten
+        return update.replaceFirst(";\\s*$", "") + " AND " + getVersionAndLeaseFilter(getIssuanceProcessTable()) + ";";
     }
 
     @Override
@@ -101,14 +100,9 @@ public class BaseSqlDialectStatements implements IssuanceProcessStoreStatements 
 
     @Override
     public SqlQueryStatement createNextNotLeaseQuery(QuerySpec querySpec) {
-        var queryTemplate = "%s LEFT JOIN %s l ON %s.%s = l.%s".formatted(getSelectStatement(), leaseStatements.getLeaseTableName(), getIssuanceProcessTable(), getIdColumn(), leaseStatements.getResourceIdColumn());
-        return new SqlQueryStatement(queryTemplate, querySpec, new IssuanceProcessMapping(this), operatorTranslator)
-                .addWhereClause(getNotLeasedFilter(), clock.millis(), getIssuanceProcessTable());
-    }
-
-    private String getNotLeasedFilter() {
-        return format("(l.%s IS NULL OR (? > (%s + %s) AND ? = l.%s))",
-                leaseStatements.getResourceIdColumn(), leaseStatements.getLeasedAtColumn(), leaseStatements.getLeaseDurationColumn(), leaseStatements.getResourceKindColumn());
+        return new SqlQueryStatement(getSelectStatement(), querySpec, new IssuanceProcessMapping(this), operatorTranslator)
+                .addWhereClause(getNotLeasedFilter(getIssuanceProcessTable()), clock.millis())
+                .forUpdate(true);
     }
 
 

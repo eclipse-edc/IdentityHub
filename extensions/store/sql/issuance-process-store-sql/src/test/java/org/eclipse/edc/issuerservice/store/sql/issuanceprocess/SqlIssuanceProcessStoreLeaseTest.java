@@ -23,11 +23,8 @@ import org.eclipse.edc.junit.testfixtures.TestUtils;
 import org.eclipse.edc.spi.monitor.ConsoleMonitor;
 import org.eclipse.edc.spi.result.StoreFailure;
 import org.eclipse.edc.sql.QueryExecutor;
-import org.eclipse.edc.sql.lease.BaseSqlLeaseStatements;
-import org.eclipse.edc.sql.lease.SqlLeaseContextBuilderImpl;
-import org.eclipse.edc.sql.lease.spi.LeaseStatements;
-import org.eclipse.edc.sql.testfixtures.LeaseUtil;
 import org.eclipse.edc.sql.testfixtures.PostgresqlStoreSetupExtension;
+import org.eclipse.edc.sql.testfixtures.RowLeaseUtil;
 import org.eclipse.edc.transaction.local.LocalDataSourceRegistry;
 import org.eclipse.edc.transaction.local.LocalTransactionContext;
 import org.junit.jupiter.api.AfterEach;
@@ -48,6 +45,7 @@ import java.util.function.Consumer;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.awaitility.Awaitility.await;
 import static org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcessStates.APPROVED;
 import static org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcessStates.DELIVERING;
 import static org.eclipse.edc.junit.assertions.AbstractResultAssert.assertThat;
@@ -55,8 +53,8 @@ import static org.eclipse.edc.spi.persistence.StateEntityStore.hasState;
 
 /**
  * Verifies that a leased {@link IssuanceProcess} contains the changes of another transaction that held its lease
- * until it completed, and that a runtime whose lease expired cannot overwrite the changes of the runtime that leased the
- * process after it.
+ * until it completed, that a process locked by another transaction is skipped instead of waited for, and that a runtime
+ * whose lease expired cannot overwrite the changes of the runtime that leased the process after it.
  * <p>
  * This cannot use the transaction context of {@link PostgresqlStoreSetupExtension}: it auto-commits every statement, so a
  * lease would never be held by an open transaction. Each store has its own lease holder, like two replicas.
@@ -68,15 +66,14 @@ class SqlIssuanceProcessStoreLeaseTest {
     private static final String PROCESS_ID = "process-id";
     private static final String RUNTIME_ID = "runtime-id";
     private final Clock clock = Clock.systemUTC();
-    private final LeaseStatements leaseStatements = new BaseSqlLeaseStatements();
-    private final IssuanceProcessStoreStatements statements = new PostgresDialectStatements(leaseStatements, clock);
+    private final IssuanceProcessStoreStatements statements = new PostgresDialectStatements(clock);
     private final ExecutorService executor = Executors.newFixedThreadPool(2);
 
     private LocalTransactionContext transactionContext;
     private SqlIssuanceProcessStore store;
     private SqlIssuanceProcessStore otherStore;
     private SqlIssuanceProcessStore expiredLeaseStore;
-    private LeaseUtil leaseUtil;
+    private RowLeaseUtil leaseUtil;
 
     @BeforeEach
     void setup(PostgresqlStoreSetupExtension extension, QueryExecutor queryExecutor) {
@@ -89,7 +86,7 @@ class SqlIssuanceProcessStoreLeaseTest {
         otherStore = createStore(registry, extension.getDatasourceName(), queryExecutor, "other-runtime-id", clock);
         // its leases start in the past, so they have expired as soon as they are acquired
         expiredLeaseStore = createStore(registry, extension.getDatasourceName(), queryExecutor, "expired-runtime-id", Clock.offset(clock, Duration.ofMinutes(-2)));
-        leaseUtil = new LeaseUtil(transactionContext, extension::getConnection, statements.getIssuanceProcessTable(), leaseStatements, clock);
+        leaseUtil = new RowLeaseUtil(transactionContext, extension::getConnection, statements, statements.getIssuanceProcessTable(), clock);
 
         extension.runQuery(TestUtils.getResourceFileContentAsString("issuance-process-schema.sql"));
     }
@@ -99,7 +96,6 @@ class SqlIssuanceProcessStoreLeaseTest {
         executor.shutdownNow();
         assertThat(executor.awaitTermination(30, TimeUnit.SECONDS)).isTrue();
         extension.runQuery("DROP TABLE " + statements.getIssuanceProcessTable() + " CASCADE");
-        extension.runQuery("DROP TABLE " + leaseStatements.getLeaseTableName() + " CASCADE");
     }
 
     @Test
@@ -118,15 +114,12 @@ class SqlIssuanceProcessStoreLeaseTest {
     }
 
     @Test
-    void nextNotLeased_whenOtherTransactionChangesEntityToNotMatch_shouldNotReturnIt() throws Exception {
-        var release = changeInOtherTransaction(IssuanceProcess::transitionToDelivering);
+    void nextNotLeased_whenOtherTransactionHoldsEntity_shouldSkipItWithoutWaiting() throws Exception {
+        var release = changeInOtherTransaction(IssuanceProcess::transitionToApproved);
         try {
             var result = executor.submit(() -> transactionContext.execute(() -> store.nextNotLeased(10, hasState(APPROVED.code()))));
 
-            assertWaitsForLease(result);
-            release.countDown();
             assertThat(result.get(30, TimeUnit.SECONDS)).isEmpty();
-            // the lease is broken again, so that the process is not blocked until the lease expires
             assertThat(leaseUtil.isLeased(PROCESS_ID, RUNTIME_ID)).isFalse();
         } finally {
             release.countDown();
@@ -134,19 +127,14 @@ class SqlIssuanceProcessStoreLeaseTest {
     }
 
     @Test
-    void nextNotLeased_whenOtherTransactionChangesEntity_shouldReturnItsChanges() throws Exception {
+    void nextNotLeased_whenOtherTransactionCompleted_shouldReturnItsChanges() throws Exception {
         var release = changeInOtherTransaction(IssuanceProcess::transitionToApproved);
-        try {
-            var result = executor.submit(() -> transactionContext.execute(() -> store.nextNotLeased(10, hasState(APPROVED.code()))));
+        release.countDown();
 
-            assertWaitsForLease(result);
-            release.countDown();
-            assertThat(result.get(30, TimeUnit.SECONDS)).singleElement()
-                    .satisfies(process -> assertThat(process.getStateCount()).isEqualTo(2));
-            assertThat(leaseUtil.isLeased(PROCESS_ID, RUNTIME_ID)).isTrue();
-        } finally {
-            release.countDown();
-        }
+        await().untilAsserted(() -> assertThat(transactionContext.execute(() -> store.nextNotLeased(10, hasState(APPROVED.code()))))
+                .singleElement()
+                .satisfies(process -> assertThat(process.getStateCount()).isEqualTo(2)));
+        assertThat(leaseUtil.isLeased(PROCESS_ID, RUNTIME_ID)).isTrue();
     }
 
     @Test
@@ -161,7 +149,7 @@ class SqlIssuanceProcessStoreLeaseTest {
 
         assertThat(transactionContext.execute(() -> expiredLeaseStore.save(outdated))).isFailed()
                 .extracting(StoreFailure::getReason)
-                .isEqualTo(StoreFailure.Reason.GENERAL_ERROR);
+                .isEqualTo(StoreFailure.Reason.CONFLICT);
         assertThat(transactionContext.execute(() -> store.findById(PROCESS_ID)).getState()).isEqualTo(DELIVERING.code());
     }
 
@@ -221,9 +209,8 @@ class SqlIssuanceProcessStoreLeaseTest {
     }
 
     private SqlIssuanceProcessStore createStore(LocalDataSourceRegistry registry, String datasourceName, QueryExecutor queryExecutor, String leaseHolder, Clock leaseClock) {
-        var leaseContextBuilder = SqlLeaseContextBuilderImpl.with(transactionContext, leaseHolder, statements.getIssuanceProcessTable(), leaseStatements, leaseClock, queryExecutor);
         return new SqlIssuanceProcessStore(registry, datasourceName, transactionContext, new JacksonTypeManager()::getMapper,
-                queryExecutor, statements, leaseContextBuilder);
+                queryExecutor, statements, leaseHolder, leaseClock);
     }
 
     private void awaitUninterruptibly(CountDownLatch latch) {

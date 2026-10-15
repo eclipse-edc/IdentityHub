@@ -25,11 +25,8 @@ import org.eclipse.edc.junit.testfixtures.TestUtils;
 import org.eclipse.edc.spi.monitor.ConsoleMonitor;
 import org.eclipse.edc.spi.result.StoreFailure;
 import org.eclipse.edc.sql.QueryExecutor;
-import org.eclipse.edc.sql.lease.BaseSqlLeaseStatements;
-import org.eclipse.edc.sql.lease.SqlLeaseContextBuilderImpl;
-import org.eclipse.edc.sql.lease.spi.LeaseStatements;
-import org.eclipse.edc.sql.testfixtures.LeaseUtil;
 import org.eclipse.edc.sql.testfixtures.PostgresqlStoreSetupExtension;
+import org.eclipse.edc.sql.testfixtures.RowLeaseUtil;
 import org.eclipse.edc.transaction.local.LocalDataSourceRegistry;
 import org.eclipse.edc.transaction.local.LocalTransactionContext;
 import org.junit.jupiter.api.AfterEach;
@@ -49,6 +46,7 @@ import java.util.function.Consumer;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.awaitility.Awaitility.await;
 import static org.eclipse.edc.identityhub.spi.credential.request.model.HolderRequestState.ISSUED;
 import static org.eclipse.edc.identityhub.spi.credential.request.model.HolderRequestState.REQUESTED;
 import static org.eclipse.edc.identityhub.spi.credential.request.model.HolderRequestState.REQUESTING;
@@ -57,8 +55,8 @@ import static org.eclipse.edc.spi.persistence.StateEntityStore.hasState;
 
 /**
  * Verifies that a leased {@link HolderCredentialRequest} contains the changes of another transaction that held its lease
- * until it completed, and that a runtime whose lease expired cannot overwrite the changes of the runtime that leased the
- * request after it.
+ * until it completed, that a request locked by another transaction is skipped instead of waited for, and that a runtime
+ * whose lease expired cannot overwrite the changes of the runtime that leased the request after it.
  * <p>
  * This cannot use the transaction context of {@link PostgresqlStoreSetupExtension}: it auto-commits every statement, so a
  * lease would never be held by an open transaction. Each store has its own lease holder, like two replicas.
@@ -70,15 +68,14 @@ class SqlHolderCredentialRequestStoreLeaseTest {
     private static final String REQUEST_ID = "request-id";
     private static final String RUNTIME_ID = "runtime-id";
     private final Clock clock = Clock.systemUTC();
-    private final LeaseStatements leaseStatements = new BaseSqlLeaseStatements();
-    private final HolderCredentialRequestStoreStatements statements = new PostgresDialectStatements(leaseStatements, clock);
+    private final HolderCredentialRequestStoreStatements statements = new PostgresDialectStatements(clock);
     private final ExecutorService executor = Executors.newFixedThreadPool(2);
 
     private LocalTransactionContext transactionContext;
     private SqlHolderCredentialRequestStore store;
     private SqlHolderCredentialRequestStore otherStore;
     private SqlHolderCredentialRequestStore expiredLeaseStore;
-    private LeaseUtil leaseUtil;
+    private RowLeaseUtil leaseUtil;
 
     @BeforeEach
     void setup(PostgresqlStoreSetupExtension extension, QueryExecutor queryExecutor) {
@@ -91,7 +88,7 @@ class SqlHolderCredentialRequestStoreLeaseTest {
         otherStore = createStore(registry, extension.getDatasourceName(), queryExecutor, "other-runtime-id", clock);
         // its leases start in the past, so they have expired as soon as they are acquired
         expiredLeaseStore = createStore(registry, extension.getDatasourceName(), queryExecutor, "expired-runtime-id", Clock.offset(clock, Duration.ofMinutes(-2)));
-        leaseUtil = new LeaseUtil(transactionContext, extension::getConnection, statements.getHolderCredentialRequestTable(), leaseStatements, clock);
+        leaseUtil = new RowLeaseUtil(transactionContext, extension::getConnection, statements, statements.getHolderCredentialRequestTable(), clock);
 
         extension.runQuery(TestUtils.getResourceFileContentAsString("holder-credential-request-schema.sql"));
     }
@@ -101,7 +98,6 @@ class SqlHolderCredentialRequestStoreLeaseTest {
         executor.shutdownNow();
         assertThat(executor.awaitTermination(30, TimeUnit.SECONDS)).isTrue();
         extension.runQuery("DROP TABLE " + statements.getHolderCredentialRequestTable() + " CASCADE");
-        extension.runQuery("DROP TABLE " + leaseStatements.getLeaseTableName() + " CASCADE");
     }
 
     @Test
@@ -129,15 +125,12 @@ class SqlHolderCredentialRequestStoreLeaseTest {
     }
 
     @Test
-    void nextNotLeased_whenOtherTransactionChangesEntityToNotMatch_shouldNotReturnIt() throws Exception {
-        var release = changeInOtherTransaction(request -> request.transitionIssued("issuer-pid"));
+    void nextNotLeased_whenOtherTransactionHoldsEntity_shouldSkipItWithoutWaiting() throws Exception {
+        var release = changeInOtherTransaction(request -> request.transitionRequested("new-issuer-pid"));
         try {
             var result = executor.submit(() -> transactionContext.execute(() -> store.nextNotLeased(10, hasState(REQUESTED.code()))));
 
-            assertWaitsForLease(result);
-            release.countDown();
             assertThat(result.get(30, TimeUnit.SECONDS)).isEmpty();
-            // the lease is broken again, so that the request is not blocked until the lease expires
             assertThat(leaseUtil.isLeased(REQUEST_ID, RUNTIME_ID)).isFalse();
         } finally {
             release.countDown();
@@ -145,19 +138,14 @@ class SqlHolderCredentialRequestStoreLeaseTest {
     }
 
     @Test
-    void nextNotLeased_whenOtherTransactionChangesEntity_shouldReturnItsChanges() throws Exception {
+    void nextNotLeased_whenOtherTransactionCompleted_shouldReturnItsChanges() throws Exception {
         var release = changeInOtherTransaction(request -> request.transitionRequested("new-issuer-pid"));
-        try {
-            var result = executor.submit(() -> transactionContext.execute(() -> store.nextNotLeased(10, hasState(REQUESTED.code()))));
+        release.countDown();
 
-            assertWaitsForLease(result);
-            release.countDown();
-            assertThat(result.get(30, TimeUnit.SECONDS)).singleElement()
-                    .satisfies(request -> assertThat(request.getIssuerPid()).isEqualTo("new-issuer-pid"));
-            assertThat(leaseUtil.isLeased(REQUEST_ID, RUNTIME_ID)).isTrue();
-        } finally {
-            release.countDown();
-        }
+        await().untilAsserted(() -> assertThat(transactionContext.execute(() -> store.nextNotLeased(10, hasState(REQUESTED.code()))))
+                .singleElement()
+                .satisfies(request -> assertThat(request.getIssuerPid()).isEqualTo("new-issuer-pid")));
+        assertThat(leaseUtil.isLeased(REQUEST_ID, RUNTIME_ID)).isTrue();
     }
 
     @Test
@@ -172,7 +160,7 @@ class SqlHolderCredentialRequestStoreLeaseTest {
 
         assertThat(transactionContext.execute(() -> expiredLeaseStore.save(outdated))).isFailed()
                 .extracting(StoreFailure::getReason)
-                .isEqualTo(StoreFailure.Reason.GENERAL_ERROR);
+                .isEqualTo(StoreFailure.Reason.CONFLICT);
         assertThat(transactionContext.execute(() -> store.findById(REQUEST_ID)).stateAsEnum()).isEqualTo(REQUESTED);
     }
 
@@ -231,9 +219,8 @@ class SqlHolderCredentialRequestStoreLeaseTest {
     }
 
     private SqlHolderCredentialRequestStore createStore(LocalDataSourceRegistry registry, String datasourceName, QueryExecutor queryExecutor, String leaseHolder, Clock leaseClock) {
-        var leaseContextBuilder = SqlLeaseContextBuilderImpl.with(transactionContext, leaseHolder, statements.getHolderCredentialRequestTable(), leaseStatements, leaseClock, queryExecutor);
         return new SqlHolderCredentialRequestStore(registry, datasourceName, transactionContext, new JacksonTypeManager()::getMapper,
-                queryExecutor, statements, leaseContextBuilder);
+                queryExecutor, statements, leaseHolder, leaseClock);
     }
 
     private void awaitUninterruptibly(CountDownLatch latch) {

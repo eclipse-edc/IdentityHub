@@ -16,7 +16,6 @@ package org.eclipse.edc.identityhub.store.sql.credentialoffer.schema;
 
 import org.eclipse.edc.identityhub.store.sql.credentialoffer.schema.schema.postgres.CredentialOfferMapping;
 import org.eclipse.edc.spi.query.QuerySpec;
-import org.eclipse.edc.sql.lease.spi.LeaseStatements;
 import org.eclipse.edc.sql.translation.PostgresqlOperatorTranslator;
 import org.eclipse.edc.sql.translation.SqlOperatorTranslator;
 import org.eclipse.edc.sql.translation.SqlQueryStatement;
@@ -28,18 +27,16 @@ import static java.lang.String.format;
 public class BaseSqlDialectStatements implements CredentialOfferStoreStatements {
 
     protected final SqlOperatorTranslator operatorTranslator;
-    protected final LeaseStatements leaseStatements;
     protected final Clock clock;
 
-    public BaseSqlDialectStatements(SqlOperatorTranslator operatorTranslator, LeaseStatements leaseStatements, Clock clock) {
+    public BaseSqlDialectStatements(SqlOperatorTranslator operatorTranslator, Clock clock) {
         this.operatorTranslator = operatorTranslator;
-        this.leaseStatements = leaseStatements;
         this.clock = clock;
     }
 
     @Override
     public String getInsertTemplate() {
-        return executeStatement()
+        var insert = executeStatement()
                 .column(getIdColumn())
                 .column(getStateColumn())
                 .column(getStateCountColumn())
@@ -51,23 +48,30 @@ public class BaseSqlDialectStatements implements CredentialOfferStoreStatements 
                 .column(getParticipantContextIdColumn())
                 .column(getIssuerColumn())
                 .jsonColumn(getCredentialsColumn())
+                .column(getVersionColumn())
                 .insertInto(getCredentialOffersTable());
+        // a row that conflicts with an existing one is not inserted. Unlike a failed statement, this does not abort the
+        // surrounding transaction
+        return insert.replaceFirst(";\\s*$", "") + " ON CONFLICT DO NOTHING;";
     }
 
     @Override
     public String getUpdateTemplate() {
-        return executeStatement()
+        var update = executeStatement()
                 .column(getStateColumn())
                 .column(getStateCountColumn())
                 .column(getStateTimestampColumn())
-                .column(getCreatedAtColumn())
                 .column(getUpdatedAtColumn())
                 .jsonColumn(getTraceContextColumn())
                 .column(getErrorDetailColumn())
-                .column(getParticipantContextIdColumn())
-                .column(getIssuerColumn())
                 .jsonColumn(getCredentialsColumn())
+                .column(getLeasedByColumn())
+                .column(getLeasedAtColumn())
+                .column(getLeaseDurationColumn())
+                .column(getVersionColumn())
                 .update(getCredentialOffersTable(), getIdColumn());
+        // an offer that was saved by someone else since it was read, or that is leased by someone else, is not overwritten
+        return update.replaceFirst(";\\s*$", "") + " AND " + getVersionAndLeaseFilter(getCredentialOffersTable()) + ";";
     }
 
     @Override
@@ -91,19 +95,14 @@ public class BaseSqlDialectStatements implements CredentialOfferStoreStatements 
 
     @Override
     public SqlQueryStatement createNextNotLeaseQuery(QuerySpec querySpec) {
-        var queryTemplate = "%s LEFT JOIN %s l ON %s.%s = l.%s".formatted(getSelectStatement(), leaseStatements.getLeaseTableName(), getCredentialOffersTable(), getIdColumn(), leaseStatements.getResourceIdColumn());
-        return new SqlQueryStatement(queryTemplate, querySpec, new CredentialOfferMapping(this), operatorTranslator)
-                .addWhereClause(getNotLeasedFilter(), clock.millis(), getCredentialOffersTable());
+        return new SqlQueryStatement(getSelectStatement(), querySpec, new CredentialOfferMapping(this), operatorTranslator)
+                .addWhereClause(getNotLeasedFilter(getCredentialOffersTable()), clock.millis())
+                .forUpdate(true);
     }
 
     @Override
     public String getSelectStatement() {
         return format("SELECT * FROM %s", getCredentialOffersTable());
-    }
-
-    private String getNotLeasedFilter() {
-        return format("(l.%s IS NULL OR (? > (%s + %s) AND ? = l.%s))",
-                leaseStatements.getResourceIdColumn(), leaseStatements.getLeasedAtColumn(), leaseStatements.getLeaseDurationColumn(), leaseStatements.getResourceKindColumn());
     }
 
 }

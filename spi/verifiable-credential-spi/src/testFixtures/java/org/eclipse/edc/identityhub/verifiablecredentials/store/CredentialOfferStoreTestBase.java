@@ -115,13 +115,77 @@ public abstract class CredentialOfferStoreTestBase {
             var offer = createOffer("test-offer", RECEIVED);
             getStore().save(offer);
 
-            var updatedOffer = createOffer("test-offer", PROCESSED);
+            var updatedOffer = getStore().findById("test-offer");
+            updatedOffer.transition(PROCESSED);
             getStore().save(updatedOffer);
 
             var query = getStore().query(QuerySpec.max());
             assertThat(query).isNotNull()
                     .usingRecursiveFieldByFieldElementComparator()
                     .containsExactly(updatedOffer);
+        }
+
+        @Test
+        void save_withSameIdExists_shouldFailWithConflict() {
+            getStore().save(createOffer("test-offer", RECEIVED));
+            var newOffer = createOffer("test-offer", PROCESSED);
+
+            assertThat(getStore().save(newOffer)).isFailed()
+                    .extracting(StoreFailure::getReason)
+                    .isEqualTo(StoreFailure.Reason.CONFLICT);
+            assertThat(getStore().findById("test-offer").getStateAsEnum()).isEqualTo(RECEIVED);
+        }
+    }
+
+    @Nested
+    class Version {
+
+        @Test
+        void save_shouldIncrementVersion() {
+            var offer = createOffer("test-offer");
+            assertThat(offer.getVersion()).isZero();
+
+            getStore().save(offer);
+
+            assertThat(offer.getVersion()).isEqualTo(1);
+            assertThat(getStore().findById("test-offer").getVersion()).isEqualTo(1);
+
+            offer.transition(PROCESSED);
+            getStore().save(offer);
+
+            assertThat(offer.getVersion()).isEqualTo(2);
+            assertThat(getStore().findById("test-offer").getVersion()).isEqualTo(2);
+        }
+
+        @Test
+        void save_shouldFailWithConflict_whenEntityIsStale() {
+            getStore().save(createOffer("test-offer"));
+            var first = getStore().findById("test-offer");
+            var stale = getStore().findById("test-offer");
+            first.transition(PROCESSED);
+            assertThat(getStore().save(first)).isSucceeded();
+
+            stale.transition(CredentialOfferStatus.REJECTED);
+
+            assertThat(getStore().save(stale)).isFailed()
+                    .extracting(StoreFailure::getReason)
+                    .isEqualTo(StoreFailure.Reason.CONFLICT);
+            assertThat(getStore().findById("test-offer").getStateAsEnum()).isEqualTo(PROCESSED);
+        }
+
+        @Test
+        void findByIdAndLease_shouldReturnLatestVersion() {
+            var offer = createOffer("test-offer");
+            getStore().save(offer);
+            offer.transition(PROCESSED);
+            getStore().save(offer);
+
+            var leased = getStore().findByIdAndLease("test-offer");
+
+            assertThat(leased).isSucceeded().satisfies(o -> {
+                assertThat(o.getVersion()).isEqualTo(2);
+                assertThat(o.getStateAsEnum()).isEqualTo(PROCESSED);
+            });
         }
     }
 

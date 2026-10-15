@@ -32,7 +32,7 @@ public class InMemoryCredentialOfferStore extends InMemoryStatefulEntityStore<Cr
     }
 
     public InMemoryCredentialOfferStore(String leaserId, Clock clock, CriterionOperatorRegistry criterionOperatorRegistry) {
-        super(CredentialOffer.class, leaserId, clock, criterionOperatorRegistry, state -> CredentialOfferStatus.valueOf(state).code());
+        super(CredentialOffer.class, leaserId, clock, criterionOperatorRegistry, state -> CredentialOfferStatus.valueOf(state).code(), true);
     }
 
     @Override
