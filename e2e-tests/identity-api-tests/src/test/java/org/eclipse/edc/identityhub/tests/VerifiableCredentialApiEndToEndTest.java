@@ -233,7 +233,7 @@ public class VerifiableCredentialApiEndToEndTest {
             var credential = createCredential();
             var resourceId = identityHub.storeCredential(credential, owner);
 
-            var updateManifest = createManifest(owner, credential)
+            var updateManifest = createManifest(otherUser, credential)
                     .id(resourceId)
                     .reissuancePolicy(Policy.Builder.newInstance().build()) // update re-issuance policy
                     .build();
@@ -250,6 +250,55 @@ public class VerifiableCredentialApiEndToEndTest {
                     .body(notNullValue());
 
             var resource = identityHub.getCredential(resourceId).orElseThrow(() -> new EdcException("Failed to retrieve credential with id %s".formatted(resourceId)));
+        }
+
+        @Test
+        void create_whenBodyNamesOtherParticipant_expect400(IdentityHub identityHub) {
+            var attacker = "attacker";
+            var attackerAuth = authorizeUser(attacker, identityHub);
+            var victim = "victim";
+            identityHub.createParticipant(victim);
+
+            var resourceId = UUID.randomUUID().toString();
+            var manifest = createManifest(victim, createCredential()).id(resourceId).build();
+
+            assertThat(Arrays.asList(attackerAuth, authorizeUser(SUPER_USER, identityHub)))
+                    .allSatisfy(auth -> identityHub.getIdentityEndpoint().baseRequest()
+                            .contentType(JSON)
+                            .header(auth)
+                            .body(manifest)
+                            .post("/v1/participants/%s/credentials".formatted(attacker))
+                            .then()
+                            .log().ifValidationFails()
+                            .statusCode(400));
+
+            assertThat(identityHub.getCredential(resourceId)).isEmpty();
+        }
+
+        @Test
+        void update_whenBodyNamesOtherParticipant_expect400(IdentityHub identityHub) {
+            var attacker = "attacker";
+            var attackerAuth = authorizeUser(attacker, identityHub);
+            var victim = "victim";
+            identityHub.createParticipant(victim);
+
+            var credential = createCredential();
+            var resourceId = identityHub.storeCredential(credential, attacker);
+            var manifest = createManifest(victim, createCredential()).id(resourceId).build();
+
+            assertThat(Arrays.asList(attackerAuth, authorizeUser(SUPER_USER, identityHub)))
+                    .allSatisfy(auth -> identityHub.getIdentityEndpoint().baseRequest()
+                            .contentType(JSON)
+                            .header(auth)
+                            .body(manifest)
+                            .put("/v1/participants/%s/credentials".formatted(attacker))
+                            .then()
+                            .log().ifValidationFails()
+                            .statusCode(400));
+
+            var resource = identityHub.getCredential(resourceId).orElseThrow(() -> new EdcException("Failed to retrieve credential with id %s".formatted(resourceId)));
+            assertThat(resource.getParticipantContextId()).isEqualTo(attacker);
+            assertThat(resource.getVerifiableCredential().credential()).usingRecursiveComparison().isEqualTo(credential);
         }
 
         @Test
