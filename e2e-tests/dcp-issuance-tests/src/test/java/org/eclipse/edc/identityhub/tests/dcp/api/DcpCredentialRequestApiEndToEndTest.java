@@ -170,7 +170,7 @@ public class DcpCredentialRequestApiEndToEndTest {
                         .id("attestation-id")
                         .attestationType("Attestation")
                         .configuration(Map.of())
-                        .participantContextId("participantContextId")
+                        .participantContextId(ISSUER_ID)
                         .build();
                 attestationDefinitionService.createAttestation(attestationDefinition);
 
@@ -188,7 +188,7 @@ public class DcpCredentialRequestApiEndToEndTest {
                         .validity(3600)
                         .mapping(new MappingDefinition("participant.name", "credentialSubject.name", true))
                         .rule(new CredentialRuleDefinition("expression", credentialRuleConfiguration))
-                        .participantContextId("participantContextId")
+                        .participantContextId(ISSUER_ID)
                         .formatFrom(VC1_0_JWT)
                         .build();
 
@@ -396,7 +396,7 @@ public class DcpCredentialRequestApiEndToEndTest {
             var attestationDefinition = AttestationDefinition.Builder.newInstance()
                     .id("attestation-id")
                     .attestationType("Attestation")
-                    .participantContextId("participantContextId")
+                    .participantContextId(ISSUER_ID)
                     .configuration(Map.of())
                     .build();
             attestationDefinitionService.createAttestation(attestationDefinition);
@@ -414,7 +414,7 @@ public class DcpCredentialRequestApiEndToEndTest {
                     .jsonSchema("{}")
                     .attestation("attestation-id")
                     .rule(new CredentialRuleDefinition("expression", credentialRuleConfiguration))
-                    .participantContextId("participantContextId")
+                    .participantContextId(ISSUER_ID)
                     .formatFrom(VC1_0_JWT)
                     .build();
 

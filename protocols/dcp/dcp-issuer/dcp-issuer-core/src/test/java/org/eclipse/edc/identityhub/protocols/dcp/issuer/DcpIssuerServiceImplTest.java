@@ -31,6 +31,8 @@ import org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcess;
 import org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcessStates;
 import org.eclipse.edc.issuerservice.spi.issuance.process.store.IssuanceProcessStore;
 import org.eclipse.edc.issuerservice.spi.issuance.rule.CredentialRuleDefinitionEvaluator;
+import org.eclipse.edc.spi.query.Criterion;
+import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.spi.result.ServiceFailure;
 import org.eclipse.edc.spi.result.ServiceResult;
@@ -114,7 +116,6 @@ public class DcpIssuerServiceImplTest {
         Map<String, Object> claims = Map.of("claim1", "value1", "claim2", "value2");
 
         when(credentialDefinitionService.queryCredentialDefinitions(any())).thenReturn(ServiceResult.success(List.of(credentialDefinition)));
-        when(credentialDefinitionService.findCredentialDefinitionById(anyString())).thenReturn(ServiceResult.success(credentialDefinition));
         when(attestationPipeline.evaluate(eq(attestations), any())).thenReturn(Result.success(claims));
         when(credentialRuleDefinitionEvaluator.evaluate(eq(List.of(credentialRuleDefinition)), any())).thenReturn(Result.success());
         when(dcpProfileRegistry.profilesFor(VC1_0_JWT)).thenReturn(List.of(new DcpProfile("profile", VC1_0_JWT, "statusType")));
@@ -178,7 +179,6 @@ public class DcpIssuerServiceImplTest {
         var existingProcess = IssuanceProcess.Builder.newInstance().holderPid(holderPid).holderId("holderId").participantContextId("participantContextId").state(IssuanceProcessStates.APPROVED.code()).build();
 
         when(credentialDefinitionService.queryCredentialDefinitions(any())).thenReturn(ServiceResult.success(List.of(credentialDefinition)));
-        when(credentialDefinitionService.findCredentialDefinitionById(anyString())).thenReturn(ServiceResult.success(credentialDefinition));
         when(attestationPipeline.evaluate(eq(attestations), any())).thenReturn(Result.success(Map.of()));
         when(credentialRuleDefinitionEvaluator.evaluate(any(), any())).thenReturn(Result.success());
         when(dcpProfileRegistry.profilesFor(VC1_0_JWT)).thenReturn(List.of(new DcpProfile("profile", VC1_0_JWT, "statusType")));
@@ -303,8 +303,9 @@ public class DcpIssuerServiceImplTest {
         var holder = Holder.Builder.newInstance().holderId("holderId").did("participantDid").holderName("name").participantContextId("participantContextId").build();
         var participant = new DcpRequestContext(holder, Map.of(), null);
 
-        when(credentialDefinitionService.queryCredentialDefinitions(any())).thenReturn(ServiceResult.notFound("test-failure"));
-        when(credentialDefinitionService.findCredentialDefinitionById(anyString())).thenReturn(ServiceResult.success(credentialDefinition));
+        when(credentialDefinitionService.queryCredentialDefinitions(any()))
+                .thenReturn(ServiceResult.success(List.of(credentialDefinition)))
+                .thenReturn(ServiceResult.notFound("test-failure"));
         when(attestationPipeline.evaluate(eq(attestations), any())).thenReturn(Result.failure("test-failure"));
 
         var result = dcpIssuerService.initiateCredentialsIssuance("participantContextId", message, participant);
@@ -320,6 +321,38 @@ public class DcpIssuerServiceImplTest {
         //noinspection unchecked
         listenerCaptor.getValue().accept(listener);
         verify(listener).rejected(eq(message.getHolderPid()), eq("participantContextId"), eq("test-failure"));
+    }
+
+    @Test
+    void initiateCredentialsIssuance_whenCredentialDefinitionOfOtherParticipantContext_returnsBadRequest() {
+        var message = CredentialRequestMessage.Builder.newInstance()
+                .holderPid(UUID.randomUUID().toString())
+                .credential(new CredentialRequestSpecifier("otherCredentialDefinitionId"))
+                .build();
+        var holder = Holder.Builder.newInstance().holderId("holderId").did("participantDid").holderName("name").participantContextId("participantContextId").build();
+        var participant = new DcpRequestContext(holder, Map.of(), null);
+
+        // the definition belongs to another participant context, so the scoped query does not return it
+        when(credentialDefinitionService.queryCredentialDefinitions(any())).thenReturn(ServiceResult.success(List.of()));
+
+        var result = dcpIssuerService.initiateCredentialsIssuance("participantContextId", message, participant);
+
+        assertThat(result).isFailed().satisfies(f -> assertThat(f.getReason()).isEqualTo(ServiceFailure.Reason.BAD_REQUEST));
+
+        var queryCaptor = ArgumentCaptor.forClass(QuerySpec.class);
+        verify(credentialDefinitionService).queryCredentialDefinitions(queryCaptor.capture());
+        assertThat(queryCaptor.getValue().getFilterExpression())
+                .contains(Criterion.criterion("participantContextId", "=", "participantContextId"));
+        verify(attestationPipeline, never()).evaluate(any(), any());
+        verify(issuanceProcessStore, never()).save(any());
+
+        var listenerCaptor = ArgumentCaptor.forClass(Consumer.class);
+        //noinspection unchecked
+        verify(issuanceObservable).invokeForEach(listenerCaptor.capture());
+        var listener = mock(IssuanceEventListener.class);
+        //noinspection unchecked
+        listenerCaptor.getValue().accept(listener);
+        verify(listener).rejected(eq(message.getHolderPid()), eq("participantContextId"), any());
     }
 
     // IS-REQ-04: CredentialRequestMessage with an empty credentials list -> badRequest "No credentials requested", nothing persisted, rejected event fired
@@ -359,7 +392,7 @@ public class DcpIssuerServiceImplTest {
                 .credential(new CredentialRequestSpecifier("credentialDefinitionId1"))
                 .build();
 
-        // the definition resolved while parsing the requested formats reports VC1_0_JWT ...
+        // the definition resolved first, while parsing the requested formats, reports VC1_0_JWT ...
         var jwtDefinition = CredentialDefinition.Builder.newInstance()
                 .id("credentialDefinitionId1")
                 .credentialType("MembershipCredential")
@@ -369,7 +402,7 @@ public class DcpIssuerServiceImplTest {
                 .participantContextId("participantContextId")
                 .formatFrom(VC1_0_JWT)
                 .build();
-        // ... but the definition returned by the query carries a different format
+        // ... but the one resolved afterwards carries a different format, e.g. because it was updated in the meantime
         var joseDefinition = CredentialDefinition.Builder.newInstance()
                 .id("credentialDefinitionId1")
                 .credentialType("MembershipCredential")
@@ -383,8 +416,9 @@ public class DcpIssuerServiceImplTest {
         var holder = Holder.Builder.newInstance().holderId("holderId").did("participantDid").holderName("name").participantContextId("participantContextId").build();
         var participant = new DcpRequestContext(holder, Map.of(), null);
 
-        when(credentialDefinitionService.findCredentialDefinitionById(anyString())).thenReturn(ServiceResult.success(jwtDefinition));
-        when(credentialDefinitionService.queryCredentialDefinitions(any())).thenReturn(ServiceResult.success(List.of(joseDefinition)));
+        when(credentialDefinitionService.queryCredentialDefinitions(any()))
+                .thenReturn(ServiceResult.success(List.of(jwtDefinition)))
+                .thenReturn(ServiceResult.success(List.of(joseDefinition)));
 
         var result = dcpIssuerService.initiateCredentialsIssuance("participantContextId", message, participant);
 
@@ -417,7 +451,6 @@ public class DcpIssuerServiceImplTest {
         var holder = Holder.Builder.newInstance().holderId("holderId").did("participantDid").holderName("name").participantContextId("participantContextId").build();
         var participant = new DcpRequestContext(holder, Map.of(), null);
 
-        when(credentialDefinitionService.findCredentialDefinitionById(anyString())).thenReturn(ServiceResult.success(credentialDefinition));
         when(credentialDefinitionService.queryCredentialDefinitions(any())).thenReturn(ServiceResult.success(List.of(credentialDefinition)));
         // no DCP profile registered for VC1_0_JWT
         when(dcpProfileRegistry.profilesFor(VC1_0_JWT)).thenReturn(List.of());
@@ -455,7 +488,6 @@ public class DcpIssuerServiceImplTest {
         var holder = Holder.Builder.newInstance().holderId("holderId").did("participantDid").holderName("name").participantContextId("participantContextId").build();
         var participant = new DcpRequestContext(holder, Map.of(), null);
 
-        when(credentialDefinitionService.findCredentialDefinitionById(anyString())).thenReturn(ServiceResult.success(credentialDefinition));
         when(credentialDefinitionService.queryCredentialDefinitions(any())).thenReturn(ServiceResult.success(List.of(credentialDefinition)));
         when(dcpProfileRegistry.profilesFor(VC1_0_JWT)).thenReturn(List.of(new DcpProfile("profile", VC1_0_JWT, "statusType")));
 
@@ -493,7 +525,6 @@ public class DcpIssuerServiceImplTest {
                 .formatFrom(VC1_0_JWT)
                 .build();
         when(credentialDefinitionService.queryCredentialDefinitions(any())).thenReturn(ServiceResult.success(List.of(credentialDefinition)));
-        when(credentialDefinitionService.findCredentialDefinitionById(anyString())).thenReturn(ServiceResult.success(credentialDefinition));
         when(attestationPipeline.evaluate(eq(attestations), any())).thenReturn(Result.success(Map.of()));
         when(credentialRuleDefinitionEvaluator.evaluate(any(), any())).thenReturn(Result.success());
         when(dcpProfileRegistry.profilesFor(VC1_0_JWT)).thenReturn(List.of(new DcpProfile("profile", VC1_0_JWT, "statusType")));

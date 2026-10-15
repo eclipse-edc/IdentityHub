@@ -22,6 +22,7 @@ import org.eclipse.edc.issuerservice.spi.issuance.model.AttestationDefinition;
 import org.eclipse.edc.issuerservice.spi.issuance.model.CredentialDefinition;
 import org.eclipse.edc.issuerservice.spi.issuance.model.CredentialRuleDefinition;
 import org.eclipse.edc.issuerservice.spi.issuance.rule.CredentialRuleDefinitionValidatorRegistry;
+import org.eclipse.edc.spi.query.Criterion;
 import org.eclipse.edc.spi.result.StoreResult;
 import org.eclipse.edc.transaction.spi.NoopTransactionContext;
 import org.eclipse.edc.validator.spi.ValidationResult;
@@ -36,6 +37,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat.VC1_0_JWT;
 import static org.eclipse.edc.junit.assertions.AbstractResultAssert.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -64,6 +66,9 @@ public class CredentialDefinitionServiceImplTest {
         assertThat(credentialDefinitionService.createCredentialDefinition(definition)).isSucceeded();
 
         verify(credentialDefinitionStore).create(definition);
+        // only attestations of the credential definition's own participant context can be referenced
+        verify(attestationDefinitionStore).query(argThat(query -> query.getFilterExpression()
+                .contains(Criterion.criterion("participantContextId", "=", definition.getParticipantContextId()))));
     }
 
     @Test

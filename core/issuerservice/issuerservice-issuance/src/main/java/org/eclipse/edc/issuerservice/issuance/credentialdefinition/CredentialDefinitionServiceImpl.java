@@ -93,6 +93,7 @@ public class CredentialDefinitionServiceImpl implements CredentialDefinitionServ
         }
         var query = QuerySpec.Builder.newInstance()
                 .filter(Criterion.criterion("id", "in", credentialDefinition.getAttestations()))
+                .filter(Criterion.criterion("participantContextId", "=", credentialDefinition.getParticipantContextId()))
                 .build();
         return from(attestationDefinitionStore.query(query))
                 .compose(attestationDefinitions -> checkAttestations(credentialDefinition, attestationDefinitions));

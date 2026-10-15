@@ -205,7 +205,7 @@ public class DcpAnonymousIssuanceFlowEndToEndTest {
             var attestationDefinition = AttestationDefinition.Builder.newInstance()
                     .id("attestation-id")
                     .attestationType("Attestation")
-                    .participantContextId(PARTICIPANT_ID)
+                    .participantContextId(ISSUER_ID)
                     .configuration(Map.of())
                     .build();
             attestationDefinitionService.createAttestation(attestationDefinition);
@@ -220,7 +220,7 @@ public class DcpAnonymousIssuanceFlowEndToEndTest {
                     .validity(Duration.ofDays(365).toSeconds()) // one year
                     .mapping(mappingDefinition)
                     .rule(new CredentialRuleDefinition("expression", ruleConfiguration))
-                    .participantContextId(PARTICIPANT_ID)
+                    .participantContextId(ISSUER_ID)
                     .formatFrom(VC1_0_JWT)
                     .build();
 

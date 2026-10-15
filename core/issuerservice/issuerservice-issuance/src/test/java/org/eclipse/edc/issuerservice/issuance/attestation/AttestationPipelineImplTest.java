@@ -14,6 +14,7 @@
 
 package org.eclipse.edc.issuerservice.issuance.attestation;
 
+import org.eclipse.edc.issuerservice.spi.holder.model.Holder;
 import org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationContext;
 import org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationDefinitionStore;
 import org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationSource;
@@ -26,7 +27,6 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
 
 import static java.util.Map.entry;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -38,16 +38,19 @@ import static org.mockito.ArgumentMatchers.isA;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 class AttestationPipelineImplTest {
+
+    private static final String PARTICIPANT_CONTEXT_ID = "participantContextId";
 
     @Test
     void evaluate_whenSingle_success() {
         var attestationDefinition = createAttestationDefinition("a123", "testType", Map.of());
 
         var store = mock(AttestationDefinitionStore.class);
-        var attestationContext = mock(AttestationContext.class);
+        var attestationContext = attestationContext();
 
         when(store.resolveDefinition(eq("a123"))).thenReturn(attestationDefinition);
 
@@ -78,7 +81,7 @@ class AttestationPipelineImplTest {
         var attestationDefinition2 = createAttestationDefinition("a456", "testType1", Map.of());
 
         var store = mock(AttestationDefinitionStore.class);
-        var attestationContext = mock(AttestationContext.class);
+        var attestationContext = attestationContext();
         when(store.resolveDefinition(eq("a123"))).thenReturn(attestationDefinition1);
         when(store.resolveDefinition(eq("a456"))).thenReturn(attestationDefinition2);
 
@@ -100,13 +103,33 @@ class AttestationPipelineImplTest {
         verify(failedSource, times(1)).execute(isA(AttestationContext.class));
     }
 
+    @Test
+    void evaluate_whenAttestationOfOtherParticipantContext_shouldFail() {
+        var attestationDefinition = AttestationDefinition.Builder.newInstance()
+                .id("a123")
+                .attestationType("testType")
+                .participantContextId("otherParticipantContextId")
+                .configuration(Map.of()).build();
+        var store = mock(AttestationDefinitionStore.class);
+        when(store.resolveDefinition(eq("a123"))).thenReturn(attestationDefinition);
+
+        var pipeline = new AttestationPipelineImpl(store);
+        var sourceFactory = mock(AttestationSourceFactory.class);
+        pipeline.registerFactory("testType", sourceFactory);
+
+        var result = pipeline.evaluate(Set.of("a123"), attestationContext());
+
+        assertThat(result).isFailed().detail().contains("a123");
+        verifyNoInteractions(sourceFactory);
+    }
+
     // B4.8: evaluation referencing an unknown attestation id must fail gracefully, not with an NPE
     // NOTE: this documents intended behavior - currently evaluate() throws an NPE from requireNonNull("Unknown attestation: ...")
     @DisplayName("B4.8: evaluating an unknown attestation id fails gracefully instead of throwing an NPE")
     @Test
     void evaluate_whenUnknownAttestationId_shouldFailGracefully() {
         var store = mock(AttestationDefinitionStore.class);
-        var attestationContext = mock(AttestationContext.class);
+        var attestationContext = attestationContext();
         // the store cannot resolve the attestation id
         when(store.resolveDefinition(eq("unknown-id"))).thenReturn(null);
 
@@ -124,7 +147,7 @@ class AttestationPipelineImplTest {
     void evaluate_whenUnregisteredAttestationType_shouldFailGracefully() {
         var attestationDefinition = createAttestationDefinition("a123", "unregistered-type", Map.of());
         var store = mock(AttestationDefinitionStore.class);
-        var attestationContext = mock(AttestationContext.class);
+        var attestationContext = attestationContext();
         when(store.resolveDefinition(eq("a123"))).thenReturn(attestationDefinition);
 
         // no AttestationSourceFactory is registered for "unregistered-type"
@@ -139,8 +162,16 @@ class AttestationPipelineImplTest {
         return AttestationDefinition.Builder.newInstance()
                 .id(id)
                 .attestationType(type)
-                .participantContextId(UUID.randomUUID().toString())
+                .participantContextId(PARTICIPANT_CONTEXT_ID)
                 .configuration(configuration).build();
+    }
+
+    private AttestationContext attestationContext() {
+        var holder = Holder.Builder.newInstance().holderId("holderId").did("did:web:holder").holderName("name")
+                .participantContextId(PARTICIPANT_CONTEXT_ID).build();
+        var attestationContext = mock(AttestationContext.class);
+        when(attestationContext.holder()).thenReturn(holder);
+        return attestationContext;
     }
 
 }

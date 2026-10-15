@@ -25,7 +25,8 @@ import java.util.Set;
 public interface AttestationPipeline {
 
     /**
-     * Performs the evaluation.
+     * Performs the evaluation. Only attestation definitions that belong to the participant context of the
+     * {@link AttestationContext#holder()} are evaluated, the evaluation fails for any other attestation ID.
      */
     Result<Map<String, Object>> evaluate(Set<String> attestations, AttestationContext context);
 
