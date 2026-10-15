@@ -123,7 +123,12 @@ public class PresentationApiController implements PresentationApi {
 
 
         // verify and validate the requestor's SI token
-        var issuerScopes = selfIssuedTokenVerifier.verify(token, participantContextId).orElseThrow(f -> new AuthenticationFailedException("ID token verification failed: %s".formatted(f.getFailureDetail())));
+        var issuerScopes = selfIssuedTokenVerifier.verify(token, participantContextId)
+                .orElseThrow(f -> {
+                    // the failure may describe the outcome of resolving the sender's DID, which is not for the caller to see
+                    monitor.debug("ID token verification failed: %s".formatted(f.getFailureDetail()));
+                    return new AuthenticationFailedException("ID token verification failed");
+                });
 
         // query the database
         var credentials = queryResolver.query(participantContextId, presentationQuery, issuerScopes).orElseThrow(f -> new NotAuthorizedException(f.getFailureDetail()));

@@ -28,6 +28,7 @@ import org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialRequestMess
 import org.eclipse.edc.identityhub.spi.participantcontext.IdentityHubParticipantContextService;
 import org.eclipse.edc.jsonld.spi.JsonLdNamespace;
 import org.eclipse.edc.spi.iam.TokenRepresentation;
+import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.transform.spi.TypeTransformerRegistry;
 import org.eclipse.edc.validator.spi.JsonObjectValidatorRegistry;
 import org.eclipse.edc.web.spi.exception.AuthenticationFailedException;
@@ -52,18 +53,21 @@ public class CredentialRequestApiController implements CredentialRequestApi {
     private final JsonObjectValidatorRegistry validatorRegistry;
     private final TypeTransformerRegistry dcpTransformerRegistry;
     private final JsonLdNamespace namespace;
+    private final Monitor monitor;
 
     public CredentialRequestApiController(IdentityHubParticipantContextService participantContextService, DcpIssuerService dcpIssuerService,
                                           DcpHolderTokenVerifier tokenValidator,
                                           JsonObjectValidatorRegistry validatorRegistry,
                                           TypeTransformerRegistry dcpTransformerRegistry,
-                                          JsonLdNamespace namespace) {
+                                          JsonLdNamespace namespace,
+                                          Monitor monitor) {
         this.participantContextService = participantContextService;
         this.dcpIssuerService = dcpIssuerService;
         this.tokenValidator = tokenValidator;
         this.validatorRegistry = validatorRegistry;
         this.dcpTransformerRegistry = dcpTransformerRegistry;
         this.namespace = namespace;
+        this.monitor = monitor;
     }
 
 
@@ -88,7 +92,11 @@ public class CredentialRequestApiController implements CredentialRequestApi {
                 .orElseThrow((f) -> new AuthenticationFailedException("Invalid issuer"));
 
         var participant = tokenValidator.verify(participantContext, tokenRepresentation)
-                .orElseThrow((f) -> new AuthenticationFailedException("ID token verification failed: %s".formatted(f.getFailureDetail())));
+                .orElseThrow(f -> {
+                    // the failure may describe the outcome of resolving the sender's DID, which is not for the caller to see
+                    monitor.debug("ID token verification failed: %s".formatted(f.getFailureDetail()));
+                    return new AuthenticationFailedException("ID token verification failed");
+                });
 
         return dcpIssuerService.initiateCredentialsIssuance(participantContext.getParticipantContextId(), credentialMessage, participant)
                 .map(response -> {

@@ -47,6 +47,8 @@ import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialObje
 import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialObject.CREDENTIAL_OBJECT_PROFILE_TERM;
 import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialOfferMessage.CREDENTIALS_TERM;
 import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialOfferMessage.CREDENTIAL_ISSUER_TERM;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.not;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -65,7 +67,8 @@ class CredentialOfferApiControllerTest extends RestControllerTestBase {
     private final IdentityHubParticipantContextService participantContextService = mock();
     private final CredentialOfferService offerService = mock();
     private final CredentialObjectResolver credentialObjectResolver = mock();
-    private final CredentialOfferApiController controller = new CredentialOfferApiController(validatorRegistry, typeTransformerRegistry, tokenVerifier, participantContextService, offerService, new TitaniumJsonLd(mock()), credentialObjectResolver);
+    private final CredentialOfferApiController controller = new CredentialOfferApiController(validatorRegistry, typeTransformerRegistry, tokenVerifier, participantContextService, offerService, new TitaniumJsonLd(mock()), credentialObjectResolver,
+            mock());
 
     @BeforeEach
     void setUp() {
@@ -179,7 +182,7 @@ class CredentialOfferApiControllerTest extends RestControllerTestBase {
     @Test
     @DisplayName("CS-OFF-07 / CS-STOR-15: token verification failure returns 401, consistently on the Offer and Storage APIs")
     void offerCredential_invalidAuthToken_statusCode401() {
-        when(tokenVerifier.verify(any(), anyString())).thenReturn(Result.failure("foobar"));
+        when(tokenVerifier.verify(any(), anyString())).thenReturn(Result.failure("DID resolution failed with HTTP 500"));
 
         // 401 is the agreed code for token-verification failures on both DCP endpoints
         baseRequest()
@@ -187,7 +190,8 @@ class CredentialOfferApiControllerTest extends RestControllerTestBase {
                 .post()
                 .then()
                 .log().ifValidationFails()
-                .statusCode(401);
+                .statusCode(401)
+                .body(not(containsString("HTTP 500")));
     }
 
     @Test

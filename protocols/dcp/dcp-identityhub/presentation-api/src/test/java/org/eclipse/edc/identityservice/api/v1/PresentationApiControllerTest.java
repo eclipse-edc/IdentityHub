@@ -154,11 +154,12 @@ class PresentationApiControllerTest extends RestControllerTestBase {
         var presentationQueryBuilder = createPresentationQueryBuilder().build();
         when(typeTransformerRegistry.forContext(scope)).thenReturn(typeTransformerRegistry);
         when(typeTransformerRegistry.transform(isA(JsonObject.class), eq(PresentationQueryMessage.class))).thenReturn(Result.success(presentationQueryBuilder));
-        when(selfIssuedTokenVerifier.verify(anyString(), anyString())).thenReturn(Result.failure("test-failure"));
+        when(selfIssuedTokenVerifier.verify(anyString(), anyString())).thenReturn(Result.failure("DID resolution failed with HTTP 500"));
 
+        // the failure is logged, but not returned to the caller
         assertThatThrownBy(() -> controller().queryPresentation(PARTICIPANT_ID, createObjectBuilder().build(), generateAuthToken()))
                 .isExactlyInstanceOf(AuthenticationFailedException.class)
-                .hasMessage("ID token verification failed: test-failure");
+                .hasMessage("ID token verification failed");
         verifyNoInteractions(queryResolver, generator);
     }
 

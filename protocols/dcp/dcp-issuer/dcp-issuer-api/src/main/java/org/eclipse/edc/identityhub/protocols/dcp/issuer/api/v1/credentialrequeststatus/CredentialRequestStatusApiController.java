@@ -29,6 +29,7 @@ import org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcess;
 import org.eclipse.edc.issuerservice.spi.issuance.process.IssuanceProcessService;
 import org.eclipse.edc.spi.EdcException;
 import org.eclipse.edc.spi.iam.TokenRepresentation;
+import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.spi.query.Criterion;
 import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.transform.spi.TypeTransformerRegistry;
@@ -48,12 +49,15 @@ public class CredentialRequestStatusApiController implements CredentialRequestSt
     private final IdentityHubParticipantContextService participantContextService;
     private final DcpHolderTokenVerifier tokenValidator;
     private final IssuanceProcessService issuanceProcessService;
+    private final Monitor monitor;
 
-    public CredentialRequestStatusApiController(IdentityHubParticipantContextService participantContextService, DcpHolderTokenVerifier tokenValidator, IssuanceProcessService issuanceProcessService, TypeTransformerRegistry dcpRegistry) {
+    public CredentialRequestStatusApiController(IdentityHubParticipantContextService participantContextService, DcpHolderTokenVerifier tokenValidator, IssuanceProcessService issuanceProcessService, TypeTransformerRegistry dcpRegistry,
+                                                Monitor monitor) {
         this.dcpRegistry = dcpRegistry;
         this.participantContextService = participantContextService;
         this.tokenValidator = tokenValidator;
         this.issuanceProcessService = issuanceProcessService;
+        this.monitor = monitor;
     }
 
     @GET
@@ -75,7 +79,11 @@ public class CredentialRequestStatusApiController implements CredentialRequestSt
         var tokenRepresentation = TokenRepresentation.Builder.newInstance().token(authToken).build();
 
         var requestContext = tokenValidator.verify(participantContext, tokenRepresentation)
-                .orElseThrow((f) -> new AuthenticationFailedException("ID token verification failed: %s".formatted(f.getFailureDetail())));
+                .orElseThrow(f -> {
+                    // the failure may describe the outcome of resolving the sender's DID, which is not for the caller to see
+                    monitor.debug("ID token verification failed: %s".formatted(f.getFailureDetail()));
+                    return new AuthenticationFailedException("ID token verification failed");
+                });
 
         var status = fetchByParticipant(participantContextId, requestContext.holder(), credentialRequestId)
                 .map(this::toCredentialStatus)

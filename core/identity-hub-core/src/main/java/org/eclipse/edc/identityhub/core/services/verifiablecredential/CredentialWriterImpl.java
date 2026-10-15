@@ -86,7 +86,7 @@ public class CredentialWriterImpl implements CredentialWriter {
     @Override
     public ServiceResult<Void> write(String holderPid, String holderDid, String issuerPid, String issuerDid, Collection<CredentialWriteRequest> writeRequests, String participantContextId) {
         // a delivery that may not act on the request at all is rejected before any DID is resolved for it
-        var originResult = transactionContext.execute(() -> checkOrigin(holderPid, issuerDid, participantContextId));
+        var originResult = checkOrigin(holderPid, issuerDid, participantContextId);
         if (originResult.failed()) {
             return originResult;
         }
@@ -178,12 +178,15 @@ public class CredentialWriterImpl implements CredentialWriter {
         return success();
     }
 
-    private ServiceResult<Void> checkOrigin(String holderPid, String issuerDid, String participantContextId) {
-        var holderRequest = holderCredentialRequestStore.findById(holderPid);
-        if (holderRequest == null) {
-            return ServiceResult.notFound("HolderCredentialRequest with ID '%s' does not exist".formatted(holderPid));
-        }
-        return checkOrigin(holderRequest, holderPid, issuerDid, participantContextId);
+    @Override
+    public ServiceResult<Void> checkOrigin(String holderPid, String issuerDid, String participantContextId) {
+        return transactionContext.execute(() -> {
+            var holderRequest = holderCredentialRequestStore.findById(holderPid);
+            if (holderRequest == null) {
+                return ServiceResult.notFound("HolderCredentialRequest with ID '%s' does not exist".formatted(holderPid));
+            }
+            return checkOrigin(holderRequest, holderPid, issuerDid, participantContextId);
+        });
     }
 
     /**

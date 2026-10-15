@@ -48,4 +48,15 @@ public interface CredentialWriter {
      * @param participantContextId the participant context the request belongs to
      */
     ServiceResult<Void> reject(String holderPid, String issuerPid, String issuerDid, @Nullable String rejectionReason, String participantContextId);
+
+    /**
+     * Checks that a credential request exists in the participant context and was sent to the given Issuer, i.e. that
+     * a message from that Issuer about the request is expected. {@link #write} and {@link #reject} perform this check
+     * themselves.
+     *
+     * @param holderPid            identifies the Holder's credential request
+     * @param issuerDid            the DID of the Issuer the message comes from
+     * @param participantContextId the participant context the request belongs to
+     */
+    ServiceResult<Void> checkOrigin(String holderPid, String issuerDid, String participantContextId);
 }

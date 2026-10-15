@@ -50,6 +50,7 @@ import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
@@ -213,6 +214,56 @@ public class DcpHolderTokenVerifierImplTest {
                 .build();
     }
 
+
+    @Test
+    void verify_participantNotFound_doesNotValidateToken() {
+        var token = TokenRepresentation.Builder.newInstance().token(generateToken()).build();
+        when(holderStore.query(any())).thenReturn(StoreResult.success(List.of()));
+
+        var result = dcpIssuerTokenVerifier.verify(participantContext, token);
+
+        assertThat(result).isFailed();
+        verifyNoInteractions(tokenValidationService);
+    }
+
+    @Test
+    void verify_kidNotBoundToRegisteredHolder_doesNotValidateToken() {
+        var foreignKey = generateEcKey("did:web:attacker.internal#key1");
+        var token = TokenRepresentation.Builder.newInstance().token(generateJwt(ISSUER_DID, PARTICIPANT_DID, PARTICIPANT_DID, Map.of(), foreignKey)).build();
+
+        var result = dcpIssuerTokenVerifier.verify(participantContext, token);
+
+        assertThat(result).isFailed().detail().startsWith("kid header");
+        verifyNoInteractions(tokenValidationService, holderStore);
+    }
+
+    @Test
+    void verify_anonymousHolder_tokenValidationFails_holderNotCreated() {
+        var verifier = new DcpHolderTokenVerifierImpl(rulesRegistry, tokenValidationService, publicKeyResolver, holderStore, true);
+        var token = TokenRepresentation.Builder.newInstance().token(generateToken()).build();
+        when(holderStore.query(any())).thenReturn(StoreResult.success(List.of()));
+        when(tokenValidationService.validate(anyString(), any(), anyList())).thenReturn(Result.failure("failed"));
+
+        var result = verifier.verify(participantContext, token);
+
+        assertThat(result).isFailed();
+        Mockito.verify(holderStore, never()).create(any());
+    }
+
+    @Test
+    void verify_anonymousHolder_tokenValid_holderCreated() {
+        var verifier = new DcpHolderTokenVerifierImpl(rulesRegistry, tokenValidationService, publicKeyResolver, holderStore, true);
+        var token = TokenRepresentation.Builder.newInstance().token(generateToken()).build();
+        when(holderStore.query(any())).thenReturn(StoreResult.success(List.of()));
+        when(holderStore.create(any())).thenReturn(StoreResult.success());
+        when(tokenValidationService.validate(anyString(), any(), anyList())).thenReturn(Result.success(ClaimToken.Builder.newInstance().build()));
+
+        var result = verifier.verify(participantContext, token);
+
+        assertThat(result).isSucceeded()
+                .satisfies(context -> org.assertj.core.api.Assertions.assertThat(context.holder().isAnonymous()).isTrue());
+        Mockito.verify(holderStore).create(argThat(holder -> holder.getDid().equals(PARTICIPANT_DID) && holder.isAnonymous()));
+    }
 
     private String generateToken() {
         return generateJwt(ISSUER_DID, PARTICIPANT_DID, PARTICIPANT_DID, Map.of(), PARTICIPANT_KEY);

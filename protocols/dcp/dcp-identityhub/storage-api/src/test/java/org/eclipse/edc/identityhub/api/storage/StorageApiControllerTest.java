@@ -52,6 +52,7 @@ import static org.eclipse.edc.identityhub.verifiablecredentials.testfixtures.Ver
 import static org.eclipse.edc.identityhub.verifiablecredentials.testfixtures.VerifiableCredentialTestUtil.generateEcKey;
 import static org.eclipse.edc.validator.spi.Violation.violation;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.not;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyCollection;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -68,6 +69,7 @@ import static org.mockito.Mockito.when;
 class StorageApiControllerTest extends RestControllerTestBase {
 
     private static final String HOLDER_DID = "did:web:holder";
+    private static final String ISSUER_DID = "did:web:issuer";
     private final JsonObjectValidatorRegistry validatorRegistry = mock();
     private final TypeTransformerRegistry transformerRegistry = mock();
     private final Monitor monitor = mock();
@@ -84,6 +86,7 @@ class StorageApiControllerTest extends RestControllerTestBase {
         when(issuerTokenVerifier.verify(any(), anyString())).thenReturn(Result.success(claimToken()));
         when(participantContextService.getParticipantContext(anyString())).thenReturn(ServiceResult.success(participantContext()));
         when(credentialWriter.write(anyString(), anyString(), anyString(), anyString(), anyCollection(), anyString())).thenReturn(ServiceResult.success());
+        when(credentialWriter.checkOrigin(anyString(), anyString(), anyString())).thenReturn(ServiceResult.success());
     }
 
     @Test
@@ -158,14 +161,45 @@ class StorageApiControllerTest extends RestControllerTestBase {
     @Test
     void storeCredential_tokenValidationFails_shouldReturn401() {
         when(validatorRegistry.validate(any(), any())).thenReturn(ValidationResult.success());
-        when(issuerTokenVerifier.verify(any(), anyString())).thenReturn(Result.failure("foo"));
+        when(issuerTokenVerifier.verify(any(), anyString())).thenReturn(Result.failure("DID resolution failed with HTTP 500"));
         baseRequest()
                 .header("Authorization", "Bearer " + generateJwt())
                 .body(credentialMessageJson())
                 .post()
                 .then()
                 .log().ifValidationFails()
+                .statusCode(401)
+                .body(not(containsString("HTTP 500")));
+    }
+
+    @Test
+    void storeCredential_requestNotSentToIssuer_shouldReturn401WithoutVerifyingToken() {
+        when(validatorRegistry.validate(any(), any())).thenReturn(ValidationResult.success());
+        when(credentialWriter.checkOrigin(anyString(), anyString(), anyString())).thenReturn(ServiceResult.notFound("no such request"));
+        baseRequest()
+                .header("Authorization", "Bearer " + generateJwt())
+                .body(credentialMessageJson())
+                .post()
+                .then()
+                .log().ifValidationFails()
+                .statusCode(401)
+                .body(not(containsString("no such request")));
+        verify(credentialWriter).checkOrigin(anyString(), eq(ISSUER_DID), anyString());
+        verifyNoInteractions(issuerTokenVerifier);
+    }
+
+    @Test
+    void storeCredential_kidNotBoundToIssuer_shouldReturn401WithoutVerifyingToken() {
+        when(validatorRegistry.validate(any(), any())).thenReturn(ValidationResult.success());
+        baseRequest()
+                .header("Authorization", "Bearer " + generateJwt("did:web:elsewhere#key1"))
+                .body(credentialMessageJson())
+                .post()
+                .then()
+                .log().ifValidationFails()
                 .statusCode(401);
+        verifyNoInteractions(issuerTokenVerifier);
+        verify(credentialWriter, never()).checkOrigin(anyString(), anyString(), anyString());
     }
 
     @Test
@@ -295,7 +329,7 @@ class StorageApiControllerTest extends RestControllerTestBase {
 
     private ClaimToken claimToken() {
         // the 'iss' claim identifies the Issuer that delivers the credentials
-        return ClaimToken.Builder.newInstance().claim(JwtRegisteredClaimNames.ISSUER, "did:web:issuer").build();
+        return ClaimToken.Builder.newInstance().claim(JwtRegisteredClaimNames.ISSUER, ISSUER_DID).build();
     }
 
     private IdentityHubParticipantContext participantContext() {
@@ -337,10 +371,14 @@ class StorageApiControllerTest extends RestControllerTestBase {
     }
 
     private String generateJwt() {
-        var ecKey = generateEcKey(null);
+        return generateJwt(ISSUER_DID + "#key1");
+    }
+
+    private String generateJwt(String kid) {
+        var ecKey = generateEcKey(kid);
         var jwt = buildSignedJwt(new JWTClaimsSet.Builder().audience("test-audience")
                 .expirationTime(Date.from(Instant.now().plusSeconds(3600)))
-                .issuer("test-issuer")
+                .issuer(ISSUER_DID)
                 .subject("test-subject")
                 .jwtID(UUID.randomUUID().toString()).build(), ecKey);
 

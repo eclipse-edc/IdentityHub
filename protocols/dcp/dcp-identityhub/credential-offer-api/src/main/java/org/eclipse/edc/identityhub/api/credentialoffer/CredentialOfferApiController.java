@@ -30,6 +30,7 @@ import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.CredentialOff
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.offer.CredentialOfferService;
 import org.eclipse.edc.jsonld.spi.JsonLd;
 import org.eclipse.edc.jwt.spi.JwtRegisteredClaimNames;
+import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.transform.spi.TypeTransformerRegistry;
 import org.eclipse.edc.validator.spi.JsonObjectValidatorRegistry;
 import org.eclipse.edc.web.spi.exception.AuthenticationFailedException;
@@ -58,12 +59,13 @@ public class CredentialOfferApiController implements CredentialOfferApi {
     private final CredentialOfferService credentialOfferService;
     private final JsonLd jsonLd;
     private final CredentialObjectResolver credentialObjectResolver;
+    private final Monitor monitor;
 
     public CredentialOfferApiController(JsonObjectValidatorRegistry validatorRegistry,
                                         TypeTransformerRegistry transformerRegistry,
                                         DcpIssuerTokenVerifier issuerTokenVerifier,
                                         IdentityHubParticipantContextService participantContextService, CredentialOfferService credentialOfferService, JsonLd jsonLd,
-                                        CredentialObjectResolver credentialObjectResolver) {
+                                        CredentialObjectResolver credentialObjectResolver, Monitor monitor) {
         this.validatorRegistry = validatorRegistry;
         this.transformerRegistry = transformerRegistry;
         this.issuerTokenVerifier = issuerTokenVerifier;
@@ -71,6 +73,7 @@ public class CredentialOfferApiController implements CredentialOfferApi {
         this.credentialOfferService = credentialOfferService;
         this.jsonLd = jsonLd;
         this.credentialObjectResolver = credentialObjectResolver;
+        this.monitor = monitor;
     }
 
 
@@ -99,7 +102,11 @@ public class CredentialOfferApiController implements CredentialOfferApi {
 
         // validate Issuer's SI token
         var issuerClaims = issuerTokenVerifier.verify(participantContext, authToken)
-                .orElseThrow(f -> new AuthenticationFailedException("ID token verification failed: %s".formatted(f.getFailureDetail())));
+                .orElseThrow(f -> {
+                    // the failure may describe the outcome of resolving the sender's DID, which is not for the caller to see
+                    monitor.debug("ID token verification failed: %s".formatted(f.getFailureDetail()));
+                    return new AuthenticationFailedException("ID token verification failed");
+                });
 
         // the token was verified against the DID document of its issuer, so only the 'iss' claim identifies the sender.
         // An offer made in the name of a different Issuer would otherwise cause credentials to be requested from it.
