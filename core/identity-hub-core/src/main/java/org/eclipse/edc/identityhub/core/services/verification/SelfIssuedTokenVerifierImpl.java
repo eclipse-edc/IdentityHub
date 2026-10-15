@@ -17,6 +17,7 @@ package org.eclipse.edc.identityhub.core.services.verification;
 import org.eclipse.edc.identityhub.publickey.KeyPairResourcePublicKeyResolver;
 import org.eclipse.edc.identityhub.spi.participantcontext.IdentityHubParticipantContextService;
 import org.eclipse.edc.identityhub.spi.verification.SelfIssuedTokenVerifier;
+import org.eclipse.edc.identityhub.verification.IssuerKeyIdRule;
 import org.eclipse.edc.identityhub.verification.SelfIssuedTokenPrecheck;
 import org.eclipse.edc.identityhub.verification.SelfIssuedTokenPrecheck.UnverifiedToken;
 import org.eclipse.edc.jwt.spi.JwtRegisteredClaimNames;
@@ -28,7 +29,6 @@ import org.eclipse.edc.token.spi.TokenValidationRule;
 import org.eclipse.edc.token.spi.TokenValidationRulesRegistry;
 import org.eclipse.edc.token.spi.TokenValidationService;
 import org.eclipse.edc.verifiablecredentials.jwt.rules.IssuerEqualsSubjectRule;
-import org.eclipse.edc.verifiablecredentials.jwt.rules.IssuerKeyIdValidationRule;
 import org.eclipse.edc.verifiablecredentials.jwt.rules.SubJwkIsNullRule;
 
 import java.text.ParseException;
@@ -95,8 +95,9 @@ public class SelfIssuedTokenVerifierImpl implements SelfIssuedTokenVerifier {
             return accessTokenOrigin.mapFailure();
         }
 
-        var idTokenRules = new ArrayList<>(tokenValidationRulesRegistry.getRules(DCP_PRESENTATION_SELF_ISSUED_TOKEN_CONTEXT));
-        idTokenRules.add(new IssuerKeyIdValidationRule(unverified.keyId()));
+        var idTokenRules = new ArrayList<TokenValidationRule>();
+        idTokenRules.add(new IssuerKeyIdRule(unverified.keyId()));
+        idTokenRules.addAll(tokenValidationRulesRegistry.getRules(DCP_PRESENTATION_SELF_ISSUED_TOKEN_CONTEXT));
         idTokenRules.add(new IssuerEqualsSubjectRule());
         idTokenRules.add(new SubJwkIsNullRule());
         idTokenRules.add(new AudienceValidationRule(participantDid));

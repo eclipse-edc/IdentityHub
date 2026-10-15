@@ -17,6 +17,7 @@ package org.eclipse.edc.identityhub.protocols.dcp.issuer;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.DcpHolderTokenVerifier;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.model.DcpRequestContext;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.IdentityHubParticipantContext;
+import org.eclipse.edc.identityhub.verification.IssuerKeyIdRule;
 import org.eclipse.edc.identityhub.verification.SelfIssuedTokenPrecheck;
 import org.eclipse.edc.issuerservice.spi.holder.model.Holder;
 import org.eclipse.edc.issuerservice.spi.holder.store.HolderStore;
@@ -26,9 +27,9 @@ import org.eclipse.edc.spi.query.Criterion;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.ServiceResult;
 import org.eclipse.edc.token.rules.AudienceValidationRule;
+import org.eclipse.edc.token.spi.TokenValidationRule;
 import org.eclipse.edc.token.spi.TokenValidationRulesRegistry;
 import org.eclipse.edc.token.spi.TokenValidationService;
-import org.eclipse.edc.verifiablecredentials.jwt.rules.IssuerKeyIdValidationRule;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -107,10 +108,10 @@ public class DcpHolderTokenVerifierImpl implements DcpHolderTokenVerifier {
 
     private ServiceResult<String> validateToken(IdentityHubParticipantContext issuerContext, TokenRepresentation token, String kid) {
 
-        var rules = rulesRegistry.getRules(DCP_ISSUER_SELF_ISSUED_TOKEN_CONTEXT);
-        var newRules = new ArrayList<>(rules);
+        var newRules = new ArrayList<TokenValidationRule>();
+        newRules.add(new IssuerKeyIdRule(kid));
+        newRules.addAll(rulesRegistry.getRules(DCP_ISSUER_SELF_ISSUED_TOKEN_CONTEXT));
         newRules.add(new AudienceValidationRule(issuerContext.getDid()));
-        newRules.add(new IssuerKeyIdValidationRule(kid));
         var res = tokenValidationService.validate(token.getToken(), publicKeyResolver, newRules);
         if (res.failed()) {
             return ServiceResult.unauthorized("Token validation failed: " + res.getFailureDetail());

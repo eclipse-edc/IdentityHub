@@ -60,6 +60,26 @@ class SelfIssuedTokenPrecheckTest {
     }
 
     @Test
+    void check_issuerComparedLiterally_fails() {
+        // the '.' in the issuer must not match any other character of the 'kid'
+        var token = token("did:web:issuerxexample.com#key-1", ISSUER);
+
+        assertThat(SelfIssuedTokenPrecheck.check(token)).isFailed().detail().startsWith("kid header");
+    }
+
+    @Test
+    void check_kidWithEmptyFragment_fails() {
+        assertThat(SelfIssuedTokenPrecheck.check(token(ISSUER + "#", ISSUER))).isFailed().detail().startsWith("kid header");
+    }
+
+    @Test
+    void check_issuerInvalidDid_fails() {
+        var issuer = "(a+)+$";
+        assertThat(SelfIssuedTokenPrecheck.check(token(issuer + "#key-1", issuer))).isFailed()
+                .detail().isEqualTo("Claim 'iss' is not a valid DID.");
+    }
+
+    @Test
     void check_missingKid_fails() {
         assertThat(SelfIssuedTokenPrecheck.check(token(null, ISSUER))).isFailed().detail().isEqualTo("Kid not present");
     }

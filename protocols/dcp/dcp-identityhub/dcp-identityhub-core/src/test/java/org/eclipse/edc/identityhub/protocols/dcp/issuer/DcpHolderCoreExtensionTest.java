@@ -24,6 +24,7 @@ import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 import org.eclipse.edc.boot.system.injection.ObjectFactory;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.IdentityHubParticipantContext;
+import org.eclipse.edc.identityhub.verification.IssuerKeyIdRule;
 import org.eclipse.edc.junit.extensions.DependencyInjectionExtension;
 import org.eclipse.edc.spi.iam.ClaimToken;
 import org.eclipse.edc.spi.iam.TokenRepresentation;
@@ -31,7 +32,6 @@ import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.spi.system.ServiceExtensionContext;
 import org.eclipse.edc.token.spi.TokenValidationRule;
 import org.eclipse.edc.token.spi.TokenValidationService;
-import org.eclipse.edc.verifiablecredentials.jwt.rules.IssuerKeyIdValidationRule;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -105,8 +105,22 @@ class DcpHolderCoreExtensionTest {
         verify(tokenValidationService).validate(anyString(), any(), rulesCaptor.capture());
         @SuppressWarnings("unchecked")
         var rules = (List<TokenValidationRule>) rulesCaptor.getValue();
+        assertThat(rules.get(0)).as("the key binding rule must run before all other rules").isInstanceOf(IssuerKeyIdRule.class);
         var claims = ClaimToken.Builder.newInstance().claim("iss", ISSUER_DID).build();
         assertThat(keyBindingRule(rules).checkRule(claims, null).succeeded()).isTrue();
+    }
+
+    @Test
+    void createTokenVerifier_kidFromLookalikeDid_isRejected(ServiceExtensionContext context, ObjectFactory factory) throws JOSEException {
+        var extension = factory.constructInstance(DcpHolderCoreExtension.class);
+        extension.initialize(context);
+
+        // the 'iss' must be compared literally, a '.' in it must not match an arbitrary character of the 'kid'
+        var token = signedToken("did:web:wallet.acme.com", "did:web:walletxacme.com#key1");
+        var result = extension.createTokenVerifier().verify(participantContext, TokenRepresentation.Builder.newInstance().token(token).build());
+
+        assertThat(result.failed()).isTrue();
+        verifyNoInteractions(tokenValidationService);
     }
 
     // a token without a 'kid' cannot be bound to its issuer at all, so it never reaches validation
@@ -125,7 +139,7 @@ class DcpHolderCoreExtensionTest {
 
     private TokenValidationRule keyBindingRule(List<TokenValidationRule> rules) {
         return rules.stream()
-                .filter(IssuerKeyIdValidationRule.class::isInstance)
+                .filter(IssuerKeyIdRule.class::isInstance)
                 .findFirst()
                 .orElseThrow(() -> new AssertionError("no key binding rule was applied"));
     }

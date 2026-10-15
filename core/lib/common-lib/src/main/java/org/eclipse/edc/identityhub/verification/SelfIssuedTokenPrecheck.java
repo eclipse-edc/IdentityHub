@@ -40,7 +40,8 @@ public final class SelfIssuedTokenPrecheck {
 
     /**
      * Parses the token without verifying it and checks that the {@code kid} header names a key of the DID in the
-     * {@code iss} claim, and that a {@code did:web} issuer is well-formed.
+     * {@code iss} claim (see {@link IssuerKeyIdRule#checkKeyBinding(String, String)}), and that a {@code did:web} issuer
+     * is well-formed.
      *
      * @param token the serialized JWT
      * @return the unverified header and claims, or a failure if the token must not be verified any further
@@ -63,10 +64,9 @@ public final class SelfIssuedTokenPrecheck {
         if (issuer == null) {
             return Result.failure("Issuer claim not present");
         }
-        if (!kid.startsWith(issuer + "#")) {
-            return Result.failure("kid header '%s' expected to correlate to 'iss' claim ('%s'), but it did not.".formatted(kid, issuer));
-        }
-        return checkDid(issuer).map(v -> new UnverifiedToken(kid, issuer, claims));
+        return IssuerKeyIdRule.checkKeyBinding(kid, issuer)
+                .compose(v -> checkDid(issuer))
+                .map(v -> new UnverifiedToken(kid, issuer, claims));
     }
 
     /**
