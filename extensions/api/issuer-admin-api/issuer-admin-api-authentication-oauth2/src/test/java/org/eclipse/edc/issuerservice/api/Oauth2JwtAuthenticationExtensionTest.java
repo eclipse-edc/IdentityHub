@@ -16,6 +16,7 @@ package org.eclipse.edc.issuerservice.api;
 
 import org.eclipse.edc.api.authentication.filter.JwtValidatorFilter;
 import org.eclipse.edc.api.authentication.filter.ServicePrincipalAuthenticationFilter;
+import org.eclipse.edc.api.authorization.filter.ScopeBasedAccessFeature;
 import org.eclipse.edc.boot.system.injection.ObjectFactory;
 import org.eclipse.edc.identityhub.spi.webcontext.IdentityHubApiContext;
 import org.eclipse.edc.junit.extensions.DependencyInjectionExtension;
@@ -71,6 +72,7 @@ class Oauth2JwtAuthenticationExtensionTest {
         var extension = factory.constructInstance(Oauth2JwtAuthenticationExtension.class);
         extension.initialize(context);
 
+        verify(webService).registerResource(eq(IdentityHubApiContext.ISSUERADMIN), isA(ScopeBasedAccessFeature.class));
         verify(webService).registerResource(eq(IdentityHubApiContext.ISSUERADMIN), isA(ServicePrincipalAuthenticationFilter.class));
         verify(webService).registerResource(eq(IdentityHubApiContext.ISSUERADMIN), isA(JwtValidatorFilter.class));
     }
