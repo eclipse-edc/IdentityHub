@@ -22,6 +22,8 @@ import org.eclipse.edc.transaction.datasource.spi.DataSourceRegistry;
 import org.eclipse.edc.transaction.spi.NoopTransactionContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 
 import java.sql.Connection;
@@ -37,6 +39,7 @@ import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 
@@ -156,6 +159,36 @@ class DatabaseAttestationSourceValidatorTest {
         var queryCaptor = ArgumentCaptor.forClass(String.class);
         verify(queryExecutor).single(any(), anyBoolean(), any(), queryCaptor.capture());
         assertThat(queryCaptor.getValue()).contains("holder_id");
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"membership_attestations; DROP TABLE foo", "membership_attestations WHERE 1=1 --",
+            "\"membership_attestations\"", "1membership", "public.membership.attestations", "membership-attestations"})
+    void validate_invalidTableName_shouldFail(String tableName) {
+        var definition = createDefinition(Map.of("tableName", tableName, "dataSourceName", "barbaz"));
+
+        assertThat(validator.validate(definition)).isFailed().detail().contains("tableName");
+        verifyNoInteractions(dataSourceRegistry, queryExecutor);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"holder_id FROM membership_attestations; --", "holder_id, id", "public.holder_id", "\"holder_id\""})
+    void validate_invalidIdColumn_shouldFail(String idColumn) {
+        var definition = createDefinition(Map.of("tableName", "membership_attestations",
+                "dataSourceName", "barbaz",
+                "idColumn", idColumn));
+
+        assertThat(validator.validate(definition)).isFailed().detail().contains("idColumn");
+        verifyNoInteractions(dataSourceRegistry, queryExecutor);
+    }
+
+    @Test
+    void validate_schemaQualifiedTableName_shouldSucceed() {
+        when(dataSourceRegistry.resolve("barbaz")).thenReturn(dataSource);
+
+        var definition = createDefinition(Map.of("tableName", "public.membership_attestations", "dataSourceName", "barbaz"));
+
+        assertThat(validator.validate(definition)).isSucceeded();
     }
 
     private AttestationDefinition createDefinition(Map<String, Object> configuration) {

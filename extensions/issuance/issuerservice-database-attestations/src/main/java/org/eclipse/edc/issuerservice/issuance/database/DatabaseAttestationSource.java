@@ -70,6 +70,12 @@ public class DatabaseAttestationSource extends AbstractSqlStore implements Attes
 
     @Override
     public Result<Map<String, Object>> execute(AttestationContext context) {
+        if (!SqlIdentifiers.isValidTableName(tableName)) {
+            return Result.failure("Invalid table name '%s'".formatted(tableName));
+        }
+        if (!SqlIdentifiers.isValidColumnName(idColumn)) {
+            return Result.failure("Invalid ID column name '%s'".formatted(idColumn));
+        }
         var participantContextId = context.participantContextId();
         return transactionContext.execute(() -> {
             try (var connection = getConnection()) {

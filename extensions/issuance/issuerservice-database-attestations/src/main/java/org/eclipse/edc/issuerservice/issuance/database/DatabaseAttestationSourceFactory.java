@@ -51,7 +51,7 @@ public class DatabaseAttestationSourceFactory implements AttestationSourceFactor
         var required = (Boolean) configuration.getOrDefault(REQUIRED, false);
         var dataSourceName = (String) configuration.get(DATASOURCE_NAME);
         var tableName = (String) configuration.get(TABLE_NAME);
-        var idColumn = (String) configuration.getOrDefault(ID_COLUMN, DEFAULT_ID_COLUMN);
+        var idColumn = configuration.get(ID_COLUMN) instanceof String col && !col.isBlank() ? col : DEFAULT_ID_COLUMN;
 
         return new DatabaseAttestationSource(dataSourceName, required, objectMapperSupplier, tableName, dataSourceRegistry, queryExecutor, transactionContext, idColumn);
     }
