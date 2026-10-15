@@ -7,8 +7,8 @@ dependencies {
     implementation(libs.edc.spi.core)
     implementation(libs.edc.lib.core)
     implementation(libs.edc.lib.controlplane)
+    implementation(libs.nimbus.jwt)
     testImplementation(libs.edc.junit)
-    testImplementation(libs.nimbus.jwt)
 
     testFixturesImplementation(libs.edc.spi.core)
 }

@@ -111,12 +111,12 @@ class CredentialRequestApiControllerTest extends RestControllerTestBase {
         when(validatorRegistryMock.validate(eq(namespace.toIri(CREDENTIAL_REQUEST_MESSAGE_TERM)), any())).thenReturn(success());
         var requestMessage = createCredentialRequestMessage();
         when(typeTransformerRegistry.transform(isA(JsonObject.class), eq(CredentialRequestMessage.class))).thenReturn(Result.success(requestMessage));
-        when(dcpIssuerTokenVerifier.verify(any(), any())).thenReturn(ServiceResult.unauthorized("unauthorized"));
+        when(dcpIssuerTokenVerifier.verify(any(), any())).thenReturn(ServiceResult.unauthorized("DID resolution failed with HTTP 500"));
         when(participantContextService.getParticipantContext(eq(participantContextId))).thenReturn(ServiceResult.success(createParticipantContext()));
 
         assertThatThrownBy(() -> controller().requestCredential(participantContextId, createObjectBuilder().build(), "Bearer " + generateJwt()))
                 .isExactlyInstanceOf(AuthenticationFailedException.class)
-                .hasMessageContaining("unauthorized");
+                .hasMessage("ID token verification failed");
 
         verifyNoInteractions(dcpIssuerService);
     }
@@ -201,7 +201,7 @@ class CredentialRequestApiControllerTest extends RestControllerTestBase {
 
     @Override
     protected CredentialRequestApiController controller() {
-        return new CredentialRequestApiController(participantContextService, dcpIssuerService, dcpIssuerTokenVerifier, validatorRegistryMock, typeTransformerRegistry, namespace);
+        return new CredentialRequestApiController(participantContextService, dcpIssuerService, dcpIssuerTokenVerifier, validatorRegistryMock, typeTransformerRegistry, namespace, mock());
     }
 
 

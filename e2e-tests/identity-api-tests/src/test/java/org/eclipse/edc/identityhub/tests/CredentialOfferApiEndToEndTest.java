@@ -88,6 +88,7 @@ import static org.eclipse.edc.identityhub.verifiablecredentials.testfixtures.Jwt
 import static org.eclipse.edc.identityhub.verifiablecredentials.testfixtures.VerifiableCredentialTestUtil.generateEcKey;
 import static org.eclipse.edc.util.io.Ports.getFreePort;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.not;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -216,7 +217,8 @@ public class CredentialOfferApiEndToEndTest {
                     .then()
                     .log().ifValidationFails()
                     .statusCode(401)
-                    .body(containsString("not found"));
+                    .body(containsString("ID token verification failed"))
+                    .body(not(containsString("not found")));
 
         }
 
@@ -235,7 +237,8 @@ public class CredentialOfferApiEndToEndTest {
                     .then()
                     .log().ifValidationFails()
                     .statusCode(401)
-                    .body(containsString("ID token verification failed: JWT signature not valid"));
+                    .body(containsString("ID token verification failed"))
+                    .body(not(containsString("JWT signature not valid")));
         }
 
         @DisplayName("CredentialMessage contains an illegal format, expect HTTP 400")

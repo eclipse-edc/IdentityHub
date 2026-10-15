@@ -83,16 +83,11 @@ class DcpHolderCoreExtensionTest {
 
         // signed with an attacker's key, but claiming to come from the issuer
         var token = signedToken(ISSUER_DID, "did:web:attacker#key1");
-        extension.createTokenVerifier().verify(participantContext, TokenRepresentation.Builder.newInstance().token(token).build());
+        var result = extension.createTokenVerifier().verify(participantContext, TokenRepresentation.Builder.newInstance().token(token).build());
 
-        var rulesCaptor = ArgumentCaptor.forClass(List.class);
-        verify(tokenValidationService).validate(anyString(), any(), rulesCaptor.capture());
-        @SuppressWarnings("unchecked")
-        var rules = (List<TokenValidationRule>) rulesCaptor.getValue();
-        var claims = ClaimToken.Builder.newInstance().claim("iss", ISSUER_DID).build();
-        assertThat(keyBindingRule(rules).checkRule(claims, null).failed())
-                .as("the key binding rule must reject a 'kid' that does not belong to the 'iss' DID")
-                .isTrue();
+        // the attacker's DID is never resolved, because the binding is checked before the token is validated
+        assertThat(result.failed()).isTrue();
+        verifyNoInteractions(tokenValidationService);
     }
 
     @Test

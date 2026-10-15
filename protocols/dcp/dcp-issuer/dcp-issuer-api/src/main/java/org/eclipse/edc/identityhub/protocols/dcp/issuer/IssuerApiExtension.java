@@ -118,8 +118,9 @@ public class IssuerApiExtension implements ServiceExtension {
 
         webService.registerResource(ISSUANCE_API, new JsonObjectMessageBodyReader(jsonLd, typeManager, JSON_LD, null));
 
-        webService.registerResource(ISSUANCE_API, new CredentialRequestApiController(participantContextService, dcpIssuerService, dcpHolderTokenVerifier, validatorRegistry, dcpRegistry, DSPACE_DCP_NAMESPACE_V_1_0));
-        webService.registerResource(ISSUANCE_API, new CredentialRequestStatusApiController(participantContextService, dcpHolderTokenVerifier, issuanceProcessService, dcpRegistry));
+        webService.registerResource(ISSUANCE_API, new CredentialRequestApiController(participantContextService, dcpIssuerService, dcpHolderTokenVerifier, validatorRegistry, dcpRegistry, DSPACE_DCP_NAMESPACE_V_1_0,
+                context.getMonitor().withPrefix("CredentialRequestAPI")));
+        webService.registerResource(ISSUANCE_API, new CredentialRequestStatusApiController(participantContextService, dcpHolderTokenVerifier, issuanceProcessService, dcpRegistry, context.getMonitor().withPrefix("CredentialRequestStatusAPI")));
         webService.registerResource(ISSUANCE_API, new IssuerMetadataApiController(participantContextService, issuerMetadataService, dcpRegistry));
 
         webService.registerResource(ISSUANCE_API, new JsonMapperProvider(typeManager, JSON_LD));

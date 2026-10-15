@@ -28,6 +28,7 @@ import org.eclipse.edc.identityhub.spi.participantcontext.model.IdentityHubParti
 import org.eclipse.edc.junit.annotations.ComponentTest;
 import org.eclipse.edc.jwt.validation.jti.JtiValidationEntry;
 import org.eclipse.edc.jwt.validation.jti.JtiValidationStore;
+import org.eclipse.edc.keys.spi.PublicKeyResolver;
 import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.spi.result.ServiceResult;
 import org.eclipse.edc.spi.result.StoreResult;
@@ -59,6 +60,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 @ComponentTest
@@ -73,6 +75,7 @@ class SelfIssuedTokenVerifierImplComponentTest {
     private KeyPair providerKeyPair; // this is used to sign the incoming SI token
     private KeyPairGenerator generator;
     private JtiValidationStore jtiValidationStore;
+    private PublicKeyResolver senderKeyResolver; // resolves the key of the SI token from the sender's DID
 
     @BeforeEach
     void setUp() throws NoSuchAlgorithmException, InvalidAlgorithmParameterException {
@@ -105,7 +108,9 @@ class SelfIssuedTokenVerifierImplComponentTest {
 
         when(participantContextService.getParticipantContext(anyString()))
                 .thenReturn(ServiceResult.success(IdentityHubParticipantContext.Builder.newInstance().did(PARTICIPANT_DID).participantContextId(PARTICIPANT_CONTEXT_ID).apiTokenAlias("foobar").build()));
-        verifier = new SelfIssuedTokenVerifierImpl(tokenValidationService, resolverMock, ruleRegistry, (id) -> Result.success(providerKeyPair.getPublic()), participantContextService);
+        senderKeyResolver = mock();
+        when(senderKeyResolver.resolveKey(anyString())).thenReturn(Result.success(providerKeyPair.getPublic()));
+        verifier = new SelfIssuedTokenVerifierImpl(tokenValidationService, resolverMock, ruleRegistry, senderKeyResolver, participantContextService, Clock.systemUTC());
     }
 
 
@@ -113,7 +118,10 @@ class SelfIssuedTokenVerifierImplComponentTest {
     void selfIssuedTokenNotVerified() {
         var spoofedKey = generator.generateKeyPair().getPrivate();
 
-        var selfIssuedIdToken = createSignedJwt(spoofedKey, new JWTClaimsSet.Builder().claim("foo", "bar").jwtID(UUID.randomUUID().toString()).build());
+        var selfIssuedIdToken = createSignedJwt(spoofedKey, new JWTClaimsSet.Builder().claim("foo", "bar").jwtID(UUID.randomUUID().toString())
+                .claim("token", validAccessToken())
+                .issuer(PARTICIPANT_DID)
+                .build());
         assertThat(verifier.verify(selfIssuedIdToken, PARTICIPANT_CONTEXT_ID)).isFailed()
                 .detail().isEqualTo("JWT signature not valid");
 
@@ -134,7 +142,7 @@ class SelfIssuedTokenVerifierImplComponentTest {
 
     @Test
     void selfIssuedToken_audClaimDoesNotBelongToParticipant() {
-        var selfIssuedIdToken = createSignedJwt(providerKeyPair.getPrivate(), new JWTClaimsSet.Builder().claim("token", "accessToken")
+        var selfIssuedIdToken = createSignedJwt(providerKeyPair.getPrivate(), new JWTClaimsSet.Builder().claim("token", validAccessToken())
                 .issuer(PARTICIPANT_DID)
                 .subject(PARTICIPANT_DID)
                 .expirationTime(inOneHour())
@@ -169,11 +177,7 @@ class SelfIssuedTokenVerifierImplComponentTest {
 
     @Test
     void selfIssuedToken_noAudience() {
-        var accessToken = createSignedJwt(stsKeyPair.getPrivate(), new JWTClaimsSet.Builder()
-                .claim("scope", "foobar")
-                .subject(PARTICIPANT_DID)
-                .build());
-        var selfIssuedIdToken = createSignedJwt(providerKeyPair.getPrivate(), new JWTClaimsSet.Builder().claim("token", accessToken)
+        var selfIssuedIdToken = createSignedJwt(providerKeyPair.getPrivate(), new JWTClaimsSet.Builder().claim("token", validAccessToken())
                 .issuer(PARTICIPANT_DID)
                 .subject(PARTICIPANT_DID)
                 .expirationTime(inOneHour())
@@ -196,7 +200,7 @@ class SelfIssuedTokenVerifierImplComponentTest {
                 .audience(PARTICIPANT_DID)
                 .build());
         assertThat(verifier.verify(selfIssuedIdToken, PARTICIPANT_CONTEXT_ID)).isFailed()
-                .detail().isEqualTo("Mandatory claim 'aud' on 'token' was null.");
+                .detail().isEqualTo("Required audience (aud) claim is missing in token");
     }
 
     @Test
@@ -245,7 +249,7 @@ class SelfIssuedTokenVerifierImplComponentTest {
 
         assertThat(verifier.verify(selfIssuedIdToken, PARTICIPANT_CONTEXT_ID)).isFailed()
                 .detail()
-                .isEqualTo("The DID associated with the Participant Context ID of this request ('did:web:someone_else') must match 'aud' claim in 'access_token' ([%s]).".formatted(PARTICIPANT_DID));
+                .isEqualTo("Token audience claim (aud -> [%s]) did not contain expected audience: did:web:someone_else".formatted(PARTICIPANT_DID));
     }
 
     @Test
@@ -322,7 +326,7 @@ class SelfIssuedTokenVerifierImplComponentTest {
                 .build());
 
         assertThat(verifier.verify(siToken, PARTICIPANT_CONTEXT_ID)).isFailed()
-                .detail().isEqualTo("Mandatory claim 'aud' on 'token' was null.");
+                .detail().isEqualTo("Required audience (aud) claim is missing in token");
     }
 
     @Test
@@ -436,8 +440,9 @@ class SelfIssuedTokenVerifierImplComponentTest {
     void selfIssuedToken_issuerNotEqualToSubject() {
         var accessToken = createSignedJwt(stsKeyPair.getPrivate(), new JWTClaimsSet.Builder()
                 .claim("scope", "foobar")
-                .subject("did:web:someone_else")
+                .subject(PARTICIPANT_DID)
                 .audience(PARTICIPANT_DID)
+                .expirationTime(inOneHour())
                 .build());
         var selfIssuedIdToken = createSignedJwt(providerKeyPair.getPrivate(), new JWTClaimsSet.Builder()
                 .claim("token", accessToken)
@@ -454,7 +459,7 @@ class SelfIssuedTokenVerifierImplComponentTest {
     @Test
     void selfIssuedToken_noSubject() {
         var selfIssuedIdToken = createSignedJwt(providerKeyPair.getPrivate(), new JWTClaimsSet.Builder()
-                .claim("token", "accessToken")
+                .claim("token", validAccessToken())
                 .issuer(PARTICIPANT_DID)
                 .audience(PARTICIPANT_DID)
                 .expirationTime(inOneHour())
@@ -467,7 +472,7 @@ class SelfIssuedTokenVerifierImplComponentTest {
     @Test
     void selfIssuedToken_noExpiration() {
         var selfIssuedIdToken = createSignedJwt(providerKeyPair.getPrivate(), new JWTClaimsSet.Builder()
-                .claim("token", "accessToken")
+                .claim("token", validAccessToken())
                 .issuer(PARTICIPANT_DID)
                 .subject(PARTICIPANT_DID)
                 .audience(PARTICIPANT_DID)
@@ -480,7 +485,7 @@ class SelfIssuedTokenVerifierImplComponentTest {
     @Test
     void selfIssuedToken_issuedAtWithoutExpiration() {
         var selfIssuedIdToken = createSignedJwt(providerKeyPair.getPrivate(), new JWTClaimsSet.Builder()
-                .claim("token", "accessToken")
+                .claim("token", validAccessToken())
                 .issuer(PARTICIPANT_DID)
                 .subject(PARTICIPANT_DID)
                 .audience(PARTICIPANT_DID)
@@ -494,7 +499,7 @@ class SelfIssuedTokenVerifierImplComponentTest {
     @Test
     void selfIssuedToken_subJwkPresent() {
         var selfIssuedIdToken = createSignedJwt(providerKeyPair.getPrivate(), new JWTClaimsSet.Builder()
-                .claim("token", "accessToken")
+                .claim("token", validAccessToken())
                 .claim("sub_jwk", "some-jwk")
                 .issuer(PARTICIPANT_DID)
                 .subject(PARTICIPANT_DID)
@@ -526,14 +531,92 @@ class SelfIssuedTokenVerifierImplComponentTest {
                 .isEqualTo("ID token [sub] claim is not equal to [token.sub] claim: expected '%s', got 'null'.".formatted(PARTICIPANT_DID));
     }
 
+    @Test
+    void accessTokenNotIssuedByParticipant_senderDidNotResolved() {
+        var foreignKey = generator.generateKeyPair().getPrivate();
+        var accessToken = createSignedJwt(foreignKey, new JWTClaimsSet.Builder()
+                .claim("scope", "foobar")
+                .expirationTime(inOneHour())
+                .audience(PARTICIPANT_DID)
+                .build());
+        var siToken = createSignedJwt(providerKeyPair.getPrivate(), "did:web:attacker.internal#key1", new JWTClaimsSet.Builder()
+                .claim("token", accessToken)
+                .issuer("did:web:attacker.internal")
+                .audience(PARTICIPANT_DID)
+                .build());
+
+        assertThat(verifier.verify(siToken, PARTICIPANT_CONTEXT_ID)).isFailed()
+                .detail().isEqualTo("JWT signature not valid");
+        verifyNoInteractions(senderKeyResolver);
+    }
+
+    @Test
+    void accessTokenIssuedForOtherSubject_senderDidNotResolved() {
+        var accessToken = createSignedJwt(stsKeyPair.getPrivate(), new JWTClaimsSet.Builder()
+                .claim("scope", "foobar")
+                .expirationTime(inOneHour())
+                .audience(PARTICIPANT_DID)
+                .subject("did:web:verifier")
+                .build());
+        var siToken = createSignedJwt(providerKeyPair.getPrivate(), "did:web:attacker.internal#key1", new JWTClaimsSet.Builder()
+                .claim("token", accessToken)
+                .issuer("did:web:attacker.internal")
+                .subject("did:web:attacker.internal")
+                .audience(PARTICIPANT_DID)
+                .build());
+
+        assertThat(verifier.verify(siToken, PARTICIPANT_CONTEXT_ID)).isFailed();
+        verifyNoInteractions(senderKeyResolver);
+    }
+
+    @Test
+    void kidNotBoundToIssuer_senderDidNotResolved() {
+        var siToken = createSignedJwt(providerKeyPair.getPrivate(), "did:web:attacker.internal#key1", new JWTClaimsSet.Builder()
+                .claim("token", validAccessToken())
+                .issuer(PARTICIPANT_DID)
+                .audience(PARTICIPANT_DID)
+                .build());
+
+        assertThat(verifier.verify(siToken, PARTICIPANT_CONTEXT_ID)).isFailed()
+                .detail().startsWith("kid header");
+        verifyNoInteractions(senderKeyResolver);
+    }
+
+    @Test
+    void malformedDidWebIssuer_senderDidNotResolved() {
+        var issuer = "did:web:example.com%2Fadmin%3F";
+        var siToken = createSignedJwt(providerKeyPair.getPrivate(), issuer + "#key1", new JWTClaimsSet.Builder()
+                .claim("token", validAccessToken())
+                .issuer(issuer)
+                .audience(PARTICIPANT_DID)
+                .build());
+
+        assertThat(verifier.verify(siToken, PARTICIPANT_CONTEXT_ID)).isFailed()
+                .detail().startsWith("Malformed did:web identifier");
+        verifyNoInteractions(senderKeyResolver);
+    }
+
     private Date inOneHour() {
         return Date.from(Instant.now().plusSeconds(3600));
     }
 
+    private String validAccessToken() {
+        return createSignedJwt(stsKeyPair.getPrivate(), new JWTClaimsSet.Builder()
+                .claim("scope", "foobar")
+                .expirationTime(inOneHour())
+                .audience(PARTICIPANT_DID)
+                .subject(PARTICIPANT_DID)
+                .build());
+    }
+
     private String createSignedJwt(PrivateKey signingKey, JWTClaimsSet claimsSet) {
+        return createSignedJwt(signingKey, STS_PUBLIC_KEY_ID, claimsSet);
+    }
+
+    private String createSignedJwt(PrivateKey signingKey, String keyId, JWTClaimsSet claimsSet) {
         try {
             var signer = new ECDSASigner(signingKey, Curve.P_256);
-            var jwsHeader = new JWSHeader.Builder(JWSAlgorithm.ES256).keyID(STS_PUBLIC_KEY_ID).build();
+            var jwsHeader = new JWSHeader.Builder(JWSAlgorithm.ES256).keyID(keyId).build();
             var jwt = new SignedJWT(jwsHeader, claimsSet);
             jwt.sign(signer);
             return jwt.serialize();

@@ -56,7 +56,6 @@ import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.spi.security.Vault;
 import org.eclipse.edc.sql.testfixtures.PostgresqlEndToEndExtension;
-import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -93,7 +92,6 @@ import static org.eclipse.edc.identityhub.verifiablecredentials.testfixtures.Jwt
 import static org.eclipse.edc.identityhub.verifiablecredentials.testfixtures.JwtCreationUtil.generateSiToken;
 import static org.eclipse.edc.identityhub.verifiablecredentials.testfixtures.VerifiableCredentialTestUtil.generateEcKey;
 import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.startsWith;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -255,7 +253,7 @@ public class PresentationApiEndToEndTest {
                     .statusCode(401)
                     .log().ifValidationFails()
                     .body("[0].type", equalTo("AuthenticationFailed"))
-                    .body("[0].message", equalTo("ID token verification failed: JWT signature not valid"));
+                    .body("[0].message", equalTo("ID token verification failed"));
         }
 
         @Test
@@ -277,7 +275,7 @@ public class PresentationApiEndToEndTest {
                     .statusCode(401)
                     .log().ifValidationFails()
                     .body("[0].type", equalTo("AuthenticationFailed"))
-                    .body("[0].message", startsWith("ID token verification failed: kid header"));
+                    .body("[0].message", equalTo("ID token verification failed"));
 
         }
 
@@ -299,7 +297,7 @@ public class PresentationApiEndToEndTest {
                     .statusCode(401)
                     .log().ifValidationFails()
                     .body("[0].type", equalTo("AuthenticationFailed"))
-                    .body("[0].message", startsWith("ID token verification failed: ID token [sub] claim is not equal to [token.sub] claim"));
+                    .body("[0].message", equalTo("ID token verification failed"));
 
         }
 
@@ -623,7 +621,7 @@ public class PresentationApiEndToEndTest {
                     .then()
                     .statusCode(401)
                     .log().ifValidationFails()
-                    .body(Matchers.containsString("The DID associated with the Participant Context ID of this request ('did:web:consumer') must match 'aud' claim in 'access_token' ([did:web:someone_else])."));
+                    .body("[0].message", equalTo("ID token verification failed"));
         }
 
         // test with both the fully-qualified-credential-type and the compact credential type

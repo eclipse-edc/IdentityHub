@@ -14,13 +14,12 @@
 
 package org.eclipse.edc.identityhub.protocols.dcp.issuer;
 
-import com.nimbusds.jwt.SignedJWT;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.DcpHolderTokenVerifier;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.model.DcpRequestContext;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.IdentityHubParticipantContext;
+import org.eclipse.edc.identityhub.verification.SelfIssuedTokenPrecheck;
 import org.eclipse.edc.issuerservice.spi.holder.model.Holder;
 import org.eclipse.edc.issuerservice.spi.holder.store.HolderStore;
-import org.eclipse.edc.jwt.spi.JwtRegisteredClaimNames;
 import org.eclipse.edc.keys.spi.PublicKeyResolver;
 import org.eclipse.edc.spi.iam.TokenRepresentation;
 import org.eclipse.edc.spi.query.Criterion;
@@ -31,7 +30,6 @@ import org.eclipse.edc.token.spi.TokenValidationRulesRegistry;
 import org.eclipse.edc.token.spi.TokenValidationService;
 import org.eclipse.edc.verifiablecredentials.jwt.rules.IssuerKeyIdValidationRule;
 
-import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -60,36 +58,29 @@ public class DcpHolderTokenVerifierImpl implements DcpHolderTokenVerifier {
 
     @Override
     public ServiceResult<DcpRequestContext> verify(IdentityHubParticipantContext issuerContext, TokenRepresentation tokenRepresentation) {
-        return getTokenIssuer(tokenRepresentation.getToken())
-                .compose(token -> getParticipant(issuerContext.getParticipantContextId(), token))
-                .compose(participant ->
-                        getKid(tokenRepresentation.getToken())
-                                .compose(kid -> validateToken(issuerContext, tokenRepresentation, participant, kid))
-                );
-    }
-
-    private ServiceResult<String> getTokenIssuer(String token) {
-        try {
-            return Optional.ofNullable(SignedJWT.parse(token).getJWTClaimsSet().getClaim(JwtRegisteredClaimNames.ISSUER))
-                    .map(Object::toString)
-                    .map(ServiceResult::success)
-                    .orElseGet(() -> ServiceResult.unauthorized("Issuer claim not present"));
-        } catch (ParseException e) {
-            return ServiceResult.badRequest("Failed to decode token");
+        // the signing key is resolved from the DID of the sender, so the sender must be known (or anonymous holders be
+        // allowed) before that happens
+        var precheck = SelfIssuedTokenPrecheck.check(tokenRepresentation.getToken());
+        if (precheck.failed()) {
+            return ServiceResult.unauthorized(precheck.getFailureDetail());
         }
+        var unverified = precheck.getContent();
+        var participantContextId = issuerContext.getParticipantContextId();
+
+        return findHolder(participantContextId, unverified.issuer())
+                .compose(holder -> {
+                    if (holder.isEmpty() && !allowAnonymous) {
+                        return ServiceResult.unauthorized("Participant not found");
+                    }
+                    return validateToken(issuerContext, tokenRepresentation, unverified.keyId())
+                            // an anonymous Holder is only recorded once it has proven control over its DID
+                            .compose(accessToken -> holder.map(ServiceResult::success)
+                                    .orElseGet(() -> createAnonymousHolder(participantContextId, unverified.issuer()))
+                                    .map(h -> new DcpRequestContext(h, Map.of(), accessToken)));
+                });
     }
 
-    private ServiceResult<String> getKid(String token) {
-        try {
-            return Optional.ofNullable(SignedJWT.parse(token).getHeader().getKeyID())
-                    .map(ServiceResult::success)
-                    .orElseGet(() -> ServiceResult.unauthorized("Kid not present"));
-        } catch (ParseException e) {
-            return ServiceResult.badRequest("Failed to decode token");
-        }
-    }
-
-    private ServiceResult<Holder> getParticipant(String participantContextId, String holderDid) {
+    private ServiceResult<Optional<Holder>> findHolder(String participantContextId, String holderDid) {
         // a Holder belongs to the Issuer it was registered with, so only Holders of the addressed Issuer are eligible
         var query = QuerySpec.Builder.newInstance().filter(List.of(
                 Criterion.criterion("did", "=", holderDid),
@@ -99,23 +90,22 @@ public class DcpHolderTokenVerifierImpl implements DcpHolderTokenVerifier {
             return ServiceResult.from(holdersResult).mapFailure();
         }
 
-        var holders = holdersResult.getContent().stream()
+        return ServiceResult.success(holdersResult.getContent().stream()
                 .filter(holder -> participantContextId.equals(holder.getParticipantContextId()))
-                .toList();
-
-        if (holders.isEmpty() && allowAnonymous) {
-            var newHolder = Holder.Builder.newInstance()
-                    .holderId(UUID.randomUUID().toString())
-                    .did(holderDid)
-                    .participantContextId(participantContextId)
-                    .isAnonymous(true)
-                    .build();
-            return ServiceResult.from(store.create(newHolder)).map(u -> newHolder);
-        }
-        return holders.stream().findFirst().map(ServiceResult::success).orElseGet(() -> ServiceResult.unauthorized("Participant not found"));
+                .findFirst());
     }
 
-    private ServiceResult<DcpRequestContext> validateToken(IdentityHubParticipantContext issuerContext, TokenRepresentation token, Holder holder, String kid) {
+    private ServiceResult<Holder> createAnonymousHolder(String participantContextId, String holderDid) {
+        var newHolder = Holder.Builder.newInstance()
+                .holderId(UUID.randomUUID().toString())
+                .did(holderDid)
+                .participantContextId(participantContextId)
+                .isAnonymous(true)
+                .build();
+        return ServiceResult.from(store.create(newHolder)).map(u -> newHolder);
+    }
+
+    private ServiceResult<String> validateToken(IdentityHubParticipantContext issuerContext, TokenRepresentation token, String kid) {
 
         var rules = rulesRegistry.getRules(DCP_ISSUER_SELF_ISSUED_TOKEN_CONTEXT);
         var newRules = new ArrayList<>(rules);
@@ -127,8 +117,7 @@ public class DcpHolderTokenVerifierImpl implements DcpHolderTokenVerifier {
         }
         // the Holder may grant access to its Credential Service by embedding an access token, which must be presented
         // back to it when the credentials are delivered
-        var accessToken = res.getContent().getStringClaim(TOKEN_CLAIM);
-        return ServiceResult.success(new DcpRequestContext(holder, Map.of(), accessToken));
+        return ServiceResult.success(res.getContent().getStringClaim(TOKEN_CLAIM));
     }
 
 }

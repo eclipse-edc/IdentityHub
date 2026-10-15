@@ -30,6 +30,7 @@ import org.eclipse.edc.token.spi.TokenValidationService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.time.Clock;
 import java.util.Map;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -53,7 +54,7 @@ class SelfIssuedTokenVerifierImplTest {
             .build();
     private final KeyPairResourcePublicKeyResolver localPublicKeyResolver = mock();
     private final IdentityHubParticipantContextService participantContextService = mock();
-    private final SelfIssuedTokenVerifierImpl verifier = new SelfIssuedTokenVerifierImpl(tokenValidationSerivce, localPublicKeyResolver, tokenValidationRulesRegistry, pkResolver, participantContextService);
+    private final SelfIssuedTokenVerifierImpl verifier = new SelfIssuedTokenVerifierImpl(tokenValidationSerivce, localPublicKeyResolver, tokenValidationRulesRegistry, pkResolver, participantContextService, Clock.systemUTC());
 
     @BeforeEach
     void beforeEach() {
@@ -67,7 +68,7 @@ class SelfIssuedTokenVerifierImplTest {
         AbstractResultAssert.assertThat(verifier.verify(JwtCreationUtil.generateSiToken(OWN_DID, OTHER_PARTICIPANT_DID), PARTICIPANT_CONTEXT_ID))
                 .isSucceeded()
                 .satisfies(strings -> Assertions.assertThat(strings).containsOnly(JwtCreationUtil.TEST_SCOPE));
-        verify(tokenValidationSerivce, times(2)).validate(anyString(), any(PublicKeyResolver.class), anyList());
+        verify(tokenValidationSerivce, times(3)).validate(anyString(), any(PublicKeyResolver.class), anyList());
 
     }
 
@@ -93,7 +94,7 @@ class SelfIssuedTokenVerifierImplTest {
     void verify_accessTokenValidationFails() {
         var spoofedKey = VerifiableCredentialTestUtil.generateEcKey("spoofed-key");
         var accessToken = JwtCreationUtil.generateJwt(OWN_DID, OWN_DID, OTHER_PARTICIPANT_DID, Map.of("scope", JwtCreationUtil.TEST_SCOPE), spoofedKey);
-        var siToken = JwtCreationUtil.generateJwt(OWN_DID, OTHER_PARTICIPANT_DID, OTHER_PARTICIPANT_DID, Map.of("client_id", OTHER_PARTICIPANT_DID, "access_token", accessToken), JwtCreationUtil.PROVIDER_KEY);
+        var siToken = JwtCreationUtil.generateJwt(OWN_DID, OTHER_PARTICIPANT_DID, OTHER_PARTICIPANT_DID, Map.of("client_id", OTHER_PARTICIPANT_DID, "token", accessToken), JwtCreationUtil.PROVIDER_KEY);
 
         when(tokenValidationSerivce.validate(anyString(), any(), anyList())).thenReturn(Result.failure("test-failure"));
         AbstractResultAssert.assertThat(verifier.verify(siToken, PARTICIPANT_CONTEXT_ID)).isFailed()
@@ -103,7 +104,7 @@ class SelfIssuedTokenVerifierImplTest {
     @Test
     void verify_accessTokenDoesNotContainScopeClaim() {
         var accessToken = JwtCreationUtil.generateJwt(OWN_DID, OWN_DID, OTHER_PARTICIPANT_DID, Map.of(/*scope missing*/), JwtCreationUtil.CONSUMER_KEY);
-        var siToken = JwtCreationUtil.generateJwt(OWN_DID, OTHER_PARTICIPANT_DID, OTHER_PARTICIPANT_DID, Map.of("client_id", OTHER_PARTICIPANT_DID, "access_token", accessToken), JwtCreationUtil.PROVIDER_KEY);
+        var siToken = JwtCreationUtil.generateJwt(OWN_DID, OTHER_PARTICIPANT_DID, OTHER_PARTICIPANT_DID, Map.of("client_id", OTHER_PARTICIPANT_DID, "token", accessToken), JwtCreationUtil.PROVIDER_KEY);
 
         when(tokenValidationSerivce.validate(anyString(), any(), anyList())).thenReturn(Result.success(idToken));
         when(tokenValidationSerivce.validate(anyString(), any(), anyList())).thenReturn(Result.failure("test-failure"));

@@ -14,16 +14,15 @@
 
 package org.eclipse.edc.identityhub.protocols.dcp.issuer;
 
-import com.nimbusds.jwt.SignedJWT;
 import org.eclipse.edc.iam.did.spi.resolution.DidPublicKeyResolver;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.DcpIssuerTokenVerifier;
+import org.eclipse.edc.identityhub.verification.SelfIssuedTokenPrecheck;
 import org.eclipse.edc.jwt.validation.jti.JtiValidationStore;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;
 import org.eclipse.edc.runtime.metamodel.annotation.Provider;
 import org.eclipse.edc.runtime.metamodel.annotation.Setting;
 import org.eclipse.edc.spi.EdcException;
-import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.spi.system.ServiceExtension;
 import org.eclipse.edc.spi.system.ServiceExtensionContext;
 import org.eclipse.edc.token.rules.AudienceValidationRule;
@@ -35,11 +34,9 @@ import org.eclipse.edc.token.spi.TokenValidationService;
 import org.eclipse.edc.verifiablecredentials.jwt.rules.IssuerEqualsSubjectRule;
 import org.eclipse.edc.verifiablecredentials.jwt.rules.IssuerKeyIdValidationRule;
 
-import java.text.ParseException;
 import java.time.Clock;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 @Extension("DCP Holder Core Extension")
 public class DcpHolderCoreExtension implements ServiceExtension {
@@ -80,26 +77,17 @@ public class DcpHolderCoreExtension implements ServiceExtension {
         return (participantContext, tokenRepresentation) -> {
             // the signing key is resolved from the DID named in the 'kid' header, while the sender identifies itself
             // with the 'iss' claim. Unless the two are tied together, anyone holding a resolvable DID could sign a
-            // message that claims to come from somebody else.
-            var kid = getKid(tokenRepresentation.getToken());
-            if (kid.failed()) {
-                return kid.mapFailure();
+            // message that claims to come from somebody else. Resolving the DID is an outbound request, so the binding is
+            // checked on the unverified token before that, and again on the verified one.
+            var precheck = SelfIssuedTokenPrecheck.check(tokenRepresentation.getToken());
+            if (precheck.failed()) {
+                return precheck.mapFailure();
             }
 
             var newRules = new ArrayList<>(rules);
             newRules.add(new AudienceValidationRule(participantContext.getDid()));
-            newRules.add(new IssuerKeyIdValidationRule(kid.getContent()));
+            newRules.add(new IssuerKeyIdValidationRule(precheck.getContent().keyId()));
             return tokenValidationService.validate(tokenRepresentation.getToken(), didPublicKeyResolver, newRules);
         };
-    }
-
-    private Result<String> getKid(String token) {
-        try {
-            return Optional.ofNullable(SignedJWT.parse(token).getHeader().getKeyID())
-                    .map(Result::success)
-                    .orElseGet(() -> Result.failure("Kid not present"));
-        } catch (ParseException e) {
-            return Result.failure("Failed to decode token");
-        }
     }
 }

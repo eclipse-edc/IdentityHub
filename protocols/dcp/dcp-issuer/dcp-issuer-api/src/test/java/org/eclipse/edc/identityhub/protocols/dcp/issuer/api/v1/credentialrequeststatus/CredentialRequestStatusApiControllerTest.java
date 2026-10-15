@@ -93,12 +93,12 @@ class CredentialRequestStatusApiControllerTest extends RestControllerTestBase {
 
     @Test
     void credentialStatus_tokenVerificationFails_shouldReturn401() {
-        when(dcpIssuerTokenVerifier.verify(any(), any())).thenReturn(ServiceResult.unauthorized("unauthorized"));
+        when(dcpIssuerTokenVerifier.verify(any(), any())).thenReturn(ServiceResult.unauthorized("DID resolution failed with HTTP 500"));
         when(participantContextService.getParticipantContext(eq(participantContextId))).thenReturn(ServiceResult.success(createParticipantContext()));
 
         assertThatThrownBy(() -> controller().credentialStatus(participantContextId, UUID.randomUUID().toString(), generateToken()))
                 .isExactlyInstanceOf(AuthenticationFailedException.class)
-                .hasMessageContaining("unauthorized");
+                .hasMessage("ID token verification failed");
 
         verifyNoInteractions(issuerService);
     }
@@ -160,7 +160,7 @@ class CredentialRequestStatusApiControllerTest extends RestControllerTestBase {
 
     @Override
     protected CredentialRequestStatusApiController controller() {
-        return new CredentialRequestStatusApiController(participantContextService, dcpIssuerTokenVerifier, issuerService, typeTransformerRegistry);
+        return new CredentialRequestStatusApiController(participantContextService, dcpIssuerTokenVerifier, issuerService, typeTransformerRegistry, mock());
     }
 
 

@@ -21,6 +21,7 @@ dependencies {
     api(project(":spi:identity-hub-spi"))
     api(project(":protocols:dcp:dcp-spi"))
     api(libs.edc.spi.core)
+    implementation(project(":core:lib:common-lib"))
     implementation(libs.edc.vc.jwt)
     implementation(libs.edc.lib.core)
     testImplementation(libs.edc.junit)

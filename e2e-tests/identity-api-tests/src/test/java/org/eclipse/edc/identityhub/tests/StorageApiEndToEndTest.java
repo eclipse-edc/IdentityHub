@@ -84,6 +84,7 @@ import static org.eclipse.edc.identityhub.verifiablecredentials.testfixtures.Jwt
 import static org.eclipse.edc.identityhub.verifiablecredentials.testfixtures.VerifiableCredentialTestUtil.buildSignedJwt;
 import static org.eclipse.edc.identityhub.verifiablecredentials.testfixtures.VerifiableCredentialTestUtil.generateEcKey;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.not;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -167,7 +168,8 @@ public class StorageApiEndToEndTest {
                     .then()
                     .log().ifValidationFails()
                     .statusCode(401)
-                    .body(containsString("not found"));
+                    .body(containsString("ID token verification failed"))
+                    .body(not(containsString("not found")));
 
         }
 
@@ -186,7 +188,8 @@ public class StorageApiEndToEndTest {
                     .then()
                     .log().ifValidationFails()
                     .statusCode(401)
-                    .body(containsString("ID token verification failed: JWT signature not valid"));
+                    .body(containsString("ID token verification failed"))
+                    .body(not(containsString("JWT signature not valid")));
         }
 
         @DisplayName("CredentialMessage contains an illegal format, expect HTTP 400")
@@ -243,7 +246,7 @@ public class StorageApiEndToEndTest {
                     .allSatisfy(vc -> assertThat(vc.getVerifiableCredential().format()).isEqualTo(CredentialFormat.VC1_0_LD));
         }
 
-        @DisplayName("CS-STOR-07: a holderPid matching no pending request is rejected with 404")
+        @DisplayName("CS-STOR-07: a holderPid matching no pending request is rejected with 401, before the sender is authenticated")
         @Test
         void storeCredential_whenNoCredentialRequest(IdentityHub identityHub) throws JOSEException {
             when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq(PROVIDER_DID + "#key1"))).thenReturn(Result.success(PROVIDER_KEY.toPublicKey()));
@@ -256,7 +259,7 @@ public class StorageApiEndToEndTest {
                     .post("/v1/participants/" + TEST_PARTICIPANT_CONTEXT_ID + "/credentials")
                     .then()
                     .log().ifValidationFails()
-                    .statusCode(404);
+                    .statusCode(401);
         }
 
         @DisplayName("Corresponding holder credential request is not in state REQUESTED, expect 400")
@@ -373,7 +376,7 @@ public class StorageApiEndToEndTest {
                     .post("/v1/participants/" + TEST_PARTICIPANT_CONTEXT_ID + "/credentials")
                     .then()
                     .log().ifValidationFails()
-                    .statusCode(403); // TODO: exact 4xx status to be defined
+                    .statusCode(401); // rejected before the sender's DID is resolved
 
             // nothing was stored
             assertThat(credentialStore.query(QuerySpec.max()).getContent()).isEmpty();
@@ -402,7 +405,7 @@ public class StorageApiEndToEndTest {
                     .post("/v1/participants/" + TEST_PARTICIPANT_CONTEXT_ID + "/credentials")
                     .then()
                     .log().ifValidationFails()
-                    .statusCode(403);
+                    .statusCode(401); // rejected before the sender's DID is resolved
 
             // nothing was stored
             assertThat(credentialStore.query(QuerySpec.max()).getContent()).isEmpty();
