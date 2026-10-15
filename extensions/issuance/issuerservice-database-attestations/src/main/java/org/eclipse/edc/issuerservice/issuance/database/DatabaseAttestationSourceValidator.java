@@ -66,7 +66,13 @@ public class DatabaseAttestationSourceValidator implements Validator<Attestation
         if (!(config.get(TABLE_NAME) instanceof String tableName) || tableName.isBlank()) {
             return failure(violation(format("No %s specified", TABLE_NAME), TABLE_NAME));
         }
+        if (!SqlIdentifiers.isValidTableName(tableName)) {
+            return failure(violation(format("Invalid %s '%s': only letters, digits and underscores are allowed, optionally qualified with a schema name", TABLE_NAME, tableName), TABLE_NAME));
+        }
         var idColumn = config.get(ID_COLUMN) instanceof String col && !col.isBlank() ? col : DEFAULT_ID_COLUMN;
+        if (!SqlIdentifiers.isValidColumnName(idColumn)) {
+            return failure(violation(format("Invalid %s '%s': only letters, digits and underscores are allowed", ID_COLUMN, idColumn), ID_COLUMN));
+        }
 
         var dataSource = dataSourceRegistry.resolve(dataSourceName);
         if (dataSource == null) {
