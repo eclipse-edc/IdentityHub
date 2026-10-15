@@ -104,6 +104,7 @@ class PresentationApiControllerTest extends RestControllerTestBase {
     @ParameterizedTest
     @ArgumentsSource(ProtocolProvider.class)
     void query_validationError_shouldReturn400(JsonLdNamespace namespace, String scope) {
+        when(selfIssuedTokenVerifier.verify(anyString(), anyString())).thenReturn(Result.success(List.of("test-scope1")));
         when(jsonLd.expand(isA(JsonObject.class))).thenReturn(Result.success(createExpandedPresentationQueryMessage(namespace)));
         when(validatorRegistryMock.validate(eq(namespace.toIri(PRESENTATION_QUERY_MESSAGE_TERM)), any())).thenReturn(failure(violation("foo", "bar")));
 
@@ -115,6 +116,7 @@ class PresentationApiControllerTest extends RestControllerTestBase {
     @ParameterizedTest
     @ArgumentsSource(ProtocolProvider.class)
     void query_transformationError_shouldReturn400(JsonLdNamespace namespace, String scope) {
+        when(selfIssuedTokenVerifier.verify(anyString(), anyString())).thenReturn(Result.success(List.of("test-scope1")));
         when(jsonLd.expand(isA(JsonObject.class))).thenReturn(Result.success(createExpandedPresentationQueryMessage(namespace)));
         when(validatorRegistryMock.validate(eq(namespace.toIri(PRESENTATION_QUERY_MESSAGE_TERM)), any())).thenReturn(success());
         when(typeTransformerRegistry.forContext(scope)).thenReturn(typeTransformerRegistry);
@@ -123,12 +125,13 @@ class PresentationApiControllerTest extends RestControllerTestBase {
         assertThatThrownBy(() -> controller().queryPresentation(PARTICIPANT_ID, createObjectBuilder().build(), generateAuthToken()))
                 .isInstanceOf(InvalidRequestException.class)
                 .hasMessage("cannot transform");
-        verifyNoInteractions(selfIssuedTokenVerifier, queryResolver, generator);
+        verifyNoInteractions(queryResolver, generator);
     }
 
     @ParameterizedTest
     @ArgumentsSource(ProtocolProvider.class)
     void query_withPresentationDefinition_shouldReturn501(JsonLdNamespace namespace, String scope) {
+        when(selfIssuedTokenVerifier.verify(anyString(), anyString())).thenReturn(Result.success(List.of("test-scope1")));
         when(jsonLd.expand(isA(JsonObject.class))).thenReturn(Result.success(createExpandedPresentationQueryMessage(namespace)));
         when(validatorRegistryMock.validate(eq(namespace.toIri(PRESENTATION_QUERY_MESSAGE_TERM)), any())).thenReturn(success());
         var presentationQueryBuilder = createPresentationQueryBuilder()
@@ -142,24 +145,31 @@ class PresentationApiControllerTest extends RestControllerTestBase {
             assertThat(ed.getMessage()).isEqualTo("Not implemented.");
             assertThat(ed.getType()).isEqualTo("Not implemented.");
         });
-        verifyNoInteractions(selfIssuedTokenVerifier, queryResolver, generator);
+        verifyNoInteractions(queryResolver, generator);
     }
 
 
-    @ParameterizedTest
-    @ArgumentsSource(ProtocolProvider.class)
-    void query_tokenVerificationFails_shouldReturn401(JsonLdNamespace namespace, String scope) {
-        when(jsonLd.expand(isA(JsonObject.class))).thenReturn(Result.success(createExpandedPresentationQueryMessage(namespace)));
-        when(validatorRegistryMock.validate(eq(namespace.toIri(PRESENTATION_QUERY_MESSAGE_TERM)), any())).thenReturn(success());
-        var presentationQueryBuilder = createPresentationQueryBuilder().build();
-        when(typeTransformerRegistry.forContext(scope)).thenReturn(typeTransformerRegistry);
-        when(typeTransformerRegistry.transform(isA(JsonObject.class), eq(PresentationQueryMessage.class))).thenReturn(Result.success(presentationQueryBuilder));
+    @Test
+    void query_tokenVerificationFails_shouldReturn401() {
         when(selfIssuedTokenVerifier.verify(anyString(), anyString())).thenReturn(Result.failure("DID resolution failed with HTTP 500"));
 
         // the failure is logged, but not returned to the caller
         assertThatThrownBy(() -> controller().queryPresentation(PARTICIPANT_ID, createObjectBuilder().build(), generateAuthToken()))
                 .isExactlyInstanceOf(AuthenticationFailedException.class)
                 .hasMessage("ID token verification failed");
+        // the query is only processed once the requestor is authenticated
+        verifyNoInteractions(jsonLd, queryResolver, generator);
+    }
+
+    @Test
+    void query_expansionFails_shouldReturn400() {
+        when(selfIssuedTokenVerifier.verify(anyString(), anyString())).thenReturn(Result.success(List.of("test-scope1")));
+        when(jsonLd.expand(isA(JsonObject.class))).thenReturn(Result.failure("JSON-LD context 'file:///etc/passwd' is not supported"));
+
+        // the failure is logged, but not returned to the caller
+        assertThatThrownBy(() -> controller().queryPresentation(PARTICIPANT_ID, createObjectBuilder().build(), generateAuthToken()))
+                .isExactlyInstanceOf(InvalidRequestException.class)
+                .hasMessage("Invalid JSON-LD");
         verifyNoInteractions(queryResolver, generator);
     }
 

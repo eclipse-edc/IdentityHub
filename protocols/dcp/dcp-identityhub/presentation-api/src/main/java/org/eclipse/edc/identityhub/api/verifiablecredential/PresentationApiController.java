@@ -102,7 +102,23 @@ public class PresentationApiController implements PresentationApi {
 
         token = token.replace("Bearer", "").trim();
 
-        query = jsonLd.expand(query).orElseThrow(InvalidRequestException::new);
+        // verify that the participant actually exists
+        participantContextService.getParticipantContext(participantContextId)
+                .orElseThrow(exceptionMapper(IdentityHubParticipantContext.class, participantContextId));
+
+        // verify and validate the requestor's SI token, before the query is processed
+        var issuerScopes = selfIssuedTokenVerifier.verify(token, participantContextId)
+                .orElseThrow(f -> {
+                    // the failure may describe the outcome of resolving the sender's DID, which is not for the caller to see
+                    monitor.debug("ID token verification failed: %s".formatted(f.getFailureDetail()));
+                    return new AuthenticationFailedException("ID token verification failed");
+                });
+
+        query = jsonLd.expand(query)
+                .orElseThrow(f -> {
+                    monitor.debug("Presentation query could not be expanded: %s".formatted(f.getFailureDetail()));
+                    return new InvalidRequestException("Invalid JSON-LD");
+                });
 
         var protocol = parseProtocol(query).orElseThrow(InvalidRequestException::new);
 
@@ -116,19 +132,6 @@ public class PresentationApiController implements PresentationApi {
             monitor.warning("DIF Presentation Queries are not supported yet. This will get implemented in future iterations.");
             return notImplemented();
         }
-
-        // verify that the participant actually exists
-        participantContextService.getParticipantContext(participantContextId)
-                .orElseThrow(exceptionMapper(IdentityHubParticipantContext.class, participantContextId));
-
-
-        // verify and validate the requestor's SI token
-        var issuerScopes = selfIssuedTokenVerifier.verify(token, participantContextId)
-                .orElseThrow(f -> {
-                    // the failure may describe the outcome of resolving the sender's DID, which is not for the caller to see
-                    monitor.debug("ID token verification failed: %s".formatted(f.getFailureDetail()));
-                    return new AuthenticationFailedException("ID token verification failed");
-                });
 
         // query the database
         var credentials = queryResolver.query(participantContextId, presentationQuery, issuerScopes).orElseThrow(f -> new NotAuthorizedException(f.getFailureDetail()));

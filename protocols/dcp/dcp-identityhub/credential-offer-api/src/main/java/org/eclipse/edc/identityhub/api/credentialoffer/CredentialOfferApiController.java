@@ -90,23 +90,27 @@ public class CredentialOfferApiController implements CredentialOfferApi {
             throw new AuthenticationFailedException("Invalid authorization header, must start with 'Bearer'");
         }
         var authToken = authHeader.replace("Bearer ", "").trim();
-        var expanded = jsonLd.expand(credentialOfferMessage).orElseThrow(InvalidRequestException::new);
-        validatorRegistry.validate(DSPACE_DCP_NAMESPACE_V_1_0.toIri(CREDENTIAL_OFFER_MESSAGE_TERM), expanded).orElseThrow(ValidationFailureException::new);
-        var protocolRegistry = transformerRegistry.forContext(DCP_SCOPE_V_1_0);
-
-
-        var offerMessage = protocolRegistry.forContext(DCP_SCOPE_V_1_0).transform(expanded, CredentialOfferMessage.class).orElseThrow(InvalidRequestException::new);
 
         var participantContext = participantContextService.getParticipantContext(participantContextId)
                 .orElseThrow((f) -> new AuthenticationFailedException("Invalid participant"));
 
-        // validate Issuer's SI token
+        // validate Issuer's SI token, before the offer is processed
         var issuerClaims = issuerTokenVerifier.verify(participantContext, authToken)
                 .orElseThrow(f -> {
                     // the failure may describe the outcome of resolving the sender's DID, which is not for the caller to see
                     monitor.debug("ID token verification failed: %s".formatted(f.getFailureDetail()));
                     return new AuthenticationFailedException("ID token verification failed");
                 });
+
+        var expanded = jsonLd.expand(credentialOfferMessage)
+                .orElseThrow(f -> {
+                    monitor.debug("Credential offer message could not be expanded: %s".formatted(f.getFailureDetail()));
+                    return new InvalidRequestException("Invalid JSON-LD");
+                });
+        validatorRegistry.validate(DSPACE_DCP_NAMESPACE_V_1_0.toIri(CREDENTIAL_OFFER_MESSAGE_TERM), expanded).orElseThrow(ValidationFailureException::new);
+        var protocolRegistry = transformerRegistry.forContext(DCP_SCOPE_V_1_0);
+
+        var offerMessage = protocolRegistry.forContext(DCP_SCOPE_V_1_0).transform(expanded, CredentialOfferMessage.class).orElseThrow(InvalidRequestException::new);
 
         // the token was verified against the DID document of its issuer, so only the 'iss' claim identifies the sender.
         // An offer made in the name of a different Issuer would otherwise cause credentials to be requested from it.

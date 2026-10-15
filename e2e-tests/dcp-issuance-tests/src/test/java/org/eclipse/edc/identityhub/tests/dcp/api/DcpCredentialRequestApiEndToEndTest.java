@@ -58,6 +58,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import java.io.IOException;
+import java.net.ServerSocket;
+import java.net.SocketTimeoutException;
 import java.util.List;
 import java.util.Map;
 
@@ -67,6 +70,7 @@ import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
 import static io.restassured.http.ContentType.JSON;
 import static jakarta.ws.rs.core.HttpHeaders.AUTHORIZATION;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.awaitility.Awaitility.await;
 import static org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat.VC1_0_JWT;
 import static org.eclipse.edc.identityhub.tests.dcp.TestData.ISSUER_RUNTIME_NAME;
@@ -266,6 +270,33 @@ public class DcpCredentialRequestApiEndToEndTest {
                     .log().ifValidationFails()
                     .statusCode(400);
 
+        }
+
+        @Test
+        void requestCredential_unsupportedContext_shouldReturn400WithoutLoadingIt(IssuerService issuer) throws IOException {
+            try (var server = new ServerSocket(0)) {
+                var message = """
+                        {
+                          "@context": [
+                            "jar:http://127.0.0.1:%d/context.jar!/context.json",
+                            "https://w3id.org/dspace-dcp/v1.0/dcp.jsonld"
+                          ],
+                          "type": "CredentialRequestMessage"
+                        }
+                        """.formatted(server.getLocalPort());
+
+                // the body is read before the request is authenticated, so the context must not be loaded
+                issuer.getIssuerApiEndpoint().baseRequest()
+                        .contentType(JSON)
+                        .body(message)
+                        .post(issuanceUrl())
+                        .then()
+                        .log().ifValidationFails()
+                        .statusCode(400);
+
+                server.setSoTimeout(500);
+                assertThatThrownBy(server::accept).isInstanceOf(SocketTimeoutException.class);
+            }
         }
 
         @Test

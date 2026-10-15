@@ -23,6 +23,8 @@ import org.eclipse.edc.identityhub.defaults.store.InMemoryCredentialStore;
 import org.eclipse.edc.identityhub.defaults.store.InMemoryHolderCredentialRequestStore;
 import org.eclipse.edc.identityhub.defaults.store.InMemoryKeyPairResourceStore;
 import org.eclipse.edc.identityhub.defaults.store.InMemorySignatureSuiteRegistry;
+import org.eclipse.edc.identityhub.jsonld.RegisteredContextsJsonLd;
+import org.eclipse.edc.identityhub.protocols.dcp.spi.DcpJsonLd;
 import org.eclipse.edc.identityhub.spi.credential.request.store.HolderCredentialRequestStore;
 import org.eclipse.edc.identityhub.spi.keypair.store.KeyPairResourceStore;
 import org.eclipse.edc.identityhub.spi.transformation.DiscriminatorMappingRegistry;
@@ -110,6 +112,7 @@ public class DefaultServicesExtension implements ServiceExtension {
 
     private Monitor monitor;
     private ScheduledExecutorService jtiEntryReaper;
+    private DcpJsonLd dcpJsonLd;
 
     @Override
     public String name() {
@@ -136,8 +139,17 @@ public class DefaultServicesExtension implements ServiceExtension {
             context.getMonitor().warning("JWT Token ID (\"jti\" claim) Validation is not active. Please consider setting '%s=true' for protection against replay attacks".formatted(ACCESSTOKEN_JTI_VALIDATION_ACTIVATE));
         }
 
-        // Setup API
+        // Setup API. The documents are cached with the runtime's JsonLd service as well
+        dcpJsonLd = new RegisteredContextsJsonLd(jsonLd);
         cacheContextDocuments(getClass().getClassLoader());
+    }
+
+    /**
+     * Provides the {@link DcpJsonLd} service, which only resolves the contexts cached by this extension.
+     */
+    @Provider
+    public DcpJsonLd dcpJsonLd() {
+        return dcpJsonLd;
     }
 
     @Override
@@ -205,12 +217,12 @@ public class DefaultServicesExtension implements ServiceExtension {
 
     private void cacheContextDocuments(ClassLoader classLoader) {
         try {
-            jsonLd.registerCachedDocument(PRESENTATION_EXCHANGE_URL, classLoader.getResource(PRESENTATION_EXCHANGE_V_1_JSON).toURI());
-            jsonLd.registerCachedDocument(DSPACE_DCP_V_1_0_CONTEXT, classLoader.getResource(DSPACE_DCP_V_1_0_JSON_LD).toURI());
-            jsonLd.registerCachedDocument(DID_CONTEXT_URL, classLoader.getResource(DID_JSON).toURI());
-            jsonLd.registerCachedDocument(JWS_2020_URL, classLoader.getResource(JWS_2020_JSON).toURI());
-            jsonLd.registerCachedDocument(W3C_CREDENTIALS_URL, classLoader.getResource(CREDENTIALS_V_1_JSON).toURI());
-            jsonLd.registerCachedDocument(PRESENTATION_SUBMISSION_URL, classLoader.getResource(PRESENTATION_SUBMISSION_V1_JSON).toURI());
+            dcpJsonLd.registerCachedDocument(PRESENTATION_EXCHANGE_URL, classLoader.getResource(PRESENTATION_EXCHANGE_V_1_JSON).toURI());
+            dcpJsonLd.registerCachedDocument(DSPACE_DCP_V_1_0_CONTEXT, classLoader.getResource(DSPACE_DCP_V_1_0_JSON_LD).toURI());
+            dcpJsonLd.registerCachedDocument(DID_CONTEXT_URL, classLoader.getResource(DID_JSON).toURI());
+            dcpJsonLd.registerCachedDocument(JWS_2020_URL, classLoader.getResource(JWS_2020_JSON).toURI());
+            dcpJsonLd.registerCachedDocument(W3C_CREDENTIALS_URL, classLoader.getResource(CREDENTIALS_V_1_JSON).toURI());
+            dcpJsonLd.registerCachedDocument(PRESENTATION_SUBMISSION_URL, classLoader.getResource(PRESENTATION_SUBMISSION_V1_JSON).toURI());
         } catch (URISyntaxException e) {
             throw new RuntimeException(e);
         }

@@ -18,11 +18,11 @@ import org.eclipse.edc.iam.decentralizedclaims.transform.from.JsonObjectFromPres
 import org.eclipse.edc.iam.decentralizedclaims.transform.to.JsonObjectToPresentationQueryTransformer;
 import org.eclipse.edc.identityhub.api.validation.PresentationQueryValidator;
 import org.eclipse.edc.identityhub.api.verifiablecredential.PresentationApiController;
+import org.eclipse.edc.identityhub.protocols.dcp.spi.DcpJsonLd;
 import org.eclipse.edc.identityhub.spi.participantcontext.IdentityHubParticipantContextService;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.generator.VerifiablePresentationService;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.resolution.CredentialQueryResolver;
 import org.eclipse.edc.identityhub.spi.verification.SelfIssuedTokenVerifier;
-import org.eclipse.edc.jsonld.spi.JsonLd;
 import org.eclipse.edc.jsonld.spi.JsonLdNamespace;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;
@@ -61,7 +61,7 @@ public class PresentationApiExtension implements ServiceExtension {
     @Inject
     private VerifiablePresentationService verifiablePresentationService;
     @Inject
-    private JsonLd jsonLd;
+    private DcpJsonLd jsonLd;
     @Inject
     private TypeManager typeManager;
     @Inject
