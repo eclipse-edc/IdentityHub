@@ -1910,6 +1910,8 @@ components:
           type: string
         privateKeyAlias:
           type: string
+        privateKeyManaged:
+          type: boolean
         rotationDuration:
           type: integer
           format: int64
