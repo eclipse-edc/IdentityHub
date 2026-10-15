@@ -720,7 +720,8 @@ paths:
     put:
       tags:
       - Verifiable Credentials
-      description: Update an existing VerifiableCredential.
+      description: Update an existing VerifiableCredential. The participantContextId
+        in the request body must match the one in the path.
       operationId: updateCredential
       parameters:
       - name: participantContextId
@@ -767,7 +768,8 @@ paths:
     post:
       tags:
       - Verifiable Credentials
-      description: Adds a new VerifiableCredential into the system.
+      description: Adds a new VerifiableCredential into the system. The participantContextId
+        in the request body must match the one in the path.
       operationId: addCredential
       parameters:
       - name: participantContextId
