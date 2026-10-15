@@ -34,7 +34,6 @@ import org.eclipse.edc.identityhub.core.services.verifiablepresentation.generato
 import org.eclipse.edc.identityhub.core.services.verifiablepresentation.generators.JwtPresentationGenerator;
 import org.eclipse.edc.identityhub.core.services.verifiablepresentation.generators.LdpPresentationGenerator;
 import org.eclipse.edc.identityhub.core.services.verification.SelfIssuedTokenVerifierImpl;
-import org.eclipse.edc.identityhub.protocols.dcp.spi.DcpJsonLd;
 import org.eclipse.edc.identityhub.publickey.KeyPairResourcePublicKeyResolver;
 import org.eclipse.edc.identityhub.spi.authentication.ParticipantSecureTokenService;
 import org.eclipse.edc.identityhub.spi.credential.request.store.HolderCredentialRequestStore;
@@ -110,8 +109,6 @@ public class CoreServicesExtension implements ServiceExtension {
     private DidPublicKeyResolver publicKeyResolver;
     @Inject
     private JsonLd jsonLd;
-    @Inject
-    private DcpJsonLd dcpJsonLd;
     @Inject
     private CredentialStore credentialStore;
     @Inject
@@ -245,7 +242,7 @@ public class CoreServicesExtension implements ServiceExtension {
                     .store(credentialRequestStore)
                     .didResolverRegistry(didResolverRegistry)
                     .typeTransformerRegistry(typeTransformerRegistry.forContext(DCP_SCOPE_V_1_0))
-                    .jsonLd(dcpJsonLd)
+                    .jsonLd(jsonLd)
                     .httpClient(credentialRequestStateMachineConfiguration.createNoRetryClient(okHttpClient, context.getMonitor()))
                     .secureTokenService(secureTokenService)
                     .transactionContext(transactionContext)

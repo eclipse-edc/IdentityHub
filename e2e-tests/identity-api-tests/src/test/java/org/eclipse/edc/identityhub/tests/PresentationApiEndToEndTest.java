@@ -219,7 +219,7 @@ public class PresentationApiEndToEndTest {
             var query = """
                     {
                       "@context": [
-                        "jar:http://127.0.0.1:1/context.jar!/context.json",
+                        "https://example.com/unknown-context.jsonld",
                         "https://w3id.org/dspace-dcp/v1.0/dcp.jsonld"
                       ],
                       "@type": "PresentationQueryMessage",

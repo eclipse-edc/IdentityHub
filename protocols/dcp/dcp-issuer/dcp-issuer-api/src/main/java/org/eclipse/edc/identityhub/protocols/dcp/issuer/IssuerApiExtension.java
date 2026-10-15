@@ -21,7 +21,6 @@ import org.eclipse.edc.identityhub.protocols.dcp.issuer.api.v1.issuermetadata.Is
 import org.eclipse.edc.identityhub.protocols.dcp.issuer.spi.DcpIssuerMetadataService;
 import org.eclipse.edc.identityhub.protocols.dcp.issuer.spi.DcpIssuerService;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.DcpHolderTokenVerifier;
-import org.eclipse.edc.identityhub.protocols.dcp.spi.DcpJsonLd;
 import org.eclipse.edc.identityhub.protocols.dcp.transform.from.JsonObjectFromCredentialObjectTransformer;
 import org.eclipse.edc.identityhub.protocols.dcp.transform.from.JsonObjectFromCredentialOfferMessageTransformer;
 import org.eclipse.edc.identityhub.protocols.dcp.transform.from.JsonObjectFromCredentialRequestStatusTransformer;
@@ -30,6 +29,7 @@ import org.eclipse.edc.identityhub.protocols.dcp.transform.to.JsonObjectToCreden
 import org.eclipse.edc.identityhub.protocols.dcp.validation.CredentialRequestMessageValidator;
 import org.eclipse.edc.identityhub.spi.participantcontext.IdentityHubParticipantContextService;
 import org.eclipse.edc.issuerservice.spi.issuance.process.IssuanceProcessService;
+import org.eclipse.edc.jsonld.spi.JsonLd;
 import org.eclipse.edc.jsonld.spi.JsonLdNamespace;
 import org.eclipse.edc.runtime.metamodel.annotation.Configuration;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
@@ -87,7 +87,7 @@ public class IssuerApiExtension implements ServiceExtension {
     private TypeTransformerRegistry transformerRegistry;
 
     @Inject
-    private DcpJsonLd jsonLd;
+    private JsonLd jsonLd;
 
     @Inject
     private DcpIssuerService dcpIssuerService;

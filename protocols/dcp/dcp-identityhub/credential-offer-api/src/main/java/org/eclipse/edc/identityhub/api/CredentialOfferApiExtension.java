@@ -20,12 +20,12 @@ import org.eclipse.edc.identityhub.api.credentialoffer.CredentialObjectResolver;
 import org.eclipse.edc.identityhub.api.credentialoffer.CredentialOfferApiController;
 import org.eclipse.edc.identityhub.api.validation.CredentialOfferMessageValidator;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.DcpIssuerTokenVerifier;
-import org.eclipse.edc.identityhub.protocols.dcp.spi.DcpJsonLd;
 import org.eclipse.edc.identityhub.protocols.dcp.transform.to.JsonObjectToCredentialObjectTransformer;
 import org.eclipse.edc.identityhub.protocols.dcp.transform.to.JsonObjectToCredentialOfferMessageTransformer;
 import org.eclipse.edc.identityhub.protocols.dcp.transform.to.JsonObjectToIssuerMetadataTransformer;
 import org.eclipse.edc.identityhub.spi.participantcontext.IdentityHubParticipantContextService;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.offer.CredentialOfferService;
+import org.eclipse.edc.jsonld.spi.JsonLd;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;
 import org.eclipse.edc.spi.system.ServiceExtension;
@@ -56,7 +56,7 @@ public class CredentialOfferApiExtension implements ServiceExtension {
     @Inject
     private WebService webService;
     @Inject
-    private DcpJsonLd jsonLd;
+    private JsonLd jsonLd;
     @Inject
     private TypeManager typeManager;
     @Inject

@@ -19,13 +19,13 @@ import org.eclipse.edc.iam.decentralizedclaims.transform.to.JwtToVerifiableCrede
 import org.eclipse.edc.identityhub.api.storage.StorageApiController;
 import org.eclipse.edc.identityhub.api.validation.CredentialMessageValidator;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.DcpIssuerTokenVerifier;
-import org.eclipse.edc.identityhub.protocols.dcp.spi.DcpJsonLd;
 import org.eclipse.edc.identityhub.protocols.dcp.transform.from.JsonObjectFromCredentialMessageTransformer;
 import org.eclipse.edc.identityhub.protocols.dcp.transform.from.JsonObjectFromCredentialRequestMessageTransformer;
 import org.eclipse.edc.identityhub.protocols.dcp.transform.to.JsonObjectToCredentialMessageTransformer;
 import org.eclipse.edc.identityhub.protocols.dcp.transform.to.JsonObjectToCredentialRequestStatusTransformer;
 import org.eclipse.edc.identityhub.spi.participantcontext.IdentityHubParticipantContextService;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.generator.CredentialWriter;
+import org.eclipse.edc.jsonld.spi.JsonLd;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;
 import org.eclipse.edc.spi.monitor.Monitor;
@@ -60,7 +60,7 @@ public class StorageApiExtension implements ServiceExtension {
     @Inject
     private WebService webService;
     @Inject
-    private DcpJsonLd jsonLd;
+    private JsonLd jsonLd;
     @Inject
     private TypeManager typeManager;
     @Inject
