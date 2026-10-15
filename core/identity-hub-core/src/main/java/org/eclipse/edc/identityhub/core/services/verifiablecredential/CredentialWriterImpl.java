@@ -247,6 +247,13 @@ public class CredentialWriterImpl implements CredentialWriter {
             }
             var resource = convertResult.getContent();
 
+            // the request was sent to one Issuer only, so it cannot be answered with credentials issued by somebody else.
+            // This also makes the credential's issuer trustworthy for deciding which credentials it supersedes.
+            if (!holderRequest.getIssuerDid().equals(resource.getIssuerId())) {
+                return ServiceResult.unauthorized("HolderCredentialRequest '%s' was sent to Issuer '%s', but the credential was issued by '%s'"
+                        .formatted(holderPid, holderRequest.getIssuerDid(), resource.getIssuerId()));
+            }
+
             // verify that the received credentials correspond to the credential request that was made prior
             var receivedCredential = resource.getVerifiableCredential();
             var receivedTypes = receivedCredential.credential().getType();
@@ -309,11 +316,11 @@ public class CredentialWriterImpl implements CredentialWriter {
     }
 
     /**
-     * A delivered credential replaces any credential that was previously obtained for the same {@code CredentialObject}
-     * in the same format, e.g. on re-issuance after automatic renewal. The Issuer may revoke the replaced credential at
-     * any time, so it must no longer be used in DCP interactions: it is moved to {@link VcStatus#EXPIRED}, which excludes
-     * it from presentations immediately, and marked as superseded so the credential watchdog neither re-activates it nor
-     * requests re-issuance for it. The watchdog may still move it on to {@link VcStatus#REVOKED} once the Issuer revokes it.
+     * A delivered credential replaces any credential that was previously obtained from the same Issuer for the same
+     * {@code CredentialObject} in the same format, e.g. on re-issuance after automatic renewal. The Issuer may revoke the
+     * replaced credential at any time, so it must no longer be used in DCP interactions: it is moved to
+     * {@link VcStatus#EXPIRED}, which excludes it from presentations immediately, and marked as superseded so the
+     * credential watchdog neither re-activates it nor requests re-issuance for it. The watchdog may still move it on to {@link VcStatus#REVOKED} once the Issuer revokes it.
      * <p>
      * The replaced credentials are locked, so that a concurrent check by the watchdog cannot overwrite the supersession,
      * and in the order of their IDs, so that concurrent deliveries cannot deadlock.
@@ -325,6 +332,8 @@ public class CredentialWriterImpl implements CredentialWriter {
                 .filter(new Criterion("metadata.%s".formatted(VerifiableCredentialResource.METADATA_CREDENTIAL_OBJECT_ID), "=",
                         newCredential.getMetadata().get(VerifiableCredentialResource.METADATA_CREDENTIAL_OBJECT_ID)))
                 .filter(new Criterion("verifiableCredential.format", "=", newCredential.getVerifiableCredential().format().ordinal()))
+                // CredentialObject IDs are chosen by each Issuer, so only the Issuer's own credentials can be replaced
+                .filter(new Criterion("issuerId", "=", newCredential.getIssuerId()))
                 .filter(new Criterion("id", "!=", newCredential.getId()))
                 // a revocation is authoritative and must not be masked by the supersession
                 .filter(new Criterion("state", "!=", VcStatus.REVOKED.code()))

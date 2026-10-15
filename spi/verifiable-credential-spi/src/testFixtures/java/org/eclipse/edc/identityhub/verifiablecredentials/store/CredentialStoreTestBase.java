@@ -425,6 +425,28 @@ public abstract class CredentialStoreTestBase {
     }
 
     @Test
+    void query_byIssuerId() {
+        var expectedCred = createCredentialBuilder()
+                .issuerId("did:web:issuer-1")
+                .build();
+        var otherCred = createCredentialBuilder()
+                .issuerId("did:web:issuer-2")
+                .build();
+
+        getStore().create(expectedCred);
+        getStore().create(otherCred);
+
+        var query = QuerySpec.Builder.newInstance()
+                .filter(new Criterion("issuerId", "=", "did:web:issuer-1"))
+                .build();
+
+        assertThat(getStore().query(query)).isSucceeded()
+                .satisfies(str -> Assertions.assertThat(str).hasSize(1)
+                        .usingRecursiveFieldByFieldElementComparator()
+                        .containsExactly(expectedCred));
+    }
+
+    @Test
     void query_noQuerySpec() {
         var resources = range(0, 5)
                 .mapToObj(i -> createCredentialBuilder().id("id" + i).build())

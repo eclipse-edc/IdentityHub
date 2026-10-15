@@ -29,11 +29,15 @@ import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.CredentialOff
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.CredentialOfferStatus;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.offer.CredentialOfferService;
 import org.eclipse.edc.jsonld.spi.JsonLd;
+import org.eclipse.edc.jwt.spi.JwtRegisteredClaimNames;
 import org.eclipse.edc.transform.spi.TypeTransformerRegistry;
 import org.eclipse.edc.validator.spi.JsonObjectValidatorRegistry;
 import org.eclipse.edc.web.spi.exception.AuthenticationFailedException;
 import org.eclipse.edc.web.spi.exception.InvalidRequestException;
+import org.eclipse.edc.web.spi.exception.NotAuthorizedException;
 import org.eclipse.edc.web.spi.exception.ValidationFailureException;
+
+import java.util.Objects;
 
 import static jakarta.ws.rs.core.HttpHeaders.AUTHORIZATION;
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
@@ -94,8 +98,15 @@ public class CredentialOfferApiController implements CredentialOfferApi {
                 .orElseThrow((f) -> new AuthenticationFailedException("Invalid participant"));
 
         // validate Issuer's SI token
-        issuerTokenVerifier.verify(participantContext, authToken)
+        var issuerClaims = issuerTokenVerifier.verify(participantContext, authToken)
                 .orElseThrow(f -> new AuthenticationFailedException("ID token verification failed: %s".formatted(f.getFailureDetail())));
+
+        // the token was verified against the DID document of its issuer, so only the 'iss' claim identifies the sender.
+        // An offer made in the name of a different Issuer would otherwise cause credentials to be requested from it.
+        var senderDid = issuerClaims.getStringClaim(JwtRegisteredClaimNames.ISSUER);
+        if (!Objects.equals(senderDid, offerMessage.getIssuer())) {
+            throw new NotAuthorizedException("The offer names issuer '%s', but was sent by '%s'".formatted(offerMessage.getIssuer(), senderDid));
+        }
 
         // sparse credential objects, i.e. those carrying only an ID, are completed from the Issuer's metadata
         var credentialObjects = credentialObjectResolver.resolve(offerMessage.getIssuer(), offerMessage.getCredentials())

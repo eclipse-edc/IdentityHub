@@ -23,7 +23,9 @@ import org.eclipse.edc.identityhub.spi.verifiablecredentials.events.CredentialOf
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.events.CredentialOfferReceived;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.CredentialOffer;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.CredentialOfferStatus;
+import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.CredentialUsage;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialOfferStore;
+import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialStore;
 import org.eclipse.edc.spi.event.Event;
 import org.eclipse.edc.spi.event.EventEnvelope;
 import org.eclipse.edc.spi.event.EventSubscriber;
@@ -49,6 +51,10 @@ import static org.eclipse.edc.spi.query.Criterion.criterion;
  * Subscribes to {@link CredentialOfferEvent}s and implements a default processing behaviour.
  * For example, when receiving {@link CredentialOfferReceived} events, a credential issuance request is sent to the issuer,
  * unless a request to the same issuer for exactly the same credential types and formats is still open.
+ * <p>
+ * If trusted issuers are configured, requests are only sent automatically to them, and to issuers that the participant
+ * already holds credentials from. Offers of other issuers are then left in state {@link CredentialOfferStatus#RECEIVED},
+ * so that they can be acted upon manually. Without trusted issuers, every issuer is trusted.
  */
 public class CredentialOfferHandler implements EventSubscriber {
     private final Monitor monitor;
@@ -57,15 +63,20 @@ public class CredentialOfferHandler implements EventSubscriber {
     private final CredentialOfferStore credentialOfferStore;
     private final HolderCredentialRequestStore holderCredentialRequestStore;
     private final TransactionContext transactionContext;
+    private final CredentialStore credentialStore;
+    private final Set<String> trustedIssuers;
 
     public CredentialOfferHandler(Monitor monitor, CredentialRequestManager requestManager, DcpProfileRegistry dcpProfileRegistry, CredentialOfferStore credentialOfferStore,
-                                  HolderCredentialRequestStore holderCredentialRequestStore, TransactionContext transactionContext) {
+                                  HolderCredentialRequestStore holderCredentialRequestStore, TransactionContext transactionContext, CredentialStore credentialStore,
+                                  Set<String> trustedIssuers) {
         this.monitor = monitor;
         this.requestManager = requestManager;
         this.dcpProfileRegistry = dcpProfileRegistry;
         this.credentialOfferStore = credentialOfferStore;
         this.holderCredentialRequestStore = holderCredentialRequestStore;
         this.transactionContext = transactionContext;
+        this.credentialStore = credentialStore;
+        this.trustedIssuers = Set.copyOf(trustedIssuers);
     }
 
     @Override
@@ -87,6 +98,14 @@ public class CredentialOfferHandler implements EventSubscriber {
 
             if (storedOffer.getStateAsEnum() == CredentialOfferStatus.PROCESSING || storedOffer.getStateAsEnum() == CredentialOfferStatus.PROCESSED) {
                 monitor.warning("Credential offer with ID = '%s' is already processing. Skipping.".formatted(receivedEvent.getId()));
+                return;
+            }
+
+            // anybody can send an offer, so requesting credentials from any issuer would let that issuer make the
+            // participant obtain credentials it never asked for
+            if (!isTrusted(receivedEvent.getParticipantContextId(), receivedEvent.getIssuer())) {
+                monitor.info("Credential offer with ID = '%s' was sent by issuer '%s', which is not trusted. No credential request is initiated automatically."
+                        .formatted(receivedEvent.getId(), receivedEvent.getIssuer()));
                 return;
             }
 
@@ -126,6 +145,28 @@ public class CredentialOfferHandler implements EventSubscriber {
         } catch (EdcPersistenceException ex) {
             monitor.warning("Could not persist CredentialOffer in database: %s".formatted(ex.getMessage()));
         }
+    }
+
+    /**
+     * An issuer is trusted if no trusted issuers are configured, if it is configured as such, or if the participant
+     * already holds credentials issued by it.
+     */
+    private boolean isTrusted(String participantContextId, String issuerDid) {
+        if (trustedIssuers.isEmpty() || trustedIssuers.contains(issuerDid)) {
+            return true;
+        }
+        var query = QuerySpec.Builder.newInstance()
+                .filter(criterion("participantContextId", "=", participantContextId))
+                .filter(criterion("usage", "=", CredentialUsage.Holder.toString()))
+                .filter(criterion("issuerId", "=", issuerDid))
+                .limit(1)
+                .build();
+        var result = credentialStore.query(query);
+        if (result.failed()) {
+            monitor.warning("Could not determine whether issuer '%s' is trusted: %s".formatted(issuerDid, result.getFailureDetail()));
+            return false;
+        }
+        return !result.getContent().isEmpty();
     }
 
     /**

@@ -217,8 +217,10 @@ public class StorageApiEndToEndTest {
         void storeCredential_jsonLdCredential(IdentityHub identityHub, CredentialStore credentialStore) throws JOSEException {
             when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq(PROVIDER_DID + "#key1"))).thenReturn(Result.success(PROVIDER_KEY.toPublicKey()));
 
-            // same credential as VC_EXAMPLE_2, but issued to the holder participant
-            var ldCredential = VC_EXAMPLE_2.replace("did:example:ebfeb1f712ebc6f1c276e12ec21", CONSUMER_DID);
+            // same credential as VC_EXAMPLE_2, but issued by the Issuer the request was sent to, to the holder participant
+            var ldCredential = VC_EXAMPLE_2
+                    .replace("https://example.edu/issuers/12345", PROVIDER_DID)
+                    .replace("did:example:ebfeb1f712ebc6f1c276e12ec21", CONSUMER_DID);
 
             var credentialContainer = Json.createObjectBuilder()
                     .add("credentialType", "MembershipCredential")
@@ -445,6 +447,7 @@ public class StorageApiEndToEndTest {
 
             // issued to the holder, but with a corrupted embedded proof, which goes unnoticed for this format
             var ldCredential = VC_EXAMPLE_2
+                    .replace("https://example.edu/issuers/12345", PROVIDER_DID)
                     .replace("did:example:ebfeb1f712ebc6f1c276e12ec21", CONSUMER_DID)
                     .replace("TCYt5XsITJX1CxPCT8yAV", "AAAAAAAAAAAAAAAAAAAAA");
 
