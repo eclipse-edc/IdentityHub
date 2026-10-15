@@ -216,7 +216,8 @@ public class VerifiableCredentialsApiController implements VerifiableCredentials
         authorizationService.authorize(securityContext, participantContextId, participantContextId, IdentityHubParticipantContext.class)
                 .orElseThrow(exceptionMapper(IdentityHubParticipantContext.class, participantContextId));
 
-        discriminatorMappings.forEach(discriminatorMappingRegistry::addMapping);
+        // mappings only ever apply to the participant context that defined them
+        discriminatorMappings.forEach((alias, discriminator) -> discriminatorMappingRegistry.addMapping(participantContextId, alias, discriminator));
     }
 
     /**

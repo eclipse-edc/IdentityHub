@@ -15,10 +15,13 @@
 package org.eclipse.edc.identityhub;
 
 import org.eclipse.edc.identityhub.defaults.DiscriminatorMappingRegistryImpl;
+import org.eclipse.edc.identityhub.spi.participantcontext.events.ParticipantContextDeleted;
 import org.eclipse.edc.identityhub.spi.transformation.DiscriminatorMappingRegistry;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
+import org.eclipse.edc.runtime.metamodel.annotation.Inject;
 import org.eclipse.edc.runtime.metamodel.annotation.Provider;
 import org.eclipse.edc.runtime.metamodel.annotation.Setting;
+import org.eclipse.edc.spi.event.EventRouter;
 import org.eclipse.edc.spi.system.ServiceExtension;
 import org.eclipse.edc.spi.system.ServiceExtensionContext;
 
@@ -39,6 +42,9 @@ public class DiscriminatorMappingExtension implements ServiceExtension {
 
     public static final String NAME = "Discriminator Mapping Extension";
 
+    @Inject
+    private EventRouter eventRouter;
+
     @Override
     public String name() {
         return NAME;
@@ -57,6 +63,8 @@ public class DiscriminatorMappingExtension implements ServiceExtension {
             discriminatorMappingRegistry.addMapping(alias, value);
         });
 
+        // a participant context's mappings must not outlive the participant context
+        eventRouter.registerSync(ParticipantContextDeleted.class, discriminatorMappingRegistry);
         return discriminatorMappingRegistry;
     }
 }

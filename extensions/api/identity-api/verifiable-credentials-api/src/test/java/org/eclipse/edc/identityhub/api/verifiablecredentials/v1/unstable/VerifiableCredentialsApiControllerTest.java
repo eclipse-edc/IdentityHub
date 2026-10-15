@@ -724,8 +724,9 @@ class VerifiableCredentialsApiControllerTest extends RestControllerTestBase {
                     .log().ifValidationFails()
                     .statusCode(204);
 
-            verify(mappingRegistry).addMapping("MyTestCredential", "https://example.com/contexts/v1/#TestCredential");
-            verify(mappingRegistry).addMapping("AnotherCredential", "https://example.com/contexts/v1/#GoldMembershipCredential");
+            verify(mappingRegistry).addMapping(PARTICIPANT_ID, "MyTestCredential", "https://example.com/contexts/v1/#TestCredential");
+            verify(mappingRegistry).addMapping(PARTICIPANT_ID, "AnotherCredential", "https://example.com/contexts/v1/#GoldMembershipCredential");
+            verifyNoMoreInteractions(mappingRegistry);
         }
 
         @Test
@@ -744,7 +745,7 @@ class VerifiableCredentialsApiControllerTest extends RestControllerTestBase {
         @Test
         void duplicateDiscriminator_expect400() {
             doThrow(new IllegalArgumentException("Duplicate discriminator"))
-                    .when(mappingRegistry).addMapping(anyString(), anyString());
+                    .when(mappingRegistry).addMapping(anyString(), anyString(), anyString());
 
             baseRequest()
                     .contentType(JSON)

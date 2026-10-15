@@ -67,7 +67,7 @@ public class CredentialQueryResolverImpl implements CredentialQueryResolver {
         }
         var requestedScopes = query.getScopes();
         // check that all access token scopes are valid
-        var accessTokenScopesParseResult = parseScopes(accessTokenScopes);
+        var accessTokenScopesParseResult = parseScopes(participantContextId, accessTokenScopes);
         if (accessTokenScopesParseResult.failed()) {
             return QueryResult.invalidScope(accessTokenScopesParseResult.getFailureMessages());
         }
@@ -98,7 +98,7 @@ public class CredentialQueryResolverImpl implements CredentialQueryResolver {
             credentialResult = allowedCredentials.stream();
         } else {
             // check that all prover scopes are valid
-            var requestedScopesParseResult = parseScopes(requestedScopes);
+            var requestedScopesParseResult = parseScopes(participantContextId, requestedScopes);
             if (requestedScopesParseResult.failed()) {
                 return QueryResult.invalidScope(requestedScopesParseResult.getFailureMessages());
             }
@@ -158,12 +158,13 @@ public class CredentialQueryResolverImpl implements CredentialQueryResolver {
      * Parses a list of scope strings, converts them to {@link Criterion} objects, and returns a {@link Result} containing
      * the list of converted criteria. If any scope string fails to be converted, a failure result is returned.
      *
-     * @param scopes The list of scope strings to parse and convert.
+     * @param participantContextId The participant context whose credentials are queried, so that its scope aliases apply.
+     * @param scopes               The list of scope strings to parse and convert.
      * @return A {@link Result} containing the list of converted {@link Criterion} objects.
      */
-    private Result<List<List<Criterion>>> parseScopes(List<String> scopes) {
+    private Result<List<List<Criterion>>> parseScopes(String participantContextId, List<String> scopes) {
         var transformResult = scopes.stream()
-                .map(scopeTransformer::transformScope)
+                .map(scope -> scopeTransformer.transformScope(participantContextId, scope))
                 .toList();
 
         if (transformResult.stream().anyMatch(AbstractResult::failed)) {
