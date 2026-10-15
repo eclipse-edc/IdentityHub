@@ -183,6 +183,26 @@ class VerifiableCredentialsApiControllerTest extends RestControllerTestBase {
         }
 
         @Test
+        void participantContextIdMismatch_returns400() {
+            var manifest = VerifiableCredentialManifest.Builder.newInstance()
+                    .id(UUID.randomUUID().toString())
+                    .participantContextId("another-participant")
+                    .verifiableCredentialContainer(new VerifiableCredentialContainer("rawVc", CredentialFormat.VC1_0_LD, createCredential("type")))
+                    .build();
+            when(validator.validate(any())).thenReturn(ValidationResult.success());
+
+            baseRequest()
+                    .contentType(JSON)
+                    .body(manifest)
+                    .post()
+                    .then()
+                    .log().ifValidationFails()
+                    .statusCode(400);
+
+            verifyNoInteractions(typeTransformerRegistry, credentialStore);
+        }
+
+        @Test
         void transformFails_returns400() {
             when(validator.validate(any())).thenReturn(ValidationResult.success());
             when(authorizationService.authorize(any(), anyString(), eq(PARTICIPANT_ID), eq(IdentityHubParticipantContext.class))).thenReturn(ServiceResult.success());
@@ -260,6 +280,26 @@ class VerifiableCredentialsApiControllerTest extends RestControllerTestBase {
                     .then()
                     .log().ifValidationFails()
                     .statusCode(403);
+        }
+
+        @Test
+        void participantContextIdMismatch_returns400() {
+            var manifest = VerifiableCredentialManifest.Builder.newInstance()
+                    .id(UUID.randomUUID().toString())
+                    .participantContextId("another-participant")
+                    .verifiableCredentialContainer(new VerifiableCredentialContainer("rawVc", CredentialFormat.VC1_0_LD, createCredential("type")))
+                    .build();
+            when(validator.validate(any())).thenReturn(ValidationResult.success());
+
+            baseRequest()
+                    .contentType(JSON)
+                    .body(manifest)
+                    .put()
+                    .then()
+                    .log().ifValidationFails()
+                    .statusCode(400);
+
+            verifyNoInteractions(typeTransformerRegistry, credentialStore);
         }
 
         @Test
