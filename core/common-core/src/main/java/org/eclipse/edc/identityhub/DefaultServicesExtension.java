@@ -121,7 +121,7 @@ public class DefaultServicesExtension implements ServiceExtension {
         monitor = context.getMonitor();
         var accessTokenRule = new ClaimIsPresentRule(TOKEN_CLAIM);
         registry.addRule(DCP_PRESENTATION_SELF_ISSUED_TOKEN_CONTEXT, accessTokenRule);
-        registry.addRule(DCP_PRESENTATION_SELF_ISSUED_TOKEN_CONTEXT, new ExpirationIssuedAtValidationRule(clock, 5, true));
+        registry.addRule(DCP_PRESENTATION_SELF_ISSUED_TOKEN_CONTEXT, new ExpirationIssuedAtValidationRule(clock, 5, false));
         registry.addRule(DCP_PRESENTATION_SELF_ISSUED_TOKEN_CONTEXT, new NotBeforeValidationRule(clock, 5, true));
 
         var scopeIsPresentRule = new ClaimIsPresentRule(ACCESS_TOKEN_SCOPE_CLAIM);
