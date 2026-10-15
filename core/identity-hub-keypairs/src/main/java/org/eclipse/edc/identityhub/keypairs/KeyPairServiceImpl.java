@@ -302,8 +302,9 @@ public class KeyPairServiceImpl implements KeyPairService, EventSubscriber {
                 if (oldKey == null) {
                     return ServiceResult.notFound("A KeyPairResource with ID '%s' does not exist.".formatted(oldId));
                 }
-                // the private key of a key pair that was rotated or revoked before is deleted already
-                var replacement = new Replacement(oldKey, !wasTakenOutOfUse(oldKey));
+                // the private key of a key pair that was rotated or revoked before is deleted already, and that of an imported
+                // key pair is not owned by IdentityHub: its alias may refer to any secret in the vault
+                var replacement = new Replacement(oldKey, oldKey.isPrivateKeyManaged() && !wasTakenOutOfUse(oldKey));
                 // the successor takes over the default flag, which is reset when the old key pair is taken out of use
                 var wasDefault = oldKey.isDefaultPair();
                 takeOutOfUse.accept(oldKey);
@@ -420,6 +421,7 @@ public class KeyPairServiceImpl implements KeyPairService, EventSubscriber {
                 .state(keyDescriptor.isActive() ? KeyPairState.ACTIVATED : KeyPairState.CREATED)
                 .isDefaultPair(makeDefault)
                 .privateKeyAlias(keyDescriptor.getPrivateKeyAlias())
+                .privateKeyManaged(newKey.privateKeyStored())
                 .serializedPublicKey(newKey.publicKeySerialized())
                 .timestamp(clock.millis())
                 .participantContextId(newKey.participantContextId())

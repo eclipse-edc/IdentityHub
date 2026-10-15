@@ -47,6 +47,7 @@ public class KeyPairResource extends AbstractParticipantResource {
     private long rotationDuration;
     private String serializedPublicKey;
     private String privateKeyAlias;
+    private boolean privateKeyManaged;
     private int state;
     private Set<KeyPairUsage> usage = Set.of();
 
@@ -84,6 +85,15 @@ public class KeyPairResource extends AbstractParticipantResource {
      */
     public String getPrivateKeyAlias() {
         return privateKeyAlias;
+    }
+
+    /**
+     * Whether the private key was stored in the vault by IdentityHub, i.e. the key pair was generated rather than imported.
+     * Only a managed private key is deleted from the vault when the key pair is taken out of use, the private key of an
+     * imported key pair is owned by whoever stored it.
+     */
+    public boolean isPrivateKeyManaged() {
+        return privateKeyManaged;
     }
 
     /**
@@ -227,6 +237,11 @@ public class KeyPairResource extends AbstractParticipantResource {
 
         public Builder privateKeyAlias(String privateKeyAlias) {
             entity.privateKeyAlias = privateKeyAlias;
+            return this;
+        }
+
+        public Builder privateKeyManaged(boolean privateKeyManaged) {
+            entity.privateKeyManaged = privateKeyManaged;
             return this;
         }
 

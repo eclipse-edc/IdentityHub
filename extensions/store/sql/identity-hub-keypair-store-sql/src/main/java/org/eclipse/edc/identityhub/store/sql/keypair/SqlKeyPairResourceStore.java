@@ -73,6 +73,7 @@ public class SqlKeyPairResourceStore extends AbstractSqlStore implements KeyPair
                         keyPairResource.getRotationDuration(),
                         keyPairResource.getSerializedPublicKey(),
                         keyPairResource.getPrivateKeyAlias(),
+                        keyPairResource.isPrivateKeyManaged(),
                         keyPairResource.getState(),
                         keyPairResource.getKeyContext(),
                         toJson(keyPairResource.getUsage()));
@@ -121,6 +122,7 @@ public class SqlKeyPairResourceStore extends AbstractSqlStore implements KeyPair
                         keyPairResource.getRotationDuration(),
                         keyPairResource.getSerializedPublicKey(),
                         keyPairResource.getPrivateKeyAlias(),
+                        keyPairResource.isPrivateKeyManaged(),
                         keyPairResource.getState(),
                         keyPairResource.getKeyContext(),
                         toJson(keyPairResource.getUsage()),
@@ -172,6 +174,7 @@ public class SqlKeyPairResourceStore extends AbstractSqlStore implements KeyPair
                 .rotationDuration(resultSet.getLong(statements.getRotationDurationColumn()))
                 .serializedPublicKey(resultSet.getString(statements.getSerializedPublicKeyColumn()))
                 .privateKeyAlias(resultSet.getString(statements.getPrivateKeyAliasColumn()))
+                .privateKeyManaged(resultSet.getBoolean(statements.getPrivateKeyManagedColumn()))
                 .state(resultSet.getInt(statements.getStateColumn()))
                 .keyContext(resultSet.getString(statements.getKeyContextColumn()))
                 .usage(fromJson(resultSet.getString(statements.getUsageColumn()), LIST_TYPE))

@@ -29,6 +29,7 @@ public class KeyPairResourceMapping extends TranslationMapping {
         add("rotationDuration", stmt.getRotationDurationColumn());
         add("serializedPublicKey", stmt.getSerializedPublicKeyColumn());
         add("privateKeyAlias", stmt.getPrivateKeyAliasColumn());
+        add("privateKeyManaged", stmt.getPrivateKeyManagedColumn());
         add("state", stmt.getStateColumn());
         add("usage", stmt.getUsageColumn());
     }
