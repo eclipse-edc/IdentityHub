@@ -19,9 +19,11 @@ import com.nimbusds.jose.jwk.Curve;
 import com.nimbusds.jose.jwk.ECKey;
 import com.nimbusds.jose.jwk.gen.ECKeyGenerator;
 import com.nimbusds.jose.jwk.gen.OctetKeyPairGenerator;
+import org.assertj.core.api.Assertions;
 import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairResource;
 import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairState;
 import org.eclipse.edc.identityhub.spi.keypair.store.KeyPairResourceStore;
+import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyPairUsage;
 import org.eclipse.edc.keys.KeyParserRegistryImpl;
 import org.eclipse.edc.keys.keyparsers.JwkParser;
 import org.eclipse.edc.keys.spi.KeyParserRegistry;
@@ -34,6 +36,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import tools.jackson.databind.ObjectMapper;
 
+import java.security.PublicKey;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
@@ -118,10 +121,57 @@ class KeyPairResourcePublicKeyResolverTest {
                 createKeyPairResource().build()
         )));
 
-        assertThat(resolver.resolveKey("test-key", "participantId")).isSucceeded();
+        assertThat(resolver.resolveKey("test-key", "participantId")).isFailed()
+                .detail().contains("Multiple KeyPairResources");
         verify(resourceStore).query(any(QuerySpec.class));
-        verify(monitor).warning(matches("Expected exactly 1 KeyPairResource with keyId '.*' but found '2'."));
+        verify(monitor).warning(matches("Expected exactly 1 non-revoked KeyPairResource with keyId '.*' but found '2'.*"));
         verifyNoMoreInteractions(resourceStore, monitor);
+        verifyNoInteractions(fallbackService);
+    }
+
+    @Test
+    void resolveKey_whenRevoked() {
+        when(resourceStore.query(any(QuerySpec.class))).thenReturn(StoreResult.success(List.of(
+                createKeyPairResource().state(KeyPairState.REVOKED).build()
+        )));
+
+        assertThat(resolver.resolveKey("test-key", "participantId")).isFailed()
+                .detail().contains("is revoked");
+        verifyNoInteractions(fallbackService);
+    }
+
+    @Test
+    void resolveKey_whenRotated() {
+        when(resourceStore.query(any(QuerySpec.class))).thenReturn(StoreResult.success(List.of(
+                createKeyPairResource().state(KeyPairState.ROTATED).build()
+        )));
+
+        assertThat(resolver.resolveKey("test-key", "participantId")).isSucceeded();
+        verifyNoInteractions(fallbackService);
+    }
+
+    @Test
+    void resolveKey_whenRevokedAndActiveWithSameKeyId_shouldUseActive() {
+        var activeKey = createPublicKeyJwk();
+        when(resourceStore.query(any(QuerySpec.class))).thenReturn(StoreResult.success(List.of(
+                createKeyPairResource().state(KeyPairState.REVOKED).build(),
+                createKeyPairResource().serializedPublicKey(activeKey.toJSONString()).build()
+        )));
+
+        assertThat(resolver.resolveKey("test-key", "participantId")).isSucceeded()
+                .satisfies(pk -> Assertions.assertThat(pk.getEncoded()).isEqualTo(toPublicKey(activeKey).getEncoded()));
+        verifyNoInteractions(fallbackService);
+    }
+
+    @Test
+    void resolveKey_whenNotTokenSigningKey() {
+        when(resourceStore.query(any(QuerySpec.class))).thenReturn(StoreResult.success(List.of(
+                createKeyPairResource().usage(KeyPairUsage.CREDENTIAL_SIGNING, KeyPairUsage.PRESENTATION_SIGNING).build()
+        )));
+
+        assertThat(resolver.resolveKey("test-key", "participantId")).isFailed()
+                .detail().contains("not intended for token signing");
+        verifyNoInteractions(fallbackService);
     }
 
     @Test
@@ -156,6 +206,14 @@ class KeyPairResourcePublicKeyResolverTest {
                 .state(KeyPairState.ACTIVATED)
                 .serializedPublicKey(createPublicKeyJwk().toJSONString())
                 .privateKeyAlias("test-key-alias");
+    }
+
+    private PublicKey toPublicKey(ECKey key) {
+        try {
+            return key.toPublicKey();
+        } catch (JOSEException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private ECKey createPublicKeyJwk() {
