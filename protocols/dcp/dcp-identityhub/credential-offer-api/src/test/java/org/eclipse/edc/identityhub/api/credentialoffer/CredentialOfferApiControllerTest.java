@@ -52,6 +52,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isA;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 @ApiTest
@@ -74,7 +75,7 @@ class CredentialOfferApiControllerTest extends RestControllerTestBase {
 
         when(tokenVerifier.verify(any(), anyString())).thenReturn(Result.success(
                 ClaimToken.Builder.newInstance()
-                        .claim("foo", "bar")
+                        .claim("iss", "test-issuer")
                         .build()
         ));
 
@@ -187,6 +188,24 @@ class CredentialOfferApiControllerTest extends RestControllerTestBase {
                 .then()
                 .log().ifValidationFails()
                 .statusCode(401);
+    }
+
+    @Test
+    void offerCredential_issuerDiffersFromTokenIssuer_expect403() {
+        when(tokenVerifier.verify(any(), anyString())).thenReturn(Result.success(
+                ClaimToken.Builder.newInstance()
+                        .claim("iss", "another-issuer")
+                        .build()
+        ));
+
+        baseRequest()
+                .body(createRequestBody())
+                .post()
+                .then()
+                .log().ifValidationFails()
+                .statusCode(403);
+
+        verifyNoInteractions(credentialObjectResolver, offerService);
     }
 
     @Override

@@ -101,7 +101,14 @@ public abstract class AbstractIdentityHub {
     public abstract Service createServiceEndpoint(String participantContextId);
 
     public String didFor(String participantContextId) {
-        var didLocation = format("%s%%3A%s", didEndpoint.get().getUrl().getHost(), didEndpoint.get().getUrl().getPort());
+        return didFor(didEndpoint.get().getUrl(), participantContextId);
+    }
+
+    /**
+     * The did:web DID of a participant context, whose DID document is served by the given DID endpoint.
+     */
+    public static String didFor(URI didEndpoint, String participantContextId) {
+        var didLocation = format("%s%%3A%s", didEndpoint.getHost(), didEndpoint.getPort());
         return format("did:web:%s:%s", didLocation, participantContextId);
     }
 

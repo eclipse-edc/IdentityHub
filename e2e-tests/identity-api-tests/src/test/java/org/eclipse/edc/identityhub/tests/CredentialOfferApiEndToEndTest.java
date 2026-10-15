@@ -28,6 +28,7 @@ import org.eclipse.edc.iam.did.spi.resolution.DidPublicKeyResolver;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.RevocationServiceRegistry;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialOfferMessage;
 import org.eclipse.edc.identityhub.spi.credential.request.model.HolderCredentialRequest;
+import org.eclipse.edc.identityhub.spi.credential.request.store.HolderCredentialRequestStore;
 import org.eclipse.edc.identityhub.spi.did.store.DidResourceStore;
 import org.eclipse.edc.identityhub.spi.keypair.store.KeyPairResourceStore;
 import org.eclipse.edc.identityhub.spi.participantcontext.IdentityHubParticipantContextService;
@@ -47,6 +48,7 @@ import org.eclipse.edc.junit.extensions.RuntimeExtension;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.spi.security.Vault;
+import org.eclipse.edc.spi.system.configuration.ConfigFactory;
 import org.eclipse.edc.sql.testfixtures.PostgresqlEndToEndExtension;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -154,6 +156,51 @@ public class CredentialOfferApiEndToEndTest {
             await().untilAsserted(() -> assertThat(credentialOfferStore.query(QuerySpec.max()))
                     .hasSize(1)
                     .allSatisfy(co -> assertThat(co.getStateAsEnum()).isEqualTo(CredentialOfferStatus.PROCESSED)));
+        }
+
+        @Test
+        void storeCredentialOffer_issuerDiffersFromSender_expect403(IdentityHub identityHub, CredentialOfferStore credentialOfferStore) throws JOSEException {
+            when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq(PROVIDER_DID + "#key1"))).thenReturn(Result.success(PROVIDER_KEY.toPublicKey()));
+
+            var offerMessage = Json.createObjectBuilder(createCredentialOfferMessage(createCredentialContainer()))
+                    .add(CREDENTIALS_NAMESPACE_W3C.toIri(CREDENTIAL_ISSUER_TERM), "did:web:another-issuer")
+                    .build();
+            identityHub.getCredentialsEndpoint().baseRequest()
+                    .contentType(ContentType.JSON)
+                    .header("Authorization", "Bearer " + generateSiToken())
+                    .body(offerMessage)
+                    .post("/v1/participants/" + TEST_PARTICIPANT_CONTEXT_ID + "/offers")
+                    .then()
+                    .log().ifValidationFails()
+                    .statusCode(403);
+
+            assertThat(credentialOfferStore.query(QuerySpec.max())).isEmpty();
+        }
+
+        @Test
+        void storeCredentialOffer_untrustedIssuer_shouldNotRequestCredentials(IdentityHub identityHub, CredentialOfferStore credentialOfferStore) throws JOSEException {
+            var issuerDid = "did:web:untrusted-issuer";
+            var issuerKey = generateEcKey(issuerDid + "#key1");
+            when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq(issuerDid + "#key1"))).thenReturn(Result.success(issuerKey.toPublicKey()));
+
+            var offerMessage = Json.createObjectBuilder(createCredentialOfferMessage(createCredentialContainer()))
+                    .add(CREDENTIALS_NAMESPACE_W3C.toIri(CREDENTIAL_ISSUER_TERM), issuerDid)
+                    .build();
+            identityHub.getCredentialsEndpoint().baseRequest()
+                    .contentType(ContentType.JSON)
+                    .header("Authorization", "Bearer " + generateJwt(CONSUMER_DID, issuerDid, issuerDid, Map.of(), issuerKey))
+                    .body(offerMessage)
+                    .post("/v1/participants/" + TEST_PARTICIPANT_CONTEXT_ID + "/offers")
+                    .then()
+                    .log().ifValidationFails()
+                    .statusCode(204);
+
+            // the offer is kept for manual handling, but no credentials are requested from its issuer
+            assertThat(credentialOfferStore.query(QuerySpec.max()))
+                    .hasSize(1)
+                    .allSatisfy(offer -> assertThat(offer.getStateAsEnum()).isEqualTo(CredentialOfferStatus.RECEIVED));
+            assertThat(identityHub.getService(HolderCredentialRequestStore.class).query(QuerySpec.max()))
+                    .noneMatch(request -> request.getIssuerDid().equals(issuerDid));
         }
 
         @DisplayName("TOK-13: an unresolvable issuer DID is rejected")
@@ -330,7 +377,7 @@ public class CredentialOfferApiEndToEndTest {
             var credentialsArray = Json.createArrayBuilder();
             Arrays.stream(credentials).forEach(credentialsArray::add);
             return Json.createObjectBuilder()
-                    .add(CREDENTIALS_NAMESPACE_W3C.toIri(CREDENTIAL_ISSUER_TERM), "test-issuer")
+                    .add(CREDENTIALS_NAMESPACE_W3C.toIri(CREDENTIAL_ISSUER_TERM), PROVIDER_DID)
                     .add(DSPACE_DCP_NAMESPACE_V_1_0.toIri(CredentialOfferMessage.CREDENTIALS_TERM), credentialsArray)
                     .build();
 
@@ -357,6 +404,7 @@ public class CredentialOfferApiEndToEndTest {
                 .modules(DefaultRuntimes.IdentityHub.MODULES)
                 .endpoints(DefaultRuntimes.IdentityHub.ENDPOINTS.build())
                 .configurationProvider(DefaultRuntimes.IdentityHub::config)
+                .configurationProvider(() -> ConfigFactory.fromMap(Map.of("edc.iam.credential.offer.trusted.issuers", PROVIDER_DID)))
                 .paramProvider(IdentityHub.class, IdentityHub::forContext)
                 .build()
                 .registerServiceMock(DidPublicKeyResolver.class, DID_PUBLIC_KEY_RESOLVER)
@@ -383,6 +431,7 @@ public class CredentialOfferApiEndToEndTest {
                 .modules(DefaultRuntimes.IdentityHub.SQL_MODULES)
                 .endpoints(DefaultRuntimes.IdentityHub.ENDPOINTS.build())
                 .configurationProvider(DefaultRuntimes.IdentityHub::config)
+                .configurationProvider(() -> ConfigFactory.fromMap(Map.of("edc.iam.credential.offer.trusted.issuers", PROVIDER_DID)))
                 .configurationProvider(() -> POSTGRESQL_EXTENSION.configFor(DB_NAME))
                 .paramProvider(IdentityHub.class, IdentityHub::forContext)
                 .build()

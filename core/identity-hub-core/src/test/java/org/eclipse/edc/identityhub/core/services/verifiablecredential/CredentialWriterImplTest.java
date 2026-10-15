@@ -236,18 +236,32 @@ class CredentialWriterImplTest {
         verify(credentialStore).update(argThat(resource -> resource.getId().equals("old-credential-id") &&
                 resource.getStateAsEnum() == VcStatus.EXPIRED &&
                 newCredential.getValue().getId().equals(resource.getMetadata().get(VerifiableCredentialResource.METADATA_SUPERSEDED_BY))));
-        // the lookup must be scoped to the participant's own holder credentials for the same credential object,
-        // must not return the credential just stored, and must leave revoked credentials alone. The credentials are
+        // the lookup must be scoped to the participant's own holder credentials from the same Issuer for the same
+        // credential object, must not return the credential just stored, and must leave revoked credentials alone. The credentials are
         // locked, so that the watchdog cannot overwrite the supersession, in the order of their IDs, to avoid deadlocks
         verify(credentialStore).queryForUpdate(argThat(querySpec -> {
             var filters = querySpec.getFilterExpression().toString();
             return filters.contains("participantContextId = " + PARTICIPANT_ID) &&
                     filters.contains("usage = Holder") &&
                     filters.contains("metadata.credentialObjectId = test-id") &&
+                    filters.contains("issuerId = " + ISSUER_DID) &&
                     filters.contains("id != " + newCredential.getValue().getId()) &&
                     filters.contains("state != " + VcStatus.REVOKED.code()) &&
                     "id".equals(querySpec.getSortField()) && querySpec.getSortOrder() == SortOrder.ASC;
         }));
+    }
+
+    @Test
+    void write_credentialIssuedByOtherIssuer_expectUnauthorized() {
+        when(credentialTransformerRegistry.transform(isA(String.class), eq(VerifiableCredential.class)))
+                .thenReturn(Result.success(createCredential().issuer(new Issuer("did:web:other-issuer", Map.of())).build()));
+
+        var result = credentialWriter.write("holderPid", HOLDER_DID, "issuerPid", ISSUER_DID, Set.of(new CredentialWriteRequest("raw-cred", TEST_CREDENTIAL_FORMAT)), PARTICIPANT_ID);
+
+        assertThat(result).isFailed().extracting(ServiceFailure::getReason).isEqualTo(ServiceFailure.Reason.UNAUTHORIZED);
+        verify(credentialStore, never()).create(any());
+        verify(credentialStore, never()).queryForUpdate(any());
+        verify(holderCredentialRequestStore, never()).save(any());
     }
 
     @Test
@@ -582,7 +596,7 @@ class CredentialWriterImplTest {
         return VerifiableCredential.Builder.newInstance()
                 .types(List.of(TEST_CREDENTIAL_TYPE))
                 .id(UUID.randomUUID().toString())
-                .issuer(new Issuer("test-issuer", Map.of()))
+                .issuer(new Issuer(ISSUER_DID, Map.of()))
                 .issuanceDate(Instant.now())
                 .credentialSubject(CredentialSubject.Builder.newInstance().id(HOLDER_DID).claim("test-claim", "test-value").build());
     }

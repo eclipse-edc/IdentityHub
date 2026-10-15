@@ -14,12 +14,14 @@
 
 package org.eclipse.edc.identityhub.tests.fixtures;
 
+import org.eclipse.edc.identityhub.tests.fixtures.common.AbstractIdentityHub;
 import org.eclipse.edc.junit.utils.Endpoints;
 import org.eclipse.edc.spi.system.configuration.Config;
 import org.eclipse.edc.spi.system.configuration.ConfigFactory;
 
 import java.net.URI;
 import java.util.HashMap;
+import java.util.Map;
 
 import static org.eclipse.edc.identityhub.spi.webcontext.IdentityHubApiContext.CREDENTIALS;
 import static org.eclipse.edc.identityhub.spi.webcontext.IdentityHubApiContext.IDENTITY;
@@ -91,6 +93,15 @@ public interface DefaultRuntimes {
                     put("edc.did.resolver.cache.expiry", "0"); // disable DID cache which would bite us when testing issuer key rotation
                 }
             });
+        }
+
+        /**
+         * Trusts the Issuer of the given participant context, so that its credential offers automatically trigger
+         * credential requests.
+         */
+        static Config trustedIssuer(Endpoints issuerEndpoints, String issuerParticipantContextId) {
+            var issuerDid = AbstractIdentityHub.didFor(issuerEndpoints.getEndpoint(IH_DID).get(), issuerParticipantContextId);
+            return ConfigFactory.fromMap(Map.of("edc.iam.credential.offer.trusted.issuers", issuerDid));
         }
     }
 }

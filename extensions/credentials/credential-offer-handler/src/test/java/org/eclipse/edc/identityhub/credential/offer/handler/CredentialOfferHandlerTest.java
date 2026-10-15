@@ -27,13 +27,17 @@ import org.eclipse.edc.identityhub.spi.verifiablecredentials.events.CredentialOf
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.CredentialObject;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.CredentialOffer;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.CredentialOfferStatus;
+import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.CredentialUsage;
+import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialResource;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialOfferStore;
+import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialStore;
 import org.eclipse.edc.spi.event.Event;
 import org.eclipse.edc.spi.event.EventEnvelope;
 import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.spi.persistence.EdcPersistenceException;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.ServiceResult;
+import org.eclipse.edc.spi.result.StoreResult;
 import org.eclipse.edc.transaction.spi.NoopTransactionContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -42,6 +46,7 @@ import org.junit.jupiter.api.Test;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -73,7 +78,8 @@ class CredentialOfferHandlerTest {
 
     private final CredentialOfferStore credentialOfferStore = mock();
     private final HolderCredentialRequestStore holderCredentialRequestStore = mock();
-    private final CredentialOfferHandler credentialOfferHandler = new CredentialOfferHandler(monitor, requestManager, profileRegistry, credentialOfferStore, holderCredentialRequestStore, new NoopTransactionContext());
+    private final CredentialStore credentialStore = mock();
+    private final CredentialOfferHandler credentialOfferHandler = createHandler(Set.of("did:web:issuer"));
 
     @BeforeEach
     void setUp() {
@@ -84,6 +90,55 @@ class CredentialOfferHandlerTest {
         when(profileRegistry.getProfile("jose-profile"))
                 .thenReturn(new DcpProfile("jose-profile", CredentialFormat.VC2_0_JOSE, "BitStringStatusList"));
         when(holderCredentialRequestStore.query(any())).thenReturn(List.of());
+        when(credentialStore.query(any())).thenReturn(StoreResult.success(List.of()));
+    }
+
+    @Test
+    void onCredentialOfferEvent_untrustedIssuer_shouldNotInitiateRequest() {
+        var handler = createHandler(Set.of("did:web:another-issuer"));
+
+        handler.on(event());
+
+        verify(requestManager, never()).initiateRequest(anyString(), anyString(), anyString(), anyList());
+        // the offer stays RECEIVED, so that it can be acted upon manually
+        verify(credentialOfferStore, never()).save(any());
+        verify(monitor).info(contains("not trusted"));
+    }
+
+    @Test
+    void onCredentialOfferEvent_noTrustedIssuersConfigured_shouldInitiateRequest() {
+        var handler = createHandler(Set.of());
+
+        handler.on(event());
+
+        verifyNoInteractions(credentialStore);
+        verify(requestManager).initiateRequest(eq("test-participant"), eq("did:web:issuer"), anyString(), anyList());
+    }
+
+    @Test
+    void onCredentialOfferEvent_issuerOfHeldCredential_shouldInitiateRequest() {
+        var handler = createHandler(Set.of("did:web:another-issuer"));
+        when(credentialStore.query(any())).thenReturn(StoreResult.success(List.of(mock(VerifiableCredentialResource.class))));
+
+        handler.on(event());
+
+        verify(credentialStore).query(argThat((QuerySpec query) -> query.getFilterExpression().containsAll(List.of(
+                criterion("participantContextId", "=", "test-participant"),
+                criterion("usage", "=", CredentialUsage.Holder.toString()),
+                criterion("issuerId", "=", "did:web:issuer")))));
+        verify(requestManager).initiateRequest(eq("test-participant"), eq("did:web:issuer"), anyString(), anyList());
+    }
+
+    @Test
+    void onCredentialOfferEvent_trustLookupFails_shouldNotInitiateRequest() {
+        var handler = createHandler(Set.of("did:web:another-issuer"));
+        when(credentialStore.query(any())).thenReturn(StoreResult.generalError("query failed"));
+
+        handler.on(event());
+
+        verify(requestManager, never()).initiateRequest(anyString(), anyString(), anyString(), anyList());
+        verify(credentialOfferStore, never()).save(any());
+        verify(monitor).warning(contains("query failed"));
     }
 
     @Test
@@ -274,6 +329,11 @@ class CredentialOfferHandlerTest {
         credentialOfferHandler.on(event());
 
         verify(requestManager, never()).initiateRequest(anyString(), anyString(), anyString(), anyList());
+    }
+
+    private CredentialOfferHandler createHandler(Set<String> trustedIssuers) {
+        return new CredentialOfferHandler(monitor, requestManager, profileRegistry, credentialOfferStore, holderCredentialRequestStore, new NoopTransactionContext(),
+                credentialStore, trustedIssuers);
     }
 
     private CredentialOffer createOffer(CredentialObject... credentialObjects) {

@@ -45,6 +45,7 @@ import org.eclipse.edc.junit.annotations.EndToEndTest;
 import org.eclipse.edc.junit.annotations.PostgresqlIntegrationTest;
 import org.eclipse.edc.junit.extensions.ComponentRuntimeExtension;
 import org.eclipse.edc.junit.extensions.RuntimeExtension;
+import org.eclipse.edc.junit.utils.Endpoints;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.sql.testfixtures.PostgresqlEndToEndExtension;
@@ -368,12 +369,15 @@ public class DcpCredentialOfferApiEndToEndTest {
     @EndToEndTest
     class InMemory extends Tests {
 
+        static final Endpoints ISSUER_ENDPOINTS = DefaultRuntimes.Issuer.ENDPOINTS.build();
+
         @RegisterExtension
         static final RuntimeExtension IDENTITY_HUB_EXTENSION = ComponentRuntimeExtension.Builder.newInstance()
                 .name(IH_RUNTIME_NAME)
                 .modules(DefaultRuntimes.IdentityHub.MODULES)
                 .endpoints(DefaultRuntimes.IdentityHub.ENDPOINTS.build())
                 .configurationProvider(DefaultRuntimes.IdentityHub::config)
+                .configurationProvider(() -> DefaultRuntimes.IdentityHub.trustedIssuer(ISSUER_ENDPOINTS, Tests.ISSUER_ID))
                 .paramProvider(IdentityHub.class, IdentityHub::forContext)
                 .build()
                 .registerServiceMock(DidPublicKeyResolver.class, DID_PUBLIC_KEY_RESOLVER);
@@ -382,7 +386,7 @@ public class DcpCredentialOfferApiEndToEndTest {
         static final RuntimeExtension ISSUER_EXTENSION = ComponentRuntimeExtension.Builder.newInstance()
                 .name(ISSUER_RUNTIME_NAME)
                 .modules(DefaultRuntimes.Issuer.MODULES)
-                .endpoints(DefaultRuntimes.Issuer.ENDPOINTS.build())
+                .endpoints(ISSUER_ENDPOINTS)
                 .configurationProvider(DefaultRuntimes.Issuer::config)
                 .paramProvider(IssuerService.class, IssuerService::forContext)
                 .build();
@@ -401,6 +405,9 @@ public class DcpCredentialOfferApiEndToEndTest {
             POSTGRESQL_EXTENSION.createDatabase(ISSUER);
             POSTGRESQL_EXTENSION.createDatabase(IDENTITY_HUB);
         };
+
+        static final Endpoints ISSUER_ENDPOINTS = DefaultRuntimes.Issuer.ENDPOINTS.build();
+
         @Order(2)
         @RegisterExtension
         static final RuntimeExtension IDENTITY_HUB_EXTENSION = ComponentRuntimeExtension.Builder.newInstance()
@@ -408,6 +415,7 @@ public class DcpCredentialOfferApiEndToEndTest {
                 .modules(DefaultRuntimes.IdentityHub.SQL_MODULES)
                 .endpoints(DefaultRuntimes.IdentityHub.ENDPOINTS.build())
                 .configurationProvider(DefaultRuntimes.IdentityHub::config)
+                .configurationProvider(() -> DefaultRuntimes.IdentityHub.trustedIssuer(ISSUER_ENDPOINTS, Tests.ISSUER_ID))
                 .configurationProvider(() -> POSTGRESQL_EXTENSION.configFor(IDENTITY_HUB))
                 .paramProvider(IdentityHub.class, IdentityHub::forContext)
                 .build()
@@ -417,7 +425,7 @@ public class DcpCredentialOfferApiEndToEndTest {
         static final RuntimeExtension ISSUER_EXTENSION = ComponentRuntimeExtension.Builder.newInstance()
                 .name(ISSUER_RUNTIME_NAME)
                 .modules(DefaultRuntimes.Issuer.SQL_MODULES)
-                .endpoints(DefaultRuntimes.Issuer.ENDPOINTS.build())
+                .endpoints(ISSUER_ENDPOINTS)
                 .configurationProvider(DefaultRuntimes.Issuer::config)
                 .configurationProvider(() -> POSTGRESQL_EXTENSION.configFor(ISSUER))
                 .paramProvider(IssuerService.class, IssuerService::forContext)
