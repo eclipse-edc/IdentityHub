@@ -282,6 +282,19 @@ public class DcpCredentialRequestApiEndToEndTest {
         }
 
         @Test
+        void requestCredential_bodyTooLarge_shouldReturn413(IssuerService issuer) {
+            issuer.getIssuerApiEndpoint().baseRequest()
+                    .contentType(JSON)
+                    // let the server reject the request before the body is sent, otherwise the client sees a connection reset
+                    .header("Expect", "100-continue")
+                    .body("{\"key\":\"%s\"}".formatted("x".repeat(6 * 1024 * 1024)))
+                    .post(issuanceUrl())
+                    .then()
+                    .log().ifValidationFails()
+                    .statusCode(413);
+        }
+
+        @Test
         void requestCredential_participantNotFound_shouldReturn401(IssuerService issuer) {
             var token = generateSiToken();
 
