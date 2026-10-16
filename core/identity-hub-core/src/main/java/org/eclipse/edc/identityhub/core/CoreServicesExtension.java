@@ -34,6 +34,7 @@ import org.eclipse.edc.identityhub.core.services.verifiablepresentation.generato
 import org.eclipse.edc.identityhub.core.services.verifiablepresentation.generators.JwtPresentationGenerator;
 import org.eclipse.edc.identityhub.core.services.verifiablepresentation.generators.LdpPresentationGenerator;
 import org.eclipse.edc.identityhub.core.services.verification.SelfIssuedTokenVerifierImpl;
+import org.eclipse.edc.identityhub.http.IssuerEndpoints;
 import org.eclipse.edc.identityhub.publickey.KeyPairResourcePublicKeyResolver;
 import org.eclipse.edc.identityhub.spi.authentication.ParticipantSecureTokenService;
 import org.eclipse.edc.identityhub.spi.credential.request.store.HolderCredentialRequestStore;
@@ -98,6 +99,12 @@ public class CoreServicesExtension implements ServiceExtension {
     @Setting(description = "How long a JWT Verifiable Presentation is valid after it was created, in seconds. Determines the presentation's 'exp' claim.",
             defaultValue = DEFAULT_PRESENTATION_VALIDITY_SECONDS + "", key = "edc.iam.presentation.validity")
     private long presentationValiditySeconds;
+
+    @Setting(description = IssuerEndpoints.RESTRICT_DESCRIPTION, key = IssuerEndpoints.RESTRICT_SETTING, defaultValue = "false")
+    private boolean restrictIssuerEndpoints;
+
+    @Setting(description = IssuerEndpoints.ALLOWED_HOSTS_DESCRIPTION, key = IssuerEndpoints.ALLOWED_HOSTS_SETTING, required = false)
+    private String allowedIssuerHosts;
 
     @Configuration
     private CredentialRequestConfiguration credentialRequestConfiguration;
@@ -238,12 +245,16 @@ public class CoreServicesExtension implements ServiceExtension {
     public CredentialRequestManager createDefaultCredentialRequestService(ServiceExtensionContext context) {
         if (credentialRequestService == null) {
             credentialRequestStateMachineConfiguration.warnIfBatchMayOutlastLease(context.getMonitor(), "credential request");
+            var allowedHosts = IssuerEndpoints.parseAllowedHosts(allowedIssuerHosts);
+            var issuerHttpClient = restrictIssuerEndpoints ? IssuerEndpoints.restrict(okHttpClient, allowedHosts) : okHttpClient;
             credentialRequestService = CredentialRequestManagerImpl.Builder.newInstance()
                     .store(credentialRequestStore)
                     .didResolverRegistry(didResolverRegistry)
                     .typeTransformerRegistry(typeTransformerRegistry.forContext(DCP_SCOPE_V_1_0))
                     .jsonLd(jsonLd)
-                    .httpClient(credentialRequestStateMachineConfiguration.createNoRetryClient(okHttpClient, context.getMonitor()))
+                    .httpClient(credentialRequestStateMachineConfiguration.createNoRetryClient(issuerHttpClient, context.getMonitor()))
+                    .restrictIssuerEndpoints(restrictIssuerEndpoints)
+                    .allowedIssuerHosts(allowedHosts)
                     .secureTokenService(secureTokenService)
                     .transactionContext(transactionContext)
                     .participantContextService(participantContextService)
