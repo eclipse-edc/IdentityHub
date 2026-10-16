@@ -17,7 +17,10 @@ package org.eclipse.edc.identityhub.core.services.verifiablecredential;
 import io.opentelemetry.api.trace.SpanKind;
 import io.opentelemetry.instrumentation.annotations.WithSpan;
 import jakarta.json.Json;
+import jakarta.json.JsonException;
 import jakarta.json.JsonObject;
+import jakarta.json.JsonString;
+import okhttp3.HttpUrl;
 import okhttp3.MediaType;
 import okhttp3.Request;
 import okhttp3.RequestBody;
@@ -25,6 +28,7 @@ import okhttp3.Response;
 import org.eclipse.edc.http.spi.EdcHttpClient;
 import org.eclipse.edc.iam.did.spi.resolution.DidResolverRegistry;
 import org.eclipse.edc.identityhub.core.CredentialRequestConfiguration;
+import org.eclipse.edc.identityhub.http.IssuerEndpoints;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialRequestMessage;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialRequestSpecifier;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialRequestStatus;
@@ -65,12 +69,14 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.regex.Pattern;
 
 import static java.util.Objects.requireNonNull;
 import static java.util.Optional.ofNullable;
@@ -96,6 +102,9 @@ public class CredentialRequestManagerImpl extends AbstractStateEntityManager<Hol
         implements CredentialRequestManager {
     private static final int HTTP_CONFLICT = 409;
     private static final String UNKNOWN_ISSUER_PID = "";
+    // the Issuer-assigned issuance process ID is used as a path segment of the status URL and is shown to the Holder
+    private static final Pattern ISSUER_PID_PATTERN = Pattern.compile("[A-Za-z0-9._~:-]{1,256}");
+    private static final String ISSUER_PID_PROPERTY = "issuerPid";
     private static final int STATUS_POLL_PAGE_SIZE = 100;
     private static final String STATUS_POLLER = "CredentialRequestStatusPoller";
     // each run of the status poller is delayed by up to this fraction of the interval at random
@@ -113,6 +122,8 @@ public class CredentialRequestManagerImpl extends AbstractStateEntityManager<Hol
     private TransactionContext transactionContext;
     private IdentityHubParticipantContextService participantContextService;
     private CredentialRequestConfiguration configuration;
+    private boolean restrictIssuerEndpoints;
+    private Set<String> allowedIssuerHosts = Set.of();
 
     private CredentialRequestManagerImpl() {
 
@@ -530,8 +541,11 @@ public class CredentialRequestManagerImpl extends AbstractStateEntityManager<Hol
     }
 
     private @NotNull Request createStatusRequest(HolderCredentialRequest request, String endpoint, TokenRepresentation token) {
+        var url = requireNonNull(HttpUrl.parse(endpoint + "/requests")).newBuilder()
+                .addPathSegment(request.getIssuerPid())
+                .build();
         return new Request.Builder()
-                .url(endpoint + "/requests/" + request.getIssuerPid())
+                .url(url)
                 .get()
                 .header("Authorization", "Bearer " + token.getToken())
                 .build();
@@ -542,7 +556,7 @@ public class CredentialRequestManagerImpl extends AbstractStateEntityManager<Hol
             if (!response.isSuccessful()) {
                 return failure("Error fetching the credential request status: code: '%s', message: '%s'".formatted(response.code(), response.message()));
             }
-            try (var reader = Json.createReader(new StringReader(body.string()))) {
+            try (var reader = Json.createReader(new StringReader(IssuerEndpoints.readBody(body)))) {
                 return jsonLd.expand(reader.readObject())
                         .compose(expanded -> dcpTypeTransformerRegistry.transform(expanded, CredentialRequestStatus.class));
             }
@@ -554,7 +568,7 @@ public class CredentialRequestManagerImpl extends AbstractStateEntityManager<Hol
     /**
      * Maps a {@link Response} to a result containing the Issuer-assigned issuance process ID. The Issuer conveys it in
      * the {@code Location} header, which points at the request-status resource, i.e. its last path segment is the ID.
-     * Falls back to the response body for Issuers that return the ID there.
+     * Falls back to the response body for Issuers that return the ID there, see {@link #issuerPidFromBody(String)}.
      */
     private StatusResult<String> mapResponseAsIssuerPid(Response response) {
         try (var body = response.body()) {
@@ -571,13 +585,13 @@ public class CredentialRequestManagerImpl extends AbstractStateEntityManager<Hol
                 if (issuerPid != null) {
                     return StatusResult.success(issuerPid);
                 }
-                return StatusResult.success(body.string());
+                return StatusResult.success(ofNullable(issuerPidFromBody(IssuerEndpoints.readBody(body))).orElse(UNKNOWN_ISSUER_PID));
             } else {
                 // an Issuer that refuses the request as it stands would refuse the identical retry just the same, whereas
                 // a server-side error says nothing about the request and may well be gone by the next attempt
                 var status = response.code() >= 400 && response.code() < 500 ? FATAL_ERROR : ERROR_RETRY;
                 return StatusResult.failure(status, "Error sending DCP Credential Request: code: '%s', message: '%s', body: '%s'"
-                        .formatted(response.code(), response.message(), body.string()));
+                        .formatted(response.code(), response.message(), IssuerEndpoints.readBody(body)));
             }
         } catch (IOException e) {
             return StatusResult.failure(ERROR_RETRY, "Error sending DCP Credential Request: code: '%s', message: '%s'"
@@ -587,17 +601,48 @@ public class CredentialRequestManagerImpl extends AbstractStateEntityManager<Hol
 
     /**
      * Takes the Issuer-assigned issuance process ID from the {@code Location} header, which points at the request-status
-     * resource, i.e. its last path segment is the ID.
+     * resource, i.e. its last path segment is the ID. The {@code Location} may be relative to the request URL.
      *
-     * @return the ID, or null if there is no {@code Location} header
+     * @return the ID, or null if there is no {@code Location} header, or its last path segment is not a valid ID
      */
     private @Nullable String issuerPidFromLocation(Response response) {
         var location = response.header("Location");
         if (location == null || location.isBlank()) {
             return null;
         }
-        var segments = location.split("/");
-        return segments[segments.length - 1];
+        var url = response.request().url().resolve(location.trim());
+        if (url == null) {
+            return null;
+        }
+        var segments = url.pathSegments();
+        return validIssuerPid(segments.get(segments.size() - 1));
+    }
+
+    /**
+     * Takes the Issuer-assigned issuance process ID from the response body, which is either a JSON object with an
+     * {@code issuerPid} property, or the plain ID.
+     *
+     * @return the ID, or null if the body does not contain a valid ID
+     */
+    private @Nullable String issuerPidFromBody(String body) {
+        var trimmed = body.trim();
+        if (trimmed.startsWith("{")) {
+            try (var reader = Json.createReader(new StringReader(trimmed))) {
+                var json = reader.readObject();
+                return json.get(ISSUER_PID_PROPERTY) instanceof JsonString issuerPid ? validIssuerPid(issuerPid.getString()) : null;
+            } catch (JsonException e) {
+                return null;
+            }
+        }
+        return validIssuerPid(trimmed);
+    }
+
+    private @Nullable String validIssuerPid(String issuerPid) {
+        if (ISSUER_PID_PATTERN.matcher(issuerPid).matches()) {
+            return issuerPid;
+        }
+        monitor.debug("Ignoring the issuance process ID reported by the Issuer, because it is not a valid ID");
+        return null;
     }
 
     /**
@@ -635,8 +680,9 @@ public class CredentialRequestManagerImpl extends AbstractStateEntityManager<Hol
      *
      * @param request The request whose Issuer's DID document is resolved
      * @return A result containing the service endpoint. A DID that cannot be resolved may be unavailable for a moment, so
-     *         that failure is retryable. A DID that no resolver supports, and a document without such an endpoint, are
-     *         terminal, as another attempt would fail just the same.
+     *         that failure is retryable. A DID that no resolver supports, a document without such an endpoint, and, if
+     *         Issuer endpoints are restricted, an endpoint that requests must not be sent to, see
+     *         {@link IssuerEndpoints#check(String, Set)}, are terminal, as another attempt would fail just the same.
      */
     private StatusResult<String> getCredentialRequestEndpoint(HolderCredentialRequest request) {
         var issuerDid = request.getIssuerDid();
@@ -652,9 +698,18 @@ public class CredentialRequestManagerImpl extends AbstractStateEntityManager<Hol
         var service = didDocument.getContent().getService().stream()
                 .filter(s -> s.getType().equalsIgnoreCase(ISSUER_SERVICE_ENDPOINT_TYPE))
                 .findAny();
-        return service.map(s -> StatusResult.success(s.getServiceEndpoint()))
-                .orElseGet(() -> StatusResult.failure(FATAL_ERROR,
-                        "The Issuer's DID Document does not contain any '%s' endpoint".formatted(ISSUER_SERVICE_ENDPOINT_TYPE)));
+        if (service.isEmpty()) {
+            return StatusResult.failure(FATAL_ERROR, "The Issuer's DID Document does not contain any '%s' endpoint".formatted(ISSUER_SERVICE_ENDPOINT_TYPE));
+        }
+        var endpoint = service.get().getServiceEndpoint();
+        if (restrictIssuerEndpoints) {
+            // the HTTP client enforces this as well, checking it here only saves retrying a request that cannot succeed
+            var check = IssuerEndpoints.check(endpoint, allowedIssuerHosts);
+            if (check.failed()) {
+                return StatusResult.failure(FATAL_ERROR, check.getFailureDetail());
+            }
+        }
+        return StatusResult.success(endpoint);
     }
 
     public static class Builder
@@ -722,6 +777,25 @@ public class CredentialRequestManagerImpl extends AbstractStateEntityManager<Hol
 
         public Builder configuration(CredentialRequestConfiguration configuration) {
             manager.configuration = configuration;
+            return this;
+        }
+
+        /**
+         * Whether requests to an Issuer's endpoint may only be sent to public HTTPS hosts, unless they are
+         * {@link #allowedIssuerHosts(Set) allow-listed}. The HTTP client must enforce the same restrictions, see
+         * {@link IssuerEndpoints#restrict(okhttp3.OkHttpClient, Set)}.
+         */
+        public Builder restrictIssuerEndpoints(boolean restrictIssuerEndpoints) {
+            manager.restrictIssuerEndpoints = restrictIssuerEndpoints;
+            return this;
+        }
+
+        /**
+         * The hosts that requests to an Issuer's endpoint may be sent to although they are not public HTTPS hosts, if
+         * {@link #restrictIssuerEndpoints(boolean) Issuer endpoints are restricted}.
+         */
+        public Builder allowedIssuerHosts(Set<String> allowedIssuerHosts) {
+            manager.allowedIssuerHosts = allowedIssuerHosts;
             return this;
         }
 

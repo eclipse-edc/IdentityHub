@@ -19,6 +19,7 @@ import okhttp3.Request;
 import okhttp3.Response;
 import org.eclipse.edc.http.spi.EdcHttpClient;
 import org.eclipse.edc.iam.did.spi.resolution.DidResolverRegistry;
+import org.eclipse.edc.identityhub.http.IssuerEndpoints;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialObject;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.model.IssuerMetadata;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.CredentialRequestManager;
@@ -118,7 +119,7 @@ public class CredentialObjectResolver {
             if (!response.isSuccessful()) {
                 return failure("Error fetching Issuer metadata: code: '%s', message: '%s'".formatted(response.code(), response.message()));
             }
-            try (var reader = Json.createReader(new StringReader(body.string()))) {
+            try (var reader = Json.createReader(new StringReader(IssuerEndpoints.readBody(body)))) {
                 return jsonLd.expand(reader.readObject())
                         .compose(expanded -> transformerRegistry.forContext(DCP_SCOPE_V_1_0).transform(expanded, IssuerMetadata.class));
             }

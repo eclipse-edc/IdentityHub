@@ -51,6 +51,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentMatchers;
 
 import java.io.IOException;
@@ -58,6 +60,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
@@ -461,6 +464,173 @@ class CredentialRequestManagerImplTest {
             });
         }
 
+        @ParameterizedTest
+        @ValueSource(strings = {
+                "http://issuer.com/issuance",
+                "https://127.0.0.1/issuance",
+                "https://169.254.169.254/latest",
+                "https://10.0.0.1/issuance",
+                "https://[::1]/issuance",
+                "https://[fd00::1]/issuance",
+                "ftp://issuer.com/issuance"
+        })
+        void processRequesting_whenEndpointsRestrictedAndEndpointNotAllowed_shouldTransitionToError(String endpoint) {
+            var service = restrictedService(Set.of());
+            when(resolver.resolve(eq(ISSUER_DID))).thenReturn(success(didDocument(endpoint)));
+            var rq = createRequest()
+                    .state(REQUESTING.code())
+                    .build();
+            when(store.nextNotLeased(anyInt(), stateIs(REQUESTING.code())))
+                    .thenReturn(List.of(rq))
+                    .thenReturn(List.of());
+
+            service.start();
+            try {
+                // whoever controls the Issuer's DID document must not be able to make IdentityHub send requests into its network
+                await().atMost(MAX_DURATION).untilAsserted(() -> {
+                    verify(store, times(1)).save(argThat(r -> r.getState() == ERROR.code() && r.getErrorDetail().contains("Issuer endpoint")));
+                    verifyNoInteractions(sts, httpClient);
+                });
+            } finally {
+                service.stop();
+            }
+        }
+
+        @Test
+        void processRequesting_whenEndpointsRestrictedAndEndpointAllowListed_shouldSendRequest() throws IOException {
+            var service = restrictedService(Set.of("issuer-service"));
+            when(resolver.resolve(eq(ISSUER_DID))).thenReturn(success(didDocument("http://issuer-service:8080/issuance")));
+            when(httpClient.execute(any(Request.class))).thenReturn(response(201, "Created", "", "/issuance/requests/issuer-pid"));
+            var rq = createRequest()
+                    .state(REQUESTING.code())
+                    .build();
+            when(store.nextNotLeased(anyInt(), stateIs(REQUESTING.code())))
+                    .thenReturn(List.of(rq))
+                    .thenReturn(List.of());
+
+            service.start();
+            try {
+                await().atMost(MAX_DURATION).untilAsserted(() -> {
+                    verify(httpClient).execute(argThat((Request r) -> r.url().toString().equals("http://issuer-service:8080/issuance/credentials")));
+                    Assertions.assertThat(rq.getState()).isEqualTo(REQUESTED.code());
+                });
+            } finally {
+                service.stop();
+            }
+        }
+
+        @Test
+        void processRequesting_whenEndpointsNotRestricted_shouldSendRequestToAnyEndpoint() throws IOException {
+            when(resolver.resolve(eq(ISSUER_DID))).thenReturn(success(didDocument("http://10.0.0.1:8080/issuance")));
+            when(httpClient.execute(any(Request.class))).thenReturn(response(201, "Created", "", "/issuance/requests/issuer-pid"));
+            var rq = createRequest()
+                    .state(REQUESTING.code())
+                    .build();
+            when(store.nextNotLeased(anyInt(), stateIs(REQUESTING.code())))
+                    .thenReturn(List.of(rq))
+                    .thenReturn(List.of());
+
+            credentialRequestService.start();
+
+            await().atMost(MAX_DURATION).untilAsserted(() -> {
+                verify(httpClient).execute(argThat((Request r) -> r.url().toString().equals("http://10.0.0.1:8080/issuance/credentials")));
+                Assertions.assertThat(rq.getState()).isEqualTo(REQUESTED.code());
+            });
+        }
+
+        private CredentialRequestManagerImpl restrictedService(Set<String> allowedIssuerHosts) {
+            return CredentialRequestManagerImpl.Builder.newInstance()
+                    .store(store)
+                    .didResolverRegistry(resolver)
+                    .typeTransformerRegistry(transformerRegistry)
+                    .jsonLd(jsonLd)
+                    .httpClient(httpClient)
+                    .secureTokenService(sts)
+                    .participantContextService(participantContextService)
+                    .transactionContext(transactionContext)
+                    .monitor(monitor)
+                    .waitStrategy(() -> 500L)
+                    .configuration(configuration)
+                    .restrictIssuerEndpoints(true)
+                    .allowedIssuerHosts(allowedIssuerHosts)
+                    .build();
+        }
+
+        @Test
+        void processRequesting_whenBodyIsNoIssuerPid_shouldNotRecordIt() throws IOException {
+            when(resolver.resolve(eq(ISSUER_DID))).thenReturn(success(didDocument()));
+            // e.g. a page served by whatever the endpoint points at
+            when(httpClient.execute(any(Request.class))).thenReturn(response(200, "OK", "<html><body>some content</body></html>"));
+            var rq = createRequest()
+                    .state(REQUESTING.code())
+                    .build();
+            when(store.nextNotLeased(anyInt(), stateIs(REQUESTING.code())))
+                    .thenReturn(List.of(rq))
+                    .thenReturn(List.of());
+
+            credentialRequestService.start();
+
+            // the request was accepted, but without a usable issuance process ID
+            await().atMost(MAX_DURATION).untilAsserted(() -> {
+                Assertions.assertThat(rq.getState()).isEqualTo(REQUESTED.code());
+                Assertions.assertThat(rq.getIssuerPid()).isEmpty();
+            });
+        }
+
+        @Test
+        void processRequesting_whenBodyIsJsonWithIssuerPid_shouldRecordIt() throws IOException {
+            when(resolver.resolve(eq(ISSUER_DID))).thenReturn(success(didDocument()));
+            when(httpClient.execute(any(Request.class))).thenReturn(response(201, "Created", "{\"issuerPid\": \"issuer-pid\", \"status\": \"RECEIVED\"}"));
+            var rq = createRequest()
+                    .state(REQUESTING.code())
+                    .build();
+            when(store.nextNotLeased(anyInt(), stateIs(REQUESTING.code())))
+                    .thenReturn(List.of(rq))
+                    .thenReturn(List.of());
+
+            credentialRequestService.start();
+
+            await().atMost(MAX_DURATION).untilAsserted(() -> {
+                Assertions.assertThat(rq.getState()).isEqualTo(REQUESTED.code());
+                Assertions.assertThat(rq.getIssuerPid()).isEqualTo("issuer-pid");
+            });
+        }
+
+        @Test
+        void processRequesting_whenLocationIsNoIssuerPid_shouldNotRecordIt() throws IOException {
+            when(resolver.resolve(eq(ISSUER_DID))).thenReturn(success(didDocument()));
+            when(httpClient.execute(any(Request.class))).thenReturn(response(201, "Created", "", "/issuance/requests/%3Cscript%3E"));
+            var rq = createRequest()
+                    .state(REQUESTING.code())
+                    .build();
+            when(store.nextNotLeased(anyInt(), stateIs(REQUESTING.code())))
+                    .thenReturn(List.of(rq))
+                    .thenReturn(List.of());
+
+            credentialRequestService.start();
+
+            await().atMost(MAX_DURATION).untilAsserted(() -> {
+                Assertions.assertThat(rq.getState()).isEqualTo(REQUESTED.code());
+                Assertions.assertThat(rq.getIssuerPid()).isEmpty();
+            });
+        }
+
+        @Test
+        void processRequested_shouldEncodeIssuerPidInStatusUrl() {
+            when(resolver.resolve(eq(ISSUER_DID))).thenReturn(success(didDocument()));
+            when(httpClient.execute(any(), (Function<Response, Result<CredentialRequestStatus>>) any()))
+                    .thenReturn(success(credentialRequestStatus(CredentialRequestStatus.Status.RECEIVED)));
+            // e.g. stored before the issuance process ID was validated
+            var rq = createRequest().state(REQUESTED.code()).issuerPid("../../admin?x=1").build();
+            when(store.query(any())).thenReturn(List.of(rq));
+
+            credentialRequestService.start();
+
+            await().atMost(MAX_DURATION).untilAsserted(() -> verify(httpClient, atLeastOnce())
+                    .execute(argThat((Request r) -> r.url().encodedPath().equals("/issuance/requests/..%2F..%2Fadmin%3Fx=1") && r.url().query() == null),
+                            (Function<Response, Result<CredentialRequestStatus>>) any()));
+        }
+
         @Test
         void processRequested_whenIssuerPidUnknownAndOverdue_shouldTransitionToError() {
             when(configuration.untrackedTimeout()).thenReturn(60L);
@@ -692,15 +862,19 @@ class CredentialRequestManagerImplTest {
     }
 
     private DidDocument didDocument() {
+        return didDocument("https://issuer.com/issuance");
+    }
+
+    private DidDocument didDocument(String issuerServiceEndpoint) {
         return DidDocument.Builder.newInstance()
                 .id(UUID.randomUUID().toString())
-                .service(List.of(new Service(UUID.randomUUID().toString(), "IssuerService", "http://issuer.com/issuance")))
+                .service(List.of(new Service(UUID.randomUUID().toString(), "IssuerService", issuerServiceEndpoint)))
                 .build();
     }
 
     private Response response(int code, String message, String body) {
         return new Response.Builder()
-                .request(new Request.Builder().url("http://issuer.com/issuance/credentials").build())
+                .request(new Request.Builder().url("https://issuer.com/issuance/credentials").build())
                 .protocol(Protocol.HTTP_1_1)
                 .code(code)
                 .message(message)
