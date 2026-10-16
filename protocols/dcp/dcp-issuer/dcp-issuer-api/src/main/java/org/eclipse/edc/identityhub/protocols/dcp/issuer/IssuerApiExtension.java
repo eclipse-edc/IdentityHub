@@ -28,6 +28,7 @@ import org.eclipse.edc.identityhub.protocols.dcp.transform.from.JsonObjectFromIs
 import org.eclipse.edc.identityhub.protocols.dcp.transform.to.JsonObjectToCredentialRequestMessageTransformer;
 import org.eclipse.edc.identityhub.protocols.dcp.validation.CredentialRequestMessageValidator;
 import org.eclipse.edc.identityhub.spi.participantcontext.IdentityHubParticipantContextService;
+import org.eclipse.edc.identityhub.web.RequestBodySizeLimitFilter;
 import org.eclipse.edc.issuerservice.spi.issuance.process.IssuanceProcessService;
 import org.eclipse.edc.jsonld.spi.JsonLd;
 import org.eclipse.edc.jsonld.spi.JsonLdNamespace;
@@ -116,6 +117,7 @@ public class IssuerApiExtension implements ServiceExtension {
         registerTransformers(dcpRegistry, DSPACE_DCP_NAMESPACE_V_1_0);
         registerValidators(DSPACE_DCP_NAMESPACE_V_1_0);
 
+        webService.registerResource(ISSUANCE_API, new RequestBodySizeLimitFilter(apiConfiguration.maxBodySize()));
         webService.registerResource(ISSUANCE_API, new JsonObjectMessageBodyReader(jsonLd, typeManager, JSON_LD, null));
 
         webService.registerResource(ISSUANCE_API, new CredentialRequestApiController(participantContextService, dcpIssuerService, dcpHolderTokenVerifier, validatorRegistry, dcpRegistry, DSPACE_DCP_NAMESPACE_V_1_0,
@@ -170,7 +172,10 @@ public class IssuerApiExtension implements ServiceExtension {
             @Setting(key = "web.http." + ISSUANCE_API + ".port", description = "Port for " + ISSUANCE_API + " api context", defaultValue = 13132 + "")
             int port,
             @Setting(key = "web.http." + ISSUANCE_API + ".path", description = "Path for " + ISSUANCE_API + " api context", defaultValue = "/api/issuance")
-            String path
+            String path,
+            @Setting(key = "web.http." + ISSUANCE_API + ".maxbodysize", description = "Maximum size in bytes of request bodies accepted by the " + ISSUANCE_API + " api context. Larger requests are rejected with 413.",
+                    defaultValue = RequestBodySizeLimitFilter.DEFAULT_MAX_REQUEST_BODY_SIZE + "")
+            long maxBodySize
     ) {
 
     }

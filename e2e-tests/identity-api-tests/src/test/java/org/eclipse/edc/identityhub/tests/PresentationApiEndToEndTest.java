@@ -69,6 +69,12 @@ import tools.jackson.core.JacksonException;
 import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.ObjectMapper;
 
+import java.io.ByteArrayInputStream;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -184,6 +190,36 @@ public class PresentationApiEndToEndTest {
                     .then()
                     .statusCode(401)
                     .extract().body().asString();
+        }
+
+        @Test
+        void query_bodyTooLarge_shouldReturn413(IdentityHub identityHub) {
+            var body = "{\"key\":\"%s\"}".formatted("x".repeat(6 * 1024 * 1024));
+
+            identityHub.getCredentialsEndpoint().baseRequest()
+                    .contentType("application/json")
+                    .header(AUTHORIZATION, "Bearer token")
+                    // let the server reject the request before the body is sent, otherwise the client sees a connection reset
+                    .header("Expect", "100-continue")
+                    .body(body)
+                    .post("/v1/participants/%s/presentations/query".formatted(TEST_PARTICIPANT_CONTEXT_ID))
+                    .then()
+                    .statusCode(413);
+        }
+
+        @Test
+        void query_chunkedBodyTooLarge_shouldReturn413(IdentityHub identityHub) throws Exception {
+            var body = "{\"key\":\"%s\"}".formatted("x".repeat(5 * 1024 * 1024 + 1024)).getBytes(StandardCharsets.UTF_8);
+            var request = HttpRequest.newBuilder(URI.create("%s/v1/participants/%s/presentations/query".formatted(identityHub.getCredentialsEndpoint().getUrl(), TEST_PARTICIPANT_CONTEXT_ID)))
+                    .header("Content-Type", "application/json")
+                    .header(AUTHORIZATION, "Bearer token")
+                    // no Content-Length header, the body is sent chunked
+                    .POST(HttpRequest.BodyPublishers.ofInputStream(() -> new ByteArrayInputStream(body)))
+                    .build();
+
+            var response = HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
+
+            assertThat(response.statusCode()).isEqualTo(413);
         }
 
         @Test

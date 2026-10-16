@@ -14,6 +14,7 @@
 
 package org.eclipse.edc.identityhub.api;
 
+import org.eclipse.edc.identityhub.web.RequestBodySizeLimitFilter;
 import org.eclipse.edc.jsonld.spi.JsonLd;
 import org.eclipse.edc.runtime.metamodel.annotation.Configuration;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
@@ -26,6 +27,7 @@ import org.eclipse.edc.spi.system.ServiceExtensionContext;
 import org.eclipse.edc.spi.system.apiversion.ApiVersionService;
 import org.eclipse.edc.spi.system.apiversion.VersionRecord;
 import org.eclipse.edc.spi.types.TypeManager;
+import org.eclipse.edc.web.spi.WebService;
 import org.eclipse.edc.web.spi.configuration.PortMapping;
 import org.eclipse.edc.web.spi.configuration.PortMappingRegistry;
 import tools.jackson.databind.DeserializationFeature;
@@ -54,6 +56,8 @@ public class CredentialsApiConfigurationExtension implements ServiceExtension {
     private ApiVersionService apiVersionService;
     @Inject
     private PortMappingRegistry portMappingRegistry;
+    @Inject
+    private WebService webService;
 
     @Override
     public String name() {
@@ -64,6 +68,7 @@ public class CredentialsApiConfigurationExtension implements ServiceExtension {
     public void initialize(ServiceExtensionContext context) {
 
         portMappingRegistry.register(new PortMapping(CREDENTIALS, apiConfiguration.port(), apiConfiguration.path()));
+        webService.registerResource(CREDENTIALS, new RequestBodySizeLimitFilter(apiConfiguration.maxBodySize()));
         jsonLd.registerContext(DSPACE_DCP_V_1_0_CONTEXT, DCP_SCOPE_V_1_0);
         registerVersionInfo(getClass().getClassLoader());
     }
@@ -88,7 +93,10 @@ public class CredentialsApiConfigurationExtension implements ServiceExtension {
             @Setting(key = "web.http." + CREDENTIALS + ".port", description = "Port for " + CREDENTIALS + " api context", defaultValue = 13131 + "")
             int port,
             @Setting(key = "web.http." + CREDENTIALS + ".path", description = "Path for " + CREDENTIALS + " api context", defaultValue = "/api/credentials")
-            String path
+            String path,
+            @Setting(key = "web.http." + CREDENTIALS + ".maxbodysize", description = "Maximum size in bytes of request bodies accepted by the " + CREDENTIALS + " api context. Larger requests are rejected with 413.",
+                    defaultValue = RequestBodySizeLimitFilter.DEFAULT_MAX_REQUEST_BODY_SIZE + "")
+            long maxBodySize
     ) {
 
     }
