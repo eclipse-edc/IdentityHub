@@ -187,7 +187,9 @@ public class PresentationApiEndToEndTest {
         }
 
         @Test
-        void query_validationError_shouldReturn400(IdentityHub identityHub) {
+        void query_validationError_shouldReturn400(IdentityHub identityHub) throws JOSEException {
+            when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq("did:web:consumer#key1"))).thenReturn(Result.success(CONSUMER_KEY.toPublicKey()));
+            when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq("did:web:provider#key1"))).thenReturn(Result.success(PROVIDER_KEY.toPublicKey()));
 
             var query = """
                     {
@@ -210,7 +212,35 @@ public class PresentationApiEndToEndTest {
         }
 
         @Test
-        void query_withPresentationDefinition_shouldReturn501(IdentityHub identityHub) {
+        void query_unsupportedContext_shouldReturn400(IdentityHub identityHub) throws JOSEException {
+            when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq("did:web:consumer#key1"))).thenReturn(Result.success(CONSUMER_KEY.toPublicKey()));
+            when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq("did:web:provider#key1"))).thenReturn(Result.success(PROVIDER_KEY.toPublicKey()));
+
+            var query = """
+                    {
+                      "@context": [
+                        "https://example.com/unknown-context.jsonld",
+                        "https://w3id.org/dspace-dcp/v1.0/dcp.jsonld"
+                      ],
+                      "@type": "PresentationQueryMessage",
+                      "scope": ["org.eclipse.edc.vc.type:SomeCredential:read"]
+                    }
+                    """;
+            identityHub.getCredentialsEndpoint().baseRequest()
+                    .contentType(JSON)
+                    .header(AUTHORIZATION, "Bearer " + generateSiToken())
+                    .body(query)
+                    .post("/v1/participants/%s/presentations/query".formatted(TEST_PARTICIPANT_CONTEXT_ID))
+                    .then()
+                    .log().ifValidationFails()
+                    .statusCode(400)
+                    .body("[0].message", equalTo("Invalid JSON-LD"));
+        }
+
+        @Test
+        void query_withPresentationDefinition_shouldReturn501(IdentityHub identityHub) throws JOSEException {
+            when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq("did:web:consumer#key1"))).thenReturn(Result.success(CONSUMER_KEY.toPublicKey()));
+            when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq("did:web:provider#key1"))).thenReturn(Result.success(PROVIDER_KEY.toPublicKey()));
 
             var query = """
                     {

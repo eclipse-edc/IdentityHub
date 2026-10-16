@@ -252,14 +252,15 @@ public class DcpCredentialOfferApiEndToEndTest {
 
         @Test
         @DisplayName("CS-OFF-03: an offer without an issuer is rejected with 400")
-        void offerCredential_missingIssuer_shouldReturn400(IdentityHub identityHub) {
+        void offerCredential_missingIssuer_shouldReturn400(IdentityHub identityHub) throws JOSEException {
+            when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq(issuerKey.getKeyID()))).thenReturn(Result.success(issuerKey.toPublicKey()));
             var message = Json.createObjectBuilder()
                     .add(DSPACE_DCP_NAMESPACE_V_1_0.toIri(CREDENTIALS_TERM), Json.createArrayBuilder().add(createCredentialObject(UUID.randomUUID().toString())))
                     .build();
 
             identityHub.getCredentialsEndpoint().baseRequest()
                     .contentType(JSON)
-                    .header(AUTHORIZATION, "Bearer " + generateSiToken())
+                    .header(AUTHORIZATION, "Bearer " + generateJwt(participantDid, issuerDid, issuerDid, Map.of(), issuerKey))
                     .body(message)
                     .post(offerUrl(PARTICIPANT_CONTEXT_ID))
                     .then()
@@ -268,7 +269,8 @@ public class DcpCredentialOfferApiEndToEndTest {
         }
 
         @Test
-        void offerCredential_missingCredentialType_shouldReturn400(IdentityHub identityHub) {
+        void offerCredential_missingCredentialType_shouldReturn400(IdentityHub identityHub) throws JOSEException {
+            when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq(issuerKey.getKeyID()))).thenReturn(Result.success(issuerKey.toPublicKey()));
             var credentialObject = Json.createObjectBuilder()
                     .add(JsonLdKeywords.ID, UUID.randomUUID().toString())
                     .add(DSPACE_DCP_NAMESPACE_V_1_0.toIri(CREDENTIAL_OBJECT_PROFILE_TERM), Json.createArrayBuilder(List.of(TEST_PROFILE)))
@@ -279,7 +281,7 @@ public class DcpCredentialOfferApiEndToEndTest {
 
             identityHub.getCredentialsEndpoint().baseRequest()
                     .contentType(JSON)
-                    .header(AUTHORIZATION, "Bearer " + generateSiToken())
+                    .header(AUTHORIZATION, "Bearer " + generateJwt(participantDid, issuerDid, issuerDid, Map.of(), issuerKey))
                     .body(createCredentialOfferMessage(credentialObject))
                     .post(offerUrl(PARTICIPANT_CONTEXT_ID))
                     .then()

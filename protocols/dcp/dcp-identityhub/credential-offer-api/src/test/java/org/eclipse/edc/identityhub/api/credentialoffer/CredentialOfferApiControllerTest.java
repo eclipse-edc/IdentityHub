@@ -192,6 +192,25 @@ class CredentialOfferApiControllerTest extends RestControllerTestBase {
                 .log().ifValidationFails()
                 .statusCode(401)
                 .body(not(containsString("HTTP 500")));
+        // the offer is only processed once the sender is authenticated
+        verifyNoInteractions(validatorRegistry, typeTransformerRegistry);
+    }
+
+    @Test
+    void offerCredential_unsupportedContext_expect400() {
+        var body = Json.createObjectBuilder(createRequestBody())
+                .add("@context", "https://example.com/unknown-context.jsonld")
+                .build();
+
+        baseRequest()
+                .body(body)
+                .post()
+                .then()
+                .log().ifValidationFails()
+                .statusCode(400)
+                .body(containsString("Invalid JSON-LD"))
+                .body(not(containsString("unknown-context")));
+        verifyNoInteractions(validatorRegistry, offerService);
     }
 
     @Test

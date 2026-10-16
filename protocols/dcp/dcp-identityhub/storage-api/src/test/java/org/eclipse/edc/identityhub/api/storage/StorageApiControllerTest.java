@@ -156,6 +156,26 @@ class StorageApiControllerTest extends RestControllerTestBase {
                 .then()
                 .log().ifValidationFails()
                 .statusCode(401);
+        // the message is not processed for a participant that does not exist
+        verifyNoInteractions(validatorRegistry, transformerRegistry, issuerTokenVerifier);
+    }
+
+    @Test
+    void storeCredential_unsupportedContext_shouldReturn400() {
+        var body = Json.createObjectBuilder(credentialMessageJson())
+                .add("@context", "https://example.com/unknown-context.jsonld")
+                .build();
+
+        baseRequest()
+                .header("Authorization", "Bearer " + generateJwt())
+                .body(body)
+                .post()
+                .then()
+                .log().ifValidationFails()
+                .statusCode(400)
+                .body(containsString("Invalid JSON-LD"))
+                .body(not(containsString("unknown-context")));
+        verifyNoInteractions(validatorRegistry, issuerTokenVerifier, credentialWriter);
     }
 
     @Test
