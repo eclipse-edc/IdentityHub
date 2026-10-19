@@ -461,8 +461,9 @@ public class TransitKeyPairService implements KeyPairService, EventSubscriber {
                     .keyContext(oldKey.getKeyContext())
                     .build();
             takeOutOfUse.accept(oldKey);
-            var createResult = keyPairResourceStore.create(successor);
-            result = createResult.failed() ? createResult : keyPairResourceStore.update(oldKey);
+            // the old key pair is written first, because the successor may have its key ID
+            var updateResult = keyPairResourceStore.update(oldKey);
+            result = updateResult.failed() ? updateResult : keyPairResourceStore.create(successor);
         } catch (RuntimeException e) {
             reportUnrecordedKeyChange(oldKey, e.getMessage());
             throw e;

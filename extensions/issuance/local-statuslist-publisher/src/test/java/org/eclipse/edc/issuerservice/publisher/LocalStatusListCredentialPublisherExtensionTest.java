@@ -98,7 +98,7 @@ class LocalStatusListCredentialPublisherExtensionTest {
             return block.execute();
         });
         StoreResult<VerifiableCredentialResource> verifiableCredentialResourceStoreResult = StoreResult.success(credentialResource);
-        when(credentialStore.findById(any())).thenReturn(verifiableCredentialResourceStoreResult);
+        when(credentialStore.findById(any(), any())).thenReturn(verifiableCredentialResourceStoreResult);
         when(credentialStore.update(credentialResource)).thenReturn(StoreResult.success());
         when(hostname.get()).thenReturn(DEFAULT_HOST);
     }

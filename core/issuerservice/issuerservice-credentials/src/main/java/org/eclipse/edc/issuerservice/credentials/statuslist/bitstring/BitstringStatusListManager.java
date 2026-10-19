@@ -174,15 +174,16 @@ public class BitstringStatusListManager implements StatusListManager {
      */
     public void renewExpiring(Duration within) {
         var deadline = clock.instant().plus(within);
-        var expiring = new ArrayList<String>();
+        var expiring = new ArrayList<StatusListKey>();
         QueryPages.forEachPage(allBitstringStatusLists(), PAGE_SIZE, this::query, VerifiableCredentialResource::getId,
-                page -> page.stream().filter(statusList -> expiresBefore(statusList, deadline)).forEach(statusList -> expiring.add(statusList.getId())));
+                page -> page.stream().filter(statusList -> expiresBefore(statusList, deadline))
+                        .forEach(statusList -> expiring.add(new StatusListKey(statusList.getParticipantContextId(), statusList.getId()))));
 
-        for (var id : expiring) {
+        for (var statusList : expiring) {
             try {
-                transactionContext.execute(() -> renewIfExpiring(id, deadline));
+                transactionContext.execute(() -> renewIfExpiring(statusList, deadline));
             } catch (RuntimeException e) {
-                monitor.warning("Could not renew status list credential '%s'".formatted(id), e);
+                monitor.warning("Could not renew status list credential '%s'".formatted(statusList.id()), e);
             }
         }
     }
@@ -261,8 +262,11 @@ public class BitstringStatusListManager implements StatusListManager {
         return renewed;
     }
 
-    private void renewIfExpiring(String id, Instant deadline) {
-        var locked = store.queryForUpdate(QuerySpec.Builder.newInstance().filter(new Criterion("id", "=", id)).build());
+    private void renewIfExpiring(StatusListKey statusList, Instant deadline) {
+        var locked = store.queryForUpdate(QuerySpec.Builder.newInstance()
+                .filter(new Criterion("participantContextId", "=", statusList.participantContextId()))
+                .filter(new Criterion("id", "=", statusList.id()))
+                .build());
         if (locked.failed() || locked.getContent().isEmpty()) {
             return;
         }
@@ -274,11 +278,11 @@ public class BitstringStatusListManager implements StatusListManager {
         // not stored if it cannot be published, so that it is renewed again on the next call
         var renewed = renewAndPublish(statusListCredential);
         if (renewed.failed()) {
-            monitor.warning("Could not renew status list credential '%s': %s".formatted(id, renewed.getFailureDetail()));
+            monitor.warning("Could not renew status list credential '%s': %s".formatted(statusList.id(), renewed.getFailureDetail()));
             return;
         }
         store.update(renewed.getContent())
-                .onFailure(f -> monitor.warning("Could not store the renewed status list credential '%s': %s".formatted(id, f.getFailureDetail())));
+                .onFailure(f -> monitor.warning("Could not store the renewed status list credential '%s': %s".formatted(statusList.id(), f.getFailureDetail())));
     }
 
     private boolean expiresBefore(VerifiableCredentialResource statusListCredential, Instant deadline) {
@@ -527,5 +531,11 @@ public class BitstringStatusListManager implements StatusListManager {
                 // created on every call
                 .limit(Integer.MAX_VALUE)
                 .build();
+    }
+
+    /**
+     * Identifies a status list credential, whose ID is only unique within its participant context.
+     */
+    private record StatusListKey(String participantContextId, String id) {
     }
 }

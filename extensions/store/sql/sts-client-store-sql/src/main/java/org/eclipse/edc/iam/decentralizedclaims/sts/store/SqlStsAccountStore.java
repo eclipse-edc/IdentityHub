@@ -78,12 +78,9 @@ public class SqlStsAccountStore extends AbstractSqlStore implements StsAccountSt
     public StoreResult<Void> update(StsAccount stsAccount) {
         return transactionContext.execute(() -> {
             try (var connection = getConnection()) {
-                if (findById(connection, stsAccount.getId()) != null) {
-                    updateInternal(connection, stsAccount);
-                    return StoreResult.success();
-                } else {
-                    return StoreResult.notFound(format(CLIENT_NOT_FOUND_BY_ID_TEMPLATE, stsAccount.getId()));
-                }
+                return updateInternal(connection, stsAccount) == 0
+                        ? StoreResult.notFound(format(CLIENT_NOT_FOUND_BY_ID_TEMPLATE, stsAccount.getId()))
+                        : StoreResult.success();
             } catch (Exception e) {
                 throw new EdcPersistenceException(e.getMessage(), e);
             }
@@ -152,9 +149,8 @@ public class SqlStsAccountStore extends AbstractSqlStore implements StsAccountSt
         });
     }
 
-    private void updateInternal(Connection connection, StsAccount stsAccount) {
-        queryExecutor.execute(connection, statements.getUpdateTemplate(),
-                stsAccount.getId(),
+    private int updateInternal(Connection connection, StsAccount stsAccount) {
+        return queryExecutor.execute(connection, statements.getUpdateTemplate(),
                 stsAccount.getName(),
                 stsAccount.getClientId(),
                 stsAccount.getDid(),

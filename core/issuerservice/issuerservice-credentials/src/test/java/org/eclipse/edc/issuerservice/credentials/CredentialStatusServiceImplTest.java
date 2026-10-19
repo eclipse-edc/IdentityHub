@@ -87,6 +87,7 @@ class CredentialStatusServiceImplTest {
     };
     private static final String REVOCATION_CREDENTIAL_ID = "https://example.com/credentials/status/3";
     private static final String CREDENTIAL_ID = "https://example.com/credentials/23894672394";
+    private static final String OWNER_ID = "test-owner";
     private final ObjectMapper objectMapper = new JacksonTypeManager().getMapper().rebuild()
             .enable(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
             .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
@@ -120,10 +121,10 @@ class CredentialStatusServiceImplTest {
             var statusListCredential = createCredential(EXAMPLE_CREDENTIAL, EXAMPLE_CREDENTIAL_JWT.replace("\n", ""));
             when(statusListInfo.getStatus()).thenReturn(Result.success("any"));
             when(statusListInfo.statusListCredential()).thenReturn(statusListCredential);
-            when(credentialStore.findById(eq(CREDENTIAL_ID))).thenReturn(success(createCredential(EXAMPLE_CREDENTIAL, EXAMPLE_CREDENTIAL_JWT.replace("\n", ""))));
+            when(credentialStore.findById(eq(OWNER_ID), eq(CREDENTIAL_ID))).thenReturn(success(createCredential(EXAMPLE_CREDENTIAL, EXAMPLE_CREDENTIAL_JWT.replace("\n", ""))));
             when(credentialStore.update(any())).thenReturn(success());
 
-            var result = revocationService.revokeCredential(CREDENTIAL_ID);
+            var result = revocationService.revokeCredential(OWNER_ID, CREDENTIAL_ID);
 
             assertThat(result).isSucceeded();
             // signing it again renews its validity, and extends a status list that is shorter than configured
@@ -141,11 +142,11 @@ class CredentialStatusServiceImplTest {
                     statusListInfoFactoryRegistry, statusListManager, publisher);
             when(statusListInfo.getStatus()).thenReturn(Result.success("any"));
             when(statusListInfo.statusListCredential()).thenReturn(createCredential(EXAMPLE_CREDENTIAL, EXAMPLE_CREDENTIAL_JWT.replace("\n", "")));
-            when(credentialStore.findById(eq(CREDENTIAL_ID))).thenReturn(success(createCredential(EXAMPLE_CREDENTIAL, EXAMPLE_CREDENTIAL_JWT.replace("\n", ""))));
+            when(credentialStore.findById(eq(OWNER_ID), eq(CREDENTIAL_ID))).thenReturn(success(createCredential(EXAMPLE_CREDENTIAL, EXAMPLE_CREDENTIAL_JWT.replace("\n", ""))));
             when(credentialStore.update(any())).thenReturn(success());
             when(publisher.publish(any())).thenReturn(Result.failure("publication target unavailable"));
 
-            var result = statusService.revokeCredential(CREDENTIAL_ID);
+            var result = statusService.revokeCredential(OWNER_ID, CREDENTIAL_ID);
 
             assertThat(result).isFailed().detail().contains("publication target unavailable");
             // otherwise the issuer would record the revocation, while the published status list does not show it
@@ -168,9 +169,9 @@ class CredentialStatusServiceImplTest {
             });
             when(statusListInfo.getStatus()).thenReturn(Result.success("any"));
             when(statusListInfo.statusListCredential()).thenReturn(createCredential(EXAMPLE_CREDENTIAL, EXAMPLE_CREDENTIAL_JWT.replace("\n", "")));
-            when(credentialStore.findById(eq(CREDENTIAL_ID))).thenReturn(success(createCredential(EXAMPLE_CREDENTIAL, EXAMPLE_CREDENTIAL_JWT.replace("\n", ""))));
+            when(credentialStore.findById(eq(OWNER_ID), eq(CREDENTIAL_ID))).thenReturn(success(createCredential(EXAMPLE_CREDENTIAL, EXAMPLE_CREDENTIAL_JWT.replace("\n", ""))));
 
-            var result = statusService.revokeCredential(CREDENTIAL_ID);
+            var result = statusService.revokeCredential(OWNER_ID, CREDENTIAL_ID);
 
             assertThat(result).isSucceeded();
             // the status list credential stays locked from being read until its transaction completes, so it has to be
@@ -181,9 +182,9 @@ class CredentialStatusServiceImplTest {
         @Test
         void revokeCredential_whenStatusCannotBeRead_shouldFail() {
             when(statusListInfo.getStatus()).thenReturn(Result.failure("cannot decode the bitstring"));
-            when(credentialStore.findById(eq(CREDENTIAL_ID))).thenReturn(success(createCredential(EXAMPLE_CREDENTIAL, EXAMPLE_CREDENTIAL_JWT.replace("\n", ""))));
+            when(credentialStore.findById(eq(OWNER_ID), eq(CREDENTIAL_ID))).thenReturn(success(createCredential(EXAMPLE_CREDENTIAL, EXAMPLE_CREDENTIAL_JWT.replace("\n", ""))));
 
-            var result = revocationService.revokeCredential(CREDENTIAL_ID);
+            var result = revocationService.revokeCredential(OWNER_ID, CREDENTIAL_ID);
 
             assertThat(result).isFailed().detail().isEqualTo("cannot decode the bitstring");
             verify(statusListInfo, never()).setStatus(anyBoolean());
@@ -198,12 +199,12 @@ class CredentialStatusServiceImplTest {
                     statusListInfoFactoryRegistry, statusListManager, publisher);
             when(statusListInfo.getStatus()).thenReturn(Result.success("any"));
             when(statusListInfo.statusListCredential()).thenReturn(createCredential(EXAMPLE_CREDENTIAL, EXAMPLE_CREDENTIAL_JWT.replace("\n", "")));
-            when(credentialStore.findById(eq(CREDENTIAL_ID))).thenReturn(success(createCredential(EXAMPLE_CREDENTIAL, EXAMPLE_CREDENTIAL_JWT.replace("\n", ""))));
+            when(credentialStore.findById(eq(OWNER_ID), eq(CREDENTIAL_ID))).thenReturn(success(createCredential(EXAMPLE_CREDENTIAL, EXAMPLE_CREDENTIAL_JWT.replace("\n", ""))));
             when(credentialStore.update(any()))
                     .thenReturn(success())
                     .thenReturn(StoreResult.generalError("cannot write"));
 
-            var result = statusService.revokeCredential(CREDENTIAL_ID);
+            var result = statusService.revokeCredential(OWNER_ID, CREDENTIAL_ID);
 
             assertThat(result).isFailed().detail().isEqualTo("cannot write");
             // the status list credential has already been written at that point, and must not be committed on its own
@@ -218,10 +219,10 @@ class CredentialStatusServiceImplTest {
                     statusListInfoFactoryRegistry, statusListManager, publisher);
             when(statusListInfo.getStatus()).thenReturn(Result.success("any"));
             when(statusListInfo.statusListCredential()).thenReturn(createCredential(EXAMPLE_CREDENTIAL, EXAMPLE_CREDENTIAL_JWT.replace("\n", "")));
-            when(credentialStore.findById(eq(CREDENTIAL_ID))).thenReturn(success(createCredential(EXAMPLE_CREDENTIAL, EXAMPLE_CREDENTIAL_JWT.replace("\n", ""))));
+            when(credentialStore.findById(eq(OWNER_ID), eq(CREDENTIAL_ID))).thenReturn(success(createCredential(EXAMPLE_CREDENTIAL, EXAMPLE_CREDENTIAL_JWT.replace("\n", ""))));
             when(credentialStore.update(any())).thenReturn(StoreResult.notFound("no status list"));
 
-            var result = statusService.revokeCredential(CREDENTIAL_ID);
+            var result = statusService.revokeCredential(OWNER_ID, CREDENTIAL_ID);
 
             assertThat(result).isFailed().detail().isEqualTo("no status list");
             assertThat(result.getFailure().getReason()).isEqualTo(NOT_FOUND);
@@ -232,11 +233,11 @@ class CredentialStatusServiceImplTest {
 
         @Test
         void revokeCredential_credentialNotFound() {
-            when(credentialStore.findById(eq(REVOCATION_CREDENTIAL_ID))).thenReturn(success(createCredential(EXAMPLE_REVOCATION_CREDENTIAL, EXAMPLE_REVOCATION_CREDENTIAL_JWT.replace("\n", ""))));
-            when(credentialStore.findById(eq(CREDENTIAL_ID))).thenReturn(notFound("foo"));
+            when(credentialStore.findById(eq(OWNER_ID), eq(REVOCATION_CREDENTIAL_ID))).thenReturn(success(createCredential(EXAMPLE_REVOCATION_CREDENTIAL, EXAMPLE_REVOCATION_CREDENTIAL_JWT.replace("\n", ""))));
+            when(credentialStore.findById(eq(OWNER_ID), eq(CREDENTIAL_ID))).thenReturn(notFound("foo"));
             when(credentialStore.update(any())).thenReturn(success());
 
-            var result = revocationService.revokeCredential(CREDENTIAL_ID);
+            var result = revocationService.revokeCredential(OWNER_ID, CREDENTIAL_ID);
 
             assertThat(result).isFailed().detail().isEqualTo("foo");
             assertThat(result.getFailure().getReason()).isEqualTo(NOT_FOUND);
@@ -246,11 +247,11 @@ class CredentialStatusServiceImplTest {
 
         @Test
         void revokeCredential_whenAlreadyRevoked() {
-            when(credentialStore.findById(eq(REVOCATION_CREDENTIAL_ID))).thenReturn(success(createCredential(EXAMPLE_REVOCATION_CREDENTIAL_WITH_STATUS_BIT_SET, EXAMPLE_REVOCATION_CREDENTIAL_JWT_WITH_STATUS_BIT_SET.replace("\n", ""))));
-            when(credentialStore.findById(eq(CREDENTIAL_ID))).thenReturn(success(createCredential(EXAMPLE_CREDENTIAL, EXAMPLE_CREDENTIAL_JWT.replace("\n", ""))));
+            when(credentialStore.findById(eq(OWNER_ID), eq(REVOCATION_CREDENTIAL_ID))).thenReturn(success(createCredential(EXAMPLE_REVOCATION_CREDENTIAL_WITH_STATUS_BIT_SET, EXAMPLE_REVOCATION_CREDENTIAL_JWT_WITH_STATUS_BIT_SET.replace("\n", ""))));
+            when(credentialStore.findById(eq(OWNER_ID), eq(CREDENTIAL_ID))).thenReturn(success(createCredential(EXAMPLE_CREDENTIAL, EXAMPLE_CREDENTIAL_JWT.replace("\n", ""))));
             when(credentialStore.update(any())).thenReturn(success());
 
-            var result = revocationService.revokeCredential(CREDENTIAL_ID);
+            var result = revocationService.revokeCredential(OWNER_ID, CREDENTIAL_ID);
 
             assertThat(result).isSucceeded();
             verifyNoInteractions(tokenGenerationService);
@@ -260,17 +261,17 @@ class CredentialStatusServiceImplTest {
 
         @Test
         void revokeCredential_noCredentialStatus() throws JacksonException, ParseException {
-            when(credentialStore.findById(eq(REVOCATION_CREDENTIAL_ID)))
+            when(credentialStore.findById(eq(OWNER_ID), eq(REVOCATION_CREDENTIAL_ID)))
                     .thenReturn(success(createCredential(EXAMPLE_REVOCATION_CREDENTIAL, EXAMPLE_REVOCATION_CREDENTIAL_JWT.replace("\n", ""))));
 
             var claims = objectMapper.readValue(EXAMPLE_CREDENTIAL, MAP_REF);
             claims.remove("credentialStatus");
             var jwt = sign(claims);
 
-            when(credentialStore.findById(eq(CREDENTIAL_ID)))
+            when(credentialStore.findById(eq(OWNER_ID), eq(CREDENTIAL_ID)))
                     .thenReturn(success(createCredential(objectMapper.writeValueAsString(jwt.getJWTClaimsSet().getClaims()), jwt.serialize())));
 
-            var result = revocationService.revokeCredential(CREDENTIAL_ID);
+            var result = revocationService.revokeCredential(OWNER_ID, CREDENTIAL_ID);
 
             assertThat(result).isFailed();
             assertThat(result.getFailure().getReason()).isEqualTo(BAD_REQUEST);
@@ -281,10 +282,10 @@ class CredentialStatusServiceImplTest {
         @Test
         void revokeCredential_noRevocationCredentialFound() {
             when(bitstringStatusListFactory.create(any())).thenReturn(ServiceResult.notFound("foo"));
-            when(credentialStore.findById(eq(CREDENTIAL_ID))).thenReturn(success(createCredential(EXAMPLE_CREDENTIAL, EXAMPLE_CREDENTIAL_JWT.replace("\n", ""))));
+            when(credentialStore.findById(eq(OWNER_ID), eq(CREDENTIAL_ID))).thenReturn(success(createCredential(EXAMPLE_CREDENTIAL, EXAMPLE_CREDENTIAL_JWT.replace("\n", ""))));
             when(credentialStore.update(any())).thenReturn(success());
 
-            var result = revocationService.revokeCredential(CREDENTIAL_ID);
+            var result = revocationService.revokeCredential(OWNER_ID, CREDENTIAL_ID);
 
             assertThat(result).isFailed().detail().isEqualTo("foo");
             assertThat(result.getFailure().getReason()).isEqualTo(NOT_FOUND);
@@ -362,7 +363,7 @@ class CredentialStatusServiceImplTest {
     class Suspend {
         @Test
         void suspend() {
-            assertThatThrownBy(() -> revocationService.suspendCredential(CREDENTIAL_ID, null))
+            assertThatThrownBy(() -> revocationService.suspendCredential(OWNER_ID, CREDENTIAL_ID, null))
                     .isInstanceOf(UnsupportedOperationException.class);
         }
     }
@@ -371,7 +372,7 @@ class CredentialStatusServiceImplTest {
     class Resume {
         @Test
         void resume() {
-            assertThatThrownBy(() -> revocationService.resumeCredential(CREDENTIAL_ID, null))
+            assertThatThrownBy(() -> revocationService.resumeCredential(OWNER_ID, CREDENTIAL_ID, null))
                     .isInstanceOf(UnsupportedOperationException.class);
         }
     }
@@ -380,10 +381,10 @@ class CredentialStatusServiceImplTest {
     class GetCredentialStatus {
         @Test
         void getCredentialStatus() {
-            when(credentialStore.findById(eq(CREDENTIAL_ID)))
+            when(credentialStore.findById(eq(OWNER_ID), eq(CREDENTIAL_ID)))
                     .thenReturn(success(createCredential(EXAMPLE_CREDENTIAL, EXAMPLE_CREDENTIAL_JWT.replace("\n", ""))));
 
-            var result = revocationService.getCredentialStatus(CREDENTIAL_ID);
+            var result = revocationService.getCredentialStatus(OWNER_ID, CREDENTIAL_ID);
 
             assertThat(result).isSucceeded().isEqualTo("revocation");
             verifyNoInteractions(tokenGenerationService);
@@ -391,9 +392,9 @@ class CredentialStatusServiceImplTest {
 
         @Test
         void getCredentialStatus_credentialNotFound() {
-            when(credentialStore.findById(eq(CREDENTIAL_ID))).thenReturn(notFound("foo"));
+            when(credentialStore.findById(eq(OWNER_ID), eq(CREDENTIAL_ID))).thenReturn(notFound("foo"));
 
-            var result = revocationService.getCredentialStatus(CREDENTIAL_ID);
+            var result = revocationService.getCredentialStatus(OWNER_ID, CREDENTIAL_ID);
 
             assertThat(result).isFailed().detail().isEqualTo("foo");
             assertThat(result.getFailure().getReason()).isEqualTo(NOT_FOUND);
@@ -403,9 +404,9 @@ class CredentialStatusServiceImplTest {
         @Test
         void getCredentialStatus_noRevocationCredentialFound() {
             when(bitstringStatusListFactory.create(any())).thenReturn(ServiceResult.notFound("foo"));
-            when(credentialStore.findById(eq(CREDENTIAL_ID))).thenReturn(success(createCredential(EXAMPLE_CREDENTIAL, EXAMPLE_CREDENTIAL_JWT.replace("\n", ""))));
+            when(credentialStore.findById(eq(OWNER_ID), eq(CREDENTIAL_ID))).thenReturn(success(createCredential(EXAMPLE_CREDENTIAL, EXAMPLE_CREDENTIAL_JWT.replace("\n", ""))));
 
-            var result = revocationService.getCredentialStatus(CREDENTIAL_ID);
+            var result = revocationService.getCredentialStatus(OWNER_ID, CREDENTIAL_ID);
 
             assertThat(result).isFailed().detail().isEqualTo("foo");
             assertThat(result.getFailure().getReason()).isEqualTo(NOT_FOUND);

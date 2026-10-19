@@ -122,12 +122,10 @@ public interface VerifiableCredentialsApi {
             operationId = "requestCredential",
             requestBody = @RequestBody(content = @Content(schema = @Schema(implementation = CredentialRequestDto.class))),
             responses = {
-                    @ApiResponse(responseCode = "201", description = "The request was processed and sent to the issuer. The issuer-created ID (\"issuerPid\") is returned in the response."),
-                    @ApiResponse(responseCode = "400", description = "Request body was malformed, or the request could not be processed",
+                    @ApiResponse(responseCode = "201", description = "The request was processed and sent to the issuer. Its URL, which ends with the \"holderPid\" that IdentityHub assigned to it, is returned in the Location header."),
+                    @ApiResponse(responseCode = "400", description = "Request body was malformed, e.g. it contained a \"holderPid\", or the request could not be processed",
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json")),
                     @ApiResponse(responseCode = "403", description = "The request could not be completed, because either the authentication was missing or was not valid.",
-                            content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json")),
-                    @ApiResponse(responseCode = "409", description = "Could not create a credential request, because a credential request with that ID already exists",
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json"))
             }
     )

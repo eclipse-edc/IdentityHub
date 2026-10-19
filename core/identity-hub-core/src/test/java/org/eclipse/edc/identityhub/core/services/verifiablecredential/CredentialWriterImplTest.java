@@ -310,7 +310,11 @@ class CredentialWriterImplTest {
         when(credentialStore.create(any())).thenReturn(StoreResult.alreadyExists("foo"));
 
         var result = credentialWriter.write("holderPid", HOLDER_DID, "issuerPid", ISSUER_DID, Set.of(new CredentialWriteRequest("raw-cred", TEST_CREDENTIAL_FORMAT)), PARTICIPANT_ID);
-        assertThat(result).isFailed().detail().isEqualTo("foo");
+        // the Issuer is not told the ID of the credential that is stored already
+        assertThat(result).isFailed().satisfies(failure -> {
+            Assertions.assertThat(failure.getReason()).isEqualTo(ServiceFailure.Reason.CONFLICT);
+            Assertions.assertThat(failure.getFailureDetail()).isEqualTo("A delivered credential is already stored");
+        });
     }
 
     @Test
@@ -338,7 +342,29 @@ class CredentialWriterImplTest {
                 new CredentialWriteRequest("raw-cred1", TEST_CREDENTIAL_FORMAT),
                 new CredentialWriteRequest("raw-cred2", CredentialFormat.VC2_0_JOSE.toString())), PARTICIPANT_ID);
         assertThat(result).isFailed().detail()
-                .containsSequence("bar");
+                .isEqualTo("A delivered credential is already stored");
+    }
+
+    @Test
+    void write_whenLaterCredentialCannotBeStored_shouldRollBackWholeDelivery() {
+        when(credentialTransformerRegistry.transform(isA(String.class), eq(VerifiableCredential.class)))
+                .thenReturn(Result.success(createCredential().build()));
+        var createTransactions = new ArrayList<Integer>();
+        when(credentialStore.create(any())).thenAnswer(i -> {
+            createTransactions.add(transactionContext.currentTransaction());
+            return createTransactions.size() == 1 ? StoreResult.success() : StoreResult.alreadyExists("exists");
+        });
+
+        var result = credentialWriter.write("holderPid", HOLDER_DID, "issuerPid", ISSUER_DID, List.of(
+                new CredentialWriteRequest("raw-cred1", TEST_CREDENTIAL_FORMAT),
+                new CredentialWriteRequest("raw-cred2", TEST_CREDENTIAL_FORMAT)), PARTICIPANT_ID);
+
+        assertThat(result).isFailed();
+        // the first credential was stored already, and must not be committed without the second one
+        Assertions.assertThat(createTransactions).hasSize(2).allSatisfy(transaction ->
+                Assertions.assertThat(transactionContext.isRolledBack(transaction)).isTrue());
+        verify(holderCredentialRequestStore).breakLease(any());
+        verify(holderCredentialRequestStore, never()).save(any());
     }
 
     @Test

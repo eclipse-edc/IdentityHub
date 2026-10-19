@@ -24,13 +24,17 @@ import java.util.Collection;
 /**
  * The CredentialStore interface represents a store that manages verifiable credentials.
  * It provides methods for creating, querying, updating, and deleting credentials.
+ * <p>
+ * Credential IDs are chosen by the Issuer, or by the caller of the Identity API, so they are only unique within a
+ * participant context: a credential is identified by its participant context ID and its ID.
  */
 public interface CredentialStore {
     /**
      * Creates a verifiable credential resource in the store.
      *
      * @param credentialResource The verifiable credential resource to create.
-     * @return A StoreResult object indicating the result of the operation.
+     * @return A StoreResult object indicating the result of the operation. It fails if the participant context already
+     *         has a credential with the same ID.
      */
     StoreResult<Void> create(VerifiableCredentialResource credentialResource);
 
@@ -61,7 +65,8 @@ public interface CredentialStore {
     /**
      * Updates a verifiable credential resource in the store.
      *
-     * @param credentialResource The verifiable credential resource to update. Note that <em>all fields</em> are overwritten.
+     * @param credentialResource The verifiable credential resource to update. Note that <em>all fields</em> are overwritten,
+     *                           except the ID and participant context ID, which identify the resource.
      * @return A {@link StoreResult} object indicating the result of the operation.
      */
     StoreResult<Void> update(VerifiableCredentialResource credentialResource);
@@ -69,10 +74,11 @@ public interface CredentialStore {
     /**
      * Deletes a verifiable credential resource from the store based on the given ID.
      *
-     * @param id The ID of the verifiable credential resource to delete.
+     * @param participantContextId The ID of the participant context that owns the verifiable credential resource.
+     * @param id                   The ID of the verifiable credential resource to delete.
      * @return A {@link StoreResult} object indicating the result of the operation.
      */
-    StoreResult<Void> deleteById(String id);
+    StoreResult<Void> deleteById(String participantContextId, String id);
 
     default String alreadyExistsErrorMessage(String id) {
         return "A VerifiableCredentialResource with ID '%s' already exists.".formatted(id);
@@ -85,8 +91,9 @@ public interface CredentialStore {
     /**
      * Obtains a single credential by its ID
      *
-     * @param credentialId the credential ID
+     * @param participantContextId the ID of the participant context that owns the credential
+     * @param credentialId         the credential ID
      * @return a result containing the {@link VerifiableCredentialResource}, or an error if not found etc.
      */
-    StoreResult<VerifiableCredentialResource> findById(String credentialId);
+    StoreResult<VerifiableCredentialResource> findById(String participantContextId, String credentialId);
 }

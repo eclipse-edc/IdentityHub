@@ -120,12 +120,11 @@ public class DcpAnonymousIssuanceFlowEndToEndTest {
             var request = """
                     {
                       "issuerDid": "%s",
-                      "holderPid": "test-request-id",
                       "credentials": [{ "format": "VC1_0_JWT", "id": "membershipCredential-id", "type": "MembershipCredential" }]
                     }
                     """.formatted(issuerDid);
 
-            identityHub.getIdentityEndpoint().baseRequest()
+            var location = identityHub.getIdentityEndpoint().baseRequest()
                     .contentType(JSON)
                     .header(new Header("x-api-key", participantToken))
                     .body(request)
@@ -133,7 +132,10 @@ public class DcpAnonymousIssuanceFlowEndToEndTest {
                     .then()
                     .log().ifValidationFails()
                     .statusCode(201)
-                    .header("Location", Matchers.endsWith("/credentials/request/test-request-id"));
+                    .header("Location", Matchers.containsString("/credentials/request/"))
+                    .extract().header("Location");
+            // the holderPid is assigned by IdentityHub
+            var requestId = location.substring(location.lastIndexOf('/') + 1);
 
             // wait for the request status to be requested on the holder side
             await().pollInterval(INTERVAL)
@@ -141,7 +143,7 @@ public class DcpAnonymousIssuanceFlowEndToEndTest {
                     .untilAsserted(() -> assertThat(identityHub.getCredentialRequestForParticipant(PARTICIPANT_ID)).hasSize(1)
                             .allSatisfy(t -> {
                                 assertThat(t.getState()).isEqualTo(HolderRequestState.ISSUED.code());
-                                assertThat(t.getHolderPid()).isEqualTo("test-request-id");
+                                assertThat(t.getHolderPid()).isEqualTo(requestId);
                             }));
 
             // wait for the issuance process to be delivered on the issuer side
@@ -149,7 +151,7 @@ public class DcpAnonymousIssuanceFlowEndToEndTest {
                     .atMost(TIMEOUT)
                     .untilAsserted(() -> assertThat(issuer.getIssuanceProcessesForParticipant(ISSUER_ID)).hasSize(1)
                             .allSatisfy(t -> {
-                                assertThat(t.getHolderPid()).isEqualTo("test-request-id");
+                                assertThat(t.getHolderPid()).isEqualTo(requestId);
                                 assertThat(t.getState()).isEqualTo(IssuanceProcessStates.DELIVERED.code());
                             }));
 

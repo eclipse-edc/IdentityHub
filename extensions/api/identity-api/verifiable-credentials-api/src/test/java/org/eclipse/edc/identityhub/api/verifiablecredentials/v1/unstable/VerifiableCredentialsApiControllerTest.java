@@ -465,7 +465,7 @@ class VerifiableCredentialsApiControllerTest extends RestControllerTestBase {
 
         @Test
         void success() {
-            when(credentialStore.deleteById(CREDENTIAL_ID)).thenReturn(StoreResult.success());
+            when(credentialStore.deleteById(PARTICIPANT_ID, CREDENTIAL_ID)).thenReturn(StoreResult.success());
 
             baseRequest()
                     .delete("/%s".formatted(CREDENTIAL_ID))
@@ -473,7 +473,7 @@ class VerifiableCredentialsApiControllerTest extends RestControllerTestBase {
                     .log().ifValidationFails()
                     .statusCode(204);
 
-            verify(credentialStore).deleteById(eq(CREDENTIAL_ID));
+            verify(credentialStore).deleteById(eq(PARTICIPANT_ID), eq(CREDENTIAL_ID));
             verifyNoMoreInteractions(credentialStore);
         }
 
@@ -492,7 +492,7 @@ class VerifiableCredentialsApiControllerTest extends RestControllerTestBase {
 
         @Test
         void idDoesNotExist_returns404() {
-            when(credentialStore.deleteById(CREDENTIAL_ID)).thenReturn(StoreResult.notFound("test-message"));
+            when(credentialStore.deleteById(PARTICIPANT_ID, CREDENTIAL_ID)).thenReturn(StoreResult.notFound("test-message"));
 
             baseRequest()
                     .delete("/%s".formatted(CREDENTIAL_ID))
@@ -500,7 +500,7 @@ class VerifiableCredentialsApiControllerTest extends RestControllerTestBase {
                     .log().ifValidationFails()
                     .statusCode(404);
 
-            verify(credentialStore).deleteById(eq(CREDENTIAL_ID));
+            verify(credentialStore).deleteById(eq(PARTICIPANT_ID), eq(CREDENTIAL_ID));
             verifyNoMoreInteractions(credentialStore);
         }
     }
@@ -511,7 +511,7 @@ class VerifiableCredentialsApiControllerTest extends RestControllerTestBase {
         @Test
         void success() {
             var credential = createCredentialResource("VerifiableCredential").build();
-            when(credentialStore.query(any())).thenReturn(StoreResult.success(List.of(credential)));
+            when(credentialStore.findById(PARTICIPANT_ID, CREDENTIAL_ID)).thenReturn(StoreResult.success(credential));
 
             var result = baseRequest()
                     .get("/%s".formatted(CREDENTIAL_ID))
@@ -521,7 +521,7 @@ class VerifiableCredentialsApiControllerTest extends RestControllerTestBase {
                     .extract().body().as(VerifiableCredentialResource.class);
 
             assertThat(result).usingRecursiveComparison().ignoringFields("clock").isEqualTo(credential);
-            verify(credentialStore).query(any());
+            verify(credentialStore).findById(PARTICIPANT_ID, CREDENTIAL_ID);
             verifyNoMoreInteractions(credentialStore);
         }
 
@@ -540,7 +540,7 @@ class VerifiableCredentialsApiControllerTest extends RestControllerTestBase {
 
         @Test
         void idDoesNotExist_returns404() {
-            when(credentialStore.query(any())).thenReturn(StoreResult.success(List.of()));
+            when(credentialStore.findById(PARTICIPANT_ID, CREDENTIAL_ID)).thenReturn(StoreResult.notFound("test-message"));
 
             baseRequest()
                     .get("/%s".formatted(CREDENTIAL_ID))
@@ -548,7 +548,7 @@ class VerifiableCredentialsApiControllerTest extends RestControllerTestBase {
                     .log().ifValidationFails()
                     .statusCode(404);
 
-            verify(credentialStore).query(any());
+            verify(credentialStore).findById(PARTICIPANT_ID, CREDENTIAL_ID);
             verifyNoMoreInteractions(credentialStore);
         }
     }
@@ -558,7 +558,7 @@ class VerifiableCredentialsApiControllerTest extends RestControllerTestBase {
         @Test
         void success() {
             var id = UUID.randomUUID().toString();
-            var request = new CredentialRequestDto("did:web:issuer", UUID.randomUUID().toString(), List.of(
+            var request = new CredentialRequestDto("did:web:issuer", null, List.of(
                     new CredentialDescriptor(CredentialFormat.VC1_0_JWT, "FooCredential", UUID.randomUUID().toString())
             ));
             when(credentialRequestService.initiateRequest(anyString(), anyString(), anyString(), anyList())).thenReturn(ServiceResult.success(id));
@@ -573,8 +573,24 @@ class VerifiableCredentialsApiControllerTest extends RestControllerTestBase {
         }
 
         @Test
+        void whenHolderPidSupplied_returns400() {
+            var request = new CredentialRequestDto("did:web:issuer", "caller-chosen-pid", List.of(
+                    new CredentialDescriptor(CredentialFormat.VC1_0_JWT, "FooCredential", UUID.randomUUID().toString())
+            ));
+            baseRequest()
+                    .contentType(JSON)
+                    .body(request)
+                    .post("/request")
+                    .then()
+                    .log().ifValidationFails()
+                    .statusCode(400)
+                    .body(containsString("holderPid"));
+            verifyNoInteractions(credentialRequestService);
+        }
+
+        @Test
         void whenConflict_returns409() {
-            var request = new CredentialRequestDto("did:web:issuer", UUID.randomUUID().toString(), List.of(
+            var request = new CredentialRequestDto("did:web:issuer", null, List.of(
                     new CredentialDescriptor(CredentialFormat.VC1_0_JWT, "FooCredential", UUID.randomUUID().toString())
             ));
             when(credentialRequestService.initiateRequest(anyString(), anyString(), anyString(), anyList())).thenReturn(ServiceResult.conflict("foo"));
@@ -590,7 +606,7 @@ class VerifiableCredentialsApiControllerTest extends RestControllerTestBase {
 
         @Test
         void whenDcpError_returns500() {
-            var request = new CredentialRequestDto("did:web:issuer", UUID.randomUUID().toString(), List.of(
+            var request = new CredentialRequestDto("did:web:issuer", null, List.of(
                     new CredentialDescriptor(CredentialFormat.VC1_0_JWT, "FooCredential", UUID.randomUUID().toString())
             ));
             when(credentialRequestService.initiateRequest(anyString(), anyString(), anyString(), anyList())).thenReturn(ServiceResult.unexpected("foo"));
@@ -605,7 +621,7 @@ class VerifiableCredentialsApiControllerTest extends RestControllerTestBase {
 
         @Test
         void whenNotAuthorized_returns403() {
-            var request = new CredentialRequestDto("did:web:issuer", UUID.randomUUID().toString(), List.of(
+            var request = new CredentialRequestDto("did:web:issuer", null, List.of(
                     new CredentialDescriptor(CredentialFormat.VC1_0_JWT, "FooCredential", UUID.randomUUID().toString())
             ));
             when(authorizationService.authorize(any(), anyString(), anyString(), any())).thenReturn(unauthorized("test-message"));
@@ -626,7 +642,7 @@ class VerifiableCredentialsApiControllerTest extends RestControllerTestBase {
         void invalidDto_nullIssuerDid_returns400() {
             // the downstream service would accept anything - validation must reject the DTO before it is reached
             when(credentialRequestService.initiateRequest(any(), any(), any(), anyList())).thenReturn(ServiceResult.success("request-id"));
-            var request = new CredentialRequestDto(null, UUID.randomUUID().toString(), List.of(
+            var request = new CredentialRequestDto(null, null, List.of(
                     new CredentialDescriptor(CredentialFormat.VC1_0_JWT, "FooCredential", UUID.randomUUID().toString())
             ));
 
@@ -646,7 +662,7 @@ class VerifiableCredentialsApiControllerTest extends RestControllerTestBase {
         void invalidDto_emptyCredentials_returns400() {
             // the downstream service would accept anything - validation must reject the DTO before it is reached
             when(credentialRequestService.initiateRequest(any(), any(), any(), anyList())).thenReturn(ServiceResult.success("request-id"));
-            var request = new CredentialRequestDto("did:web:issuer", UUID.randomUUID().toString(), List.of());
+            var request = new CredentialRequestDto("did:web:issuer", null, List.of());
 
             baseRequest()
                     .contentType(JSON)
@@ -664,7 +680,7 @@ class VerifiableCredentialsApiControllerTest extends RestControllerTestBase {
         void invalidDto_descriptorWithNullIdAndFormat_returns400() {
             // the downstream service would accept anything - validation must reject the DTO before it is reached
             when(credentialRequestService.initiateRequest(any(), any(), any(), anyList())).thenReturn(ServiceResult.success("request-id"));
-            var request = new CredentialRequestDto("did:web:issuer", UUID.randomUUID().toString(), List.of(
+            var request = new CredentialRequestDto("did:web:issuer", null, List.of(
                     new CredentialDescriptor((String) null, "FooCredential", null)
             ));
 

@@ -174,7 +174,7 @@ public class PresentationApiEndToEndTest {
 
             // purge all VCs
             store.query(QuerySpec.none())
-                    .map(creds -> creds.stream().map(cred -> store.deleteById(cred.getId())).toList())
+                    .map(creds -> creds.stream().map(cred -> store.deleteById(cred.getParticipantContextId(), cred.getId())).toList())
                     .orElseThrow(f -> new RuntimeException(f.getFailureDetail()));
 
             accountStore.findAll(QuerySpec.max())

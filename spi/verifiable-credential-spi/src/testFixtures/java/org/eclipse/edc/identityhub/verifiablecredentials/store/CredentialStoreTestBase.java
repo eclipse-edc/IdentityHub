@@ -120,6 +120,29 @@ public abstract class CredentialStoreTestBase {
     }
 
     @Test
+    void create_whenIdExistsInOtherParticipantContext_shouldSucceed() {
+        var credential = createCredential();
+        getStore().create(credential);
+
+        var other = createCredentialBuilder().id(credential.getId()).participantContextId("other-participant").holderId("other-holder").build();
+
+        assertThat(getStore().create(other)).isSucceeded();
+        assertThat(getStore().findById(TEST_PARTICIPANT_CONTEXT_ID, credential.getId())).isSucceeded()
+                .extracting(VerifiableCredentialResource::getHolderId).isEqualTo("test-holder");
+        assertThat(getStore().findById("other-participant", credential.getId())).isSucceeded()
+                .extracting(VerifiableCredentialResource::getHolderId).isEqualTo("other-holder");
+    }
+
+    @Test
+    void findById_whenOwnedByOtherParticipantContext_shouldReturnNotFound() {
+        var credential = createCredential();
+        getStore().create(credential);
+
+        assertThat(getStore().findById("other-participant", credential.getId())).isFailed()
+                .detail().contains("does not exist");
+    }
+
+    @Test
     void findById_returnsCredentialUnchanged() {
         // shaped like a credential the IssuerService issues: it keeps no signed credential, and signs the stored one again
         // when a delivery has to be repeated, so nothing about it may get lost in the store
@@ -145,7 +168,7 @@ public abstract class CredentialStoreTestBase {
                 .build();
         getStore().create(resource);
 
-        assertThat(getStore().findById(resource.getId())).isSucceeded()
+        assertThat(getStore().findById(TEST_PARTICIPANT_CONTEXT_ID, resource.getId())).isSucceeded()
                 .satisfies(found -> Assertions.assertThat(found.getVerifiableCredential().credential())
                         .usingRecursiveComparison()
                         .isEqualTo(credential));
@@ -636,6 +659,18 @@ public abstract class CredentialStoreTestBase {
     }
 
     @Test
+    void update_whenParticipantContextChanges_shouldReturnNotFound() {
+        var credential = createCredential();
+        getStore().create(credential);
+
+        var moved = createCredentialBuilder().id(credential.getId()).participantContextId("other-participant").build();
+
+        assertThat(getStore().update(moved)).isFailed().detail().contains("does not exist");
+        assertThat(getStore().findById(TEST_PARTICIPANT_CONTEXT_ID, credential.getId())).isSucceeded()
+                .extracting(VerifiableCredentialResource::getParticipantContextId).isEqualTo(TEST_PARTICIPANT_CONTEXT_ID);
+    }
+
+    @Test
     void update_whenNotExists() {
         var credential = createCredentialBuilder();
         var updateRes = getStore().update(credential.state(VcStatus.ISSUED).id("another-id").build());
@@ -647,14 +682,24 @@ public abstract class CredentialStoreTestBase {
         var credential = createCredential();
         getStore().create(credential);
 
-        var deleteRes = getStore().deleteById(credential.getId());
+        var deleteRes = getStore().deleteById(TEST_PARTICIPANT_CONTEXT_ID, credential.getId());
         assertThat(deleteRes).isSucceeded();
     }
 
     @Test
     void delete_whenNotExists() {
-        assertThat(getStore().deleteById("not-exist")).isFailed()
+        assertThat(getStore().deleteById(TEST_PARTICIPANT_CONTEXT_ID, "not-exist")).isFailed()
                 .detail().contains("with ID 'not-exist' does not exist.");
+    }
+
+    @Test
+    void delete_whenOwnedByOtherParticipantContext_shouldReturnNotFound() {
+        var credential = createCredential();
+        getStore().create(credential);
+
+        assertThat(getStore().deleteById("other-participant", credential.getId())).isFailed()
+                .detail().contains("does not exist");
+        assertThat(getStore().findById(TEST_PARTICIPANT_CONTEXT_ID, credential.getId())).isSucceeded();
     }
 
     protected abstract CredentialStore getStore();

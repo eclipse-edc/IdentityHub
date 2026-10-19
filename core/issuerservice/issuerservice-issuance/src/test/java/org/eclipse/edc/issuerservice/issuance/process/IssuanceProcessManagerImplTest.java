@@ -476,7 +476,7 @@ public class IssuanceProcessManagerImplTest {
 
         // the credential stays ISSUED, although it may have reached the Holder or not, so its record needs reconciliation
         verify(monitor).severe(argThat((String message) -> message.contains(record.getId()) && message.contains("Manual reconciliation is needed")));
-        verify(credentialStatusService, never()).revokeCredential(any());
+        verify(credentialStatusService, never()).revokeCredential(any(), any());
 
         // both attempts delivered the very same credential, nothing new was generated
         @SuppressWarnings("unchecked")

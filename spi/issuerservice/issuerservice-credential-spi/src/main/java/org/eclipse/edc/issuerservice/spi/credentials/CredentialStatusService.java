@@ -48,31 +48,34 @@ public interface CredentialStatusService {
      * Note that the specific revocation credential is determined by inspecting the user credentials
      * {@code credentialSubject.statusListCredential} field.
      *
-     * @param credentialId The ID of the credential.
+     * @param participantContextId The ID of the participant context (=tenant) that owns the credential.
+     * @param credentialId         The ID of the credential.
      * @return a service result indicating success or failure
      */
-    ServiceResult<Void> revokeCredential(String credentialId);
+    ServiceResult<Void> revokeCredential(String participantContextId, String credentialId);
 
     /**
      * Suspends a credential by adding its ID to the revocation list credential. Implementations may choose to also track
      * the status in the internal database
      *
-     * @param credentialId The ID of the credential.
-     * @param reason       An optional string indicating the reason for suspension, e.g. "temporary account suspension", etc.
+     * @param participantContextId The ID of the participant context (=tenant) that owns the credential.
+     * @param credentialId         The ID of the credential.
+     * @param reason               An optional string indicating the reason for suspension, e.g. "temporary account suspension", etc.
      * @return a service result indicating success or failure
      * @throws UnsupportedOperationException if this credential status service does not support suspension
      */
-    ServiceResult<Void> suspendCredential(String credentialId, @Nullable String reason);
+    ServiceResult<Void> suspendCredential(String participantContextId, String credentialId, @Nullable String reason);
 
     /**
      * Removes the "suspended" state from the revocation credential.
      *
-     * @param credentialId The ID of the credential.
-     * @param reason       An optional string indicating the reason for resuming, e.g. "account reactivation", etc.
+     * @param participantContextId The ID of the participant context (=tenant) that owns the credential.
+     * @param credentialId         The ID of the credential.
+     * @param reason               An optional string indicating the reason for resuming, e.g. "account reactivation", etc.
      * @return a service result indicating success or failure
      * @throws UnsupportedOperationException if this credential status service does not support suspension/resuming
      */
-    ServiceResult<Void> resumeCredential(String credentialId, @Nullable String reason);
+    ServiceResult<Void> resumeCredential(String participantContextId, String credentialId, @Nullable String reason);
 
     /**
      * Obtains the status for a given credential. This is done by parsing the StatusList credential, decoding the bitstring
@@ -80,18 +83,20 @@ public interface CredentialStatusService {
      * <p>
      * Alternatively, users can inspect {@code VerifiableCredentialResource#getState()}
      *
-     * @param credentialId The ID of the credential.
+     * @param participantContextId The ID of the participant context (=tenant) that owns the credential.
+     * @param credentialId         The ID of the credential.
      * @return A string containing the credential status, null if the status is not set, or a failure to indicate an error.
      */
-    ServiceResult<String> getCredentialStatus(String credentialId);
+    ServiceResult<String> getCredentialStatus(String participantContextId, String credentialId);
 
     ServiceResult<Collection<VerifiableCredentialResource>> queryCredentials(QuerySpec query);
 
     /**
      * Obtains a single credential by its ID.
      *
-     * @param credentialId The ID of the credential.
+     * @param participantContextId The ID of the participant context (=tenant) that owns the credential.
+     * @param credentialId         The ID of the credential.
      * @return The credential resource, or a failure if the credential does not exist.
      */
-    ServiceResult<VerifiableCredentialResource> getCredentialById(String credentialId);
+    ServiceResult<VerifiableCredentialResource> getCredentialById(String participantContextId, String credentialId);
 }

@@ -134,7 +134,7 @@ public class CredentialWatchdog implements Runnable {
     private void check(VerifiableCredentialResource credential) {
         try {
             var checked = transactionContext.execute(() -> {
-                var current = lock(credential.getId());
+                var current = lock(credential);
                 // credentials waiting on a renewal are held back: their REQUESTED state records that fact, and the status
                 // check below would overwrite it. Those whose renewal came to nothing are released here and treated normally.
                 return current != null && reconcileRenewal(current) ? current : null;
@@ -144,7 +144,7 @@ public class CredentialWatchdog implements Runnable {
             }
             var newStatus = determineStatus(checked);
             transactionContext.execute(() -> {
-                var current = lock(credential.getId());
+                var current = lock(credential);
                 if (current == null || hasChanged(checked, current)) {
                     monitor.debug("Credential '%s' changed while its status was determined, it is checked again in the next run".formatted(credential.getId()));
                     return;
@@ -164,12 +164,13 @@ public class CredentialWatchdog implements Runnable {
      *
      * @return the credential, or null if it does not exist anymore, or could not be read
      */
-    private @Nullable VerifiableCredentialResource lock(String credentialId) {
+    private @Nullable VerifiableCredentialResource lock(VerifiableCredentialResource credential) {
         var query = QuerySpec.Builder.newInstance()
-                .filter(new Criterion("id", "=", credentialId))
+                .filter(new Criterion("participantContextId", "=", credential.getParticipantContextId()))
+                .filter(new Criterion("id", "=", credential.getId()))
                 .build();
         return credentialStore.queryForUpdate(query)
-                .onFailure(f -> monitor.warning("Failed to read credential '%s': %s".formatted(credentialId, f.getFailureDetail())))
+                .onFailure(f -> monitor.warning("Failed to read credential '%s': %s".formatted(credential.getId(), f.getFailureDetail())))
                 .map(credentials -> credentials.stream().findFirst().orElse(null))
                 .orElse(f -> null);
     }

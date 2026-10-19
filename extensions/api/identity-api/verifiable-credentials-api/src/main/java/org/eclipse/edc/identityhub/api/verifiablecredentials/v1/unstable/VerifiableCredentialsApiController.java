@@ -42,7 +42,6 @@ import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCre
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialResource;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialStore;
 import org.eclipse.edc.spi.query.Criterion;
-import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.ServiceResult;
 import org.eclipse.edc.transform.spi.TypeTransformerRegistry;
 import org.eclipse.edc.util.string.StringUtils;
@@ -100,9 +99,8 @@ public class VerifiableCredentialsApiController implements VerifiableCredentials
         authorizationService.authorize(securityContext, participantContextId, id, VerifiableCredentialResource.class)
                 .orElseThrow(exceptionMapper(VerifiableCredentialResource.class, id));
 
-        var result = credentialStore.query(QuerySpec.Builder.newInstance().filter(new Criterion("id", "=", id)).build())
-                .orElseThrow(InvalidRequestException::new);
-        return result.stream().findFirst().orElseThrow(() -> new ObjectNotFoundException(VerifiableCredentialResource.class, id));
+        return credentialStore.findById(participantContextId, id)
+                .orElseThrow(f -> new ObjectNotFoundException(VerifiableCredentialResource.class, id));
     }
 
     @POST
@@ -163,7 +161,7 @@ public class VerifiableCredentialsApiController implements VerifiableCredentials
     public void deleteCredential(@PathParam("participantContextId") String participantContextId, @PathParam("credentialId") String id, @Context SecurityContext securityContext) {
         authorizationService.authorize(securityContext, participantContextId, id, VerifiableCredentialResource.class)
                 .orElseThrow(exceptionMapper(VerifiableCredentialResource.class, id));
-        var res = credentialStore.deleteById(id);
+        var res = credentialStore.deleteById(participantContextId, id);
         if (res.failed()) {
             throw exceptionMapper(VerifiableCredentialResource.class, id).apply(ServiceResult.fromFailure(res).getFailure());
         }
@@ -179,7 +177,8 @@ public class VerifiableCredentialsApiController implements VerifiableCredentials
 
         validateCredentialRequest(credentialRequestDto);
 
-        var holderPid = ofNullable(credentialRequestDto.holderPid()).orElseGet(() -> UUID.randomUUID().toString());
+        // the holderPid identifies the request across all participant contexts, and at the Issuer, so it is never chosen by the caller
+        var holderPid = UUID.randomUUID().toString();
         var requestParameters = credentialRequestDto.credentials().stream().map(cd -> new RequestedCredential(cd.id(), cd.type(), cd.format())).toList();
 
         return credentialRequestService.initiateRequest(participantContextId, credentialRequestDto.issuerDid(), holderPid, requestParameters)
@@ -229,6 +228,9 @@ public class VerifiableCredentialsApiController implements VerifiableCredentials
         }
         if (StringUtils.isNullOrBlank(credentialRequestDto.issuerDid())) {
             throw new InvalidRequestException("Property 'issuerDid' is required");
+        }
+        if (credentialRequestDto.holderPid() != null) {
+            throw new InvalidRequestException("Property 'holderPid' must not be set, it is assigned by IdentityHub");
         }
         if (credentialRequestDto.credentials() == null || credentialRequestDto.credentials().isEmpty()) {
             throw new InvalidRequestException("Property 'credentials' must contain at least one entry");

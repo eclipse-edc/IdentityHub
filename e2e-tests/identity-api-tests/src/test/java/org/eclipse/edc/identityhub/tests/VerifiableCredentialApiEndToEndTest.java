@@ -75,7 +75,7 @@ import static org.eclipse.edc.identityhub.tests.fixtures.TestFunctions.authorize
 import static org.eclipse.edc.identityhub.tests.fixtures.TestFunctions.createCredential;
 import static org.eclipse.edc.identityhub.tests.fixtures.common.AbstractIdentityHub.SUPER_USER;
 import static org.eclipse.edc.util.io.Ports.getFreePort;
-import static org.hamcrest.Matchers.endsWith;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.notNullValue;
 
@@ -402,16 +402,14 @@ public class VerifiableCredentialApiEndToEndTest {
                 identityHub.createSuperUser();
                 var user = "user1";
                 var auth = authorizeUser(user, identityHub);
-                var holderPid = UUID.randomUUID().toString();
                 var request =
                         """
                                 {
                                   "issuerDid": "did:web:issuer",
-                                  "holderPid": "%s",
                                   "credentials": [{ "format": "VC1_0_JWT", "id": "TestCredential-id"}]
                                 }
-                                """.formatted(holderPid);
-                identityHub.getIdentityEndpoint().baseRequest()
+                                """;
+                var location = identityHub.getIdentityEndpoint().baseRequest()
                         .contentType(JSON)
                         .header(auth)
                         .body(request)
@@ -419,7 +417,10 @@ public class VerifiableCredentialApiEndToEndTest {
                         .then()
                         .log().ifValidationFails()
                         .statusCode(201)
-                        .header("Location", endsWith("/v1/participants/%s/credentials/request/%s".formatted(user, holderPid)));
+                        .header("Location", containsString("/v1/participants/%s/credentials/request/".formatted(user)))
+                        .extract().header("Location");
+                // the holderPid is assigned by IdentityHub
+                var holderPid = location.substring(location.lastIndexOf('/') + 1);
 
                 // wait until the state machine has progress to the REQUESTED state
                 await().atMost(Duration.ofSeconds(10))
@@ -515,18 +516,16 @@ public class VerifiableCredentialApiEndToEndTest {
                 identityHub.createSuperUser();
                 var user = "user1";
                 var auth = authorizeUser(user, identityHub);
-                var holderPid = UUID.randomUUID().toString();
                 var request =
                         """
                                 {
                                   "issuerDid": "did:web:issuer",
-                                  "holderPid": "%s",
                                   "credentials": [{ "format": "VC1_0_JWT", "id": "unknown-credential-object-id"}]
                                 }
-                                """.formatted(holderPid);
+                                """;
 
                 // the API accepts the request with 201 - it only means the request was received, validation happens downstream
-                identityHub.getIdentityEndpoint().baseRequest()
+                var location = identityHub.getIdentityEndpoint().baseRequest()
                         .contentType(JSON)
                         .header(auth)
                         .body(request)
@@ -534,7 +533,10 @@ public class VerifiableCredentialApiEndToEndTest {
                         .then()
                         .log().ifValidationFails()
                         .statusCode(201)
-                        .header("Location", endsWith("/v1/participants/%s/credentials/request/%s".formatted(user, holderPid)));
+                        .header("Location", containsString("/v1/participants/%s/credentials/request/".formatted(user)))
+                        .extract().header("Location");
+                // the holderPid is assigned by IdentityHub
+                var holderPid = location.substring(location.lastIndexOf('/') + 1);
 
                 // the request transitions to ERROR asynchronously, carrying the issuer's error in errorDetail
                 await().atMost(Duration.ofSeconds(15))

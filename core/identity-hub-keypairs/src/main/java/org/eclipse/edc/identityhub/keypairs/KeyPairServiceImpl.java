@@ -360,15 +360,11 @@ public class KeyPairServiceImpl implements KeyPairService, EventSubscriber {
     }
 
     /**
-     * Writes the successor, and the old key pair, which was taken out of use. Once the successor is written, a failure
-     * throws a {@link RollbackException}, because the transaction is only rolled back when an exception is thrown.
+     * Writes the old key pair, which was taken out of use, and its successor. The old key pair is written first, because
+     * the successor may have its key ID, and only one key pair per key ID may be in use. Once the old key pair is written, a failure throws a
+     * {@link RollbackException}, because the transaction is only rolled back when an exception is thrown.
      */
     private ServiceResult<KeyPairResource> writeReplacement(KeyPairResource oldKey, NewKey newKey, boolean makeDefault) {
-        var successor = createKeyPair(newKey, makeDefault);
-        if (successor.failed()) {
-            return successor;
-        }
-
         StoreResult<Void> updateResult;
         try {
             updateResult = keyPairResourceStore.update(oldKey);
@@ -378,7 +374,12 @@ public class KeyPairServiceImpl implements KeyPairService, EventSubscriber {
         }
         if (updateResult.failed()) {
             discardPrivateKey(newKey);
-            throw new RollbackException(ServiceResult.fromFailure(updateResult));
+            return ServiceResult.fromFailure(updateResult);
+        }
+
+        var successor = createKeyPair(newKey, makeDefault);
+        if (successor.failed()) {
+            throw new RollbackException(successor.mapFailure());
         }
         return successor;
     }

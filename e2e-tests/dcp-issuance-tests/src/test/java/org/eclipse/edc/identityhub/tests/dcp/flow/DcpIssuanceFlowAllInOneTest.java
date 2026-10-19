@@ -40,6 +40,7 @@ import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCre
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialStore;
 import org.eclipse.edc.identityhub.tests.fixtures.DefaultRuntimes;
 import org.eclipse.edc.identityhub.tests.fixtures.SharedPostgresqlEndToEndExtension;
+import org.eclipse.edc.identityhub.tests.fixtures.common.Endpoint;
 import org.eclipse.edc.identityhub.tests.fixtures.credentialservice.IdentityHub;
 import org.eclipse.edc.identityhub.tests.fixtures.issuerservice.IssuerService;
 import org.eclipse.edc.issuerservice.spi.holder.HolderService;
@@ -90,7 +91,6 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
 import static io.restassured.RestAssured.given;
 import static io.restassured.http.ContentType.JSON;
@@ -247,17 +247,7 @@ public class DcpIssuanceFlowAllInOneTest {
         @Test
         @DisplayName("RT-01: request -> issue -> deliver round trip, with issuer and holder in one runtime")
         void testCredentialIssuance(IssuerService issuer, IdentityHub identityHub) {
-            var holderRequestId = UUID.randomUUID().toString();
-
-            identityHub.getIdentityEndpoint().baseRequest()
-                    .contentType(JSON)
-                    .header(new Header("x-api-key", participantToken))
-                    .body(createIssuanceRequest(holderRequestId))
-                    .post("/v1/participants/%s/credentials/request".formatted(PARTICIPANT_ID))
-                    .then()
-                    .log().ifValidationFails()
-                    .statusCode(201)
-                    .header("Location", Matchers.endsWith("/credentials/request/" + holderRequestId));
+            var holderRequestId = sendCredentialRequest(identityHub.getIdentityEndpoint(), createIssuanceRequest());
 
             // wait for the request status to be requested on the holder side
             await().pollInterval(INTERVAL)
@@ -327,17 +317,7 @@ public class DcpIssuanceFlowAllInOneTest {
         @Test
         @DisplayName("RT-07: a credential nearing expiry is re-issued and the holder ends up holding the fresh one")
         void testRenewal(IssuerService issuer, IdentityHub identityHub) {
-            var holderRequestId = UUID.randomUUID().toString();
-
-            issuer.getIdentityEndpoint().baseRequest()
-                    .contentType(JSON)
-                    .header(new Header("x-api-key", participantToken))
-                    .body(createIssuanceRequest(holderRequestId, "renewalCredential-id", "RenewalCredential"))
-                    .post("/v1/participants/%s/credentials/request".formatted(PARTICIPANT_ID))
-                    .then()
-                    .log().ifValidationFails()
-                    .statusCode(201)
-                    .header("Location", Matchers.endsWith("/credentials/request/" + holderRequestId));
+            var holderRequestId = sendCredentialRequest(issuer.getIdentityEndpoint(), createIssuanceRequest("renewalCredential-id", "RenewalCredential"));
 
             // wait for the request status to be ISSUED on the holder side
             await().pollInterval(INTERVAL)
@@ -394,16 +374,7 @@ public class DcpIssuanceFlowAllInOneTest {
         @DisplayName("a re-issuance requested while the current credential is still valid supersedes it upon delivery")
         void testReissuanceWithinValidity(IssuerService issuer, IdentityHub identityHub) {
             var store = issuer.getService(CredentialStore.class);
-            var firstRequestId = UUID.randomUUID().toString();
-
-            identityHub.getIdentityEndpoint().baseRequest()
-                    .contentType(JSON)
-                    .header(new Header("x-api-key", participantToken))
-                    .body(createIssuanceRequest(firstRequestId))
-                    .post("/v1/participants/%s/credentials/request".formatted(PARTICIPANT_ID))
-                    .then()
-                    .log().ifValidationFails()
-                    .statusCode(201);
+            var firstRequestId = sendCredentialRequest(identityHub.getIdentityEndpoint(), createIssuanceRequest());
 
             await().pollInterval(INTERVAL)
                     .atMost(TIMEOUT)
@@ -419,15 +390,7 @@ public class DcpIssuanceFlowAllInOneTest {
 
             // request re-issuance long before the first credential expires - once the fresh credential is delivered,
             // two technically valid credentials exist on the holder, and only the newer one may remain usable
-            var secondRequestId = UUID.randomUUID().toString();
-            identityHub.getIdentityEndpoint().baseRequest()
-                    .contentType(JSON)
-                    .header(new Header("x-api-key", participantToken))
-                    .body(createIssuanceRequest(secondRequestId))
-                    .post("/v1/participants/%s/credentials/request".formatted(PARTICIPANT_ID))
-                    .then()
-                    .log().ifValidationFails()
-                    .statusCode(201);
+            sendCredentialRequest(identityHub.getIdentityEndpoint(), createIssuanceRequest());
 
             await().pollInterval(INTERVAL)
                     .atMost(TIMEOUT)
@@ -438,7 +401,7 @@ public class DcpIssuanceFlowAllInOneTest {
                         assertThat(newCredential.getId()).isNotEqualTo(firstCredential.getId());
                         assertThat(newCredential.getStateAsEnum()).isEqualTo(VcStatus.ISSUED);
 
-                        var supersededResult = store.findById(firstCredential.getId());
+                        var supersededResult = store.findById(firstCredential.getParticipantContextId(), firstCredential.getId());
                         assertThat(supersededResult.succeeded()).isTrue();
                         var superseded = supersededResult.getContent();
                         assertThat(superseded.getVerifiableCredential().credential().getExpirationDate()).isAfter(Instant.now());
@@ -450,16 +413,7 @@ public class DcpIssuanceFlowAllInOneTest {
         @Test
         @DisplayName("RT-05: revoking an issued credential flips its published status list, observable by a verifier")
         void testRevoke(IssuerService issuer, IdentityHub identityHub) throws ParseException {
-            var holderRequestId = UUID.randomUUID().toString();
-
-            issuer.getIdentityEndpoint().baseRequest()
-                    .contentType(JSON)
-                    .header(new Header("x-api-key", participantToken))
-                    .body(createIssuanceRequest(holderRequestId))
-                    .post("/v1/participants/%s/credentials/request".formatted(PARTICIPANT_ID))
-                    .then()
-                    .log().ifValidationFails()
-                    .statusCode(201);
+            var holderRequestId = sendCredentialRequest(issuer.getIdentityEndpoint(), createIssuanceRequest());
 
             await().pollInterval(INTERVAL)
                     .atMost(TIMEOUT)
@@ -547,17 +501,7 @@ public class DcpIssuanceFlowAllInOneTest {
             issuer.getService(DidResolverRegistry.class).register(exampleResolverMock);
 
             // issue credential to holder
-            var holderRequestId = UUID.randomUUID().toString();
-
-            issuer.getIdentityEndpoint().baseRequest()
-                    .contentType(JSON)
-                    .header(new Header("x-api-key", participantToken))
-                    .body(createIssuanceRequest(holderRequestId))
-                    .post("/v1/participants/%s/credentials/request".formatted(PARTICIPANT_ID))
-                    .then()
-                    .log().ifValidationFails()
-                    .statusCode(201)
-                    .header("Location", Matchers.endsWith("/credentials/request/" + holderRequestId));
+            var holderRequestId = sendCredentialRequest(issuer.getIdentityEndpoint(), createIssuanceRequest());
 
             // wait for the request status to be requested on the holder side
             await().pollInterval(INTERVAL)
@@ -622,14 +566,31 @@ public class DcpIssuanceFlowAllInOneTest {
                     .toList();
         }
 
-        private @NonNull Map<String, Object> createIssuanceRequest(String holderRequestId) {
-            return createIssuanceRequest(holderRequestId, "membershipCredential-id", "MembershipCredential");
+        /**
+         * Sends a credential request via the Identity API.
+         *
+         * @return the holderPid that IdentityHub assigned to the request
+         */
+        private String sendCredentialRequest(Endpoint identityEndpoint, Map<String, Object> request) {
+            var location = identityEndpoint.baseRequest()
+                    .contentType(JSON)
+                    .header(new Header("x-api-key", participantToken))
+                    .body(request)
+                    .post("/v1/participants/%s/credentials/request".formatted(PARTICIPANT_ID))
+                    .then()
+                    .log().ifValidationFails()
+                    .statusCode(201)
+                    .extract().header("Location");
+            return location.substring(location.lastIndexOf('/') + 1);
         }
 
-        private @NonNull Map<String, Object> createIssuanceRequest(String holderRequestId, String credentialDefinitionId, String credentialType) {
+        private @NonNull Map<String, Object> createIssuanceRequest() {
+            return createIssuanceRequest("membershipCredential-id", "MembershipCredential");
+        }
+
+        private @NonNull Map<String, Object> createIssuanceRequest(String credentialDefinitionId, String credentialType) {
             return Map.of(
                     "issuerDid", issuerDid,
-                    "holderPid", holderRequestId,
                     "credentials", List.of(Map.of(
                             "id", credentialDefinitionId,
                             "format", VC1_0_JWT.name(),

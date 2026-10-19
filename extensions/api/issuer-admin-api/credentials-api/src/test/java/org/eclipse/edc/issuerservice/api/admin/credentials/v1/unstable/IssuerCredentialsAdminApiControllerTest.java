@@ -104,7 +104,7 @@ class IssuerCredentialsAdminApiControllerTest extends RestControllerTestBase {
 
     @Test
     void revokeCredential_whenAlreadyRevoked() {
-        when(credentialStatusService.revokeCredential(anyString()))
+        when(credentialStatusService.revokeCredential(eq(PARTICIPANT_ID_ENCODED), anyString()))
                 .thenReturn(ServiceResult.success());
 
         baseRequest()
@@ -117,7 +117,7 @@ class IssuerCredentialsAdminApiControllerTest extends RestControllerTestBase {
 
     @Test
     void revokeCredential_whenNotFound() {
-        when(credentialStatusService.revokeCredential(anyString()))
+        when(credentialStatusService.revokeCredential(eq(PARTICIPANT_ID_ENCODED), anyString()))
                 .thenReturn(ServiceResult.notFound("foo"));
 
         baseRequest()
@@ -147,7 +147,7 @@ class IssuerCredentialsAdminApiControllerTest extends RestControllerTestBase {
 
     @Test
     void checkRevocationStatus_whenNotRevoked() {
-        when(credentialStatusService.getCredentialStatus(eq("test-credential-id")))
+        when(credentialStatusService.getCredentialStatus(eq(PARTICIPANT_ID_ENCODED), eq("test-credential-id")))
                 .thenReturn(ServiceResult.success());
         baseRequest()
                 .get("/test-credential-id/status")
@@ -158,7 +158,7 @@ class IssuerCredentialsAdminApiControllerTest extends RestControllerTestBase {
 
     @Test
     void checkRevocationStatus_whenRevoked() {
-        when(credentialStatusService.getCredentialStatus(eq("test-credential-id")))
+        when(credentialStatusService.getCredentialStatus(eq(PARTICIPANT_ID_ENCODED), eq("test-credential-id")))
                 .thenReturn(ServiceResult.success("revocation"));
 
         baseRequest()
@@ -170,7 +170,7 @@ class IssuerCredentialsAdminApiControllerTest extends RestControllerTestBase {
 
     @Test
     void checkRevocationStatus_whenNotFound() {
-        when(credentialStatusService.getCredentialStatus(eq("test-credential-id")))
+        when(credentialStatusService.getCredentialStatus(eq(PARTICIPANT_ID_ENCODED), eq("test-credential-id")))
                 .thenReturn(ServiceResult.notFound("foo"));
 
         baseRequest()

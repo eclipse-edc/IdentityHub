@@ -166,24 +166,14 @@ public class DcpIssuanceFlowEndToEndTest {
                                     "credentialName", "test-credential-name",
                                     "credentialDescription", "test-credential-description"))));
 
-            var requestId = UUID.randomUUID().toString();
             var request = """
                     {
                       "issuerDid": "%s",
-                      "holderPid": "%s",
                       "credentials": [{ "format": "%s", "id": "%s", "type": "%s" }]
                     }
-                    """.formatted(issuerDid, requestId, format.name(), credentialDefinitionId, credentialType);
+                    """.formatted(issuerDid, format.name(), credentialDefinitionId, credentialType);
 
-            identityHub.getIdentityEndpoint().baseRequest()
-                    .contentType(JSON)
-                    .header(new Header("x-api-key", participantToken))
-                    .body(request)
-                    .post("/v1/participants/%s/credentials/request".formatted(PARTICIPANT_ID))
-                    .then()
-                    .log().ifValidationFails()
-                    .statusCode(201)
-                    .header("Location", Matchers.endsWith("/credentials/request/" + requestId));
+            var requestId = sendCredentialRequest(identityHub, PARTICIPANT_ID, participantToken, request);
 
             // wait for the request status to be requested on the holder side
             await().pollInterval(INTERVAL)
@@ -260,7 +250,7 @@ public class DcpIssuanceFlowEndToEndTest {
         }
 
         @Test
-        @DisplayName("IS-REQ-06: a second request with the same holderPid yields no second issuance")
+        @DisplayName("IS-REQ-06: a second request cannot reuse the holderPid, so it yields no second issuance")
         void issuanceFlow_rejectExistingProcessByHolderPid(IssuerService issuer, IdentityHub identityHub) {
             var subscriber = mock(EventSubscriber.class);
             issuer.registerListener(IssuanceEvent.class, subscriber);
@@ -281,24 +271,15 @@ public class DcpIssuanceFlowEndToEndTest {
             when(attestationSource.execute(any()))
                     .thenReturn(Result.success(Map.of("onboarding", Map.of("signedDocuments", true), "participant", Map.of("name", "Alice", "id", participantDid))));
 
-            var requestId = UUID.randomUUID().toString();
             var request = """
                     {
                       "issuerDid": "%s",
-                      "holderPid": "%s",
                       "credentials": [{ "format": "%s", "id": "%s", "type": "%s" }]
                     }
-                    """.formatted(issuerDid, requestId, format.name(), credentialDefinitionId, credentialType);
+                    """.formatted(issuerDid, format.name(), credentialDefinitionId, credentialType);
 
             // make first request - expect it to succeed
-            identityHub.getIdentityEndpoint().baseRequest()
-                    .contentType(JSON)
-                    .header(new Header("x-api-key", participantToken))
-                    .body(request)
-                    .post("/v1/participants/%s/credentials/request".formatted(PARTICIPANT_ID))
-                    .then()
-                    .log().all()
-                    .statusCode(201);
+            var requestId = sendCredentialRequest(identityHub, PARTICIPANT_ID, participantToken, request);
 
             // wait for the issuance process to be approved on the issuer side
             await().pollInterval(INTERVAL)
@@ -309,15 +290,23 @@ public class DcpIssuanceFlowEndToEndTest {
                                 assertThat(t.getState()).isGreaterThanOrEqualTo(IssuanceProcessStates.APPROVED.code());
                             }));
 
-            // make another request with the same holder-PID, expect a 409
+            // make another request with the same holder-PID, expect a 400, because the holderPid is assigned by IdentityHub
+            var secondRequest = """
+                    {
+                      "issuerDid": "%s",
+                      "holderPid": "%s",
+                      "credentials": [{ "format": "%s", "id": "%s", "type": "%s" }]
+                    }
+                    """.formatted(issuerDid, requestId, format.name(), credentialDefinitionId, credentialType);
             identityHub.getIdentityEndpoint().baseRequest()
                     .contentType(JSON)
                     .header(new Header("x-api-key", participantToken))
-                    .body(request)
+                    .body(secondRequest)
                     .post("/v1/participants/%s/credentials/request".formatted(PARTICIPANT_ID))
                     .then()
                     .log().ifValidationFails()
-                    .statusCode(409);
+                    .statusCode(400);
+            assertThat(issuer.getIssuanceProcessesForParticipant(ISSUER_ID, requestId)).hasSize(1);
         }
 
         // CS-REQ-04: after the request reaches REQUESTED, the holder's HolderCredentialRequest.issuerPid must equal the issuer's issuance process id
@@ -350,9 +339,8 @@ public class DcpIssuanceFlowEndToEndTest {
                             "participant", Map.of("name", "Alice", "id", holderDid))));
 
             // initiate the credential request via the Identity API
-            var requestId = UUID.randomUUID().toString();
-            sendCredentialRequest(identityHub, holderContextId, holderToken,
-                    credentialRequestBody(requestId, VC1_0_JWT, credentialDefinitionId, credentialType));
+            var requestId = sendCredentialRequest(identityHub, holderContextId, holderToken,
+                    credentialRequestBody(VC1_0_JWT, credentialDefinitionId, credentialType));
 
             // the issuer accepted the request and created an issuance process
             await().pollInterval(INTERVAL)
@@ -408,28 +396,19 @@ public class DcpIssuanceFlowEndToEndTest {
                             "participant", Map.of("name", "Alice", "id", participantDid))));
 
             // send ONE request referencing BOTH credentialObjectIds
-            var requestId = UUID.randomUUID().toString();
             var request = """
                     {
                       "issuerDid": "%s",
-                      "holderPid": "%s",
                       "credentials": [
                         { "format": "%s", "id": "%s", "type": "%s" },
                         { "format": "%s", "id": "%s", "type": "%s" }
                       ]
                     }
-                    """.formatted(issuerDid, requestId,
+                    """.formatted(issuerDid,
                     VC1_0_JWT.name(), definitionId1, credentialType1,
                     VC2_0_JOSE.name(), definitionId2, credentialType2);
 
-            identityHub.getIdentityEndpoint().baseRequest()
-                    .contentType(JSON)
-                    .header(new Header("x-api-key", participantToken))
-                    .body(request)
-                    .post("/v1/participants/%s/credentials/request".formatted(PARTICIPANT_ID))
-                    .then()
-                    .log().ifValidationFails()
-                    .statusCode(201);
+            var requestId = sendCredentialRequest(identityHub, PARTICIPANT_ID, participantToken, request);
 
             // exactly ONE issuance process exists for this holderPid, it references BOTH definitions and ends in DELIVERED
             await().pollInterval(INTERVAL)
@@ -664,9 +643,8 @@ public class DcpIssuanceFlowEndToEndTest {
                             "participant", Map.of("name", "Alice", "id", participantDid))));
 
             // 1: full issuance round trip for credential 1
-            var requestId1 = UUID.randomUUID().toString();
-            sendCredentialRequest(identityHub, PARTICIPANT_ID, participantToken,
-                    credentialRequestBody(requestId1, VC1_0_JWT, credentialDefinitionId, credentialType));
+            var requestId1 = sendCredentialRequest(identityHub, PARTICIPANT_ID, participantToken,
+                    credentialRequestBody(VC1_0_JWT, credentialDefinitionId, credentialType));
             await().pollInterval(INTERVAL)
                     .atMost(TIMEOUT)
                     .untilAsserted(() -> assertThat(identityHub.getCredentialRequestForParticipant(PARTICIPANT_ID))
@@ -716,9 +694,8 @@ public class DcpIssuanceFlowEndToEndTest {
                             }));
 
             // full issuance round trip for credential 2
-            var requestId2 = UUID.randomUUID().toString();
-            sendCredentialRequest(identityHub, PARTICIPANT_ID, participantToken,
-                    credentialRequestBody(requestId2, VC1_0_JWT, credentialDefinitionId, credentialType));
+            var requestId2 = sendCredentialRequest(identityHub, PARTICIPANT_ID, participantToken,
+                    credentialRequestBody(VC1_0_JWT, credentialDefinitionId, credentialType));
             await().pollInterval(INTERVAL)
                     .atMost(TIMEOUT)
                     .untilAsserted(() -> assertThat(identityHub.getCredentialRequestForParticipant(PARTICIPANT_ID))
@@ -747,25 +724,31 @@ public class DcpIssuanceFlowEndToEndTest {
                     });
         }
 
-        private void sendCredentialRequest(IdentityHub identityHub, String participantContextId, String apiToken, String requestBody) {
-            identityHub.getIdentityEndpoint().baseRequest()
+        /**
+         * Sends a credential request via the Identity API.
+         *
+         * @return the holderPid that IdentityHub assigned to the request
+         */
+        private String sendCredentialRequest(IdentityHub identityHub, String participantContextId, String apiToken, String requestBody) {
+            var location = identityHub.getIdentityEndpoint().baseRequest()
                     .contentType(JSON)
                     .header(new Header("x-api-key", apiToken))
                     .body(requestBody)
                     .post("/v1/participants/%s/credentials/request".formatted(participantContextId))
                     .then()
                     .log().ifValidationFails()
-                    .statusCode(201);
+                    .statusCode(201)
+                    .extract().header("Location");
+            return location.substring(location.lastIndexOf('/') + 1);
         }
 
-        private String credentialRequestBody(String requestId, CredentialFormat format, String credentialDefinitionId, String credentialType) {
+        private String credentialRequestBody(CredentialFormat format, String credentialDefinitionId, String credentialType) {
             return """
                     {
                       "issuerDid": "%s",
-                      "holderPid": "%s",
                       "credentials": [{ "format": "%s", "id": "%s", "type": "%s" }]
                     }
-                    """.formatted(issuerDid, requestId, format.name(), credentialDefinitionId, credentialType);
+                    """.formatted(issuerDid, format.name(), credentialDefinitionId, credentialType);
         }
 
         private String kidOf(String rawJwt) {

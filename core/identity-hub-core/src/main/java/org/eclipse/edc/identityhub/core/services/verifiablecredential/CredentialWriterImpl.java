@@ -54,6 +54,7 @@ import static org.eclipse.edc.identityhub.spi.credential.request.model.HolderReq
 import static org.eclipse.edc.identityhub.spi.credential.request.model.HolderRequestState.REQUESTED;
 import static org.eclipse.edc.spi.result.ServiceResult.from;
 import static org.eclipse.edc.spi.result.ServiceResult.success;
+import static org.eclipse.edc.spi.result.StoreFailure.Reason.ALREADY_EXISTS;
 
 
 public class CredentialWriterImpl implements CredentialWriter {
@@ -112,8 +113,10 @@ public class CredentialWriterImpl implements CredentialWriter {
 
                 var result = writeCredentials(holderRequest, holderPid, holderDid, issuerPid, issuerDid, writeRequests, participantContextId);
                 if (result.failed()) {
-                    // the request remains open for another delivery attempt, so it must not stay leased
+                    // the request remains open for another delivery attempt, so it must not stay leased. The credentials
+                    // of this delivery that were stored before the failure must not be kept either
                     holderCredentialRequestStore.breakLease(holderRequest);
+                    throw new RollbackException(result);
                 }
                 return result;
             });
@@ -304,7 +307,10 @@ public class CredentialWriterImpl implements CredentialWriter {
             var createResult = credentialStore.create(resource);
 
             if (createResult.failed()) {
-                return from(createResult);
+                monitor.debug("Could not store credential '%s' delivered for request '%s': %s".formatted(resource.getId(), holderPid, createResult.getFailureDetail()));
+                return createResult.reason() == ALREADY_EXISTS
+                        ? ServiceResult.conflict("A delivered credential is already stored")
+                        : from(createResult);
             }
 
             var supersededResult = expireSupersededCredentials(resource, participantContextId);
@@ -449,8 +455,8 @@ public class CredentialWriterImpl implements CredentialWriter {
     }
 
     /**
-     * Rolls back a write whose credentials were stored, but whose request could not be updated, and carries its failure
-     * out of the transaction.
+     * Rolls back a write that failed after some of its credentials may have been stored, and carries its failure out of
+     * the transaction.
      */
     private static class RollbackException extends EdcException {
         private final ServiceResult<Void> failure;

@@ -20,6 +20,7 @@ import org.eclipse.edc.sql.translation.PostgresqlOperatorTranslator;
 import org.eclipse.edc.sql.translation.SqlQueryStatement;
 
 import static java.lang.String.format;
+import static org.eclipse.edc.sql.statement.SqlExecuteStatement.equalTo;
 
 public class BaseSqlDialectStatements implements KeyPairResourceStoreStatements {
     @Override
@@ -47,9 +48,8 @@ public class BaseSqlDialectStatements implements KeyPairResourceStoreStatements 
 
     @Override
     public String getUpdateTemplate() {
+        // the owner of a key pair never changes, so a key pair of another participant context is not updated
         return executeStatement()
-                .column(getIdColumn())
-                .column(getParticipantContextIdColumn())
                 .column(getTimestampColumn())
                 .column(getKeyIdColumn())
                 .column(getGroupNameColumn())
@@ -62,7 +62,7 @@ public class BaseSqlDialectStatements implements KeyPairResourceStoreStatements 
                 .column(getStateColumn())
                 .column(getKeyContextColumn())
                 .column(getUsageColumn())
-                .update(getTableName(), getIdColumn());
+                .update(getTableName(), equalTo(getParticipantContextIdColumn()), equalTo(getIdColumn()));
     }
 
     @Override
