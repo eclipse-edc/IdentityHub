@@ -18,14 +18,23 @@ import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyDescriptor;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyPairUsage;
 import org.eclipse.edc.spi.monitor.ConsoleMonitor;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtensionContext;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.ArgumentsProvider;
+import org.junit.jupiter.params.provider.ArgumentsSource;
+import org.junit.jupiter.params.support.ParameterDeclarations;
 
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Stream;
 
 import static org.eclipse.edc.junit.assertions.AbstractResultAssert.assertThat;
 
 class KeyDescriptorValidatorTest {
 
+    // the Ed25519 key of RFC 8037, Appendix A
+    private static final Map<String, Object> PUBLIC_JWK = Map.of("kty", "OKP", "crv", "Ed25519", "x", "11qYAYKxCrfVS_7TyWQHOg7hcvPapiMlrwIaaPcHURo");
     private final KeyDescriptorValidator validator = new KeyDescriptorValidator(new ConsoleMonitor());
 
     @Test
@@ -147,4 +156,39 @@ class KeyDescriptorValidatorTest {
                 .detail().isEqualTo("Either the public key is specified (PEM or JWK), or the generator params are provided, not both.");
     }
 
+    @Test
+    void validate_publicKeyJwk() {
+        var descriptor = KeyDescriptor.Builder.newInstance()
+                .usage(Set.of(KeyPairUsage.PRESENTATION_SIGNING))
+                .keyId("key-id")
+                .privateKeyAlias("test-alias")
+                .publicKeyJwk(PUBLIC_JWK)
+                .build();
+        assertThat(validator.validate(descriptor)).isSucceeded();
+    }
+
+    @ParameterizedTest
+    @ArgumentsSource(InvalidPublicKeyJwks.class)
+    void validate_publicKeyJwkInvalid(Map<String, Object> jwk, String expectedDetail) {
+        var descriptor = KeyDescriptor.Builder.newInstance()
+                .usage(Set.of(KeyPairUsage.PRESENTATION_SIGNING))
+                .keyId("key-id")
+                .privateKeyAlias("test-alias")
+                .publicKeyJwk(jwk)
+                .build();
+        assertThat(validator.validate(descriptor)).isFailed()
+                .detail().contains(expectedDetail);
+    }
+
+    private static class InvalidPublicKeyJwks implements ArgumentsProvider {
+        @Override
+        public Stream<? extends Arguments> provideArguments(ParameterDeclarations parameters, ExtensionContext context) {
+            return Stream.of(
+                    // a full key pair, pasted by mistake
+                    Arguments.of(Map.of("kty", "OKP", "crv", "Ed25519", "x", "11qYAYKxCrfVS_7TyWQHOg7hcvPapiMlrwIaaPcHURo", "d", "nWGxne_9WmC6hEr0kuwsxERJxWl7MmkZcDusAxyuf2A"), "must not contain private key material"),
+                    Arguments.of(Map.of("kty", "oct", "k", "nWGxne_9WmC6hEr0kuwsxERJxWl7MmkZcDusAxyuf2A"), "must not contain private key material"),
+                    Arguments.of(Map.of("foo", "bar"), "The public key JWK is invalid")
+            );
+        }
+    }
 }

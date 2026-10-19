@@ -42,10 +42,12 @@ import java.util.Set;
 public class TransitSigner implements JWSSigner {
     private final JCAContext jcaContext = new JCAContext();
     private final TransitEngine transitEngine;
+    private final String participantContextId;
     private final String keyName;
 
-    public TransitSigner(TransitEngine transitEngine, String keyName) {
+    public TransitSigner(TransitEngine transitEngine, String participantContextId, String keyName) {
         this.transitEngine = transitEngine;
+        this.participantContextId = participantContextId;
         this.keyName = keyName;
     }
 
@@ -53,7 +55,7 @@ public class TransitSigner implements JWSSigner {
     public Base64URL sign(JWSHeader header, byte[] signingInput) throws JOSEException {
         // signingInput is ASCII(BASE64URL(header) || '.' || BASE64URL(payload))
         var payload = new String(signingInput, StandardCharsets.US_ASCII);
-        var result = transitEngine.sign(keyName, payload);
+        var result = transitEngine.sign(participantContextId, keyName, payload);
         if (result.failed()) {
             throw new JOSEException("Transit signing failed: " + result.getFailureDetail());
         }

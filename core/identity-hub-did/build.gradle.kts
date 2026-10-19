@@ -7,6 +7,7 @@ dependencies {
     api(project(":spi:participant-context-spi"))
 
     implementation(project(":spi:keypair-spi"))
+    implementation(project(":core:lib:keypair-lib"))
     implementation(libs.edc.spi.core)
     implementation(libs.edc.lib.core)
     implementation(libs.edc.lib.controlplane)

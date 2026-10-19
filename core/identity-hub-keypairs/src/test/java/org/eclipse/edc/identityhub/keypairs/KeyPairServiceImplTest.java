@@ -514,6 +514,49 @@ class KeyPairServiceImplTest {
     }
 
     @Test
+    void addKeyPair_whenPublicKeyJwkIsPrivate_shouldFailWithoutStoringIt() {
+        Map<String, Object> privateJwk;
+        try {
+            // a full key pair, pasted by mistake
+            privateJwk = new OctetKeyPairGenerator(Curve.Ed25519).generate().toJSONObject();
+        } catch (JOSEException e) {
+            throw new RuntimeException(e);
+        }
+        var key = createKey().publicKeyJwk(privateJwk).publicKeyPem(null).keyGeneratorParams(null).build();
+
+        assertThat(keyPairService.addKeyPair(PARTICIPANT_ID, key, true)).isFailed()
+                .extracting(ServiceFailure::getReason).isEqualTo(ServiceFailure.Reason.BAD_REQUEST);
+        verifyNoInteractions(keyPairResourceStore, vault, observableMock);
+    }
+
+    @Test
+    void addKeyPair_whenGeneratorParamsInvalid_shouldFailBeforeTransaction() {
+        var key = createKey().publicKeyJwk(null).publicKeyPem(null).keyGeneratorParams(Map.of(
+                "algorithm", "RSA",
+                "length", 16384
+        )).build();
+
+        assertThat(keyPairService.addKeyPair(PARTICIPANT_ID, key, true)).isFailed()
+                .extracting(ServiceFailure::getReason).isEqualTo(ServiceFailure.Reason.BAD_REQUEST);
+        // the participant context is only looked up in the transaction
+        verifyNoInteractions(participantContextServiceMock, keyPairResourceStore, vault, observableMock);
+    }
+
+    @Test
+    void rotateKeyPair_whenSuccessorGeneratorParamsInvalid_shouldFailWithoutRotating() {
+        var oldKey = createKeyPairResource().build();
+        storeFinds(oldKey);
+        var newKey = createKey().publicKeyJwk(null).publicKeyPem(null).keyGeneratorParams(Map.of(
+                "algorithm", "EC",
+                "curve", "secp256k1"
+        )).build();
+
+        assertThat(keyPairService.rotateKeyPair(oldKey.getId(), newKey, 0)).isFailed()
+                .extracting(ServiceFailure::getReason).isEqualTo(ServiceFailure.Reason.BAD_REQUEST);
+        verifyNoInteractions(keyPairResourceStore, vault, observableMock);
+    }
+
+    @Test
     void addKeyPair_whenStoringPrivateKeyFails_shouldFail() {
         when(vault.storeSecret(anyString(), anyString(), anyString())).thenReturn(Result.failure("vault unavailable"));
         var key = createKey().publicKeyJwk(null).publicKeyPem(null).keyGeneratorParams(Map.of(
@@ -901,6 +944,7 @@ class KeyPairServiceImplTest {
         try {
             return new OctetKeyPairGenerator(Curve.Ed25519)
                     .generate()
+                    .toPublicJWK()
                     .toJSONObject();
         } catch (JOSEException e) {
             throw new RuntimeException(e);

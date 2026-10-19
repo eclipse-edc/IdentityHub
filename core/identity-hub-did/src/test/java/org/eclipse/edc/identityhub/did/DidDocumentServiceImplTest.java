@@ -19,6 +19,7 @@ import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.jwk.Curve;
 import com.nimbusds.jose.jwk.RSAKey;
 import com.nimbusds.jose.jwk.gen.ECKeyGenerator;
+import com.nimbusds.jose.jwk.gen.OctetSequenceKeyGenerator;
 import org.eclipse.edc.iam.did.spi.document.DidDocument;
 import org.eclipse.edc.iam.did.spi.document.Service;
 import org.eclipse.edc.iam.did.spi.document.VerificationMethod;
@@ -768,6 +769,69 @@ class DidDocumentServiceImplTest {
         verify(didResourceStoreMock).queryForUpdate(argThat(byDid(did)));
         verifyNoMoreInteractions(didResourceStoreMock);
         verify(publisherMock).publish(eq(did));
+    }
+
+    @SuppressWarnings("unchecked")
+    @Test
+    void onKeyPairActivated_withPrivateJwk_shouldOnlyPublishPublicKey() throws JOSEException {
+        var keyId = "key-id";
+        // e.g. a key pair that was stored with private key material before supplied JWKs were checked
+        var key = new ECKeyGenerator(Curve.P_256).keyID(keyId).generate();
+        var doc = createDidDocument().build();
+        var did = doc.getId();
+        var didResource = DidResource.Builder.newInstance().did(did).state(DidState.GENERATED).document(doc).build();
+
+        when(didResourceStoreMock.queryForUpdate(argThat(byParticipantInDidOrder(TEST_PARTICIPANT_ID)))).thenReturn(List.of(didResource));
+        when(didResourceStoreMock.update(any())).thenReturn(StoreResult.success());
+        when(didResourceStoreMock.queryForUpdate(argThat(byDid(did)))).thenReturn(List.of(didResource));
+        when(publisherMock.publish(did)).thenReturn(Result.success());
+
+        var event = EventEnvelope.Builder.newInstance()
+                .at(System.currentTimeMillis())
+                .id(UUID.randomUUID().toString())
+                .payload(KeyPairActivated.Builder.newInstance()
+                        .keyId(keyId)
+                        .keyPairResource(KeyPairResource.Builder.newPresentationSigning().id(UUID.randomUUID().toString()).build())
+                        .participantContextId("test-participant")
+                        .publicKey(key.toJSONString(), JSON_WEB_KEY_2020)
+                        .build())
+                .build();
+
+        service.on(event);
+
+        assertThat(doc.getVerificationMethod()).filteredOn(vm -> vm.getId().equals(keyId)).singleElement()
+                .satisfies(vm -> assertThat(vm.getPublicKeyJwk()).isEqualTo(key.toPublicJWK().toJSONObject()).doesNotContainKey("d"));
+        verify(publisherMock).publish(eq(did));
+    }
+
+    @SuppressWarnings("unchecked")
+    @Test
+    void onKeyPairActivated_withSymmetricJwk_shouldLogWarning() throws JOSEException {
+        var keyId = "key-id";
+        var doc = createDidDocument().build();
+        var did = doc.getId();
+        var didResource = DidResource.Builder.newInstance().did(did).state(DidState.GENERATED).document(doc).build();
+
+        when(didResourceStoreMock.queryForUpdate(argThat(byParticipantInDidOrder(TEST_PARTICIPANT_ID)))).thenReturn(List.of(didResource));
+
+        var event = EventEnvelope.Builder.newInstance()
+                .at(System.currentTimeMillis())
+                .id(UUID.randomUUID().toString())
+                .payload(KeyPairActivated.Builder.newInstance()
+                        .keyId(keyId)
+                        .keyPairResource(KeyPairResource.Builder.newPresentationSigning().id(UUID.randomUUID().toString()).build())
+                        .participantContextId("test-participant")
+                        .publicKey(new OctetSequenceKeyGenerator(256).keyID(keyId).generate().toJSONString(), JSON_WEB_KEY_2020)
+                        .build())
+                .build();
+
+        service.on(event);
+
+        verify(monitorMock).warning(anyString());
+        verify(didResourceStoreMock).queryForUpdate(argThat(byParticipantInDidOrder(TEST_PARTICIPANT_ID)));
+        verifyNoMoreInteractions(didResourceStoreMock);
+        verifyNoInteractions(publisherMock);
+        assertThat(doc.getVerificationMethod()).noneMatch(vm -> vm.getId().equals(keyId));
     }
 
     @SuppressWarnings("unchecked")

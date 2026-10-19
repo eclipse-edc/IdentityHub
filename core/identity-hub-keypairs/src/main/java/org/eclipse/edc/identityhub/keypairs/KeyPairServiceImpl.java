@@ -14,6 +14,7 @@
 
 package org.eclipse.edc.identityhub.keypairs;
 
+import com.nimbusds.jose.jwk.JWK;
 import io.opentelemetry.api.trace.SpanKind;
 import io.opentelemetry.instrumentation.annotations.WithSpan;
 import org.eclipse.edc.identityhub.spi.keypair.KeyPairService;
@@ -49,7 +50,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -82,6 +82,10 @@ public class KeyPairServiceImpl implements KeyPairService, EventSubscriber {
     @Override
     @WithSpan(value = "keypairs.add", kind = SpanKind.INTERNAL)
     public ServiceResult<Void> addKeyPair(String participantContextId, KeyDescriptor keyDescriptor, boolean makeDefault) {
+        var keyMaterial = createKeyMaterial(keyDescriptor);
+        if (keyMaterial.failed()) {
+            return keyMaterial.mapFailure();
+        }
 
         return transactionContext.execute(() -> {
 
@@ -97,7 +101,7 @@ public class KeyPairServiceImpl implements KeyPairService, EventSubscriber {
 
             // a failure is returned rather than thrown, so that the caller decides whether a surrounding transaction, e.g. the
             // one that creates the participant context, is rolled back. Nothing is written to the database when it happens.
-            return storePrivateKey(participantContextId, keyDescriptor)
+            return storePrivateKey(participantContextId, keyDescriptor, keyMaterial.getContent())
                     .compose(newKey -> createKeyPair(newKey, makeDefault))
                     .onSuccess(this::announceAdded)
                     .mapEmpty();
@@ -295,6 +299,11 @@ public class KeyPairServiceImpl implements KeyPairService, EventSubscriber {
      */
     private ServiceResult<Void> replaceKeyPair(String oldId, @Nullable KeyDescriptor successorDescriptor, boolean successorMayReuseKeyId,
                                                Consumer<KeyPairResource> takeOutOfUse, BiConsumer<KeyPairEventListener, KeyPairResource> announce) {
+        var successorKeyMaterial = successorDescriptor == null ? null : createKeyMaterial(successorDescriptor);
+        if (successorKeyMaterial != null && successorKeyMaterial.failed()) {
+            return successorKeyMaterial.mapFailure();
+        }
+
         ServiceResult<Replacement> result;
         try {
             result = transactionContext.execute(() -> {
@@ -324,7 +333,7 @@ public class KeyPairServiceImpl implements KeyPairService, EventSubscriber {
                     return check.mapFailure();
                 }
 
-                return storePrivateKey(participantContextId, successorDescriptor)
+                return storePrivateKey(participantContextId, successorDescriptor, successorKeyMaterial.getContent())
                         .compose(newKey -> writeReplacement(oldKey, newKey, wasDefault))
                         .onSuccess(successor -> {
                             // the outgoing old key pair is announced first: a revoked key pair is removed from the DID document, and
@@ -375,26 +384,20 @@ public class KeyPairServiceImpl implements KeyPairService, EventSubscriber {
     }
 
     /**
-     * Stores the private key of a key pair that is generated here, or takes the public key of one whose private key was
-     * stored in the vault beforehand.
-     * <p>
-     * The vault is not part of the transaction, so this happens before anything is written to the database, and the private
-     * key is deleted again if the key pair is not added after all, c.f. {@link #discardPrivateKey(NewKey)}. An existing
-     * secret is never overwritten: it may be the private key of another key pair, or any other secret of the participant
-     * context.
+     * Generates the key pair, or takes the supplied public key, of a key pair that is about to be added. Generating a key
+     * takes a while, so this happens before the transaction is opened.
      */
-    private ServiceResult<NewKey> storePrivateKey(String participantContextId, KeyDescriptor keyDescriptor) {
+    private ServiceResult<KeyMaterial> createKeyMaterial(KeyDescriptor keyDescriptor) {
         if (keyDescriptor.getKeyGeneratorParams() == null) {
-            // either take the public key from the JWK structure or the PEM field
-            var publicKeySerialized = Optional.ofNullable(keyDescriptor.getPublicKeyJwk())
-                    .map(m -> CryptoConverter.create(m).toJSONString())
-                    .orElseGet(() -> keyDescriptor.getPublicKeyPem().replace("\\n", "\n"));
-            return success(new NewKey(participantContextId, keyDescriptor, publicKeySerialized, false));
-        }
-
-        var alias = keyDescriptor.getPrivateKeyAlias();
-        if (vault.resolveSecret(participantContextId, alias) != null) {
-            return ServiceResult.conflict("A secret with alias '%s' already exists for participant context '%s'.".formatted(alias, participantContextId));
+            // either take the public key from the JWK structure or the PEM field. Only the public key is published, a JWK
+            // that contains private key material is rejected rather than stripped, because that key must be considered leaked.
+            if (keyDescriptor.getPublicKeyJwk() != null) {
+                var publicJwk = PublicKeyJwk.parse(keyDescriptor.getPublicKeyJwk());
+                return publicJwk.succeeded()
+                        ? success(new KeyMaterial(publicJwk.getContent().toJSONString(), null))
+                        : ServiceResult.badRequest(publicJwk.getFailureDetail());
+            }
+            return success(new KeyMaterial(keyDescriptor.getPublicKeyPem().replace("\\n", "\n"), null));
         }
 
         var keyPair = KeyPairGenerator.generateKeyPair(keyDescriptor.getKeyGeneratorParams());
@@ -402,11 +405,33 @@ public class KeyPairServiceImpl implements KeyPairService, EventSubscriber {
             return ServiceResult.badRequest(keyPair.getFailureDetail());
         }
         var privateJwk = CryptoConverter.createJwk(keyPair.getContent(), keyDescriptor.getKeyId());
-        var storeResult = vault.storeSecret(participantContextId, alias, privateJwk.toJSONString());
+        return success(new KeyMaterial(privateJwk.toPublicJWK().toJSONString(), privateJwk));
+    }
+
+    /**
+     * Stores the private key of a key pair that is generated here. The private key of a key pair whose public key is
+     * supplied was stored in the vault beforehand.
+     * <p>
+     * The vault is not part of the transaction, so this happens before anything is written to the database, and the private
+     * key is deleted again if the key pair is not added after all, c.f. {@link #discardPrivateKey(NewKey)}. An existing
+     * secret is never overwritten: it may be the private key of another key pair, or any other secret of the participant
+     * context.
+     */
+    private ServiceResult<NewKey> storePrivateKey(String participantContextId, KeyDescriptor keyDescriptor, KeyMaterial keyMaterial) {
+        if (keyMaterial.privateJwk() == null) {
+            return success(new NewKey(participantContextId, keyDescriptor, keyMaterial.publicKeySerialized(), false));
+        }
+
+        var alias = keyDescriptor.getPrivateKeyAlias();
+        if (vault.resolveSecret(participantContextId, alias) != null) {
+            return ServiceResult.conflict("A secret with alias '%s' already exists for participant context '%s'.".formatted(alias, participantContextId));
+        }
+
+        var storeResult = vault.storeSecret(participantContextId, alias, keyMaterial.privateJwk().toJSONString());
         if (storeResult.failed()) {
             return ServiceResult.unexpected("Failed to store the private key with alias '%s': %s".formatted(alias, storeResult.getFailureDetail()));
         }
-        return success(new NewKey(participantContextId, keyDescriptor, privateJwk.toPublicJWK().toJSONString(), true));
+        return success(new NewKey(participantContextId, keyDescriptor, keyMaterial.publicKeySerialized(), true));
     }
 
     /**
@@ -491,6 +516,14 @@ public class KeyPairServiceImpl implements KeyPairService, EventSubscriber {
         vault.deleteSecret(keyPair.getParticipantContextId(), keyPair.getPrivateKeyAlias())
                 .onFailure(f -> monitor.warning("Failed to delete the private key '%s' of key pair '%s', it must be deleted manually: %s"
                         .formatted(keyPair.getPrivateKeyAlias(), keyPair.getId(), f.getFailureDetail())));
+    }
+
+    /**
+     * The key material of a key pair that is about to be added, before it is stored.
+     *
+     * @param privateJwk the private key of a key pair that is generated here, or null if only its public key is supplied
+     */
+    private record KeyMaterial(String publicKeySerialized, @Nullable JWK privateJwk) {
     }
 
     /**

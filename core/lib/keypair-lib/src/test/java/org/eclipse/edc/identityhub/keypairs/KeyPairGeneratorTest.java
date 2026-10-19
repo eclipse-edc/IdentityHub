@@ -14,14 +14,12 @@
 
 package org.eclipse.edc.identityhub.keypairs;
 
-import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EmptySource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import java.security.AlgorithmParameters;
-import java.security.InvalidParameterException;
 import java.security.KeyPair;
 import java.security.NoSuchAlgorithmException;
 import java.security.interfaces.ECPrivateKey;
@@ -59,9 +57,22 @@ class KeyPairGeneratorTest {
     }
 
     @ParameterizedTest
-    @ValueSource(ints = { 0, 1, -1, Integer.MAX_VALUE })
-    void generateKeyPair_rsa_withInvalidLength(int invalidLength) {
-        Assertions.assertThatThrownBy(() -> KeyPairGenerator.generateKeyPair(Map.of("algorithm", "RSA", "length", invalidLength))).isInstanceOf(InvalidParameterException.class);
+    @ValueSource(ints = { 0, 1, -1, 1024, 2047, 8192, 16384, Integer.MAX_VALUE })
+    void generateKeyPair_rsa_withUnsupportedLength(int invalidLength) {
+        assertThat(KeyPairGenerator.generateKeyPair(Map.of("algorithm", "RSA", "length", invalidLength))).isFailed()
+                .detail().contains("Unsupported RSA key length: %d".formatted(invalidLength));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = { "foo", "", "2048.5", "99999999999" })
+    void generateKeyPair_rsa_withMalformedLength(String malformedLength) {
+        assertThat(KeyPairGenerator.generateKeyPair(Map.of("algorithm", "RSA", "length", malformedLength))).isFailed()
+                .detail().contains("Unsupported RSA key length");
+    }
+
+    @Test
+    void generateKeyPair_rsa_withLengthAsString() {
+        assertThat(KeyPairGenerator.generateKeyPair(Map.of("algorithm", "RSA", "length", "3072"))).isSucceeded();
     }
 
     @Test
@@ -89,7 +100,7 @@ class KeyPairGeneratorTest {
     }
 
     @ParameterizedTest()
-    @ValueSource(strings = { "secp256k1", "foobar" })
+    @ValueSource(strings = { "secp256k1", "secp192r1", "sect571r1", "foobar" })
     @EmptySource
     void generateKeyPair_ec_withInvalidCurve(String curve) {
         var ecResult = KeyPairGenerator.generateKeyPair(Map.of("algorithm", "EC", "curve", curve));
@@ -127,6 +138,13 @@ class KeyPairGeneratorTest {
     void generateKeyPair_noAlgorithm() {
         var result = KeyPairGenerator.generateKeyPair(Map.of("algorithm", "", "foo", "bar"));
         assertThat(result).isSucceeded()
+                .extracting(KeyPair::getPrivate)
+                .satisfies(k -> assertThat(k.getClass().getName()).isEqualTo("sun.security.ec.ed.EdDSAPrivateKeyImpl")); // not available at compile time
+    }
+
+    @Test
+    void generateKeyPair_algorithmMissing() {
+        assertThat(KeyPairGenerator.generateKeyPair(Map.of())).isSucceeded()
                 .extracting(KeyPair::getPrivate)
                 .satisfies(k -> assertThat(k.getClass().getName()).isEqualTo("sun.security.ec.ed.EdDSAPrivateKeyImpl")); // not available at compile time
     }

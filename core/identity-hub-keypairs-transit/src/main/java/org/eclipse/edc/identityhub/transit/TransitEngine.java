@@ -28,118 +28,115 @@ public interface TransitEngine {
     );
 
     /**
-     * Prefix for Transit key names. Key names follow the convention {@code participant_<participantContextId>_<keyId>}.
-     * The {@code participantContextId} segment is also the token-exchange {@code resource} used to obtain a vault token
-     * scoped (via the {@code participant} Vault role) to that participant's transit keys.
+     * Prefix for Transit key names. Key names follow the convention {@code participant_<participantContextId>_<privateKeyAlias>}.
      */
     String KEY_NAME_PREFIX = "participant_";
 
     /**
-     * Builds the Transit key name for a participant key: {@code participant_<participantContextId>_<keyId>}.
-     *
-     * @param participantContextId the participant context id (must not contain underscores)
-     * @param keyId                the key id / alias (must not contain underscores)
+     * Separates the segments of a Transit key name. The private key alias, i.e. the last segment, must not contain it.
      */
-    static String keyName(String participantContextId, String keyId) {
-        return KEY_NAME_PREFIX + participantContextId + "_" + keyId;
-    }
+    String KEY_NAME_SEPARATOR = "_";
 
     /**
-     * Extracts the participant context id from a key name produced by {@link #keyName(String, String)}, or
-     * {@code null} if the name does not follow the convention. The participant context id is everything between
-     * the {@link #KEY_NAME_PREFIX} and the last underscore (key ids must not contain underscores).
+     * Builds the Transit key name for a participant key: {@code participant_<participantContextId>_<privateKeyAlias>}.
+     *
+     * @param participantContextId the participant context id
+     * @param privateKeyAlias      the private key alias, which must not contain {@link #KEY_NAME_SEPARATOR}
      */
-    static String participantContextIdFromKeyName(String keyName) {
-        if (keyName != null && keyName.startsWith(KEY_NAME_PREFIX)) {
-            var lastSeparator = keyName.lastIndexOf('_');
-            if (lastSeparator > KEY_NAME_PREFIX.length()) {
-                return keyName.substring(KEY_NAME_PREFIX.length(), lastSeparator);
-            }
-        }
-        return null;
+    static String keyName(String participantContextId, String privateKeyAlias) {
+        return KEY_NAME_PREFIX + participantContextId + KEY_NAME_SEPARATOR + privateKeyAlias;
     }
 
     /**
      * Generates a new key with the given name. Note that keys are created with the {@code deletion_allowed} flag set to {@code true}.
      *
+     * @param participantContextId The ID of the participant context that owns the key. A Vault token scoped to it is used.
      * @param keyName The name of the key. Should not contain spaces or special characters.
      * @param keyType The type of key, i.e., the key algorithm and curve etc. Supported types are <a href="https://developer.hashicorp.com/vault/api-docs/secret/transit#type">here</a>
      * @return ServiceResult containing the generated TransitKeyDescriptor or error details.
      */
-    Result<TransitKeyDescriptor> generateKey(String keyName, String keyType);
+    Result<TransitKeyDescriptor> generateKey(String participantContextId, String keyName, String keyType);
 
     /**
      * Rotates the key with the given name by adding a new "version" of the key. Note that previous versions of the key are not deleted,
      * and they can still be used for encryption and decryption.
-     * Use {@link TransitEngine#setMinEncryptionKeyVersion(String, int)} and {@link TransitEngine#setMinDecryptionKeyVersion(String, int)} to
+     * Use {@link TransitEngine#setMinEncryptionKeyVersion(String, String, int)} and {@link TransitEngine#setMinDecryptionKeyVersion(String, String, int)} to
      * control which versions of the key are used for encryption and decryption.
      *
+     * @param participantContextId The ID of the participant context that owns the key. A Vault token scoped to it is used.
      * @param keyName The name of the key. Should not contain spaces or special characters.
      */
-    Result<Void> rotateKey(String keyName);
+    Result<Void> rotateKey(String participantContextId, String keyName);
 
     /**
      * Retrieves the key information with the given name.
      *
+     * @param participantContextId The ID of the participant context that owns the key. A Vault token scoped to it is used.
      * @param keyName The name of the key. Should not contain spaces or special characters.
      * @return ServiceResult containing the generated TransitKeyDescriptor or error details.
      */
-    Result<TransitKeyDescriptor> getKey(String keyName);
+    Result<TransitKeyDescriptor> getKey(String participantContextId, String keyName);
 
     /**
      * Sets the minimum version of the key that can be used for encryption.
      *
+     * @param participantContextId The ID of the participant context that owns the key. A Vault token scoped to it is used.
      * @param keyName    The name of the key. Should not contain spaces or special characters.
      * @param minVersion The minimum version number. Must be positive.
      * @return ServiceResult indicating success or failure.
      */
-    Result<Void> setMinEncryptionKeyVersion(String keyName, int minVersion);
+    Result<Void> setMinEncryptionKeyVersion(String participantContextId, String keyName, int minVersion);
 
     /**
      * Sets the minimum version of the key that can be used for decryption. A version of a key might not be usable for
      * <em>encryption</em> anymore, but it might be useful to allow decryption of older versions of the key.
      *
+     * @param participantContextId The ID of the participant context that owns the key. A Vault token scoped to it is used.
      * @param keyName    The name of the key. Should not contain spaces or special characters.
      * @param minVersion The minimum version number. Must be positive.
      * @return ServiceResult indicating success or failure.
      */
-    Result<Void> setMinDecryptionKeyVersion(String keyName, int minVersion);
+    Result<Void> setMinDecryptionKeyVersion(String participantContextId, String keyName, int minVersion);
 
     /**
      * Sets the minimum version of the key that is still stored by the Transit secret engine. Old keys might get deleted.
      * <p>
      * Note that the min-available version cannot be set if the min encryption version is not set.
      *
+     * @param participantContextId The ID of the participant context that owns the key. A Vault token scoped to it is used.
      * @param keyName    The name of the key. Should not contain spaces or special characters.
      * @param minVersion The minimum version number. Must be positive.
      * @return ServiceResult indicating success or failure.
      */
-    Result<Void> setMinAvailableVersion(String keyName, int minVersion);
+    Result<Void> setMinAvailableVersion(String participantContextId, String keyName, int minVersion);
 
     /**
      * Signs the given payload using the specified key.
      *
+     * @param participantContextId The ID of the participant context that owns the key. A Vault token scoped to it is used.
      * @param keyName The name of the key to use for signing.
      * @param payload The payload to be signed. The implementation will base64-encode the payload before sending it to Vault.
      * @return ServiceResult indicating success or failure, carrying the signature in the result.
      */
-    Result<String> sign(String keyName, String payload);
+    Result<String> sign(String participantContextId, String keyName, String payload);
 
     /**
      * Verifies the given signature against the given payload using the specified key.
      *
+     * @param participantContextId The ID of the participant context that owns the key. A Vault token scoped to it is used.
      * @param keyName   The name of the key to use for verification.
      * @param payload   The payload to be verified. The implementation will base64-encode the payload before sending it to Vault.
      * @param signature The signature to be verified.
      * @return ServiceResult indicating success or failure.
      */
-    Result<Void> verify(String keyName, String payload, String signature);
+    Result<Void> verify(String participantContextId, String keyName, String payload, String signature);
 
     /**
      * Deletes the key with the given name.
      *
+     * @param participantContextId the ID of the participant context that owns the key. A Vault token scoped to it is used.
      * @param keyName the name of the key to delete
      * @return ServiceResult indicating success or failure.
      */
-    Result<Void> deleteKey(String keyName);
+    Result<Void> deleteKey(String participantContextId, String keyName);
 }

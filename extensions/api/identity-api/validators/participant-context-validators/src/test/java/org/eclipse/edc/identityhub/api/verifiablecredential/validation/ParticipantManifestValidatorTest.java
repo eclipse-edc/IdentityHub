@@ -50,7 +50,7 @@ class ParticipantManifestValidatorTest {
                 .usage(Set.of(KeyPairUsage.PRESENTATION_SIGNING))
                 .keyId("key-id")
                 .privateKeyAlias("alias")
-                .publicKeyJwk(Map.of("foo", "bar"));
+                .publicKeyJwk(Map.of("kty", "OKP", "crv", "Ed25519", "x", "11qYAYKxCrfVS_7TyWQHOg7hcvPapiMlrwIaaPcHURo"));
     }
 
     @Test
