@@ -20,6 +20,7 @@ import org.eclipse.edc.sql.translation.PostgresqlOperatorTranslator;
 import org.eclipse.edc.sql.translation.SqlQueryStatement;
 
 import static java.lang.String.format;
+import static org.eclipse.edc.sql.statement.SqlExecuteStatement.equalTo;
 
 public class BaseSqlDialectStatements implements CredentialStoreStatements {
     @Override
@@ -46,8 +47,8 @@ public class BaseSqlDialectStatements implements CredentialStoreStatements {
 
     @Override
     public String getUpdateTemplate() {
+        // a credential is identified by its owner and its ID, so neither is changed
         return executeStatement()
-                .column(getIdColumn())
                 .column(getCreateTimestampColumn())
                 .column(getIssuerIdColumn())
                 .column(getHolderIdColumn())
@@ -58,20 +59,18 @@ public class BaseSqlDialectStatements implements CredentialStoreStatements {
                 .column(getVcFormatColumn())
                 .column(getRawVcColumn())
                 .jsonColumn(getVerifiableCredentialColumn())
-                .column(getParticipantContextIdColumn())
                 .column(getUsageColumn())
-                .update(getCredentialResourceTable(), getIdColumn());
+                .update(getCredentialResourceTable(), equalTo(getParticipantContextIdColumn()), equalTo(getIdColumn()));
     }
 
     @Override
     public String getDeleteByIdTemplate() {
-        return executeStatement().delete(getCredentialResourceTable(), getIdColumn());
+        return executeStatement().delete(getCredentialResourceTable(), equalTo(getParticipantContextIdColumn()), equalTo(getIdColumn()));
     }
 
     @Override
     public String getFindByIdTemplate() {
-        return format("SELECT * FROM %s WHERE %s = ?", getCredentialResourceTable(), getIdColumn());
-
+        return format("SELECT * FROM %s WHERE %s = ? AND %s = ?", getCredentialResourceTable(), getParticipantContextIdColumn(), getIdColumn());
     }
 
     @Override

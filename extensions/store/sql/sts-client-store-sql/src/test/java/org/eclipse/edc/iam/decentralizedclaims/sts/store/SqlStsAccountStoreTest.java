@@ -14,6 +14,7 @@
 
 package org.eclipse.edc.iam.decentralizedclaims.sts.store;
 
+import org.assertj.core.api.Assertions;
 import org.eclipse.edc.iam.decentralizedclaims.sts.spi.store.StsAccountStore;
 import org.eclipse.edc.iam.decentralizedclaims.sts.spi.store.fixtures.StsAccountStoreTestBase;
 import org.eclipse.edc.iam.decentralizedclaims.sts.store.schema.BaseSqlDialectStatements;
@@ -26,7 +27,12 @@ import org.eclipse.edc.sql.QueryExecutor;
 import org.eclipse.edc.sql.testfixtures.PostgresqlStoreSetupExtension;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+
+import static org.eclipse.edc.iam.decentralizedclaims.sts.spi.store.fixtures.TestFunctions.createClient;
+import static org.eclipse.edc.iam.decentralizedclaims.sts.spi.store.fixtures.TestFunctions.createClientBuilder;
+import static org.eclipse.edc.junit.assertions.AbstractResultAssert.assertThat;
 
 @ComponentTest
 @ExtendWith(PostgresqlStoreSetupExtension.class)
@@ -51,6 +57,26 @@ public class SqlStsAccountStoreTest extends StsAccountStoreTestBase {
     @AfterEach
     void tearDown(PostgresqlStoreSetupExtension setupExtension) {
         setupExtension.runQuery("DROP TABLE " + sqlStatements.getStsClientTable() + " CASCADE");
+    }
+
+    @Test
+    void update_whenParticipantContextChanges_shouldReturnNotFound() {
+        var account = createClient("account-id");
+        stsClientStore.create(account);
+
+        var moved = createClientBuilder(account.getId())
+                .clientId(account.getClientId())
+                .did(account.getDid())
+                .secretAlias("other-secret")
+                .participantContextId("other-participant")
+                .build();
+
+        assertThat(stsClientStore.update(moved)).isFailed();
+        assertThat(stsClientStore.findById(account.getId())).isSucceeded()
+                .satisfies(found -> {
+                    Assertions.assertThat(found.getParticipantContextId()).isEqualTo(account.getParticipantContextId());
+                    Assertions.assertThat(found.getSecretAlias()).isEqualTo(account.getSecretAlias());
+                });
     }
 
     @Override

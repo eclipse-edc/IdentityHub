@@ -77,11 +77,11 @@ public class CredentialStatusServiceImpl implements CredentialStatusService {
     }
 
     @Override
-    public ServiceResult<Void> revokeCredential(String holderCredentialId) {
+    public ServiceResult<Void> revokeCredential(String participantContextId, String holderCredentialId) {
         try {
             return transactionContext.execute(() -> {
 
-                var result = getCredential(holderCredentialId)
+                var result = getCredential(participantContextId, holderCredentialId)
                         .compose(this::getRevocationInfo);
 
                 if (result.failed()) {
@@ -105,7 +105,7 @@ public class CredentialStatusServiceImpl implements CredentialStatusService {
                 }
 
                 return updateStatusCredential(revocationInfo.statusListCredential())
-                        .compose(updatedStatusListCredential -> getCredential(holderCredentialId)
+                        .compose(updatedStatusListCredential -> getCredential(participantContextId, holderCredentialId)
                                 .onSuccess(VerifiableCredentialResource::revoke)
                                 .compose(userCredential -> update(updatedStatusListCredential, userCredential))
                                 .compose(v -> publish(updatedStatusListCredential))
@@ -117,18 +117,18 @@ public class CredentialStatusServiceImpl implements CredentialStatusService {
     }
 
     @Override
-    public ServiceResult<Void> suspendCredential(String credentialId, @Nullable String reason) {
+    public ServiceResult<Void> suspendCredential(String participantContextId, String credentialId, @Nullable String reason) {
         throw new UnsupportedOperationException("Not supported by this implementation.");
     }
 
     @Override
-    public ServiceResult<Void> resumeCredential(String credentialId, @Nullable String reason) {
+    public ServiceResult<Void> resumeCredential(String participantContextId, String credentialId, @Nullable String reason) {
         throw new UnsupportedOperationException("Not supported by this implementation.");
     }
 
     @Override
-    public ServiceResult<String> getCredentialStatus(String credentialId) {
-        return transactionContext.execute(() -> getCredential(credentialId)
+    public ServiceResult<String> getCredentialStatus(String participantContextId, String credentialId) {
+        return transactionContext.execute(() -> getCredential(participantContextId, credentialId)
                 .compose(this::getRevocationInfo)
                 .compose(r -> from(r.getStatus())));
     }
@@ -139,8 +139,8 @@ public class CredentialStatusServiceImpl implements CredentialStatusService {
     }
 
     @Override
-    public ServiceResult<VerifiableCredentialResource> getCredentialById(String credentialId) {
-        return getCredential(credentialId);
+    public ServiceResult<VerifiableCredentialResource> getCredentialById(String participantContextId, String credentialId) {
+        return getCredential(participantContextId, credentialId);
     }
 
     /**
@@ -173,8 +173,8 @@ public class CredentialStatusServiceImpl implements CredentialStatusService {
         return success();
     }
 
-    private ServiceResult<VerifiableCredentialResource> getCredential(String credentialId) {
-        return credentialStore.findById(credentialId).flatMap(ServiceResult::from);
+    private ServiceResult<VerifiableCredentialResource> getCredential(String participantContextId, String credentialId) {
+        return credentialStore.findById(participantContextId, credentialId).flatMap(ServiceResult::from);
     }
 
     /**

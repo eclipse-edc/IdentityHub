@@ -113,7 +113,6 @@ public class DcpIssuanceHolderAttestationTest {
 
             var request = createObjectBuilder()
                     .add("issuerDid", issuerDid)
-                    .add("holderPid", "test-request-id")
                     .add("credentials", Json.createArrayBuilder()
                             .add(createObjectBuilder()
                                     .add("format", "VC1_0_JWT")
@@ -131,7 +130,7 @@ public class DcpIssuanceHolderAttestationTest {
                     .then()
                     .log().ifValidationFails()
                     .statusCode(201)
-                    .header("Location", Matchers.endsWith("/credentials/request/test-request-id"));
+                    .header("Location", Matchers.containsString("/credentials/request/"));
 
             await().untilAsserted(() -> assertThat(identityHub.getCredentialsForParticipant(participantId))
                     .hasSize(1)

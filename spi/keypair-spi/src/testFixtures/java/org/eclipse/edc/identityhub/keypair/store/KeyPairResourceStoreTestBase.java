@@ -131,7 +131,7 @@ public abstract class KeyPairResourceStoreTestBase {
     @Test
     void query_byIdAndState() {
         var kp1 = createKeyPairResource().id("id1").state(KeyPairState.ACTIVATED).build();
-        var kp2 = createKeyPairResource().id("id2").state(KeyPairState.CREATED).build();
+        var kp2 = createKeyPairResource().id("id2").keyId("test-key-2").state(KeyPairState.CREATED).build();
         var kp3 = createKeyPairResource().id("id3").state(KeyPairState.REVOKED).build();
         var kp4 = createKeyPairResource().id("id4").state(KeyPairState.ROTATED).build();
 

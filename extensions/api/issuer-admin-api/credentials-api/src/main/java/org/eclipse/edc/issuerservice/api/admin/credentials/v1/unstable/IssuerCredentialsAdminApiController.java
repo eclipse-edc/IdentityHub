@@ -81,7 +81,7 @@ public class IssuerCredentialsAdminApiController implements IssuerCredentialsAdm
     @Override
     public void revokeCredential(@PathParam("participantContextId") String participantContextId, @PathParam("credentialId") String credentialId, @Context SecurityContext context) {
         authorizationService.authorize(context, participantContextId, credentialId, VerifiableCredentialResource.class)
-                .compose(u -> credentialStatusService.revokeCredential(credentialId))
+                .compose(u -> credentialStatusService.revokeCredential(participantContextId, credentialId))
                 .orElseThrow(exceptionMapper(VerifiableCredential.class, credentialId));
     }
 
@@ -107,7 +107,7 @@ public class IssuerCredentialsAdminApiController implements IssuerCredentialsAdm
     @Override
     public CredentialStatusResponse checkRevocationStatus(@PathParam("participantContextId") String participantContextId, @PathParam("credentialId") String credentialId, @Context SecurityContext context) {
         return authorizationService.authorize(context, participantContextId, credentialId, VerifiableCredentialResource.class)
-                .compose(u -> credentialStatusService.getCredentialStatus(credentialId))
+                .compose(u -> credentialStatusService.getCredentialStatus(participantContextId, credentialId))
                 .map(status -> new CredentialStatusResponse(credentialId, status, null))
                 .orElseThrow(exceptionMapper(VerifiableCredential.class, credentialId));
     }

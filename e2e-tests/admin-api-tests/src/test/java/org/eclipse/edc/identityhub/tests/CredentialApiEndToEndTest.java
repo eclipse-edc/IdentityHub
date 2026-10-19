@@ -160,7 +160,7 @@ public class CredentialApiEndToEndTest {
         @AfterEach
         void teardown(CredentialStore credentialStore, IdentityHubParticipantContextService pcService, HolderStore holderStore) {
             credentialStore.query(QuerySpec.max()).getContent()
-                    .forEach(vcr -> credentialStore.deleteById(vcr.getId()));
+                    .forEach(vcr -> credentialStore.deleteById(vcr.getParticipantContextId(), vcr.getId()));
 
             pcService.query(QuerySpec.max()).getContent()
                     .forEach(pc -> pcService.deleteParticipantContext(pc.getParticipantContextId()).getContent());
@@ -187,7 +187,7 @@ public class CredentialApiEndToEndTest {
                     .statusCode(204);
 
             // verify that the status list credential's bitstring has changed
-            var updatedBitstring = credentialStore.findById(statusListCredential.getId()).getContent()
+            var updatedBitstring = credentialStore.findById(statusListCredential.getParticipantContextId(), statusListCredential.getId()).getContent()
                     .getVerifiableCredential().credential().getCredentialSubject().get(0).getClaim("", "encodedList");
             assertThat(updatedBitstring).isNotEqualTo(originalBitstring);
         }
@@ -210,7 +210,7 @@ public class CredentialApiEndToEndTest {
                     .statusCode(204);
 
             // verify that the status list credential's bitstring has NOT changed
-            var updatedBitstring = credentialStore.findById(statusListCredential.getId()).getContent()
+            var updatedBitstring = credentialStore.findById(statusListCredential.getParticipantContextId(), statusListCredential.getId()).getContent()
                     .getVerifiableCredential().credential().getCredentialSubject().get(0).getClaim("", "encodedList");
             assertThat(updatedBitstring).isEqualTo(originalBitstring);
         }

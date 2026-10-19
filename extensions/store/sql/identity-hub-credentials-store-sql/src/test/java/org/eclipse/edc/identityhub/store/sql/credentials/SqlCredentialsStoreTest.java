@@ -69,6 +69,42 @@ class SqlCredentialsStoreTest extends CredentialStoreTestBase {
     }
 
     @Test
+    void schema_migratesTableWithCredentialIdsUniqueAcrossParticipantContexts(PostgresqlStoreSetupExtension extension) {
+        extension.runQuery("DROP TABLE " + statements.getCredentialResourceTable() + " CASCADE");
+        extension.runQuery("""
+                CREATE TABLE credential_resource
+                (
+                    id                     VARCHAR PRIMARY KEY NOT NULL,
+                    create_timestamp       BIGINT              NOT NULL,
+                    issuer_id              VARCHAR             NOT NULL,
+                    holder_id              VARCHAR             NOT NULL,
+                    vc_state               INTEGER             NOT NULL,
+                    metadata               JSON DEFAULT '{}',
+                    issuance_policy        JSON,
+                    reissuance_policy      JSON,
+                    raw_vc                 VARCHAR,
+                    vc_format              INTEGER             NOT NULL,
+                    verifiable_credential  JSON                NOT NULL,
+                    participant_context_id VARCHAR,
+                    usage                  VARCHAR             NOT NULL
+                );
+                CREATE UNIQUE INDEX credential_resource_credential_id_uindex ON credential_resource USING btree (id);
+                """);
+        var credential = createCredential();
+        store.create(credential);
+
+        // the schema is applied on every start, so it must be repeatable
+        var schema = TestUtils.getResourceFileContentAsString("credentials-schema.sql");
+        extension.runQuery(schema);
+        extension.runQuery(schema);
+
+        var other = createCredentialBuilder().id(credential.getId()).participantContextId("other-participant").build();
+        assertThat(store.create(other).succeeded()).isTrue();
+        assertThat(store.create(credential).failed()).isTrue();
+        assertThat(store.query(QuerySpec.max()).getContent()).hasSize(2);
+    }
+
+    @Test
     void queryForUpdate_locksEntriesUntilTransactionCompletes(PostgresqlStoreSetupExtension extension, QueryExecutor queryExecutor) throws Exception {
         var transactionContext = new LocalTransactionContext(mock(Monitor.class));
         var transactionalStore = createTransactionalStore(extension, queryExecutor, transactionContext);

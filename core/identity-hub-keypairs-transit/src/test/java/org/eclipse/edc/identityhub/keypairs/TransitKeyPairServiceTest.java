@@ -533,13 +533,16 @@ class TransitKeyPairServiceTest {
         void revokeKey_whenStoreCreateFails_shouldFail() {
             var oldKey = createKeyPairResource().build();
             when(keyPairResourceStore.query(any())).thenReturn(success(List.of(oldKey)));
+            when(keyPairResourceStore.update(any())).thenReturn(StoreResult.success());
             when(keyPairResourceStore.create(any())).thenReturn(StoreResult.generalError("create failed"));
             transitRotates();
 
             assertThat(keyPairService.revokeKey(oldKey.getId(), null)).isFailed();
 
-            verify(keyPairResourceStore).create(any());
-            verify(keyPairResourceStore, never()).update(any());
+            // the old key pair is written first, because the successor keeps its key ID, and the write is rolled back
+            var inOrder = inOrder(keyPairResourceStore);
+            inOrder.verify(keyPairResourceStore).update(any());
+            inOrder.verify(keyPairResourceStore).create(any());
             assertThat(transactionContext.isRolledBack(1)).isTrue();
             verify(monitor).severe(contains("could not be updated"));
             verifyNoMoreInteractions(observableMock);

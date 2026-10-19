@@ -20,6 +20,7 @@ import org.eclipse.edc.sql.translation.PostgresqlOperatorTranslator;
 import org.eclipse.edc.sql.translation.SqlQueryStatement;
 
 import static java.lang.String.format;
+import static org.eclipse.edc.sql.statement.SqlExecuteStatement.equalTo;
 
 public class BaseSqlDialectStatements implements DidResourceStatements {
     @Override
@@ -39,14 +40,13 @@ public class BaseSqlDialectStatements implements DidResourceStatements {
 
     @Override
     public String getUpdateTemplate() {
+        // the owner of a DID never changes, so a DID of another participant context is not updated
         return executeStatement()
-                .column(getIdColumn())
                 .column(getStateColumn())
                 .column(getCreateTimestampColumn())
                 .column(getStateTimestampColumn())
                 .jsonColumn(getDidDocumentColumn())
-                .column(getParticipantContextId())
-                .update(getDidResourceTableName(), getIdColumn());
+                .update(getDidResourceTableName(), equalTo(getParticipantContextId()), equalTo(getIdColumn()));
     }
 
     @Override

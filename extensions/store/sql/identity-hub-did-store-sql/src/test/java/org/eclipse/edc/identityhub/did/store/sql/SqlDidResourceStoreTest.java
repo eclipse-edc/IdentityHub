@@ -70,6 +70,18 @@ class SqlDidResourceStoreTest extends DidResourceStoreTestBase {
     }
 
     @Test
+    void update_whenParticipantContextChanges_shouldReturnNotFound() {
+        var did = "did:web:example.com:owned";
+        store.save(didResource(did, "test-participant").build());
+
+        assertThat(store.update(didResource(did, "other-participant").state(DidState.PUBLISHED).build()).failed()).isTrue();
+        assertThat(store.findById(did)).satisfies(resource -> {
+            assertThat(resource.getParticipantContextId()).isEqualTo("test-participant");
+            assertThat(resource.getState()).isEqualTo(DidState.INITIAL.code());
+        });
+    }
+
+    @Test
     void queryForUpdate_locksEntriesUntilTransactionCompletes(PostgresqlStoreSetupExtension extension, QueryExecutor queryExecutor) throws Exception {
         var transactionContext = new LocalTransactionContext(mock(Monitor.class));
         var transactionalStore = createTransactionalStore(extension, queryExecutor, transactionContext);
@@ -132,5 +144,13 @@ class SqlDidResourceStoreTest extends DidResourceStoreTestBase {
             Thread.currentThread().interrupt();
             throw new RuntimeException(e);
         }
+    }
+
+    private DidResource.Builder didResource(String did, String participantContextId) {
+        return DidResource.Builder.newInstance()
+                .did(did)
+                .participantContextId(participantContextId)
+                .document(DidDocument.Builder.newInstance().id(did).build())
+                .state(DidState.INITIAL);
     }
 }

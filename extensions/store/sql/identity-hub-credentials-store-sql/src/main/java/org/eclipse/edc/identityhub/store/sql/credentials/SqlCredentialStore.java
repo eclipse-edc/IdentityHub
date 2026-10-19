@@ -61,7 +61,7 @@ public class SqlCredentialStore extends AbstractSqlStore implements CredentialSt
         var id = credentialResource.getId();
         return transactionContext.execute(() -> {
             try (var connection = getConnection()) {
-                if (findByIdInternal(connection, id) != null) {
+                if (findByIdInternal(connection, credentialResource.getParticipantContextId(), id) != null) {
                     return alreadyExists(alreadyExistsErrorMessage(id));
                 }
 
@@ -116,15 +116,13 @@ public class SqlCredentialStore extends AbstractSqlStore implements CredentialSt
 
     @Override
     public StoreResult<Void> update(VerifiableCredentialResource credentialResource) {
-        var id = credentialResource.getId();
-
         Objects.requireNonNull(credentialResource);
-        Objects.requireNonNull(id);
+        var id = Objects.requireNonNull(credentialResource.getId());
+        var participantContextId = credentialResource.getParticipantContextId();
         return transactionContext.execute(() -> {
             try (var connection = getConnection()) {
-                if (findByIdInternal(connection, id) != null) {
+                if (findByIdInternal(connection, participantContextId, id) != null) {
                     queryExecutor.execute(connection, statements.getUpdateTemplate(),
-                            id,
                             credentialResource.getTimestamp(),
                             credentialResource.getIssuerId(),
                             credentialResource.getHolderId(),
@@ -135,8 +133,8 @@ public class SqlCredentialStore extends AbstractSqlStore implements CredentialSt
                             credentialResource.getVerifiableCredential().format().ordinal(),
                             credentialResource.getVerifiableCredential().rawVc(),
                             toJson(credentialResource.getVerifiableCredential().credential()),
-                            credentialResource.getParticipantContextId(),
                             credentialResource.getUsage().toString(),
+                            participantContextId,
                             id);
                     return StoreResult.success();
                 }
@@ -148,13 +146,13 @@ public class SqlCredentialStore extends AbstractSqlStore implements CredentialSt
     }
 
     @Override
-    public StoreResult<Void> deleteById(String id) {
+    public StoreResult<Void> deleteById(String participantContextId, String id) {
         Objects.requireNonNull(id);
         return transactionContext.execute(() -> {
             try (var connection = getConnection()) {
-                if (findByIdInternal(connection, id) != null) {
+                if (findByIdInternal(connection, participantContextId, id) != null) {
                     var stmt = statements.getDeleteByIdTemplate();
-                    queryExecutor.execute(connection, stmt, id);
+                    queryExecutor.execute(connection, stmt, participantContextId, id);
                     return success();
                 }
                 return StoreResult.notFound(notFoundErrorMessage(id));
@@ -165,11 +163,11 @@ public class SqlCredentialStore extends AbstractSqlStore implements CredentialSt
     }
 
     @Override
-    public StoreResult<VerifiableCredentialResource> findById(String credentialId) {
+    public StoreResult<VerifiableCredentialResource> findById(String participantContextId, String credentialId) {
         Objects.requireNonNull(credentialId);
         return transactionContext.execute(() -> {
             try (var connection = getConnection()) {
-                return ofNullable(findByIdInternal(connection, credentialId))
+                return ofNullable(findByIdInternal(connection, participantContextId, credentialId))
                         .map(StoreResult::success)
                         .orElseGet(() -> StoreResult.notFound(notFoundErrorMessage(credentialId)));
             } catch (SQLException e) {
@@ -178,10 +176,10 @@ public class SqlCredentialStore extends AbstractSqlStore implements CredentialSt
         });
     }
 
-    private VerifiableCredentialResource findByIdInternal(Connection connection, String id) {
+    private VerifiableCredentialResource findByIdInternal(Connection connection, String participantContextId, String id) {
         return transactionContext.execute(() -> {
             var stmt = statements.getFindByIdTemplate();
-            return queryExecutor.single(connection, false, this::mapResultSet, stmt, id);
+            return queryExecutor.single(connection, false, this::mapResultSet, stmt, participantContextId, id);
         });
     }
 

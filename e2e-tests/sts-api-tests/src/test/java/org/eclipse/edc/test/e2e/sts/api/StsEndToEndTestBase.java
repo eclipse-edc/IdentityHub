@@ -47,9 +47,10 @@ public abstract class StsEndToEndTestBase {
 
         var pem = loadResourceFile("ec-privatekey.pem");
         vault.storeSecret(client.getParticipantContextId(), keyAlias, pem);
+        // all clients belong to the same participant context, which may have only one key pair in use per key ID
         keyPairStore.create(KeyPairResource.Builder.newTokenSigning()
                 .id(UUID.randomUUID().toString())
-                .keyId("key1")
+                .keyId("key-" + clientId)
                 .participantContextId(client.getParticipantContextId())
                 .privateKeyAlias(keyAlias)
                 .serializedPublicKey(pem)

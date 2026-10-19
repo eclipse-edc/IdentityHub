@@ -32,3 +32,15 @@ CREATE TABLE IF NOT EXISTS keypair_resource
 );
 
 CREATE INDEX IF NOT EXISTS keypair_resource_participant_context_id ON keypair_resource (participant_context_id);
+-- a participant context has at most one key pair per key ID that is in use (state CREATED or ACTIVATED). A rotated key
+-- pair is not included, because a rotated Transit key keeps its key ID. A table that already holds such duplicates is
+-- left as it is, with a warning, until they are rotated, revoked or deleted
+DO
+$$
+    BEGIN
+        CREATE UNIQUE INDEX IF NOT EXISTS keypair_resource_participant_key_id ON keypair_resource (participant_context_id, key_id) WHERE state IN (100, 200);
+    EXCEPTION
+        WHEN unique_violation THEN
+            RAISE WARNING 'Index keypair_resource_participant_key_id not created: a participant context has several key pairs in use with the same key ID';
+    END
+$$;

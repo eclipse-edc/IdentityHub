@@ -629,7 +629,7 @@ class KeyPairServiceImplTest {
     }
 
     @Test
-    void revokeKey_withNewKey_shouldStoreSuccessorFirstAndDeleteOldPrivateKeyLast() {
+    void revokeKey_withNewKey_shouldRevokeOldKeyFirstAndDeleteOldPrivateKeyLast() {
         var oldId = "old-id";
         var oldKey = createKeyPairResource().id(oldId).build();
         storeFinds(oldKey);
@@ -651,11 +651,11 @@ class KeyPairServiceImplTest {
         assertThat(keyPairService.revokeKey(oldId, newKey)).isSucceeded();
 
         // the successor's private key is stored before anything is written, and the events, which may take locks, come
-        // last. The old key pair is announced first, because its successor may have the same key ID
+        // last. The old key pair is written and announced first, because its successor may have the same key ID
         var inOrder = inOrder(vault, keyPairResourceStore, listener);
         inOrder.verify(vault).storeSecret(anyString(), eq(newKey.getPrivateKeyAlias()), anyString());
-        inOrder.verify(keyPairResourceStore).create(argThat(kpr -> kpr.getKeyId().equals(NEW_KEY_ID)));
         inOrder.verify(keyPairResourceStore).update(argThat(kpr -> kpr.getId().equals(oldId)));
+        inOrder.verify(keyPairResourceStore).create(argThat(kpr -> kpr.getKeyId().equals(NEW_KEY_ID)));
         inOrder.verify(listener).revoked(argThat(kpr -> kpr.getId().equals(oldId)), eq(newKey));
         inOrder.verify(listener).added(argThat(kpr -> kpr.getKeyId().equals(NEW_KEY_ID)), any());
         inOrder.verify(listener).activated(argThat(kpr -> kpr.getKeyId().equals(NEW_KEY_ID)), any());
@@ -665,7 +665,7 @@ class KeyPairServiceImplTest {
     }
 
     @Test
-    void revokeKey_withNewKey_whenUpdatingOldKeyFails_shouldRollBack() {
+    void revokeKey_withNewKey_whenUpdatingOldKeyFails_shouldNotCreateSuccessor() {
         var oldId = "old-id";
         var oldKey = createKeyPairResource().id(oldId).build();
         storeFinds(oldKey);
@@ -677,8 +677,7 @@ class KeyPairServiceImplTest {
 
         assertThat(keyPairService.revokeKey(oldId, newKey)).isFailed().detail().isEqualTo("update failed");
 
-        // the successor was written already, and must not stay without the old key being revoked
-        assertThat(transactionContext.isRolledBack(1)).isTrue();
+        verify(keyPairResourceStore, never()).create(any());
         verify(vault).deleteSecret(PARTICIPANT_ID, newKey.getPrivateKeyAlias());
         // the old key stays usable
         verify(vault, never()).deleteSecret(anyString(), eq(oldKey.getPrivateKeyAlias()));
@@ -686,7 +685,7 @@ class KeyPairServiceImplTest {
     }
 
     @Test
-    void revokeKey_withNewKey_whenCreatingSuccessorFails_shouldNotRevoke() {
+    void revokeKey_withNewKey_whenCreatingSuccessorFails_shouldRollBack() {
         var oldId = "old-id";
         var oldKey = createKeyPairResource().id(oldId).build();
         storeFinds(oldKey);
@@ -698,7 +697,8 @@ class KeyPairServiceImplTest {
 
         assertThat(keyPairService.revokeKey(oldId, newKey)).isFailed().detail().isEqualTo("key pair exists");
 
-        verify(keyPairResourceStore, never()).update(any());
+        // the old key pair was revoked already, and must not stay revoked without its successor
+        assertThat(transactionContext.isRolledBack(1)).isTrue();
         verify(vault).deleteSecret(PARTICIPANT_ID, newKey.getPrivateKeyAlias());
         verify(vault, never()).deleteSecret(anyString(), eq(oldKey.getPrivateKeyAlias()));
         verifyNoInteractions(observableMock);

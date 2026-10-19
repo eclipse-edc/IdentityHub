@@ -81,18 +81,14 @@ public class SqlDidResourceStore extends AbstractSqlStore implements DidResource
         Objects.requireNonNull(did);
         return transactionContext.execute(() -> {
             try (var connection = getConnection()) {
-                if (findById(did) != null) {
-                    queryExecutor.execute(connection, statements.getUpdateTemplate(),
-                            did,
-                            resource.getState(),
-                            resource.getCreateTimestamp(),
-                            resource.getStateTimestamp(),
-                            toJson(resource.getDocument()),
-                            resource.getParticipantContextId(),
-                            did);
-                    return StoreResult.success();
-                }
-                return StoreResult.notFound(notFoundErrorMessage(did));
+                var updated = queryExecutor.execute(connection, statements.getUpdateTemplate(),
+                        resource.getState(),
+                        resource.getCreateTimestamp(),
+                        resource.getStateTimestamp(),
+                        toJson(resource.getDocument()),
+                        resource.getParticipantContextId(),
+                        did);
+                return updated == 0 ? StoreResult.notFound(notFoundErrorMessage(did)) : StoreResult.success();
             } catch (SQLException e) {
                 throw new EdcPersistenceException(e);
             }

@@ -22,7 +22,6 @@ import org.eclipse.edc.spi.query.QueryResolver;
 import org.eclipse.edc.spi.result.StoreResult;
 import org.eclipse.edc.store.ReflectionBasedQueryResolver;
 
-import static java.util.Optional.ofNullable;
 
 /**
  * In-memory variant of the {@link CredentialStore} that is thread-safe.
@@ -31,7 +30,7 @@ public class InMemoryCredentialStore extends InMemoryEntityStore<VerifiableCrede
 
     @Override
     protected String getId(VerifiableCredentialResource newObject) {
-        return newObject.getId();
+        return participantScopedKey(newObject.getParticipantContextId(), newObject.getId());
     }
 
     @Override
@@ -41,9 +40,26 @@ public class InMemoryCredentialStore extends InMemoryEntityStore<VerifiableCrede
     }
 
     @Override
-    public StoreResult<VerifiableCredentialResource> findById(String credentialId) {
-        return ofNullable(this.store.get(credentialId))
-                .map(StoreResult::success)
-                .orElseGet(() -> StoreResult.notFound(notFoundErrorMessage(credentialId)));
+    public StoreResult<VerifiableCredentialResource> findById(String participantContextId, String credentialId) {
+        var result = findById(participantScopedKey(participantContextId, credentialId));
+        return result.succeeded() ? result : StoreResult.notFound(notFoundErrorMessage(credentialId));
+    }
+
+    @Override
+    public StoreResult<Void> create(VerifiableCredentialResource credentialResource) {
+        var result = super.create(credentialResource);
+        return result.succeeded() ? result : StoreResult.alreadyExists(alreadyExistsErrorMessage(credentialResource.getId()));
+    }
+
+    @Override
+    public StoreResult<Void> update(VerifiableCredentialResource credentialResource) {
+        var result = super.update(credentialResource);
+        return result.succeeded() ? result : StoreResult.notFound(notFoundErrorMessage(credentialResource.getId()));
+    }
+
+    @Override
+    public StoreResult<Void> deleteById(String participantContextId, String id) {
+        var result = deleteById(participantScopedKey(participantContextId, id));
+        return result.succeeded() ? result : StoreResult.notFound(notFoundErrorMessage(id));
     }
 }

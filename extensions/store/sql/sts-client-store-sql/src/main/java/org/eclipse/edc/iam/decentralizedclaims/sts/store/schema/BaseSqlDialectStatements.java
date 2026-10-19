@@ -20,6 +20,7 @@ import org.eclipse.edc.sql.translation.SqlOperatorTranslator;
 import org.eclipse.edc.sql.translation.SqlQueryStatement;
 
 import static java.lang.String.format;
+import static org.eclipse.edc.sql.statement.SqlExecuteStatement.equalTo;
 
 public class BaseSqlDialectStatements implements StsClientStatements {
 
@@ -63,15 +64,14 @@ public class BaseSqlDialectStatements implements StsClientStatements {
 
     @Override
     public String getUpdateTemplate() {
+        // the owner of an STS account never changes, so an account of another participant context is not updated
         return executeStatement()
-                .column(getIdColumn())
                 .column(getNameColumn())
                 .column(getClientIdColumn())
                 .column(getDidColumn())
                 .column(getSecretAliasColumn())
                 .column(getCreatedAtColumn())
-                .column(getParticipantContextIdColumn())
-                .update(getStsClientTable(), getIdColumn());
+                .update(getStsClientTable(), equalTo(getParticipantContextIdColumn()), equalTo(getIdColumn()));
 
     }
 
