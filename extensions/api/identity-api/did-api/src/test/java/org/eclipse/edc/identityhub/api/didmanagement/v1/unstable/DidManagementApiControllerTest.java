@@ -30,6 +30,9 @@ import org.eclipse.edc.web.jersey.testfixtures.RestControllerTestBase;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.NullSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import tools.jackson.databind.MapperFeature;
 
 import java.util.Base64;
@@ -42,9 +45,11 @@ import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.equalTo;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
@@ -327,6 +332,17 @@ class DidManagementApiControllerTest extends RestControllerTestBase {
                     .statusCode(404);
             verify(didDocumentServiceMock).addService(eq(TEST_DID), any(Service.class));
         }
+
+        @Test
+        void addEndpoint_didNotBase64_expect400() {
+            baseRequest()
+                    .body(new DidRequestPayload(TEST_DID))
+                    .post("/%s/endpoints".formatted("not*base64"))
+                    .then()
+                    .log().ifValidationFails()
+                    .statusCode(400);
+            verifyNoInteractions(didDocumentServiceMock, authService);
+        }
     }
 
     @Nested
@@ -348,7 +364,9 @@ class DidManagementApiControllerTest extends RestControllerTestBase {
             assertThat(docList).isNotEmpty().hasSize(1)
                     .usingRecursiveFieldByFieldElementComparator()
                     .containsExactlyInAnyOrderElementsOf(resultList);
-            verify(didDocumentServiceMock).queryDocuments(eq(q));
+            verify(didDocumentServiceMock).queryDocuments(argThat(spec -> spec.getFilterExpression().containsAll(List.of(
+                    new Criterion("id", "=", "foobar"),
+                    new Criterion("participantContextId", "=", "test-participant")))));
         }
 
         @Test
@@ -362,7 +380,7 @@ class DidManagementApiControllerTest extends RestControllerTestBase {
                     .log().ifValidationFails()
                     .statusCode(400);
 
-            verify(didDocumentServiceMock).queryDocuments(eq(q));
+            verify(didDocumentServiceMock).queryDocuments(argThat(spec -> spec.getFilterExpression().contains(new Criterion("participantContextId", "=", "test-participant"))));
         }
 
         @Test
@@ -383,7 +401,7 @@ class DidManagementApiControllerTest extends RestControllerTestBase {
             assertThat(result).isEmpty();
 
             verify(authService).authorize(any(), anyString(), anyString(), eq(DidResource.class));
-            verify(didDocumentServiceMock).queryDocuments(eq(q));
+            verify(didDocumentServiceMock).queryDocuments(argThat(spec -> spec.getFilterExpression().contains(new Criterion("participantContextId", "=", "test-participant"))));
             verifyNoMoreInteractions(didDocumentServiceMock, authService);
         }
     }
@@ -502,6 +520,19 @@ class DidManagementApiControllerTest extends RestControllerTestBase {
                     .statusCode(equalTo(404));
             verify(didDocumentServiceMock).publish(eq(TEST_DID));
             verifyNoMoreInteractions(didDocumentServiceMock);
+        }
+
+        @ParameterizedTest
+        @ValueSource(strings = {"", " "})
+        @NullSource
+        void publish_whenDidBlank_expect400(String did) {
+            baseRequest()
+                    .body(new DidRequestPayload(did))
+                    .post("/publish")
+                    .then()
+                    .log().ifValidationFails()
+                    .statusCode(400);
+            verifyNoInteractions(didDocumentServiceMock, authService);
         }
 
         @Test

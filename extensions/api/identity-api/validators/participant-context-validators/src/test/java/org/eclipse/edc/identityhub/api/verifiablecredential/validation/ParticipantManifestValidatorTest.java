@@ -92,6 +92,23 @@ class ParticipantManifestValidatorTest {
     }
 
     @ParameterizedTest
+    @ValueSource(strings = {"did:web:example.com", "did:web:example.com%3A8443:user:alice", "did:example:123", "did:key:z6MkhaXgBZDvotDkL5257faiztiGiC2QtKLGpbnnEGta2doK"})
+    void validate_didValid(String did) {
+        var manifest = createManifest().did(did).build();
+        assertThat(validator.validate(manifest)).isSucceeded();
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"foo", "did:web", "did:web:", "did:web::foo", "did:web:example.com:", "did:web:example.com::user",
+            "did:web:example.com/user", "did:web:example.com:user#key-1", "did:web:example.com:user?query", "did:WEB:example.com",
+            "did:example:", "did:example:%zz", "did:web:exa mple.com"})
+    void validate_didMalformed(String did) {
+        var manifest = createManifest().did(did).build();
+        assertThat(validator.validate(manifest)).isFailed()
+                .detail().isEqualTo("DID '%s' is not a valid DID.".formatted(did));
+    }
+
+    @ParameterizedTest
     @ValueSource(strings = {"", "  ", "\n"})
     @NullAndEmptySource
     void validate_participantContextIdNull(String participantId) {

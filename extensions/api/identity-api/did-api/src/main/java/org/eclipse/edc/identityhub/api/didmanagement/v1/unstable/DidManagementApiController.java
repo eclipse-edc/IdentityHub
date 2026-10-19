@@ -34,6 +34,8 @@ import org.eclipse.edc.identityhub.spi.did.model.DidResource;
 import org.eclipse.edc.identityhub.spi.did.model.DidState;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.ServiceResult;
+import org.eclipse.edc.util.string.StringUtils;
+import org.eclipse.edc.web.spi.exception.InvalidRequestException;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
@@ -41,6 +43,7 @@ import java.util.Collection;
 
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 import static org.eclipse.edc.identityhub.spi.authorization.AuthorizationResultHandler.exceptionMapper;
+import static org.eclipse.edc.participantcontext.spi.types.ParticipantResource.filterByParticipantContextId;
 
 @Consumes(APPLICATION_JSON)
 @Produces(APPLICATION_JSON)
@@ -60,10 +63,10 @@ public class DidManagementApiController implements DidManagementApi {
     @RequiredScope("identity-api:dids:write")
     @Path("/publish")
     public void publishDid(@PathParam("participantContextId") String participantContextId, DidRequestPayload didRequestPayload, @Context SecurityContext securityContext) {
-
-        authorizationService.authorize(securityContext, participantContextId, didRequestPayload.did(), DidResource.class)
-                .compose(u -> documentService.publish(didRequestPayload.did()))
-                .orElseThrow(exceptionMapper(DidResource.class, didRequestPayload.did()));
+        var did = requireDid(didRequestPayload);
+        authorizationService.authorize(securityContext, participantContextId, did, DidResource.class)
+                .compose(u -> documentService.publish(did))
+                .orElseThrow(exceptionMapper(DidResource.class, did));
     }
 
     @Override
@@ -71,10 +74,10 @@ public class DidManagementApiController implements DidManagementApi {
     @RequiredScope("identity-api:dids:write")
     @Path("/unpublish")
     public void unpublishDid(@PathParam("participantContextId") String participantContextId, DidRequestPayload didRequestPayload, @Context SecurityContext securityContext) {
-
-        authorizationService.authorize(securityContext, participantContextId, didRequestPayload.did(), DidResource.class)
-                .compose(u -> documentService.unpublish(didRequestPayload.did()))
-                .orElseThrow(exceptionMapper(DidDocument.class, didRequestPayload.did()));
+        var did = requireDid(didRequestPayload);
+        authorizationService.authorize(securityContext, participantContextId, did, DidResource.class)
+                .compose(u -> documentService.unpublish(did))
+                .orElseThrow(exceptionMapper(DidDocument.class, did));
     }
 
 
@@ -83,7 +86,8 @@ public class DidManagementApiController implements DidManagementApi {
     @RequiredScope("identity-api:dids:read")
     @Override
     public Collection<DidDocument> queryDids(@PathParam("participantContextId") String participantContextId, QuerySpec querySpec, @Context SecurityContext securityContext) {
-        return documentService.queryDocuments(querySpec)
+        var spec = querySpec.toBuilder().filter(filterByParticipantContextId(participantContextId)).build();
+        return documentService.queryDocuments(spec)
                 .orElseThrow(exceptionMapper(DidDocument.class, null))
                 .stream().filter(dd -> authorizationService.authorize(securityContext, participantContextId, dd.getId(), DidResource.class).succeeded())
                 .toList();
@@ -94,9 +98,10 @@ public class DidManagementApiController implements DidManagementApi {
     @RequiredScope("identity-api:dids:read")
     @Path("/state")
     public String getDidState(@PathParam("participantContextId") String participantContextId, DidRequestPayload request, @Context SecurityContext securityContext) {
-        authorizationService.authorize(securityContext, participantContextId, request.did(), DidResource.class)
-                .orElseThrow(exceptionMapper(DidResource.class, request.did()));
-        var byId = documentService.findById(request.did());
+        var did = requireDid(request);
+        authorizationService.authorize(securityContext, participantContextId, did, DidResource.class)
+                .orElseThrow(exceptionMapper(DidResource.class, did));
+        var byId = documentService.findById(did);
         return byId != null ? DidState.from(byId.getState()).toString() : null;
     }
 
@@ -151,7 +156,18 @@ public class DidManagementApiController implements DidManagementApi {
                 .orElseThrow(exceptionMapper(Service.class, decodedDid));
     }
 
-    private String decodeDid(String encoded) {
-        return new String(Base64.getUrlDecoder().decode(encoded), StandardCharsets.UTF_8);
+    private static String requireDid(DidRequestPayload payload) {
+        if (payload == null || StringUtils.isNullOrBlank(payload.did())) {
+            throw new InvalidRequestException("DID cannot be null or empty.");
+        }
+        return payload.did();
+    }
+
+    private static String decodeDid(String encoded) {
+        try {
+            return new String(Base64.getUrlDecoder().decode(encoded), StandardCharsets.UTF_8);
+        } catch (IllegalArgumentException e) {
+            throw new InvalidRequestException("DID path parameter is not valid Base64url.");
+        }
     }
 }

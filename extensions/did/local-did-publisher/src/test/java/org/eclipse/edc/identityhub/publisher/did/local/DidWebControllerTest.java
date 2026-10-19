@@ -23,6 +23,8 @@ import org.eclipse.edc.identityhub.spi.did.store.DidResourceStore;
 import org.eclipse.edc.junit.annotations.ApiTest;
 import org.eclipse.edc.web.jersey.testfixtures.RestControllerTestBase;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.List;
 
@@ -30,11 +32,11 @@ import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.edc.identityhub.publisher.did.local.TestFunctions.createDidResource;
 import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.emptyString;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 @ApiTest
@@ -89,18 +91,59 @@ class DidWebControllerTest extends RestControllerTestBase {
     }
 
     @Test
+    void getDidDocument_withDidJson() {
+        when(storeMock.query(any())).thenReturn(List.of(publishedDid("did:web:testdid1")));
+
+        baseRequest()
+                .get("/foo/bar/did.json")
+                .then()
+                .log().ifValidationFails()
+                .statusCode(200)
+                .body(containsString("did:web:testdid1"));
+
+        verify(storeMock).query(argThat(qs -> qs.getFilterExpression().stream().anyMatch(c -> c.getOperandRight().equals("did:web:localhost%%3A%s:foo:bar".formatted(port)))));
+    }
+
+    @Test
     void getDidDocument_noResult() {
         baseRequest()
                 .get("/foo/bar")
                 .then()
-                .log().ifError()
-                .statusCode(204)
-                .body(emptyString());
+                .log().ifValidationFails()
+                .statusCode(404);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"/foo/bar/", "/foo/bar/.well-known", "/foo/.well-known/bar/did.json", "/foo/bar/did.json/did.json"})
+    void getDidDocument_unservedUrl(String path) {
+        when(storeMock.query(any())).thenReturn(List.of(publishedDid("did:web:testdid1")));
+
+        baseRequest()
+                .get(path)
+                .then()
+                .log().ifValidationFails()
+                .statusCode(404);
+
+        verifyNoInteractions(storeMock);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"application/json; charset=\"\"", "application/json; charset=x-unknown"})
+    void getDidDocument_ignoresContentTypeCharset(String contentType) {
+        when(storeMock.query(any())).thenReturn(List.of(publishedDid("did:web:testdid1")));
+
+        baseRequest()
+                .header("Content-Type", contentType)
+                .get("/foo/bar/did.json")
+                .then()
+                .log().ifValidationFails()
+                .statusCode(200)
+                .body(containsString("did:web:testdid1"));
     }
 
     @Override
     protected Object controller() {
-        return new DidWebController(monitor, storeMock, new DidWebParser());
+        return new DidWebController(storeMock, new DidWebParser());
     }
 
     private RequestSpecification baseRequest() {

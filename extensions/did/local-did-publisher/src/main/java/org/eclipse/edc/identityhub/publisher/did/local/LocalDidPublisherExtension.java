@@ -78,7 +78,7 @@ public class LocalDidPublisherExtension implements ServiceExtension {
         portMappingRegistry.register(new PortMapping(IH_DID, apiConfiguration.port(), apiConfiguration.path()));
         var localPublisher = new LocalDidPublisher(didDocumentObservable(), didResourceStore, context.getMonitor());
         registry.addPublisher(DidConstants.DID_WEB_METHOD, localPublisher);
-        webService.registerResource(IdentityHubApiContext.IH_DID, new DidWebController(context.getMonitor(), didResourceStore, getDidParser()));
+        webService.registerResource(IdentityHubApiContext.IH_DID, new DidWebController(didResourceStore, getDidParser()));
     }
 
     @Provider
