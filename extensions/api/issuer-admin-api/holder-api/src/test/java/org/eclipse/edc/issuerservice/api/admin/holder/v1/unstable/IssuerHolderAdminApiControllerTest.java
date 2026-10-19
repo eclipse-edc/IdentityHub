@@ -110,7 +110,7 @@ class IssuerHolderAdminApiControllerTest extends RestControllerTestBase {
     @Test
     void getHolderById() {
         var test = createHolder("test-id", "did:web:test", "test name");
-        when(holderService.findById(any())).thenReturn(ServiceResult.success(test));
+        when(holderService.findById(any(), any())).thenReturn(ServiceResult.success(test));
 
         var response = baseRequest()
                 .get("/test-id")
@@ -124,7 +124,7 @@ class IssuerHolderAdminApiControllerTest extends RestControllerTestBase {
 
     @Test
     void getHolderById_notFound() {
-        when(holderService.findById(any())).thenReturn(ServiceResult.notFound("not found"));
+        when(holderService.findById(any(), any())).thenReturn(ServiceResult.notFound("not found"));
 
         baseRequest()
                 .get("/test-id")
@@ -167,7 +167,7 @@ class IssuerHolderAdminApiControllerTest extends RestControllerTestBase {
 
     @Test
     void deleteHolder_success() {
-        when(holderService.deleteHolder(any())).thenReturn(ServiceResult.success());
+        when(holderService.deleteHolder(any(), any())).thenReturn(ServiceResult.success());
 
         baseRequest()
                 .delete("/test-id")
@@ -179,7 +179,7 @@ class IssuerHolderAdminApiControllerTest extends RestControllerTestBase {
 
     @Test
     void deleteHolder_notFound() {
-        when(holderService.deleteHolder(any())).thenReturn(ServiceResult.notFound("not found"));
+        when(holderService.deleteHolder(any(), any())).thenReturn(ServiceResult.notFound("not found"));
 
         baseRequest()
                 .delete("/test-id")
@@ -191,7 +191,7 @@ class IssuerHolderAdminApiControllerTest extends RestControllerTestBase {
 
     @Test
     void deleteHolder_whenHasCredentials() {
-        when(holderService.deleteHolder(any())).thenReturn(ServiceResult.conflict("holder has associated credentials"));
+        when(holderService.deleteHolder(any(), any())).thenReturn(ServiceResult.conflict("holder has associated credentials"));
 
         baseRequest()
                 .delete("/test-id")

@@ -54,8 +54,8 @@ public class CredentialDefinitionServiceImpl implements CredentialDefinitionServ
     }
 
     @Override
-    public ServiceResult<Void> deleteCredentialDefinition(String credentialDefinitionId) {
-        return transactionContext.execute(() -> from(credentialDefinitionStore.deleteById(credentialDefinitionId)));
+    public ServiceResult<Void> deleteCredentialDefinition(String participantContextId, String credentialDefinitionId) {
+        return transactionContext.execute(() -> from(credentialDefinitionStore.deleteById(participantContextId, credentialDefinitionId)));
     }
 
     @Override
@@ -70,8 +70,8 @@ public class CredentialDefinitionServiceImpl implements CredentialDefinitionServ
     }
 
     @Override
-    public ServiceResult<CredentialDefinition> findCredentialDefinitionById(String credentialDefinitionId) {
-        return transactionContext.execute(() -> from(credentialDefinitionStore.findById(credentialDefinitionId)));
+    public ServiceResult<CredentialDefinition> findCredentialDefinitionById(String participantContextId, String credentialDefinitionId) {
+        return transactionContext.execute(() -> from(credentialDefinitionStore.findById(participantContextId, credentialDefinitionId)));
 
     }
 

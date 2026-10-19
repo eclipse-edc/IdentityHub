@@ -59,6 +59,40 @@ class SqlCredentialDefinitionStoreTest extends CredentialDefinitionStoreTestBase
         extension.runQuery("DROP TABLE " + statements.getCredentialDefinitionTable() + " CASCADE");
     }
 
+    @Test
+    void schema_migratesTableWithIdsUniqueAcrossParticipantContexts(PostgresqlStoreSetupExtension extension) {
+        extension.runQuery("DROP TABLE " + statements.getCredentialDefinitionTable() + " CASCADE");
+        extension.runQuery("""
+                CREATE TABLE credential_definitions
+                (
+                    id                     VARCHAR NOT NULL,
+                    participant_context_id VARCHAR NOT NULL,
+                    credential_type        VARCHAR NOT NULL,
+                    attestations           JSON    NOT NULL DEFAULT '[]',
+                    rules                  JSON    NOT NULL DEFAULT '[]',
+                    mappings               JSON    NOT NULL DEFAULT '[]',
+                    additional_context     JSON    NOT NULL DEFAULT '[]',
+                    private_properties     JSON    NOT NULL DEFAULT '{}',
+                    json_schema            JSON,
+                    json_schema_url        VARCHAR,
+                    validity               BIGINT  NOT NULL,
+                    format                 VARCHAR NOT NULL,
+                    created_date           BIGINT  NOT NULL,
+                    last_modified_date     BIGINT,
+                    PRIMARY KEY (id)
+                );
+                """);
+        store.create(createCredentialDefinitionBuilder("definition-id", "Membership").build());
+
+        // the schema is applied on every start, so it must be repeatable
+        var schema = TestUtils.getResourceFileContentAsString("credential-definition-schema.sql");
+        extension.runQuery(schema);
+        extension.runQuery(schema);
+
+        assertThat(store.create(createCredentialDefinitionBuilder("definition-id", "Membership").participantContextId("other-participant").build())).isSucceeded();
+        assertThat(store.create(createCredentialDefinitionBuilder("definition-id", "Membership").build())).isFailed();
+    }
+
     // queries that introspect JSON are not supported in the in-mem variant
     @Test
     void byJsonSchema_introspectingJson() {

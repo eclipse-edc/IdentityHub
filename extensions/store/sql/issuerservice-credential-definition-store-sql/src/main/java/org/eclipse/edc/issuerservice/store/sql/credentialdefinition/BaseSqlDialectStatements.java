@@ -20,6 +20,7 @@ import org.eclipse.edc.sql.translation.PostgresqlOperatorTranslator;
 import org.eclipse.edc.sql.translation.SqlQueryStatement;
 
 import static java.lang.String.format;
+import static org.eclipse.edc.sql.statement.SqlExecuteStatement.equalTo;
 
 public class BaseSqlDialectStatements implements CredentialDefinitionStoreStatements {
 
@@ -66,17 +67,17 @@ public class BaseSqlDialectStatements implements CredentialDefinitionStoreStatem
                 .column(getValidityColumn())
                 .column(getFormatsColumn())
                 .column(getLastModifiedTimestampColumn())
-                .update(getCredentialDefinitionTable(), getIdColumn());
+                .update(getCredentialDefinitionTable(), equalTo(getParticipantContextIdColumn()), equalTo(getIdColumn()));
     }
 
     @Override
     public String getDeleteByIdTemplate() {
-        return executeStatement().delete(getCredentialDefinitionTable(), getIdColumn());
+        return executeStatement().delete(getCredentialDefinitionTable(), equalTo(getParticipantContextIdColumn()), equalTo(getIdColumn()));
     }
 
     @Override
     public String getFindByIdTemplate() {
-        return format("SELECT * FROM %s WHERE %s = ?", getCredentialDefinitionTable(), getIdColumn());
+        return format("SELECT * FROM %s WHERE %s = ? AND %s = ?", getCredentialDefinitionTable(), getParticipantContextIdColumn(), getIdColumn());
 
     }
 

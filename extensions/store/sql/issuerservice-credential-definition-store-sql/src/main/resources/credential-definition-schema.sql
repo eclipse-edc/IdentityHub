@@ -29,7 +29,11 @@ CREATE TABLE IF NOT EXISTS credential_definitions
     format                 VARCHAR NOT NULL,
     created_date           BIGINT  NOT NULL, -- POSIX timestamp of the creation of the PC
     last_modified_date     BIGINT,           -- POSIX timestamp of the last modified date
-    PRIMARY KEY (id)
+    CONSTRAINT credential_definitions_participant_id_pk PRIMARY KEY (participant_context_id, id)
 );
+-- migration of tables in which the credential definition ID was unique across all participant contexts. The unique
+-- index takes the place of the composite primary key, and is a no-op if the table already has it
+ALTER TABLE credential_definitions DROP CONSTRAINT IF EXISTS credential_definitions_pkey;
+CREATE UNIQUE INDEX IF NOT EXISTS credential_definitions_participant_id_pk ON credential_definitions (participant_context_id, id);
 
 

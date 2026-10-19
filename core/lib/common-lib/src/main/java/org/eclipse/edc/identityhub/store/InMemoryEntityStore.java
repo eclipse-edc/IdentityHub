@@ -130,18 +130,6 @@ public abstract class InMemoryEntityStore<T> {
         }
     }
 
-    /**
-     * The key under which an entity is kept whose ID is only unique within its participant context. The length prefix
-     * keeps the key unambiguous whatever characters the participant context ID contains.
-     *
-     * @param participantContextId the ID of the participant context that owns the entity
-     * @param id                   the ID of the entity
-     * @return the key
-     */
-    protected static String participantScopedKey(String participantContextId, String id) {
-        return participantContextId.length() + ":" + participantContextId + id;
-    }
-
     protected abstract String getId(T newObject);
 
     protected abstract QueryResolver<T> createQueryResolver();

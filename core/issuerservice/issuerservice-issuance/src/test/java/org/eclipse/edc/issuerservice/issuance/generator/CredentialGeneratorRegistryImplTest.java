@@ -78,7 +78,7 @@ public class CredentialGeneratorRegistryImplTest {
 
         when(claimsMapper.apply(anyList(), any())).thenReturn(Result.success(Map.of()));
         when(participantContextService.getParticipantContext("participantContextId")).thenReturn(success(participantContext));
-        when(holderService.findById("holderId")).thenReturn(success(participant));
+        when(holderService.findById("participantContextId", "holderId")).thenReturn(success(participant));
         when(keyPairService.getActiveKeyPairForUsage(anyString(), eq(CREDENTIAL_SIGNING))).thenReturn(success(key));
         when(generator.generateCredential(anyString(), eq(definition), eq(key.getPrivateKeyAlias()), eq(key.getKeyId()), eq("issuerDid"), eq("participantDid"), any())).thenReturn(Result.success(mock()));
         var request = new CredentialGenerationRequest(definition, VC1_0_JWT);
@@ -132,7 +132,7 @@ public class CredentialGeneratorRegistryImplTest {
 
         when(claimsMapper.apply(anyList(), any())).thenReturn(Result.success(Map.of()));
         when(participantContextService.getParticipantContext("participantContextId")).thenReturn(success(participantContext));
-        when(holderService.findById("holderId")).thenReturn(ServiceResult.notFound("not found"));
+        when(holderService.findById("participantContextId", "holderId")).thenReturn(ServiceResult.notFound("not found"));
 
         var request = new CredentialGenerationRequest(definition, VC1_0_JWT);
         var result = credentialGeneratorRegistry.generateCredential("participantContextId", "holderId", request, Map.of());
@@ -157,7 +157,7 @@ public class CredentialGeneratorRegistryImplTest {
 
         when(claimsMapper.apply(anyList(), any())).thenReturn(Result.success(Map.of()));
         when(participantContextService.getParticipantContext("participantContextId")).thenReturn(success(participantContext));
-        when(holderService.findById("holderId")).thenReturn(success(participant));
+        when(holderService.findById("participantContextId", "holderId")).thenReturn(success(participant));
         when(keyPairService.getActiveKeyPairForUsage(anyString(), eq(CREDENTIAL_SIGNING))).thenReturn(ServiceResult.notFound("foobar"));
 
         var request = new CredentialGenerationRequest(definition, VC1_0_JWT);

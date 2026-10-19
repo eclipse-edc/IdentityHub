@@ -79,7 +79,7 @@ class IssuerAttestationAdminApiControllerTest extends RestControllerTestBase {
 
     @Test
     void deleteAttestationDefinition() {
-        when(attestationDefinitionService.deleteAttestation(anyString()))
+        when(attestationDefinitionService.deleteAttestation(anyString(), anyString()))
                 .thenReturn(ServiceResult.success());
 
         baseRequest()
@@ -91,7 +91,7 @@ class IssuerAttestationAdminApiControllerTest extends RestControllerTestBase {
 
     @Test
     void deleteAttestationDefinition_whenNotFound_expect404() {
-        when(attestationDefinitionService.deleteAttestation(anyString()))
+        when(attestationDefinitionService.deleteAttestation(anyString(), anyString()))
                 .thenReturn(ServiceResult.notFound("foo"));
 
         baseRequest()

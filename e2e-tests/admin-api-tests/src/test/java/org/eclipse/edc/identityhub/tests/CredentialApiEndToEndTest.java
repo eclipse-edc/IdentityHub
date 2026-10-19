@@ -166,7 +166,7 @@ public class CredentialApiEndToEndTest {
                     .forEach(pc -> pcService.deleteParticipantContext(pc.getParticipantContextId()).getContent());
 
             holderStore.query(QuerySpec.max()).getContent()
-                    .forEach(holder -> holderStore.deleteById(holder.getHolderId()).getContent());
+                    .forEach(holder -> holderStore.deleteById(holder.getParticipantContextId(), holder.getHolderId()).getContent());
         }
 
         @Test

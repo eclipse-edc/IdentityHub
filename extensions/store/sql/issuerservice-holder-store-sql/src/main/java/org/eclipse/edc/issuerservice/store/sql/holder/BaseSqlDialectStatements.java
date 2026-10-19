@@ -20,6 +20,7 @@ import org.eclipse.edc.sql.translation.PostgresqlOperatorTranslator;
 import org.eclipse.edc.sql.translation.SqlQueryStatement;
 
 import static java.lang.String.format;
+import static org.eclipse.edc.sql.statement.SqlExecuteStatement.equalTo;
 
 public class BaseSqlDialectStatements implements HolderStoreStatements {
     @Override
@@ -41,25 +42,25 @@ public class BaseSqlDialectStatements implements HolderStoreStatements {
 
     @Override
     public String getUpdateTemplate() {
+        // a holder is identified by its owner and its ID, so neither is changed
         return executeStatement()
-                .column(getIdColumn())
                 .column(getDidColumn())
                 .column(getHolderNameColumn())
                 .column(getCreateTimestampColumn())
                 .column(getLastModifiedTimestampColumn())
                 .column(getAnonymousColumn())
                 .jsonColumn(getPropertiesColumn())
-                .update(getHoldersTable(), getIdColumn());
+                .update(getHoldersTable(), equalTo(getParticipantContextIdColumn()), equalTo(getIdColumn()));
     }
 
     @Override
     public String getDeleteByIdTemplate() {
-        return executeStatement().delete(getHoldersTable(), getIdColumn());
+        return executeStatement().delete(getHoldersTable(), equalTo(getParticipantContextIdColumn()), equalTo(getIdColumn()));
     }
 
     @Override
     public String getFindByIdTemplate() {
-        return format("SELECT * FROM %s WHERE %s = ?", getHoldersTable(), getIdColumn());
+        return format("SELECT * FROM %s WHERE %s = ? AND %s = ?", getHoldersTable(), getParticipantContextIdColumn(), getIdColumn());
 
     }
 

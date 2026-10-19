@@ -42,7 +42,7 @@ public abstract class HolderStoreTestBase {
         var result = getStore().create(holder);
         assertThat(result).isSucceeded();
 
-        var query = getStore().findById(id);
+        var query = getStore().findById(holder.getParticipantContextId(), id);
         assertThat(query).isSucceeded().usingRecursiveComparison().isEqualTo(holder);
     }
 
@@ -54,6 +54,28 @@ public abstract class HolderStoreTestBase {
         var result2 = getStore().create(holder);
 
         assertThat(result2).isFailed().detail().contains("already exists");
+    }
+
+    @Test
+    void create_whenIdExistsInOtherParticipantContext_shouldSucceed() {
+        var holder = createHolder();
+        getStore().create(holder);
+        var other = createHolder(holder.getHolderId(), "did:web:other", "other");
+
+        assertThat(getStore().create(other)).isSucceeded();
+        assertThat(getStore().findById(holder.getParticipantContextId(), holder.getHolderId())).isSucceeded()
+                .extracting(Holder::getDid).isEqualTo(holder.getDid());
+        assertThat(getStore().findById(other.getParticipantContextId(), holder.getHolderId())).isSucceeded()
+                .extracting(Holder::getDid).isEqualTo("did:web:other");
+    }
+
+    @Test
+    void findById_whenOwnedByOtherParticipantContext_shouldReturnNotFound() {
+        var holder = createHolder();
+        getStore().create(holder);
+
+        assertThat(getStore().findById("other-participant", holder.getHolderId())).isFailed()
+                .detail().contains("does not exist");
     }
 
     @Test
@@ -170,8 +192,20 @@ public abstract class HolderStoreTestBase {
         var updateRes = getStore().update(updated);
         assertThat(updateRes).isSucceeded();
 
-        var query = getStore().findById(id);
+        var query = getStore().findById(holder.getParticipantContextId(), id);
         assertThat(query).isSucceeded().usingRecursiveComparison().isEqualTo(updated);
+    }
+
+    @Test
+    void update_whenParticipantContextChanges_shouldReturnNotFound() {
+        var holder = createHolder();
+        getStore().create(holder);
+
+        var moved = createHolder(holder.getHolderId(), "did:web:moved", "moved");
+
+        assertThat(getStore().update(moved)).isFailed().detail().contains("does not exist");
+        assertThat(getStore().findById(holder.getParticipantContextId(), holder.getHolderId())).isSucceeded()
+                .extracting(Holder::getDid).isEqualTo(holder.getDid());
     }
 
     @Test
@@ -196,14 +230,24 @@ public abstract class HolderStoreTestBase {
         var holder = createHolder();
         getStore().create(holder);
 
-        var deleteRes = getStore().deleteById(holder.getHolderId());
+        var deleteRes = getStore().deleteById(holder.getParticipantContextId(), holder.getHolderId());
         assertThat(deleteRes).isSucceeded();
     }
 
     @Test
     void delete_whenNotExists() {
-        assertThat(getStore().deleteById("not-exist")).isFailed()
+        assertThat(getStore().deleteById("test-participant", "not-exist")).isFailed()
                 .detail().contains("with ID 'not-exist' does not exist.");
+    }
+
+    @Test
+    void delete_whenOwnedByOtherParticipantContext_shouldReturnNotFound() {
+        var holder = createHolder();
+        getStore().create(holder);
+
+        assertThat(getStore().deleteById("other-participant", holder.getHolderId())).isFailed()
+                .detail().contains("does not exist");
+        assertThat(getStore().findById(holder.getParticipantContextId(), holder.getHolderId())).isSucceeded();
     }
 
     protected abstract HolderStore getStore();

@@ -110,7 +110,7 @@ class IssuerCredentialDefinitionAdminApiControllerTest extends RestControllerTes
     @Test
     void getCredentialDefinitionById() {
         var test = credentialDefinition();
-        when(credentialDefinitionService.findCredentialDefinitionById(any())).thenReturn(ServiceResult.success(test));
+        when(credentialDefinitionService.findCredentialDefinitionById(any(), any())).thenReturn(ServiceResult.success(test));
 
         var response = baseRequest()
                 .get("/test-id")
@@ -124,7 +124,7 @@ class IssuerCredentialDefinitionAdminApiControllerTest extends RestControllerTes
 
     @Test
     void getCredentialDefinitionById_notFound() {
-        when(credentialDefinitionService.findCredentialDefinitionById(any())).thenReturn(ServiceResult.notFound("not found"));
+        when(credentialDefinitionService.findCredentialDefinitionById(any(), any())).thenReturn(ServiceResult.notFound("not found"));
 
         baseRequest()
                 .get("/test-id")

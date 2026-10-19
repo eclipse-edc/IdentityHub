@@ -16,6 +16,7 @@ package org.eclipse.edc.identityhub.tests;
 
 import io.restassured.http.ContentType;
 import io.restassured.http.Header;
+import io.restassured.response.ValidatableResponse;
 import org.eclipse.edc.api.authentication.OauthServerEndToEndExtension;
 import org.eclipse.edc.identityhub.spi.participantcontext.IdentityHubParticipantContextService;
 import org.eclipse.edc.identityhub.tests.fixtures.DefaultRuntimes;
@@ -62,7 +63,7 @@ public class CredentialDefinitionApiEndToEndTest {
         @AfterEach
         void teardown(CredentialDefinitionService service, IdentityHubParticipantContextService pcService) {
             service.queryCredentialDefinitions(QuerySpec.max()).getContent()
-                    .forEach(p -> service.deleteCredentialDefinition(p.getId()).getContent());
+                    .forEach(p -> service.deleteCredentialDefinition(p.getParticipantContextId(), p.getId()).getContent());
 
             pcService.query(QuerySpec.max()).getContent()
                     .forEach(pc -> pcService.deleteParticipantContext(pc.getParticipantContextId()).getContent());
@@ -101,7 +102,7 @@ public class CredentialDefinitionApiEndToEndTest {
                     .statusCode(201)
                     .header("Location", Matchers.endsWith("/credentialdefinitions/test-definition-id"));
 
-            assertThat(service.findCredentialDefinitionById(definition.getId())).isSucceeded()
+            assertThat(service.findCredentialDefinitionById(definition.getParticipantContextId(), definition.getId())).isSucceeded()
                     .usingRecursiveComparison()
                     .ignoringFields("createdAt")
                     .isEqualTo(definition);
@@ -139,34 +140,54 @@ public class CredentialDefinitionApiEndToEndTest {
         @Test
         void createCredentialDefinition_whenExists(IssuerService issuer, CredentialDefinitionService service) {
             issuer.createParticipant(USER);
+            service.createCredentialDefinition(credentialDefinition("test-definition-id", USER));
 
-            var definition = CredentialDefinition.Builder.newInstance()
-                    .id("test-definition-id")
+            createCredentialDefinition(issuer, "test-definition-id")
+                    .statusCode(409);
+        }
+
+        @Test
+        void createCredentialDefinition_whenIdExistsInOtherParticipantContext(IssuerService issuer, CredentialDefinitionService service) {
+            issuer.createParticipant(USER);
+            service.createCredentialDefinition(credentialDefinition("test-definition-id", "participantContextId"));
+
+            // IDs are only unique within a participant context, so another participant context's ID can be used
+            createCredentialDefinition(issuer, "test-definition-id")
+                    .statusCode(201);
+
+            assertThat(service.findCredentialDefinitionById(USER, "test-definition-id")).isSucceeded()
+                    .extracting(CredentialDefinition::getCredentialType).isEqualTo("MembershipCredential");
+            assertThat(service.findCredentialDefinitionById("participantContextId", "test-definition-id")).isSucceeded()
+                    .extracting(CredentialDefinition::getCredentialType).isEqualTo("MyType");
+        }
+
+        private CredentialDefinition credentialDefinition(String id, String participantContextId) {
+            return CredentialDefinition.Builder.newInstance()
+                    .id(id)
                     .jsonSchema("{}")
                     .jsonSchemaUrl("https://example.org/membership-credential-schema.json")
                     .credentialType("MyType")
-                    .participantContextId("participantContextId")
+                    .participantContextId(participantContextId)
                     .formatFrom(VC1_0_JWT)
                     .build();
+        }
 
-            service.createCredentialDefinition(definition);
-
-            issuer.getAdminEndpoint().baseRequest()
+        private ValidatableResponse createCredentialDefinition(IssuerService issuer, String id) {
+            return issuer.getAdminEndpoint().baseRequest()
                     .contentType(ContentType.JSON)
                     .header(authorizeUser(USER, issuer))
                     .body("""
                             {
-                              "id": "test-definition-id",
+                              "id": "%s",
                               "credentialType": "MembershipCredential",
                               "jsonSchema": "{}",
                               "jsonSchemaUrl": "https://example.org/membership-credential-schema.json",
                               "format": "VC1_0_JWT"
                             }
-                            """)
+                            """.formatted(id))
                     .post("/v1/participants/%s/credentialdefinitions".formatted(USER))
                     .then()
-                    .log().all()
-                    .statusCode(409);
+                    .log().ifValidationFails();
         }
 
         @Test
@@ -400,7 +421,7 @@ public class CredentialDefinitionApiEndToEndTest {
                     .then()
                     .statusCode(200);
 
-            var updatedDefinition = service.findCredentialDefinitionById(definition.getId()).getContent();
+            var updatedDefinition = service.findCredentialDefinitionById(definition.getParticipantContextId(), definition.getId()).getContent();
 
             assertThat(updatedDefinition).usingRecursiveComparison()
                     .ignoringFields("createdAt")
@@ -521,7 +542,7 @@ public class CredentialDefinitionApiEndToEndTest {
                     .then()
                     .statusCode(204);
 
-            assertThat(service.findCredentialDefinitionById(definition.getId())).isFailed();
+            assertThat(service.findCredentialDefinitionById(definition.getParticipantContextId(), definition.getId())).isFailed();
 
         }
 

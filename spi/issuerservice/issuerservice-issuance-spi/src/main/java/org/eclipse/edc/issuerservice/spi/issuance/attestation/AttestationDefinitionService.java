@@ -32,17 +32,19 @@ public interface AttestationDefinitionService {
     /**
      * Deletes an {@link AttestationDefinition} from persistent storage
      *
-     * @param attestationId the ID of the attestation definition
+     * @param participantContextId the ID of the participant context that owns the attestation definition
+     * @param attestationId        the ID of the attestation definition
      */
-    ServiceResult<Void> deleteAttestation(String attestationId);
+    ServiceResult<Void> deleteAttestation(String participantContextId, String attestationId);
 
     /**
      * Gets an {@link AttestationDefinition} by id.
      *
-     * @param attestationId the ID of the attestation
+     * @param participantContextId the ID of the participant context that owns the attestation definition
+     * @param attestationId        the ID of the attestation
      * @return A {@link AttestationDefinition} if found, or an error if it was not found.
      */
-    ServiceResult<AttestationDefinition> getAttestationById(String attestationId);
+    ServiceResult<AttestationDefinition> getAttestationById(String participantContextId, String attestationId);
 
     /**
      * Queries all {@link AttestationDefinition} objects according to a given query.

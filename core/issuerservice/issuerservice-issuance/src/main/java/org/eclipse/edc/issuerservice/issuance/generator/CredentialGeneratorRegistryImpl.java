@@ -103,7 +103,7 @@ public class CredentialGeneratorRegistryImpl implements CredentialGeneratorRegis
                     .orElseThrow(f -> new EdcException(f.getFailureDetail()));
 
             var participantDid = ofNullable(participantId)
-                    .map(holderId -> holderService.findById(holderId).orElseThrow(f -> new EdcException(f.getFailureDetail())))
+                    .map(holderId -> holderService.findById(participantContextId, holderId).orElseThrow(f -> new EdcException(f.getFailureDetail())))
                     .map(Holder::getDid)
                     .orElse(issuerDid);
 

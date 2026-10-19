@@ -14,29 +14,34 @@
 
 package org.eclipse.edc.issuerservice.defaults.store;
 
-import org.eclipse.edc.identityhub.store.InMemoryEntityStore;
+import org.eclipse.edc.identityhub.store.InMemoryParticipantResourceStore;
 import org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationDefinitionStore;
 import org.eclipse.edc.issuerservice.spi.issuance.model.AttestationDefinition;
 import org.eclipse.edc.spi.query.QueryResolver;
-import org.eclipse.edc.spi.result.StoreResult;
 import org.eclipse.edc.store.ReflectionBasedQueryResolver;
 import org.jetbrains.annotations.Nullable;
 
-public class InMemoryAttestationDefinitionStore extends InMemoryEntityStore<AttestationDefinition> implements AttestationDefinitionStore {
+public class InMemoryAttestationDefinitionStore extends InMemoryParticipantResourceStore<AttestationDefinition> implements AttestationDefinitionStore {
 
     @Override
-    public @Nullable AttestationDefinition resolveDefinition(String id) {
-        return store.get(id);
+    public @Nullable AttestationDefinition resolveDefinition(String participantContextId, String id) {
+        var result = findById(participantContextId, id);
+        return result.succeeded() ? result.getContent() : null;
     }
 
     @Override
-    public StoreResult<Void> deleteById(String id) {
-        return super.deleteById(id);
+    protected String getResourceId(AttestationDefinition entity) {
+        return entity.getId();
     }
 
     @Override
-    protected String getId(AttestationDefinition newObject) {
-        return newObject.getId();
+    protected String notFoundMessage(String id) {
+        return notFoundErrorMessage(id);
+    }
+
+    @Override
+    protected String alreadyExistsMessage(String id) {
+        return alreadyExistsErrorMessage(id);
     }
 
     @Override

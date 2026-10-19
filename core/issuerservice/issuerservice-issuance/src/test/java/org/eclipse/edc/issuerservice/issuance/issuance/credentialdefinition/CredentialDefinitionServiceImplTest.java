@@ -185,9 +185,9 @@ public class CredentialDefinitionServiceImplTest {
 
         var definition = credentialDefinition();
 
-        when(credentialDefinitionStore.findById(definition.getId())).thenReturn(StoreResult.success(definition));
+        when(credentialDefinitionStore.findById(definition.getParticipantContextId(), definition.getId())).thenReturn(StoreResult.success(definition));
 
-        assertThat(credentialDefinitionService.findCredentialDefinitionById(definition.getId()))
+        assertThat(credentialDefinitionService.findCredentialDefinitionById(definition.getParticipantContextId(), definition.getId()))
                 .isSucceeded()
                 .usingRecursiveComparison().isEqualTo(definition);
 
@@ -224,9 +224,9 @@ public class CredentialDefinitionServiceImplTest {
 
         var id = UUID.randomUUID().toString();
 
-        when(credentialDefinitionStore.deleteById(id)).thenReturn(StoreResult.success());
+        when(credentialDefinitionStore.deleteById("participant-id", id)).thenReturn(StoreResult.success());
 
-        assertThat(credentialDefinitionService.deleteCredentialDefinition(id))
+        assertThat(credentialDefinitionService.deleteCredentialDefinition("participant-id", id))
                 .isSucceeded();
     }
 
@@ -235,9 +235,9 @@ public class CredentialDefinitionServiceImplTest {
 
         var id = UUID.randomUUID().toString();
 
-        when(credentialDefinitionStore.deleteById(id)).thenReturn(StoreResult.notFound("not found"));
+        when(credentialDefinitionStore.deleteById("participant-id", id)).thenReturn(StoreResult.notFound("not found"));
 
-        assertThat(credentialDefinitionService.deleteCredentialDefinition(id))
+        assertThat(credentialDefinitionService.deleteCredentialDefinition("participant-id", id))
                 .isFailed();
     }
 

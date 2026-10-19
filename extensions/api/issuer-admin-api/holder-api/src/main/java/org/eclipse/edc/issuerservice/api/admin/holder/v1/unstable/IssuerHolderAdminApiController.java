@@ -70,7 +70,7 @@ public class IssuerHolderAdminApiController implements IssuerHolderAdminApi {
     @Override
     public Response deleteHolder(@PathParam("participantContextId") String participantContextId, @PathParam("holderId") String holderId, @Context SecurityContext context) {
         return authorizationService.authorize(context, participantContextId, holderId, Holder.class)
-                .compose(u -> holderService.deleteHolder(holderId))
+                .compose(u -> holderService.deleteHolder(participantContextId, holderId))
                 .map(v -> Response.noContent().build())
                 .orElseThrow(exceptionMapper(Holder.class, holderId));
     }
@@ -92,7 +92,7 @@ public class IssuerHolderAdminApiController implements IssuerHolderAdminApi {
     public Holder getHolderById(@PathParam("participantContextId") String participantContextId, @PathParam("holderId") String holderId, @Context SecurityContext context) {
 
         return authorizationService.authorize(context, participantContextId, holderId, Holder.class)
-                .compose(u -> holderService.findById(holderId))
+                .compose(u -> holderService.findById(participantContextId, holderId))
                 .orElseThrow(exceptionMapper(Holder.class, holderId));
     }
 

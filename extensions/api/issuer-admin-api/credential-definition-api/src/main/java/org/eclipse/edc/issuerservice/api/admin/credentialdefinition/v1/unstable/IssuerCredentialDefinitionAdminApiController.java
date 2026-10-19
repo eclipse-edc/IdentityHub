@@ -81,7 +81,7 @@ public class IssuerCredentialDefinitionAdminApiController implements IssuerCrede
     @Override
     public CredentialDefinition getCredentialDefinitionById(@PathParam("participantContextId") String participantContextId, @PathParam("credentialDefinitionId") String credentialDefinitionId, @Context SecurityContext context) {
         return authorizationService.authorize(context, participantContextId, credentialDefinitionId, CredentialDefinition.class)
-                .compose(u -> credentialDefinitionService.findCredentialDefinitionById(credentialDefinitionId))
+                .compose(u -> credentialDefinitionService.findCredentialDefinitionById(participantContextId, credentialDefinitionId))
                 .orElseThrow(exceptionMapper(CredentialDefinition.class, credentialDefinitionId));
     }
 
@@ -105,7 +105,7 @@ public class IssuerCredentialDefinitionAdminApiController implements IssuerCrede
     @Override
     public void deleteCredentialDefinitionById(@PathParam("participantContextId") String participantContextId, @PathParam("credentialDefinitionId") String credentialDefinitionId, @Context SecurityContext context) {
         authorizationService.authorize(context, participantContextId, credentialDefinitionId, CredentialDefinition.class)
-                .compose(u -> credentialDefinitionService.deleteCredentialDefinition(credentialDefinitionId))
+                .compose(u -> credentialDefinitionService.deleteCredentialDefinition(participantContextId, credentialDefinitionId))
                 .orElseThrow(exceptionMapper(CredentialDefinition.class, credentialDefinitionId));
     }
 }
