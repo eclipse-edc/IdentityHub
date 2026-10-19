@@ -14,30 +14,49 @@
 
 package org.eclipse.edc.identityhub.spi.did;
 
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
-import java.net.MalformedURLException;
 import java.net.URI;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 class DidWebParserTest {
-    private static final Charset DEFAULT_CHARSET = Charset.defaultCharset();
     private final DidWebParser parser = new DidWebParser();
 
-    @Test
-    void parse() throws MalformedURLException {
-        assertThat(parser.parse(URI.create("http://localhost:123"), DEFAULT_CHARSET)).isEqualTo("did:web:localhost%3A123");
-        assertThat(parser.parse(URI.create("http://localhost:123/.well-known"), DEFAULT_CHARSET)).isEqualTo("did:web:localhost%3A123");
-        assertThat(parser.parse(URI.create("http://localhost:123/asdf/gh"), DEFAULT_CHARSET)).isEqualTo("did:web:localhost%3A123:asdf:gh");
-        assertThat(parser.parse(URI.create("http://localhost:123/asdf/gh/"), DEFAULT_CHARSET)).isEqualTo("did:web:localhost%3A123:asdf:gh");
-        assertThat(parser.parse(URI.create("http://localhost:123/asdf/gh/.well-known"), DEFAULT_CHARSET)).isEqualTo("did:web:localhost%3A123:asdf:gh");
-        assertThat(parser.parse(URI.create("http://localhost:123/asdf/gh/.well-known/"), DEFAULT_CHARSET)).isEqualTo("did:web:localhost%3A123:asdf:gh");
-        assertThat(parser.parse(URI.create("http://localhost:123/asdf/gh/.well-known/did.json"), DEFAULT_CHARSET)).isEqualTo("did:web:localhost%3A123:asdf:gh");
-        assertThat(parser.parse(URI.create("http://localhost:123/asdf/gh/.well-known/did.json/"), DEFAULT_CHARSET)).isEqualTo("did:web:localhost%3A123:asdf:gh");
-        assertThat(parser.parse(URI.create("http://localhost:123/asdf/gh/.well-known/did.json/asdf"), DEFAULT_CHARSET)).isEqualTo("did:web:localhost%3A123:asdf:gh:.well-known:did.json:asdf");
-        assertThat(parser.parse(URI.create("http://localhost:123/asdf/gh/.well-known/did.json/asdf/"), DEFAULT_CHARSET)).isEqualTo("did:web:localhost%3A123:asdf:gh:.well-known:did.json:asdf");
+    @ParameterizedTest
+    @CsvSource({
+            "http://localhost:123, did:web:localhost%3A123",
+            "http://localhost:123/, did:web:localhost%3A123",
+            "http://localhost:123/did.json, did:web:localhost%3A123",
+            "http://localhost:123/.well-known/did.json, did:web:localhost%3A123",
+            "http://localhost:123/asdf/gh, did:web:localhost%3A123:asdf:gh",
+            "http://localhost:123/asdf/gh/did.json, did:web:localhost%3A123:asdf:gh",
+            "http://localhost:123/asdf/gh/.well-known/did.json, did:web:localhost%3A123:asdf:gh",
+            "http://localhost:123/asdf/ghdid.json, did:web:localhost%3A123:asdf:ghdid.json"
+    })
+    void parse(String url, String expectedDid) {
+        assertThat(parser.parse(URI.create(url), StandardCharsets.UTF_8)).isEqualTo(expectedDid);
+    }
 
+    @ParameterizedTest
+    @ValueSource(strings = {
+            "http://localhost:123/asdf/gh/",
+            "http://localhost:123/asdf//gh",
+            "http://localhost:123/asdf/gh/did.json/",
+            "http://localhost:123/asdf/gh/did.json/did.json",
+            "http://localhost:123/asdf/did.json/gh",
+            "http://localhost:123/.well-known",
+            "http://localhost:123/asdf/gh/.well-known",
+            "http://localhost:123/asdf/gh/.well-known/",
+            "http://localhost:123/asdf/gh/.well-known/did.json/",
+            "http://localhost:123/asdf/.well-known/gh/did.json",
+            "http://localhost:123/.well-known/.well-known/did.json",
+            "http://localhost:123/asdf/gh/.well-known/did.json/asdf"
+    })
+    void parse_unservedUrl_returnsNull(String url) {
+        assertThat(parser.parse(URI.create(url), StandardCharsets.UTF_8)).isNull();
     }
 }

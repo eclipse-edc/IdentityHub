@@ -334,6 +334,49 @@ public class DidManagementApiEndToEndTest {
         }
 
         @Test
+        void publishDid_unknownDid_expect404(IdentityHub identityHub) {
+            var userAuth = authorizeUser(PARTICIPANT_CONTEXT_ID, identityHub);
+
+            identityHub.getIdentityEndpoint().baseRequest()
+                    .contentType(JSON)
+                    .header(userAuth)
+                    .body("""
+                            {
+                               "did": "did:web:does-not-exist"
+                            }
+                            """)
+                    .post("/v1/participants/%s/dids/publish".formatted(PARTICIPANT_CONTEXT_ID))
+                    .then()
+                    .log().ifValidationFails()
+                    .statusCode(404);
+        }
+
+        @Test
+        void queryDids_onlyReturnsOwnDocuments(IdentityHub identityHub) {
+            identityHub.createParticipant("user2");
+            var userAuth = authorizeUser(PARTICIPANT_CONTEXT_ID, identityHub);
+
+            var docs = identityHub.getIdentityEndpoint().baseRequest()
+                    .contentType(JSON)
+                    .header(userAuth)
+                    .body("""
+                            {
+                               "offset": 0,
+                               "limit": 1,
+                               "sortField": "did",
+                               "sortOrder": "DESC"
+                            }
+                            """)
+                    .post("/v1/participants/%s/dids/query".formatted(PARTICIPANT_CONTEXT_ID))
+                    .then()
+                    .log().ifValidationFails()
+                    .statusCode(200)
+                    .extract().body().as(DidDocument[].class);
+
+            assertThat(docs).extracting(DidDocument::getId).containsExactly("did:web:" + PARTICIPANT_CONTEXT_ID);
+        }
+
+        @Test
         void getAll(IdentityHub identityHub) {
             var superUserAuth = authorizeUser(SUPER_USER, identityHub);
             range(0, 20).forEach(i -> identityHub.createParticipant("user-" + i));

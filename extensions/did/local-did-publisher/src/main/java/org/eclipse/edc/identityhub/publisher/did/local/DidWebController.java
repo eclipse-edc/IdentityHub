@@ -27,30 +27,24 @@ import org.eclipse.edc.identityhub.spi.did.DidWebParser;
 import org.eclipse.edc.identityhub.spi.did.model.DidResource;
 import org.eclipse.edc.identityhub.spi.did.model.DidState;
 import org.eclipse.edc.identityhub.spi.did.store.DidResourceStore;
-import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.spi.query.Criterion;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.web.spi.exception.InvalidRequestException;
+import org.eclipse.edc.web.spi.exception.ObjectNotFoundException;
 
-import java.nio.charset.Charset;
-import java.util.Optional;
-import java.util.regex.Pattern;
+import java.net.URI;
+import java.nio.charset.StandardCharsets;
 
-import static jakarta.ws.rs.core.HttpHeaders.CONTENT_TYPE;
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 
 @Consumes(APPLICATION_JSON)
 @Produces(APPLICATION_JSON)
 @Path("{any:.*}")
 public class DidWebController {
-    private static final Charset DEFAULT_CHARSET = Charset.defaultCharset();
-    private static final Pattern CHARSET_REGEX_PATTERN = Pattern.compile("(?i)\\bcharset=\\s*\"?([^\\s;\"]*)");
-    private final Monitor monitor;
     private final DidResourceStore didResourceStore;
     private final DidWebParser didWebParser;
 
-    public DidWebController(Monitor monitor, DidResourceStore didResourceStore, DidWebParser didWebParser) {
-        this.monitor = monitor;
+    public DidWebController(DidResourceStore didResourceStore, DidWebParser didWebParser) {
         this.didResourceStore = didResourceStore;
         this.didWebParser = didWebParser;
     }
@@ -61,10 +55,11 @@ public class DidWebController {
 
         var httpUrl = context.getUriInfo().getAbsolutePath();
 
-        var charset = extractCharset(context.getHeaderString(CONTENT_TYPE));
-        String did;
-        did = didWebParser.parse(httpUrl, charset);
-
+        // did:web always uses UTF-8, see https://w3c-ccg.github.io/did-method-web/#read-resolve
+        var did = didWebParser.parse(httpUrl, StandardCharsets.UTF_8);
+        if (did == null) {
+            throw notFound(httpUrl);
+        }
 
         var q = QuerySpec.Builder.newInstance()
                 .filter(new Criterion("state", "=", DidState.PUBLISHED.code()))
@@ -80,33 +75,10 @@ public class DidWebController {
             throw new InvalidRequestException("DID '%s' resolved more than one document".formatted(did));
         }
 
-        return dids.stream().findFirst().orElse(null);
+        return dids.stream().findFirst().orElseThrow(() -> notFound(httpUrl));
     }
 
-    private Charset extractCharset(String contentType) {
-        return Optional.ofNullable(contentType)
-                .map(this::parseCharsetFromContentType)
-                .orElse(DEFAULT_CHARSET);
-    }
-
-    /**
-     * Parses the "charset" attribute from the Content-Type header. Returns the value of the charset attribute,
-     * or {@link Charset#defaultCharset()} if the attribute was not present or represents an invalid charset
-     *
-     * @param contentType The Content-Type header
-     * @return The value of the charset attribute or the default charset
-     */
-    private Charset parseCharsetFromContentType(String contentType) {
-        var m = CHARSET_REGEX_PATTERN.matcher(contentType);
-        if (m.find()) {
-            var cs = m.group(1).trim().toUpperCase();
-            if (Charset.isSupported(cs)) {
-                return Charset.forName(cs);
-            } else {
-                monitor.warning("Charset '%s' is not supported, defaulting to %s".formatted(cs, DEFAULT_CHARSET));
-                return DEFAULT_CHARSET;
-            }
-        }
-        return DEFAULT_CHARSET;
+    private static ObjectNotFoundException notFound(URI url) {
+        return new ObjectNotFoundException(DidDocument.class, url.getPath());
     }
 }

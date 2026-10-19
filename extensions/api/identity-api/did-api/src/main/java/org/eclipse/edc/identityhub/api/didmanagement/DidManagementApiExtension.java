@@ -56,7 +56,7 @@ public class DidManagementApiExtension implements ServiceExtension {
 
     private DidResource findById(String owner, String id) {
         var resource = didDocumentService.findById(id);
-        if (resource.getParticipantContextId().equals(owner)) {
+        if (resource != null && resource.getParticipantContextId().equals(owner)) {
             return resource;
         }
         return null;
