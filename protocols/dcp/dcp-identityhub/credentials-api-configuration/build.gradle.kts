@@ -29,6 +29,7 @@ dependencies {
     implementation(libs.edc.spi.dcp)
     implementation(libs.edc.lib.core)
     implementation(libs.edc.dcp.transform)
+    implementation(project(":core:lib:common-lib"))
     implementation(libs.jakarta.rsApi)
     testImplementation(libs.edc.junit)
     testImplementation(libs.edc.jsonld)

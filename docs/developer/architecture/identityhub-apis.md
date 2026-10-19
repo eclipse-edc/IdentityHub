@@ -20,6 +20,27 @@ This API offers endpoints to credentials issuers to store newly issued credentia
 
 > not yet implemented
 
+## Request body size limits
+
+The DCP endpoints (Presentation API, Storage API and Credential Offer API on the `credentials` context, and the
+Credential Request API on the `issuance` context of the IssuerService) reject requests whose body exceeds a maximum size
+with `413 Payload Too Large`. The limit defaults to 5 MiB and can be configured per context:
+
+| Setting                            | Default   |
+|------------------------------------|-----------|
+| `web.http.credentials.maxbodysize` | `5242880` |
+| `web.http.issuance.maxbodysize`    | `5242880` |
+
+If the `Content-Length` header exceeds the limit, the request is rejected before its body is read. Bodies without a
+`Content-Length` header (chunked transfer encoding) are rejected as soon as more than the maximum number of bytes has
+been read.
+
+> Note to client implementors: when a request is rejected based on its `Content-Length` header, IdentityHub responds and
+> closes the connection without reading the body. Clients that send the whole body before reading the response may then
+> observe a connection reset instead of the `413` response. To reliably receive the `413`, clients should send the
+> `Expect: 100-continue` header with large requests, so that the server can reject them before the body is transmitted.
+> Some HTTP clients (e.g. curl) do this automatically for large bodies, others (e.g. Apache HttpClient) do not.
+
 ## Identity API
 
 IdentityHub's Identity API is used to manipulate information that pertain to a participant's identity. Specifically, DID
