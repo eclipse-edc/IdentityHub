@@ -79,8 +79,9 @@ public abstract class IdentityResource extends AbstractParticipantResource {
                 entity.id = UUID.randomUUID().toString();
             }
 
+            // reuse createdAt, which was already taken from the clock, so both default to the same instant
             if (entity.timestamp == 0) {
-                entity.timestamp = entity.clock.millis();
+                entity.timestamp = entity.createdAt;
             }
             return entity;
         }

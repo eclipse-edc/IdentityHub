@@ -16,8 +16,12 @@ package org.eclipse.edc.identityhub.spi.verifiablecredentials.model;
 
 import org.junit.jupiter.api.Test;
 
+import java.time.Clock;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 class VerifiableCredentialResourceTest {
 
@@ -48,5 +52,21 @@ class VerifiableCredentialResourceTest {
         assertThat(vc.getId()).isNotNull();
         assertThat(vc.getStateAsEnum()).isEqualTo(VcStatus.INITIAL);
         assertThat(vc.getTimeOfLastStatusUpdate()).isNull();
+    }
+
+    @Test
+    void verifyBuilder_timestampDefaultsToCreatedAt() {
+        // a clock that advances on every read
+        var clock = mock(Clock.class);
+        when(clock.millis()).thenReturn(1000L, 1001L, 1002L);
+
+        var vc = VerifiableCredentialResource.Builder.newHolder()
+                .issuerId("test-issuer")
+                .holderId("test-holder")
+                .participantContextId("test-participant")
+                .clock(clock)
+                .build();
+
+        assertThat(vc.getTimestamp()).isEqualTo(vc.getCreatedAt());
     }
 }
