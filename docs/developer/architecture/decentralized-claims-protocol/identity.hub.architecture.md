@@ -432,6 +432,21 @@ retries them anyway. A warning is logged if the batch size times the call timeou
 | `edc.iam.credential.request.send.connect-timeout.ms`             | How long connecting to the issuer may take, in milliseconds          | `5000`   |
 | `edc.iam.credential.request.send.call-timeout.ms`                | How long sending a credential request may take, in milliseconds      | `15000`  |
 
+The issuer's `IssuerService` endpoint is taken from its DID document, so whoever controls that document decides where
+IdentityHub sends credential requests, status queries and, for credential offers, metadata requests. Deployments in which
+participants or issuers are not trusted to only publish endpoints of legitimate issuers should therefore restrict these
+requests to `https` URLs whose host resolves to public addresses, i.e. not to loopback, link-local, private, unique local
+or shared (carrier-grade NAT) addresses. Redirects are not followed then. Hosts that are exempt from these restrictions,
+e.g. an issuer running in the same cluster, can be allow-listed. The restriction is disabled by default, as issuers that
+run in the same cluster as IdentityHub are commonly reached at internal addresses. Note that the target host is not
+resolved by IdentityHub if its HTTP client is configured to use a proxy, in which case the proxy needs to restrict the
+hosts it connects to.
+
+| Setting                                 | Description                                                                                      | Default |
+|-----------------------------------------|--------------------------------------------------------------------------------------------------|---------|
+| `edc.iam.issuer.endpoint.restrict`      | Whether requests to issuers are restricted to public HTTPS hosts, and redirects are not followed | `false` |
+| `edc.iam.issuer.endpoint.allowed.hosts` | Comma-separated host names or IP addresses that are exempt from the restriction                  | none    |
+
 Request operations publish events.
 
 ### 3.5.4. CredentialStore

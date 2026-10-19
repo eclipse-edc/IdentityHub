@@ -14,11 +14,16 @@
 
 package org.eclipse.edc.identityhub.api;
 
+import dev.failsafe.RetryPolicy;
+import okhttp3.OkHttpClient;
+import okhttp3.Response;
+import org.eclipse.edc.http.client.EdcHttpClientImpl;
 import org.eclipse.edc.http.spi.EdcHttpClient;
 import org.eclipse.edc.iam.did.spi.resolution.DidResolverRegistry;
 import org.eclipse.edc.identityhub.api.credentialoffer.CredentialObjectResolver;
 import org.eclipse.edc.identityhub.api.credentialoffer.CredentialOfferApiController;
 import org.eclipse.edc.identityhub.api.validation.CredentialOfferMessageValidator;
+import org.eclipse.edc.identityhub.http.IssuerEndpoints;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.DcpIssuerTokenVerifier;
 import org.eclipse.edc.identityhub.protocols.dcp.transform.to.JsonObjectToCredentialObjectTransformer;
 import org.eclipse.edc.identityhub.protocols.dcp.transform.to.JsonObjectToCredentialOfferMessageTransformer;
@@ -28,6 +33,7 @@ import org.eclipse.edc.identityhub.spi.verifiablecredentials.offer.CredentialOff
 import org.eclipse.edc.jsonld.spi.JsonLd;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;
+import org.eclipse.edc.runtime.metamodel.annotation.Setting;
 import org.eclipse.edc.spi.system.ServiceExtension;
 import org.eclipse.edc.spi.system.ServiceExtensionContext;
 import org.eclipse.edc.spi.types.TypeManager;
@@ -48,6 +54,12 @@ import static org.eclipse.edc.spi.constants.CoreConstants.JSON_LD;
 public class CredentialOfferApiExtension implements ServiceExtension {
 
     public static final String NAME = "Storage API Extension";
+
+    @Setting(description = IssuerEndpoints.RESTRICT_DESCRIPTION, key = IssuerEndpoints.RESTRICT_SETTING, defaultValue = "false")
+    private boolean restrictIssuerEndpoints;
+
+    @Setting(description = IssuerEndpoints.ALLOWED_HOSTS_DESCRIPTION, key = IssuerEndpoints.ALLOWED_HOSTS_SETTING, required = false)
+    private String allowedIssuerHosts;
 
     @Inject
     private TypeTransformerRegistry typeTransformer;
@@ -70,6 +82,10 @@ public class CredentialOfferApiExtension implements ServiceExtension {
     private DidResolverRegistry didResolverRegistry;
     @Inject
     private EdcHttpClient httpClient;
+    @Inject
+    private OkHttpClient okHttpClient;
+    @Inject
+    private RetryPolicy<Response> retryPolicy;
 
     @Override
     public String name() {
@@ -81,7 +97,11 @@ public class CredentialOfferApiExtension implements ServiceExtension {
 
         validatorRegistry.register(DSPACE_DCP_NAMESPACE_V_1_0.toIri(CREDENTIAL_OFFER_MESSAGE_TERM), new CredentialOfferMessageValidator());
 
-        var credentialObjectResolver = new CredentialObjectResolver(didResolverRegistry, httpClient, jsonLd, typeTransformer);
+        // the Issuer's endpoint is taken from the DID document of whoever sent the offer
+        var issuerHttpClient = restrictIssuerEndpoints
+                ? new EdcHttpClientImpl(IssuerEndpoints.restrict(okHttpClient, IssuerEndpoints.parseAllowedHosts(allowedIssuerHosts)), retryPolicy, context.getMonitor())
+                : httpClient;
+        var credentialObjectResolver = new CredentialObjectResolver(didResolverRegistry, issuerHttpClient, jsonLd, typeTransformer);
         var controller = new CredentialOfferApiController(validatorRegistry, typeTransformer, issuerTokenVerifier, participantContextService, credentialOfferService, jsonLd, credentialObjectResolver,
                 context.getMonitor().withPrefix("CredentialOfferAPI"));
         webService.registerResource(CREDENTIALS, new JsonMapperProvider(typeManager, JSON_LD));
