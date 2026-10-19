@@ -1253,10 +1253,12 @@ paths:
               $ref: "#/components/schemas/CredentialRequestDto"
       responses:
         "201":
-          description: The request was processed and sent to the issuer. The issuer-created
-            ID ("issuerPid") is returned in the response.
+          description: "The request was processed and sent to the issuer. Its URL,\
+            \ which ends with the \"holderPid\" that IdentityHub assigned to it, is\
+            \ returned in the Location header."
         "400":
-          description: "Request body was malformed, or the request could not be processed"
+          description: "Request body was malformed, e.g. it contained a \"holderPid\"\
+            , or the request could not be processed"
           content:
             application/json:
               schema:
@@ -1266,15 +1268,6 @@ paths:
         "403":
           description: "The request could not be completed, because either the authentication\
             \ was missing or was not valid."
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/ApiErrorDetail"
-        "409":
-          description: "Could not create a credential request, because a credential\
-            \ request with that ID already exists"
           content:
             application/json:
               schema:
@@ -2096,6 +2089,8 @@ components:
             $ref: "#/components/schemas/CredentialDescriptor"
         holderPid:
           type: string
+          description: "Must not be set: IdentityHub assigns the holderPid"
+          deprecated: true
         issuerDid:
           type: string
     CredentialDescriptor:
