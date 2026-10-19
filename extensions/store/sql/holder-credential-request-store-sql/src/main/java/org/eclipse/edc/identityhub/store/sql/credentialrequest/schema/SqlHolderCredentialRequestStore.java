@@ -230,6 +230,24 @@ public class SqlHolderCredentialRequestStore extends AbstractSqlStore implements
         return StoreResult.success();
     }
 
+    @Override
+    public StoreResult<Void> deleteById(String id) {
+        return transactionContext.execute(() -> {
+            try (var connection = getConnection()) {
+                if (findByIdInternal(connection, id) == null) {
+                    return StoreResult.notFound(format("HolderCredentialRequest '%s' not found", id));
+                }
+                if (!acquireLease(connection, id)) {
+                    return StoreResult.alreadyLeased(format("HolderCredentialRequest %s is currently leased!", id));
+                }
+                queryExecutor.execute(connection, statements.getDeleteByIdTemplate(), id);
+                return StoreResult.success();
+            } catch (SQLException e) {
+                throw new EdcPersistenceException(e);
+            }
+        });
+    }
+
     private boolean acquireLease(Connection connection, String id) {
         var now = clock.millis();
         var sql = statements.getAcquireLeaseTemplate(statements.getHolderCredentialRequestTable());

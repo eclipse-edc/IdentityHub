@@ -254,7 +254,7 @@ public class DidManagementApiEndToEndTest {
         }
 
         @Test
-        void unpublishDid_withUserToken(IdentityHub identityHub, EventRouter router, IdentityHubParticipantContextService participantContextService) {
+        void unpublishDid_withUserToken_whenParticipantDeactivated_expect401(IdentityHub identityHub, EventRouter router, IdentityHubParticipantContextService participantContextService) {
             var subscriber = mock(EventSubscriber.class);
             router.registerSync(DidDocumentUnpublished.class, subscriber);
 
@@ -264,8 +264,10 @@ public class DidManagementApiEndToEndTest {
             participantContextService.updateParticipant(user, IdentityHubParticipantContext::deactivate);
 
             reset(subscriber);
+            // a deactivated participant context cannot use the API any more, only an admin can
             identityHub.getIdentityEndpoint().baseRequest()
                     .contentType(JSON)
+                    .accept(JSON)
                     .header(userAuth)
                     .body("""
                             {
@@ -275,10 +277,8 @@ public class DidManagementApiEndToEndTest {
                     .post("/v1/participants/%s/dids/unpublish".formatted(user))
                     .then()
                     .log().ifValidationFails()
-                    .statusCode(204)
-                    .body(Matchers.notNullValue());
+                    .statusCode(401);
 
-            // verify that the unpublish event was fired
             verifyNoInteractions(subscriber);
         }
 

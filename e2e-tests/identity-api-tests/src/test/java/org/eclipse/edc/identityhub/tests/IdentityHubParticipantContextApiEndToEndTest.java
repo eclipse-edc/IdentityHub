@@ -19,6 +19,9 @@ import io.restassured.http.Header;
 import org.eclipse.edc.api.authentication.OauthServerEndToEndExtension;
 import org.eclipse.edc.iam.decentralizedclaims.sts.spi.store.StsAccountStore;
 import org.eclipse.edc.iam.did.spi.document.DidDocument;
+import org.eclipse.edc.identityhub.spi.credential.request.model.HolderCredentialRequest;
+import org.eclipse.edc.identityhub.spi.credential.request.model.HolderRequestState;
+import org.eclipse.edc.identityhub.spi.credential.request.store.HolderCredentialRequestStore;
 import org.eclipse.edc.identityhub.spi.did.DidConstants;
 import org.eclipse.edc.identityhub.spi.did.DidDocumentPublisher;
 import org.eclipse.edc.identityhub.spi.did.DidDocumentPublisherRegistry;
@@ -33,6 +36,9 @@ import org.eclipse.edc.identityhub.spi.participantcontext.IdentityHubParticipant
 import org.eclipse.edc.identityhub.spi.participantcontext.events.ParticipantContextCreated;
 import org.eclipse.edc.identityhub.spi.participantcontext.events.ParticipantContextUpdated;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.IdentityHubParticipantContext;
+import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.CredentialOffer;
+import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.CredentialOfferStatus;
+import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialOfferStore;
 import org.eclipse.edc.identityhub.tests.fixtures.DefaultRuntimes;
 import org.eclipse.edc.identityhub.tests.fixtures.SharedPostgresqlEndToEndExtension;
 import org.eclipse.edc.identityhub.tests.fixtures.credentialservice.IdentityHub;
@@ -71,9 +77,11 @@ import static org.eclipse.edc.identityhub.spi.participantcontext.StsAccountProvi
 import static org.eclipse.edc.identityhub.tests.fixtures.TestData.IH_RUNTIME_NAME;
 import static org.eclipse.edc.identityhub.tests.fixtures.TestFunctions.authorizeOauth2;
 import static org.eclipse.edc.identityhub.tests.fixtures.TestFunctions.authorizeTokenBased;
+import static org.eclipse.edc.identityhub.tests.fixtures.TestFunctions.createCredential;
 import static org.eclipse.edc.identityhub.tests.fixtures.TestFunctions.createKeyDescriptor;
 import static org.eclipse.edc.identityhub.tests.fixtures.TestFunctions.createNewParticipant;
 import static org.eclipse.edc.identityhub.tests.fixtures.common.AbstractIdentityHub.SUPER_USER;
+import static org.eclipse.edc.participantcontext.spi.types.ParticipantResource.queryByParticipantContextId;
 import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.notNullValue;
@@ -539,6 +547,80 @@ public class IdentityHubParticipantContextApiEndToEndTest {
             assertThat(identityHub.getKeyPairsForParticipant(participantContextId)).isEmpty();
             assertThat(vault.resolveSecret(alias)).isNull();
             assertThat(vault.resolveSecret(apiTokenAlias)).isNull();
+        }
+
+        @Test
+        void deleteParticipant_shouldDeleteHolderData(IdentityHub identityHub, HolderCredentialRequestStore requestStore, CredentialOfferStore offerStore) {
+            var participantContextId = "another-user";
+            identityHub.createParticipant(participantContextId);
+            identityHub.storeCredential(createCredential(), participantContextId);
+            // terminal states, so that the request and the offer are not leased by their state machines while they are deleted
+            requestStore.save(HolderCredentialRequest.Builder.newInstance()
+                    .id(UUID.randomUUID().toString())
+                    .participantContextId(participantContextId)
+                    .issuerDid("did:web:issuer")
+                    .requestedCredential("credential-object-id", "TestCredential", "VC1_0_JWT")
+                    .state(HolderRequestState.ISSUED.code())
+                    .build());
+            offerStore.save(CredentialOffer.Builder.newInstance()
+                    .id(UUID.randomUUID().toString())
+                    .participantContextId(participantContextId)
+                    .issuer("did:web:issuer")
+                    .state(CredentialOfferStatus.PROCESSED.code())
+                    .build());
+
+            identityHub.getIdentityEndpoint().baseRequest()
+                    .header(authorizeUser(SUPER_USER, identityHub))
+                    .contentType(ContentType.JSON)
+                    .delete("/v1/participants/%s".formatted(participantContextId))
+                    .then()
+                    .log().ifError()
+                    .statusCode(204);
+
+            // a participant context that is created with the same ID does not inherit the data of the deleted one
+            identityHub.createParticipant(participantContextId);
+            var query = queryByParticipantContextId(participantContextId).build();
+            assertThat(identityHub.getCredentialsForParticipant(participantContextId)).isEmpty();
+            assertThat(requestStore.query(query)).isEmpty();
+            assertThat(offerStore.query(query)).isEmpty();
+        }
+
+        @Test
+        void deactivateParticipant_shouldRejectItsRequests(IdentityHub identityHub) {
+            var participantContextId = "test-user";
+            var userAuth = authorizeUser(participantContextId, identityHub);
+            var adminAuth = authorizeUser(SUPER_USER, identityHub);
+
+            identityHub.getIdentityEndpoint().baseRequest()
+                    .header(userAuth)
+                    .accept(ContentType.JSON)
+                    .get("/v1/participants/" + participantContextId)
+                    .then()
+                    .statusCode(200);
+
+            identityHub.getIdentityEndpoint().baseRequest()
+                    .header(adminAuth)
+                    .contentType(ContentType.JSON)
+                    .post("/v1/participants/%s/state?isActive=false".formatted(participantContextId))
+                    .then()
+                    .log().ifError()
+                    .statusCode(204);
+
+            identityHub.getIdentityEndpoint().baseRequest()
+                    .header(userAuth)
+                    .accept(ContentType.JSON)
+                    .get("/v1/participants/" + participantContextId)
+                    .then()
+                    .log().ifValidationFails()
+                    .statusCode(401);
+
+            // an admin still manages the deactivated participant context
+            identityHub.getIdentityEndpoint().baseRequest()
+                    .header(adminAuth)
+                    .accept(ContentType.JSON)
+                    .get("/v1/participants/" + participantContextId)
+                    .then()
+                    .statusCode(200);
         }
 
         @ParameterizedTest(name = "Expect 403, target = {0}, isActive = {1}")

@@ -17,6 +17,7 @@ package org.eclipse.edc.identityhub.spi.participantcontext;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.CreateParticipantContextResponse;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.IdentityHubParticipantContext;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantManifest;
+import org.eclipse.edc.participantcontext.spi.types.ParticipantContextState;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.ServiceResult;
 
@@ -43,6 +44,26 @@ public interface IdentityHubParticipantContextService {
      * @return The participant context, or a failure if not found.
      */
     ServiceResult<IdentityHubParticipantContext> getParticipantContext(String participantContextId);
+
+    /**
+     * Fetches the {@link IdentityHubParticipantContext} by ID, unless it is {@link ParticipantContextState#DEACTIVATED}.
+     * A deactivated participant context must neither authenticate nor be addressed by requests, e.g. on the DCP
+     * endpoints or the STS, so callers that resolve the participant context of a request use this method. Admins still
+     * manage deactivated participant contexts through {@link #getParticipantContext(String)}.
+     *
+     * @param participantContextId the ID to look for.
+     * @return the participant context, a not-found failure if it does not exist, or a bad-request failure if it is deactivated
+     */
+    default ServiceResult<IdentityHubParticipantContext> rejectIfDeactivated(String participantContextId) {
+        var participantContext = getParticipantContext(participantContextId);
+        if (participantContext.failed()) {
+            return ServiceResult.notFound("ParticipantContext '%s' does not exist.".formatted(participantContextId));
+        }
+        if (participantContext.getContent().getStateAsEnum() == ParticipantContextState.DEACTIVATED) {
+            return ServiceResult.badRequest("ParticipantContext '%s' is deactivated.".formatted(participantContextId));
+        }
+        return participantContext;
+    }
 
     /**
      * Deletes the {@link IdentityHubParticipantContext} by ID.

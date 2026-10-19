@@ -16,8 +16,10 @@ package org.eclipse.edc.iam.decentralizedclaims.sts.service;
 
 import org.eclipse.edc.identityhub.spi.authentication.ParticipantSecureTokenService;
 import org.eclipse.edc.identityhub.spi.keypair.KeyPairService;
+import org.eclipse.edc.identityhub.spi.participantcontext.IdentityHubParticipantContextService;
 import org.eclipse.edc.spi.iam.TokenRepresentation;
 import org.eclipse.edc.spi.result.Result;
+import org.eclipse.edc.spi.result.ServiceFailure;
 import org.eclipse.edc.token.spi.KeyIdDecorator;
 import org.eclipse.edc.token.spi.TokenGenerationService;
 import org.eclipse.edc.transaction.spi.TransactionContext;
@@ -51,22 +53,31 @@ public class EmbeddedSecureTokenService implements ParticipantSecureTokenService
     private final TokenGenerationService tokenGenerationService;
     private final Clock clock;
     private final KeyPairService keyPairService;
+    private final IdentityHubParticipantContextService participantContextService;
 
     public EmbeddedSecureTokenService(TransactionContext transactionContext,
                                       long tokenValiditySeconds,
                                       TokenGenerationService tokenGenerationService,
                                       Clock clock,
-                                      KeyPairService keyPairService) {
+                                      KeyPairService keyPairService,
+                                      IdentityHubParticipantContextService participantContextService) {
         this.transactionContext = transactionContext;
         this.tokenValiditySeconds = tokenValiditySeconds;
         this.tokenGenerationService = tokenGenerationService;
         this.clock = clock;
         this.keyPairService = keyPairService;
+        this.participantContextService = participantContextService;
     }
 
     @Override
     public Result<TokenRepresentation> createToken(String participantContextId, Map<String, String> claims, @Nullable String bearerAccessScope) {
         return transactionContext.execute(() -> {
+            // a deactivated participant context must not obtain tokens
+            var participantContext = participantContextService.rejectIfDeactivated(participantContextId);
+            if (participantContext.failed() && participantContext.reason() == ServiceFailure.Reason.BAD_REQUEST) {
+                return Result.<TokenRepresentation>failure(participantContext.getFailureDetail());
+            }
+
             var tokenSigningKey = keyPairService.getActiveKeyPairForUsage(participantContextId, TOKEN_SIGNING);
             if (tokenSigningKey.failed()) {
                 return Result.failure(tokenSigningKey.getFailureDetail());

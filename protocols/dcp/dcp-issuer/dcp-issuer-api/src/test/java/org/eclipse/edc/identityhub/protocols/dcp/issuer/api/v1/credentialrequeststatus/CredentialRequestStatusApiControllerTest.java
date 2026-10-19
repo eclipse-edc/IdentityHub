@@ -33,6 +33,7 @@ import org.eclipse.edc.spi.result.ServiceResult;
 import org.eclipse.edc.transform.spi.TypeTransformerRegistry;
 import org.eclipse.edc.web.jersey.testfixtures.RestControllerTestBase;
 import org.eclipse.edc.web.spi.exception.AuthenticationFailedException;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -64,6 +65,11 @@ class CredentialRequestStatusApiControllerTest extends RestControllerTestBase {
     private final DcpHolderTokenVerifier dcpIssuerTokenVerifier = mock();
     private final IdentityHubParticipantContextService participantContextService = mock();
     private final String participantContextId = "participantContextId";
+
+    @BeforeEach
+    void setUp() {
+        when(participantContextService.rejectIfDeactivated(any())).thenCallRealMethod();
+    }
 
     @Test
     void credentialStatus_tokenNotPresent_shouldReturn401() {
@@ -106,6 +112,19 @@ class CredentialRequestStatusApiControllerTest extends RestControllerTestBase {
     @Test
     void credentialStatus_participantNotFound_shouldReturn401() {
         when(participantContextService.getParticipantContext(eq(participantContextId))).thenReturn(ServiceResult.notFound("not found"));
+
+        assertThatThrownBy(() -> controller().credentialStatus(participantContextId, UUID.randomUUID().toString(), generateToken()))
+                .isExactlyInstanceOf(AuthenticationFailedException.class)
+                .hasMessage("ID token verification failed");
+
+        verifyNoInteractions(issuerService);
+    }
+
+    @Test
+    void credentialStatus_participantDeactivated_shouldReturn401() {
+        var participantContext = createParticipantContext();
+        participantContext.deactivate();
+        when(participantContextService.getParticipantContext(eq(participantContextId))).thenReturn(ServiceResult.success(participantContext));
 
         assertThatThrownBy(() -> controller().credentialStatus(participantContextId, UUID.randomUUID().toString(), generateToken()))
                 .isExactlyInstanceOf(AuthenticationFailedException.class)

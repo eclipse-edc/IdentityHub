@@ -21,6 +21,7 @@ import org.eclipse.edc.iam.did.spi.resolution.DidPublicKeyResolver;
 import org.eclipse.edc.iam.did.spi.resolution.DidResolverRegistry;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.RevocationServiceRegistry;
+import org.eclipse.edc.identityhub.core.services.participant.HolderDataCleanup;
 import org.eclipse.edc.identityhub.core.services.query.CredentialQueryResolverImpl;
 import org.eclipse.edc.identityhub.core.services.verifiablecredential.CredentialOfferEventPublisher;
 import org.eclipse.edc.identityhub.core.services.verifiablecredential.CredentialOfferObservableImpl;
@@ -42,6 +43,7 @@ import org.eclipse.edc.identityhub.spi.keypair.KeyPairService;
 import org.eclipse.edc.identityhub.spi.keypair.store.KeyPairResourceStore;
 import org.eclipse.edc.identityhub.spi.model.IdentityHubConstants;
 import org.eclipse.edc.identityhub.spi.participantcontext.IdentityHubParticipantContextService;
+import org.eclipse.edc.identityhub.spi.participantcontext.events.ParticipantContextDeleted;
 import org.eclipse.edc.identityhub.spi.transformation.ScopeToCriterionTransformer;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.CredentialRequestManager;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.CredentialStatusCheckService;
@@ -184,6 +186,8 @@ public class CoreServicesExtension implements ServiceExtension {
     public void initialize(ServiceExtensionContext context) {
 
         suiteRegistry.register(IdentityHubConstants.JWS_2020_SIGNATURE_SUITE, new Jws2020SignatureSuite(JacksonJsonLd.createObjectMapper()));
+        eventRouter.registerSync(ParticipantContextDeleted.class,
+                new HolderDataCleanup(credentialStore, holderCredentialRequestStore, credentialOfferStore, transactionContext, context.getMonitor()));
     }
 
     @Override

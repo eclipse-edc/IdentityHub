@@ -32,6 +32,7 @@ import org.eclipse.edc.keys.keyparsers.PemParser;
 import org.eclipse.edc.participantcontext.spi.config.model.ParticipantContextConfiguration;
 import org.eclipse.edc.participantcontext.spi.config.service.ParticipantContextConfigService;
 import org.eclipse.edc.participantcontext.spi.store.ParticipantContextStore;
+import org.eclipse.edc.participantcontext.spi.types.ParticipantContext;
 import org.eclipse.edc.participantcontext.spi.types.ParticipantContextState;
 import org.eclipse.edc.spi.EdcException;
 import org.eclipse.edc.spi.monitor.Monitor;
@@ -46,6 +47,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.mockito.ArgumentCaptor;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -54,6 +56,7 @@ import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.entry;
 import static org.eclipse.edc.junit.assertions.AbstractResultAssert.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -121,6 +124,24 @@ class IdentityHubParticipantContextServiceImplTest {
         verify(vault).storeSecret(anyString(), eq(ctx.getParticipantContextId() + "-apikey"), anyString());
         verifyNoMoreInteractions(vault, participantContextStore);
         verify(observableMock).invokeForEach(any());
+    }
+
+    @Test
+    void createParticipantContext_shouldStoreAdditionalPropertiesOnlyInConfiguration() {
+        when(participantContextStore.create(any())).thenReturn(StoreResult.success());
+        when(vault.storeSecret(anyString(), anyString(), anyString())).thenReturn(Result.success());
+
+        var manifest = createManifest().property("secret-setting", "secret-value").build();
+
+        assertThat(participantContextService.createParticipantContext(manifest)).isSucceeded();
+
+        var contextCaptor = ArgumentCaptor.forClass(ParticipantContext.class);
+        verify(participantContextStore).create(contextCaptor.capture());
+        assertThat(contextCaptor.getValue().getProperties()).doesNotContainKey("secret-setting");
+
+        var configCaptor = ArgumentCaptor.forClass(ParticipantContextConfiguration.class);
+        verify(configService).save(configCaptor.capture());
+        assertThat(configCaptor.getValue().getPrivateEntries()).containsExactly(entry("secret-setting", "secret-value"));
     }
 
     @ParameterizedTest(name = "isActive: {0}")

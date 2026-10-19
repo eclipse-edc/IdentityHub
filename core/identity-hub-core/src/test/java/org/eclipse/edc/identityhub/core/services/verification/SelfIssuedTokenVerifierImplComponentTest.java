@@ -108,6 +108,7 @@ class SelfIssuedTokenVerifierImplComponentTest {
 
         when(participantContextService.getParticipantContext(anyString()))
                 .thenReturn(ServiceResult.success(IdentityHubParticipantContext.Builder.newInstance().did(PARTICIPANT_DID).participantContextId(PARTICIPANT_CONTEXT_ID).apiTokenAlias("foobar").build()));
+        when(participantContextService.rejectIfDeactivated(any())).thenCallRealMethod();
         senderKeyResolver = mock();
         when(senderKeyResolver.resolveKey(anyString())).thenReturn(Result.success(providerKeyPair.getPublic()));
         verifier = new SelfIssuedTokenVerifierImpl(tokenValidationService, resolverMock, ruleRegistry, senderKeyResolver, participantContextService, Clock.systemUTC());

@@ -19,6 +19,7 @@ import org.eclipse.edc.identityhub.spi.credential.request.model.HolderRequestSta
 import org.eclipse.edc.identityhub.spi.credential.request.store.HolderCredentialRequestStore;
 import org.eclipse.edc.spi.query.CriterionOperatorRegistry;
 import org.eclipse.edc.spi.query.QuerySpec;
+import org.eclipse.edc.spi.result.StoreResult;
 import org.eclipse.edc.store.InMemoryStatefulEntityStore;
 
 import java.time.Clock;
@@ -37,5 +38,13 @@ public class InMemoryHolderCredentialRequestStore extends InMemoryStatefulEntity
     @Override
     public Collection<HolderCredentialRequest> query(QuerySpec query) {
         return super.findAll(query).toList();
+    }
+
+    @Override
+    public StoreResult<Void> deleteById(String id) {
+        if (findById(id) == null) {
+            return StoreResult.notFound("HolderCredentialRequest with id '%s' not found".formatted(id));
+        }
+        return delete(id);
     }
 }

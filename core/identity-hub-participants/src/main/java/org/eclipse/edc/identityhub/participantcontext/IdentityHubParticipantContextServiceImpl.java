@@ -112,7 +112,7 @@ public class IdentityHubParticipantContextServiceImpl implements IdentityHubPart
                 }
 
                 // from here on, a failure rolls back the transaction, so that no partially provisioned participant context remains
-                rollbackOnFailure(saveConfiguration(context));
+                rollbackOnFailure(saveConfiguration(manifest));
 
                 String apiKey = null;
                 if (manifest.isProvisionApiKey()) {
@@ -229,8 +229,13 @@ public class IdentityHubParticipantContextServiceImpl implements IdentityHubPart
     }
 
 
-    private ServiceResult<Void> saveConfiguration(IdentityHubParticipantContext context) {
-        var config = context.getProperties().entrySet().stream()
+    /**
+     * Stores the additional properties of the manifest as private entries of the participant's configuration, which are
+     * encrypted if configuration encryption is enabled. They are not copied into the participant context, whose properties
+     * are stored in plaintext.
+     */
+    private ServiceResult<Void> saveConfiguration(ParticipantManifest manifest) {
+        var config = manifest.getAdditionalProperties().entrySet().stream()
                 .collect(toMap(Map.Entry::getKey, e -> {
                     if (e.getValue() instanceof String v) {
                         return v;
@@ -243,7 +248,7 @@ public class IdentityHubParticipantContextServiceImpl implements IdentityHubPart
                 }));
 
         var cfg = ParticipantContextConfiguration.Builder.newInstance()
-                .participantContextId(context.getParticipantContextId())
+                .participantContextId(manifest.getParticipantContextId())
                 .privateEntries(config)
                 .build();
         return configService.save(cfg);
@@ -276,8 +281,7 @@ public class IdentityHubParticipantContextServiceImpl implements IdentityHubPart
                 .scopes(manifest.getScopes())
                 .did(manifest.getDid())
                 .apiTokenAlias(apiKeyAlias)
-                .state(ParticipantContextState.CREATED)
-                .properties(manifest.getAdditionalProperties());
+                .state(ParticipantContextState.CREATED);
         if (manifest.getScopes().isEmpty()) {
             context.scopes(List.of(IdentityApiScopes.READ, IdentityApiScopes.WRITE, IssuerAdminApiScopes.READ, IssuerAdminApiScopes.WRITE));
         }
