@@ -19,6 +19,7 @@ import org.eclipse.edc.identityhub.spi.authentication.ServicePrincipal;
 import org.eclipse.edc.identityhub.spi.authentication.ServicePrincipalResolver;
 import org.eclipse.edc.identityhub.spi.participantcontext.IdentityHubParticipantContextService;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.IdentityHubParticipantContext;
+import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.spi.security.Vault;
 import org.eclipse.edc.web.spi.exception.AuthenticationFailedException;
 
@@ -36,10 +37,12 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 class ParticipantServicePrincipalResolver implements ServicePrincipalResolver {
     private final IdentityHubParticipantContextService participantContextService;
     private final Vault vault;
+    private final Monitor monitor;
 
-    ParticipantServicePrincipalResolver(IdentityHubParticipantContextService participantContextService, Vault vault) {
+    ParticipantServicePrincipalResolver(IdentityHubParticipantContextService participantContextService, Vault vault, Monitor monitor) {
         this.participantContextService = participantContextService;
         this.vault = vault;
+        this.monitor = monitor;
     }
 
     /**
@@ -73,7 +76,11 @@ class ParticipantServicePrincipalResolver implements ServicePrincipalResolver {
     private ServicePrincipal findByPrincipal(String principal) {
         return participantContextService.getParticipantContext(principal)
                 .map(this::toUser)
-                .orElseThrow(f -> new AuthenticationFailedException("Invalid Authentication '%s': %s".formatted(principal, f.getFailureDetail())));
+                .orElseThrow(f -> {
+                    // answered like a wrong API key, so that the participant's existence cannot be told from the response
+                    monitor.debug("API key authentication failed: %s".formatted(f.getFailureDetail()));
+                    return new AuthenticationFailedException("Invalid API token");
+                });
     }
 
     private ServicePrincipal toUser(IdentityHubParticipantContext participantContext) {

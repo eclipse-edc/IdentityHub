@@ -152,7 +152,10 @@ class CredentialOfferApiControllerTest extends RestControllerTestBase {
                 .post()
                 .then()
                 .log().ifValidationFails()
-                .statusCode(401);
+                .statusCode(401)
+                // answered like a failed token verification, so the participant's existence cannot be told
+                .body(containsString("ID token verification failed"))
+                .body(not(containsString("foobar")));
     }
 
     @Test

@@ -109,7 +109,7 @@ class CredentialRequestStatusApiControllerTest extends RestControllerTestBase {
 
         assertThatThrownBy(() -> controller().credentialStatus(participantContextId, UUID.randomUUID().toString(), generateToken()))
                 .isExactlyInstanceOf(AuthenticationFailedException.class)
-                .hasMessageContaining("Invalid issuer");
+                .hasMessage("ID token verification failed");
 
         verifyNoInteractions(issuerService);
     }
@@ -133,6 +133,21 @@ class CredentialRequestStatusApiControllerTest extends RestControllerTestBase {
         assertThat(response).isNotNull();
 
         verify(dcpIssuerTokenVerifier).verify(any(), argThat(tr -> token.contains(tr.getToken())));
+    }
+
+    @Test
+    void credentialStatus_requestNotFound_shouldReturn401WithoutDetails() {
+        var participant = createHolder("id", "did", "name");
+        var ctx = new DcpRequestContext(participant, Map.of(), null);
+        var requestId = UUID.randomUUID().toString();
+
+        when(issuerService.search(any())).thenReturn(ServiceResult.success(List.of()));
+        when(dcpIssuerTokenVerifier.verify(any(), any())).thenReturn(ServiceResult.success(ctx));
+        when(participantContextService.getParticipantContext(eq(participantContextId))).thenReturn(ServiceResult.success(createParticipantContext()));
+
+        assertThatThrownBy(() -> controller().credentialStatus(participantContextId, requestId, generateToken()))
+                .isInstanceOf(AuthenticationFailedException.class)
+                .hasMessage("Invalid credential request");
     }
 
     // until DELIVERED, the Holder does not have the credentials, so the request is merely received

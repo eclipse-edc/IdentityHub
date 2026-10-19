@@ -464,7 +464,7 @@ class CredentialWriterImplTest {
                 .participantContextId(PARTICIPANT_ID)
                 .issuerPid("issuerPid")
                 .build();
-        when(holderCredentialRequestStore.findByIdAndLease(anyString())).thenReturn(StoreResult.success(request));
+        storeHolds(request);
 
         var result = credentialWriter.reject("holderPid", "issuerPid", ISSUER_DID, "attestation not satisfied", PARTICIPANT_ID);
 
@@ -485,7 +485,7 @@ class CredentialWriterImplTest {
                 .participantContextId(PARTICIPANT_ID)
                 .issuerPid("issuerPid")
                 .build();
-        when(holderCredentialRequestStore.findByIdAndLease(anyString())).thenReturn(StoreResult.success(request));
+        storeHolds(request);
 
         var result = credentialWriter.reject("holderPid", "issuerPid", ISSUER_DID, null, PARTICIPANT_ID);
 
@@ -503,7 +503,7 @@ class CredentialWriterImplTest {
                 .participantContextId(PARTICIPANT_ID)
                 .issuerPid("issuerPid")
                 .build();
-        when(holderCredentialRequestStore.findByIdAndLease(anyString())).thenReturn(StoreResult.success(request));
+        storeHolds(request);
         when(holderCredentialRequestStore.save(any())).thenReturn(StoreResult.generalError("save failed"));
 
         var result = credentialWriter.reject("holderPid", "issuerPid", ISSUER_DID, "attestation not satisfied", PARTICIPANT_ID);
@@ -522,14 +522,14 @@ class CredentialWriterImplTest {
                 .participantContextId(PARTICIPANT_ID)
                 .issuerPid("issuerPid")
                 .build();
-        when(holderCredentialRequestStore.findByIdAndLease(anyString())).thenReturn(StoreResult.success(request));
+        storeHolds(request);
 
         var result = credentialWriter.reject("holderPid", "issuerPid", "did:web:someone-else", "nope", PARTICIPANT_ID);
 
-        assertThat(result).isFailed();
+        assertThat(result).isFailed().detail().doesNotContain(ISSUER_DID);
         Assertions.assertThat(request.stateAsEnum()).isEqualTo(REQUESTED);
         verify(holderCredentialRequestStore, never()).save(any());
-        verify(holderCredentialRequestStore).breakLease(request);
+        verify(holderCredentialRequestStore, never()).findByIdAndLease(anyString());
     }
 
     @Test
@@ -542,7 +542,7 @@ class CredentialWriterImplTest {
                 .participantContextId(PARTICIPANT_ID)
                 .issuerPid("issuerPid")
                 .build();
-        when(holderCredentialRequestStore.findByIdAndLease(anyString())).thenReturn(StoreResult.success(request));
+        storeHolds(request);
 
         var result = credentialWriter.reject("holderPid", "issuerPid", ISSUER_DID, "too late", PARTICIPANT_ID);
 
@@ -562,13 +562,14 @@ class CredentialWriterImplTest {
                 .participantContextId("another-participant")
                 .issuerPid("issuerPid")
                 .build();
-        when(holderCredentialRequestStore.findByIdAndLease(anyString())).thenReturn(StoreResult.success(request));
+        storeHolds(request);
 
         var result = credentialWriter.reject("holderPid", "issuerPid", ISSUER_DID, "nope", PARTICIPANT_ID);
 
         assertThat(result).isFailed();
+        Assertions.assertThat(result.reason()).isEqualTo(ServiceFailure.Reason.NOT_FOUND);
         Assertions.assertThat(request.stateAsEnum()).isEqualTo(REQUESTED);
-        verify(holderCredentialRequestStore).breakLease(request);
+        verify(holderCredentialRequestStore, never()).findByIdAndLease(anyString());
     }
 
     /**

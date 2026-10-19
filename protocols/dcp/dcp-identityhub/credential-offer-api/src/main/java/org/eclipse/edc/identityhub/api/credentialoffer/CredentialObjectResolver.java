@@ -24,6 +24,7 @@ import org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialObject;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.model.IssuerMetadata;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.CredentialRequestManager;
 import org.eclipse.edc.jsonld.spi.JsonLd;
+import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.transform.spi.TypeTransformerRegistry;
 
@@ -51,12 +52,14 @@ public class CredentialObjectResolver {
     private final EdcHttpClient httpClient;
     private final JsonLd jsonLd;
     private final TypeTransformerRegistry transformerRegistry;
+    private final Monitor monitor;
 
-    public CredentialObjectResolver(DidResolverRegistry didResolverRegistry, EdcHttpClient httpClient, JsonLd jsonLd, TypeTransformerRegistry transformerRegistry) {
+    public CredentialObjectResolver(DidResolverRegistry didResolverRegistry, EdcHttpClient httpClient, JsonLd jsonLd, TypeTransformerRegistry transformerRegistry, Monitor monitor) {
         this.didResolverRegistry = didResolverRegistry;
         this.httpClient = httpClient;
         this.jsonLd = jsonLd;
         this.transformerRegistry = transformerRegistry;
+        this.monitor = monitor;
     }
 
     /**
@@ -70,7 +73,14 @@ public class CredentialObjectResolver {
         if (credentialObjects.stream().noneMatch(CredentialObjectResolver::isSparse)) {
             return success(credentialObjects);
         }
-        return fetchIssuerMetadata(issuerDid).compose(metadata -> complete(credentialObjects, metadata));
+        var metadata = fetchIssuerMetadata(issuerDid);
+        if (metadata.failed()) {
+            // the failure may describe the outcome of a request to whatever endpoint the Issuer's DID document names,
+            // which is not for the caller to see
+            monitor.debug("Issuer metadata of '%s' could not be fetched: %s".formatted(issuerDid, metadata.getFailureDetail()));
+            return failure("The Issuer's metadata could not be fetched");
+        }
+        return complete(credentialObjects, metadata.getContent());
     }
 
     private static boolean isSparse(CredentialObject credentialObject) {

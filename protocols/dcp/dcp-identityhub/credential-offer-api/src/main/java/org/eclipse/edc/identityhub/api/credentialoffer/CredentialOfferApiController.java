@@ -45,6 +45,7 @@ import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 import static org.eclipse.edc.iam.decentralizedclaims.spi.DcpConstants.DSPACE_DCP_NAMESPACE_V_1_0;
 import static org.eclipse.edc.identityhub.protocols.dcp.spi.DcpConstants.DCP_SCOPE_V_1_0;
 import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialOfferMessage.CREDENTIAL_OFFER_MESSAGE_TERM;
+import static org.eclipse.edc.identityhub.verification.AuthenticationFailures.idTokenVerificationFailed;
 import static org.eclipse.edc.web.spi.exception.ServiceResultHandler.exceptionMapper;
 
 @Consumes(APPLICATION_JSON)
@@ -92,15 +93,11 @@ public class CredentialOfferApiController implements CredentialOfferApi {
         var authToken = authHeader.replace("Bearer ", "").trim();
 
         var participantContext = participantContextService.getParticipantContext(participantContextId)
-                .orElseThrow((f) -> new AuthenticationFailedException("Invalid participant"));
+                .orElseThrow(idTokenVerificationFailed(monitor, "Participant context '%s' could not be resolved".formatted(participantContextId)));
 
         // validate Issuer's SI token, before the offer is processed
         var issuerClaims = issuerTokenVerifier.verify(participantContext, authToken)
-                .orElseThrow(f -> {
-                    // the failure may describe the outcome of resolving the sender's DID, which is not for the caller to see
-                    monitor.debug("ID token verification failed: %s".formatted(f.getFailureDetail()));
-                    return new AuthenticationFailedException("ID token verification failed");
-                });
+                .orElseThrow(idTokenVerificationFailed(monitor, "ID token verification failed"));
 
         var expanded = jsonLd.expand(credentialOfferMessage)
                 .orElseThrow(f -> {

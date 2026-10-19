@@ -101,7 +101,7 @@ public class CredentialOfferApiExtension implements ServiceExtension {
         var issuerHttpClient = restrictIssuerEndpoints
                 ? new EdcHttpClientImpl(IssuerEndpoints.restrict(okHttpClient, IssuerEndpoints.parseAllowedHosts(allowedIssuerHosts)), retryPolicy, context.getMonitor())
                 : httpClient;
-        var credentialObjectResolver = new CredentialObjectResolver(didResolverRegistry, issuerHttpClient, jsonLd, typeTransformer);
+        var credentialObjectResolver = new CredentialObjectResolver(didResolverRegistry, issuerHttpClient, jsonLd, typeTransformer, context.getMonitor().withPrefix("CredentialOfferAPI"));
         var controller = new CredentialOfferApiController(validatorRegistry, typeTransformer, issuerTokenVerifier, participantContextService, credentialOfferService, jsonLd, credentialObjectResolver,
                 context.getMonitor().withPrefix("CredentialOfferAPI"));
         webService.registerResource(CREDENTIALS, new JsonMapperProvider(typeManager, JSON_LD));

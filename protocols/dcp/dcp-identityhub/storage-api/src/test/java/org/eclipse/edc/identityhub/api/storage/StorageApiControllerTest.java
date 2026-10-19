@@ -155,7 +155,10 @@ class StorageApiControllerTest extends RestControllerTestBase {
                 .post()
                 .then()
                 .log().ifValidationFails()
-                .statusCode(401);
+                .statusCode(401)
+                // answered like a failed token verification, so the participant's existence cannot be told
+                .body(containsString("ID token verification failed"))
+                .body(not(containsString("foo")));
         // the message is not processed for a participant that does not exist
         verifyNoInteractions(validatorRegistry, transformerRegistry, issuerTokenVerifier);
     }
