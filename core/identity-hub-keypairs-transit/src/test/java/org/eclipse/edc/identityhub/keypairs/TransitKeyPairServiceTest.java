@@ -100,8 +100,8 @@ class TransitKeyPairServiceTest {
     void setup() {
         when(keyPairResourceStore.query(any())).thenReturn(success(List.of()));
         // no key exists in Transit, unless a test says otherwise
-        when(transitEngine.getKey(anyString())).thenReturn(Result.failure("not found"));
-        when(transitEngine.deleteKey(anyString())).thenReturn(Result.success());
+        when(transitEngine.getKey(eq(PARTICIPANT_ID), anyString())).thenReturn(Result.failure("not found"));
+        when(transitEngine.deleteKey(eq(PARTICIPANT_ID), anyString())).thenReturn(Result.success());
         when(participantContextServiceMock.findById(anyString()))
                 .thenReturn(StoreResult.success(ParticipantContext.Builder.newInstance()
                         .participantContextId(PARTICIPANT_ID)
@@ -148,11 +148,11 @@ class TransitKeyPairServiceTest {
     }
 
     private void transitRotates() {
-        when(transitEngine.rotateKey(anyString())).thenReturn(Result.success());
-        when(transitEngine.getKey(anyString())).thenReturn(Result.success(transitKeyDescriptor()));
-        when(transitEngine.setMinAvailableVersion(anyString(), anyInt())).thenReturn(Result.success());
-        when(transitEngine.setMinEncryptionKeyVersion(anyString(), anyInt())).thenReturn(Result.success());
-        when(transitEngine.setMinDecryptionKeyVersion(anyString(), anyInt())).thenReturn(Result.success());
+        when(transitEngine.rotateKey(eq(PARTICIPANT_ID), anyString())).thenReturn(Result.success());
+        when(transitEngine.getKey(eq(PARTICIPANT_ID), anyString())).thenReturn(Result.success(transitKeyDescriptor()));
+        when(transitEngine.setMinAvailableVersion(eq(PARTICIPANT_ID), anyString(), anyInt())).thenReturn(Result.success());
+        when(transitEngine.setMinEncryptionKeyVersion(eq(PARTICIPANT_ID), anyString(), anyInt())).thenReturn(Result.success());
+        when(transitEngine.setMinDecryptionKeyVersion(eq(PARTICIPANT_ID), anyString(), anyInt())).thenReturn(Result.success());
     }
 
     /**
@@ -205,14 +205,14 @@ class TransitKeyPairServiceTest {
 
         keyPairService.discardKeyMaterial(PARTICIPANT_ID, key);
 
-        verify(transitEngine).deleteKey(TransitEngine.keyName(PARTICIPANT_ID, key.getPrivateKeyAlias()));
+        verify(transitEngine).deleteKey(PARTICIPANT_ID, TransitEngine.keyName(PARTICIPANT_ID, key.getPrivateKeyAlias()));
         verifyNoMoreInteractions(transitEngine);
         verifyNoInteractions(keyPairResourceStore, observableMock);
     }
 
     @Test
     void discardKeyMaterial_whenDeletingFails_shouldWarn() {
-        when(transitEngine.deleteKey(anyString())).thenReturn(Result.failure("vault down"));
+        when(transitEngine.deleteKey(eq(PARTICIPANT_ID), anyString())).thenReturn(Result.failure("vault down"));
         var key = createKey().build();
 
         keyPairService.discardKeyMaterial(PARTICIPANT_ID, key);
@@ -405,11 +405,11 @@ class TransitKeyPairServiceTest {
 
             verify(keyPairResourceStore).update(argThat(kpr -> kpr.getState() == KeyPairState.REVOKED.code()));
             verify(keyPairResourceStore).create(any());
-            verify(transitEngine).rotateKey(anyString());
-            verify(transitEngine).getKey(anyString());
-            verify(transitEngine).setMinAvailableVersion(anyString(), anyInt());
-            verify(transitEngine).setMinEncryptionKeyVersion(anyString(), anyInt());
-            verify(transitEngine).setMinDecryptionKeyVersion(anyString(), anyInt());
+            verify(transitEngine).rotateKey(eq(PARTICIPANT_ID), anyString());
+            verify(transitEngine).getKey(eq(PARTICIPANT_ID), anyString());
+            verify(transitEngine).setMinAvailableVersion(eq(PARTICIPANT_ID), anyString(), anyInt());
+            verify(transitEngine).setMinEncryptionKeyVersion(eq(PARTICIPANT_ID), anyString(), anyInt());
+            verify(transitEngine).setMinDecryptionKeyVersion(eq(PARTICIPANT_ID), anyString(), anyInt());
             verify(observableMock).invokeForEach(any());
             verifyNoMoreInteractions(observableMock, transitEngine);
             // the successor replaces the revoked key in the DID document, so it must be announced as activated as well. It
@@ -440,11 +440,11 @@ class TransitKeyPairServiceTest {
         void revokeKey_whenRotateFails_shouldFail() {
             var oldKey = createKeyPairResource().build();
             when(keyPairResourceStore.query(any())).thenReturn(success(List.of(oldKey)));
-            when(transitEngine.rotateKey(anyString())).thenReturn(Result.failure("rotate failed"));
+            when(transitEngine.rotateKey(eq(PARTICIPANT_ID), anyString())).thenReturn(Result.failure("rotate failed"));
 
             assertThat(keyPairService.revokeKey(oldKey.getId(), null)).isFailed();
 
-            verify(transitEngine).rotateKey(anyString());
+            verify(transitEngine).rotateKey(eq(PARTICIPANT_ID), anyString());
             // nothing was changed, so the old key stays usable
             verify(keyPairResourceStore, never()).update(any());
             verify(keyPairResourceStore, never()).create(any());
@@ -456,13 +456,13 @@ class TransitKeyPairServiceTest {
         void revokeKey_whenGetKeyFails_shouldFail() {
             var oldKey = createKeyPairResource().build();
             when(keyPairResourceStore.query(any())).thenReturn(success(List.of(oldKey)));
-            when(transitEngine.rotateKey(anyString())).thenReturn(Result.success());
-            when(transitEngine.getKey(anyString())).thenReturn(Result.failure("getKey failed"));
+            when(transitEngine.rotateKey(eq(PARTICIPANT_ID), anyString())).thenReturn(Result.success());
+            when(transitEngine.getKey(eq(PARTICIPANT_ID), anyString())).thenReturn(Result.failure("getKey failed"));
 
             assertThat(keyPairService.revokeKey(oldKey.getId(), null)).isFailed();
 
-            verify(transitEngine).rotateKey(anyString());
-            verify(transitEngine).getKey(anyString());
+            verify(transitEngine).rotateKey(eq(PARTICIPANT_ID), anyString());
+            verify(transitEngine).getKey(eq(PARTICIPANT_ID), anyString());
             // the key was rotated in Transit already, but the key pairs are not written
             verify(keyPairResourceStore, never()).update(any());
             verify(keyPairResourceStore, never()).create(any());
@@ -474,15 +474,15 @@ class TransitKeyPairServiceTest {
         void revokeKey_whenSetMinAvailableVersionFails_shouldFail() {
             var oldKey = createKeyPairResource().build();
             when(keyPairResourceStore.query(any())).thenReturn(success(List.of(oldKey)));
-            when(transitEngine.rotateKey(anyString())).thenReturn(Result.success());
-            when(transitEngine.getKey(anyString())).thenReturn(Result.success(transitKeyDescriptor()));
-            when(transitEngine.setMinEncryptionKeyVersion(anyString(), anyInt())).thenReturn(Result.success());
-            when(transitEngine.setMinDecryptionKeyVersion(anyString(), anyInt())).thenReturn(Result.success());
-            when(transitEngine.setMinAvailableVersion(anyString(), anyInt())).thenReturn(Result.failure("setMinAvailable failed"));
+            when(transitEngine.rotateKey(eq(PARTICIPANT_ID), anyString())).thenReturn(Result.success());
+            when(transitEngine.getKey(eq(PARTICIPANT_ID), anyString())).thenReturn(Result.success(transitKeyDescriptor()));
+            when(transitEngine.setMinEncryptionKeyVersion(eq(PARTICIPANT_ID), anyString(), anyInt())).thenReturn(Result.success());
+            when(transitEngine.setMinDecryptionKeyVersion(eq(PARTICIPANT_ID), anyString(), anyInt())).thenReturn(Result.success());
+            when(transitEngine.setMinAvailableVersion(eq(PARTICIPANT_ID), anyString(), anyInt())).thenReturn(Result.failure("setMinAvailable failed"));
 
             assertThat(keyPairService.revokeKey(oldKey.getId(), null)).isFailed();
 
-            verify(transitEngine).setMinAvailableVersion(anyString(), anyInt());
+            verify(transitEngine).setMinAvailableVersion(eq(PARTICIPANT_ID), anyString(), anyInt());
             // the key was rotated in Transit already, but the key pairs are not written
             verify(keyPairResourceStore, never()).update(any());
             verify(keyPairResourceStore, never()).create(any());
@@ -494,14 +494,14 @@ class TransitKeyPairServiceTest {
         void revokeKey_whenSetMinEncryptionVersionFails_shouldFail() {
             var oldKey = createKeyPairResource().build();
             when(keyPairResourceStore.query(any())).thenReturn(success(List.of(oldKey)));
-            when(transitEngine.rotateKey(anyString())).thenReturn(Result.success());
-            when(transitEngine.getKey(anyString())).thenReturn(Result.success(transitKeyDescriptor()));
-            when(transitEngine.setMinAvailableVersion(anyString(), anyInt())).thenReturn(Result.success());
-            when(transitEngine.setMinEncryptionKeyVersion(anyString(), anyInt())).thenReturn(Result.failure("setMinEncryption failed"));
+            when(transitEngine.rotateKey(eq(PARTICIPANT_ID), anyString())).thenReturn(Result.success());
+            when(transitEngine.getKey(eq(PARTICIPANT_ID), anyString())).thenReturn(Result.success(transitKeyDescriptor()));
+            when(transitEngine.setMinAvailableVersion(eq(PARTICIPANT_ID), anyString(), anyInt())).thenReturn(Result.success());
+            when(transitEngine.setMinEncryptionKeyVersion(eq(PARTICIPANT_ID), anyString(), anyInt())).thenReturn(Result.failure("setMinEncryption failed"));
 
             assertThat(keyPairService.revokeKey(oldKey.getId(), null)).isFailed();
 
-            verify(transitEngine).setMinEncryptionKeyVersion(anyString(), anyInt());
+            verify(transitEngine).setMinEncryptionKeyVersion(eq(PARTICIPANT_ID), anyString(), anyInt());
             // the key was rotated in Transit already, but the key pairs are not written
             verify(keyPairResourceStore, never()).update(any());
             verify(keyPairResourceStore, never()).create(any());
@@ -513,15 +513,15 @@ class TransitKeyPairServiceTest {
         void revokeKey_whenSetMinDecryptionVersionFails_shouldFail() {
             var oldKey = createKeyPairResource().build();
             when(keyPairResourceStore.query(any())).thenReturn(success(List.of(oldKey)));
-            when(transitEngine.rotateKey(anyString())).thenReturn(Result.success());
-            when(transitEngine.getKey(anyString())).thenReturn(Result.success(transitKeyDescriptor()));
-            when(transitEngine.setMinAvailableVersion(anyString(), anyInt())).thenReturn(Result.success());
-            when(transitEngine.setMinEncryptionKeyVersion(anyString(), anyInt())).thenReturn(Result.success());
-            when(transitEngine.setMinDecryptionKeyVersion(anyString(), anyInt())).thenReturn(Result.failure("setMinDecryption failed"));
+            when(transitEngine.rotateKey(eq(PARTICIPANT_ID), anyString())).thenReturn(Result.success());
+            when(transitEngine.getKey(eq(PARTICIPANT_ID), anyString())).thenReturn(Result.success(transitKeyDescriptor()));
+            when(transitEngine.setMinAvailableVersion(eq(PARTICIPANT_ID), anyString(), anyInt())).thenReturn(Result.success());
+            when(transitEngine.setMinEncryptionKeyVersion(eq(PARTICIPANT_ID), anyString(), anyInt())).thenReturn(Result.success());
+            when(transitEngine.setMinDecryptionKeyVersion(eq(PARTICIPANT_ID), anyString(), anyInt())).thenReturn(Result.failure("setMinDecryption failed"));
 
             assertThat(keyPairService.revokeKey(oldKey.getId(), null)).isFailed();
 
-            verify(transitEngine).setMinDecryptionKeyVersion(anyString(), anyInt());
+            verify(transitEngine).setMinDecryptionKeyVersion(eq(PARTICIPANT_ID), anyString(), anyInt());
             // the key was rotated in Transit already, but the key pairs are not written
             verify(keyPairResourceStore, never()).update(any());
             verify(keyPairResourceStore, never()).create(any());
@@ -564,9 +564,9 @@ class TransitKeyPairServiceTest {
                         // no other key pair uses the key ID of the successor
                         when(keyPairResourceStore.query(argThat(isKeyIdQuery(NEW_KEY_ID)))).thenReturn(success(List.of()));
                         when(keyPairResourceStore.create(any())).thenReturn(success());
-                        when(transitEngine.rotateKey(anyString())).thenReturn(Result.success());
-                        when(transitEngine.getKey(anyString())).thenReturn(Result.success(transitKeyDescriptor()));
-                        when(transitEngine.setMinEncryptionKeyVersion(anyString(), anyInt())).thenReturn(Result.success());
+                        when(transitEngine.rotateKey(eq(PARTICIPANT_ID), anyString())).thenReturn(Result.success());
+                        when(transitEngine.getKey(eq(PARTICIPANT_ID), anyString())).thenReturn(Result.success(transitKeyDescriptor()));
+                        when(transitEngine.setMinEncryptionKeyVersion(eq(PARTICIPANT_ID), anyString(), anyInt())).thenReturn(Result.success());
 
                         assertThat(keyPairService.rotateKeyPair(oldId, kd, Duration.ofDays(100).toMillis())).isSucceeded();
 
@@ -574,9 +574,9 @@ class TransitKeyPairServiceTest {
                         verify(keyPairResourceStore, times(kd == null ? 1 : 2)).query(any());
                         verify(keyPairResourceStore).update(argThat(kpr -> kpr.getId().equals(oldId)));
                         verify(keyPairResourceStore).create(any());
-                        verify(transitEngine).rotateKey(anyString());
-                        verify(transitEngine).getKey(anyString());
-                        verify(transitEngine).setMinEncryptionKeyVersion(anyString(), anyInt());
+                        verify(transitEngine).rotateKey(eq(PARTICIPANT_ID), anyString());
+                        verify(transitEngine).getKey(eq(PARTICIPANT_ID), anyString());
+                        verify(transitEngine).setMinEncryptionKeyVersion(eq(PARTICIPANT_ID), anyString(), anyInt());
                         verify(observableMock, times(1)).invokeForEach(any()); // 1 for rotate
                         verifyNoMoreInteractions(keyPairResourceStore, observableMock, transitEngine);
                         reset(keyPairResourceStore, observableMock, transitEngine);
@@ -632,11 +632,11 @@ class TransitKeyPairServiceTest {
             var oldId = "old-id";
             var oldKey = createKeyPairResource().id(oldId).build();
             when(keyPairResourceStore.query(any())).thenReturn(success(List.of(oldKey)));
-            when(transitEngine.rotateKey(anyString())).thenReturn(Result.failure("rotate failed"));
+            when(transitEngine.rotateKey(eq(PARTICIPANT_ID), anyString())).thenReturn(Result.failure("rotate failed"));
 
             assertThat(keyPairService.rotateKeyPair(oldId, null, Duration.ofDays(100).toMillis())).isFailed();
 
-            verify(transitEngine).rotateKey(anyString());
+            verify(transitEngine).rotateKey(eq(PARTICIPANT_ID), anyString());
             // nothing was changed, so the old key stays usable
             verify(keyPairResourceStore, never()).update(any());
             verify(keyPairResourceStore, never()).create(any());
@@ -649,13 +649,13 @@ class TransitKeyPairServiceTest {
             var oldId = "old-id";
             var oldKey = createKeyPairResource().id(oldId).build();
             when(keyPairResourceStore.query(any())).thenReturn(success(List.of(oldKey)));
-            when(transitEngine.rotateKey(anyString())).thenReturn(Result.success());
-            when(transitEngine.getKey(anyString())).thenReturn(Result.failure("getKey failed"));
+            when(transitEngine.rotateKey(eq(PARTICIPANT_ID), anyString())).thenReturn(Result.success());
+            when(transitEngine.getKey(eq(PARTICIPANT_ID), anyString())).thenReturn(Result.failure("getKey failed"));
 
             assertThat(keyPairService.rotateKeyPair(oldId, null, Duration.ofDays(100).toMillis())).isFailed();
 
-            verify(transitEngine).rotateKey(anyString());
-            verify(transitEngine).getKey(anyString());
+            verify(transitEngine).rotateKey(eq(PARTICIPANT_ID), anyString());
+            verify(transitEngine).getKey(eq(PARTICIPANT_ID), anyString());
             // the key was rotated in Transit already, but the key pairs are not written
             verify(keyPairResourceStore, never()).update(any());
             verify(keyPairResourceStore, never()).create(any());
@@ -668,13 +668,13 @@ class TransitKeyPairServiceTest {
             var oldId = "old-id";
             var oldKey = createKeyPairResource().id(oldId).build();
             when(keyPairResourceStore.query(any())).thenReturn(success(List.of(oldKey)));
-            when(transitEngine.rotateKey(anyString())).thenReturn(Result.success());
-            when(transitEngine.getKey(anyString())).thenReturn(Result.success(transitKeyDescriptor()));
-            when(transitEngine.setMinEncryptionKeyVersion(anyString(), anyInt())).thenReturn(Result.failure("setMinEncryption failed"));
+            when(transitEngine.rotateKey(eq(PARTICIPANT_ID), anyString())).thenReturn(Result.success());
+            when(transitEngine.getKey(eq(PARTICIPANT_ID), anyString())).thenReturn(Result.success(transitKeyDescriptor()));
+            when(transitEngine.setMinEncryptionKeyVersion(eq(PARTICIPANT_ID), anyString(), anyInt())).thenReturn(Result.failure("setMinEncryption failed"));
 
             assertThat(keyPairService.rotateKeyPair(oldId, null, Duration.ofDays(100).toMillis())).isFailed();
 
-            verify(transitEngine).setMinEncryptionKeyVersion(anyString(), anyInt());
+            verify(transitEngine).setMinEncryptionKeyVersion(eq(PARTICIPANT_ID), anyString(), anyInt());
             // the key was rotated in Transit already, but the key pairs are not written
             verify(keyPairResourceStore, never()).update(any());
             verify(keyPairResourceStore, never()).create(any());
@@ -699,10 +699,22 @@ class TransitKeyPairServiceTest {
         }
 
         @ParameterizedTest
+        @ValueSource(strings = { "sign_1", "_", "key_" })
+        void addKeyPair_whenAliasContainsSeparator_shouldFailWithoutGeneratingKey(String alias) {
+            // the alias is the last segment of the Transit key name, so it must not contain the separator
+            var key = createKey().publicKeyJwk(null).publicKeyPem(null).privateKeyAlias(alias).keyGeneratorParams(Map.of("type", "ed25519")).build();
+
+            assertThat(keyPairService.addKeyPair(PARTICIPANT_ID, key, true)).isFailed()
+                    .extracting(ServiceFailure::getReason).isEqualTo(ServiceFailure.Reason.BAD_REQUEST);
+
+            verifyNoInteractions(keyPairResourceStore, transitEngine, observableMock);
+        }
+
+        @ParameterizedTest
         @ValueSource(strings = { "ed25519", "ecdsa-p256", "rsa-4096" })
         void addKeyPair_shouldGenerate_storesInTransit(String keyType) {
             when(keyPairResourceStore.create(any())).thenReturn(success());
-            when(transitEngine.generateKey(any(), eq(keyType))).thenReturn(Result.success(transitKeyDescriptor()));
+            when(transitEngine.generateKey(eq(PARTICIPANT_ID), any(), eq(keyType))).thenReturn(Result.success(transitKeyDescriptor()));
 
             var key = createKey().publicKeyJwk(null).publicKeyPem(null).keyGeneratorParams(Map.of(
                     "type", keyType
@@ -716,7 +728,7 @@ class TransitKeyPairServiceTest {
             // the key ID of the new key is checked to not be in use already
             verify(keyPairResourceStore).query(argThat(isKeyIdQuery(key.getKeyId())));
             // new key is set to active - expect an update in the DB
-            verify(transitEngine).generateKey(anyString(), eq(keyType));
+            verify(transitEngine).generateKey(eq(PARTICIPANT_ID), anyString(), eq(keyType));
             verify(observableMock, times(1)).invokeForEach(any());
             verifyNoMoreInteractions(keyPairResourceStore, vault, observableMock);
         }
@@ -727,7 +739,7 @@ class TransitKeyPairServiceTest {
             // "lR5RKw+..." decodes to 32 bytes whose first two bytes look like a valid ASN.1 tag+length,
             // causing SubjectPublicKeyInfo.getInstance() to throw an exception. We still need to handle this properly
             when(keyPairResourceStore.create(any())).thenReturn(success());
-            when(transitEngine.generateKey(any(), any())).thenReturn(Result.success(transitKeyDescriptorWith(publicKey)));
+            when(transitEngine.generateKey(eq(PARTICIPANT_ID), any(), any())).thenReturn(Result.success(transitKeyDescriptorWith(publicKey)));
 
             var key = createKey().publicKeyJwk(null).publicKeyPem(null).build();
 
@@ -752,28 +764,28 @@ class TransitKeyPairServiceTest {
         @Test
         void addKeyPair_whenTransitKeyExists_shouldFailWithoutTakingItOver() {
             // e.g. the key of another key pair, which would then share its key material
-            when(transitEngine.getKey(anyString())).thenReturn(Result.success(transitKeyDescriptor()));
+            when(transitEngine.getKey(eq(PARTICIPANT_ID), anyString())).thenReturn(Result.success(transitKeyDescriptor()));
             var key = createKey().publicKeyJwk(null).publicKeyPem(null).build();
 
             assertThat(keyPairService.addKeyPair(PARTICIPANT_ID, key, true)).isFailed()
                     .extracting(ServiceFailure::getReason).isEqualTo(ServiceFailure.Reason.CONFLICT);
-            verify(transitEngine, never()).generateKey(anyString(), anyString());
+            verify(transitEngine, never()).generateKey(anyString(), anyString(), anyString());
             verify(keyPairResourceStore, never()).create(any());
             verifyNoInteractions(observableMock);
         }
 
         @Test
         void addKeyPair_whenCreateFails_shouldDeleteTransitKey() {
-            when(transitEngine.generateKey(anyString(), anyString())).thenReturn(Result.success(transitKeyDescriptor()));
+            when(transitEngine.generateKey(eq(PARTICIPANT_ID), anyString(), anyString())).thenReturn(Result.success(transitKeyDescriptor()));
             when(keyPairResourceStore.create(any())).thenReturn(StoreResult.alreadyExists("key pair exists"));
             var key = createKey().publicKeyJwk(null).publicKeyPem(null).build();
 
             assertThat(keyPairService.addKeyPair(PARTICIPANT_ID, key, true)).isFailed().detail().isEqualTo("key pair exists");
 
             var inOrder = inOrder(transitEngine, keyPairResourceStore);
-            inOrder.verify(transitEngine).generateKey(anyString(), anyString());
+            inOrder.verify(transitEngine).generateKey(eq(PARTICIPANT_ID), anyString(), anyString());
             inOrder.verify(keyPairResourceStore).create(any());
-            inOrder.verify(transitEngine).deleteKey(TransitEngine.keyName(PARTICIPANT_ID, key.getPrivateKeyAlias()));
+            inOrder.verify(transitEngine).deleteKey(PARTICIPANT_ID, TransitEngine.keyName(PARTICIPANT_ID, key.getPrivateKeyAlias()));
             verifyNoInteractions(observableMock);
         }
 
@@ -810,14 +822,14 @@ class TransitKeyPairServiceTest {
             var kp1 = createKeyPairResource().id("kp-1").privateKeyAlias("alias-1").build();
             var kp2 = createKeyPairResource().id("kp-2").privateKeyAlias("alias-2").build();
             when(keyPairResourceStore.query(any())).thenReturn(success(List.of(kp1, kp2)));
-            when(transitEngine.deleteKey(anyString())).thenReturn(Result.success());
+            when(transitEngine.deleteKey(eq(PARTICIPANT_ID), anyString())).thenReturn(Result.success());
 
             keyPairService.on(deletedEvent());
 
             verify(keyPairResourceStore).deleteById("kp-1");
             verify(keyPairResourceStore).deleteById("kp-2");
-            verify(transitEngine).deleteKey("alias-1");
-            verify(transitEngine).deleteKey("alias-2");
+            verify(transitEngine).deleteKey(PARTICIPANT_ID, "alias-1");
+            verify(transitEngine).deleteKey(PARTICIPANT_ID, "alias-2");
         }
 
         @Test
@@ -847,15 +859,15 @@ class TransitKeyPairServiceTest {
             var kp1 = createKeyPairResource().id("kp-1").privateKeyAlias("alias-1").build();
             var kp2 = createKeyPairResource().id("kp-2").privateKeyAlias("alias-2").build();
             when(keyPairResourceStore.query(any())).thenReturn(success(List.of(kp1, kp2)));
-            when(transitEngine.deleteKey("alias-1")).thenReturn(Result.failure("vault error"));
-            when(transitEngine.deleteKey("alias-2")).thenReturn(Result.success());
+            when(transitEngine.deleteKey(PARTICIPANT_ID, "alias-1")).thenReturn(Result.failure("vault error"));
+            when(transitEngine.deleteKey(PARTICIPANT_ID, "alias-2")).thenReturn(Result.success());
 
             keyPairService.on(deletedEvent());
 
             verify(keyPairResourceStore).deleteById("kp-1");
             verify(keyPairResourceStore).deleteById("kp-2");
-            verify(transitEngine).deleteKey("alias-1");
-            verify(transitEngine).deleteKey("alias-2");
+            verify(transitEngine).deleteKey(PARTICIPANT_ID, "alias-1");
+            verify(transitEngine).deleteKey(PARTICIPANT_ID, "alias-2");
             verifyNoMoreInteractions(transitEngine);
         }
 

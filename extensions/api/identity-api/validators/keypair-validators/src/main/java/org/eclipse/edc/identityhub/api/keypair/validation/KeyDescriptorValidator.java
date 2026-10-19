@@ -15,6 +15,7 @@
 package org.eclipse.edc.identityhub.api.keypair.validation;
 
 import org.eclipse.edc.iam.did.spi.document.DidConstants;
+import org.eclipse.edc.identityhub.keypairs.PublicKeyJwk;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyDescriptor;
 import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.util.string.StringUtils;
@@ -37,6 +38,7 @@ import static org.eclipse.edc.validator.spi.Violation.violation;
  *     <li>not all of {@code publicKeyPem}, {@code publicKeyJwk} and {@code keyGeneratorParams} must be null</li>
  *     <li>not both  {@code publicKeyPem} and {@code publicKeyJwk} must be specified</li>
  *     <li>if {@code keyGeneratorParams} are specified, {@code publicKeyPem} and {@code publicKeyJwk} must be null</li>
+ *     <li>a {@code publicKeyJwk} must not contain private key material, or be a symmetric key</li>
  * </ul>
  */
 public class KeyDescriptorValidator implements Validator<KeyDescriptor> {
@@ -77,6 +79,13 @@ public class KeyDescriptorValidator implements Validator<KeyDescriptor> {
 
         if (Stream.of(input.getPublicKeyJwk(), input.getPublicKeyPem()).anyMatch(Objects::nonNull) && input.getKeyGeneratorParams() != null) {
             return failure(violation("Either the public key is specified (PEM or JWK), or the generator params are provided, not both.", "keyGeneratorPArams"));
+        }
+
+        if (input.getPublicKeyJwk() != null) {
+            var publicJwk = PublicKeyJwk.parse(input.getPublicKeyJwk());
+            if (publicJwk.failed()) {
+                return failure(violation(publicJwk.getFailureDetail(), "publicKeyJwk"));
+            }
         }
 
         if (input.getUsage() == null || input.getUsage().isEmpty()) {

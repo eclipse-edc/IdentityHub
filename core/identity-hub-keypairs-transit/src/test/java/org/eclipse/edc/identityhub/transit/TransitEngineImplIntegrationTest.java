@@ -30,7 +30,9 @@ import org.testcontainers.vault.VaultContainer;
 import tools.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Base64;
+import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -43,6 +45,7 @@ import static org.mockito.Mockito.mock;
 class TransitEngineImplIntegrationTest {
 
     static final String VAULT_TOKEN = "root";
+    static final String PARTICIPANT_CONTEXT_ID = "test-participant";
 
     @Container
     static final VaultContainer<?> VAULT = new VaultContainer<>("hashicorp/vault")
@@ -53,6 +56,7 @@ class TransitEngineImplIntegrationTest {
 
 
     private final EdcHttpClient client = new EdcHttpClientImpl(new OkHttpClient.Builder().build(), RetryPolicy.ofDefaults(), mock());
+    private final List<String> tokenResources = new ArrayList<>();
     private TransitEngineImpl transitEngine;
 
     @BeforeAll
@@ -63,13 +67,27 @@ class TransitEngineImplIntegrationTest {
     @BeforeEach
     void setUp() throws Exception {
         var vaultBaseUrl = "http://%s:%d".formatted(VAULT.getHost(), VAULT.getMappedPort(8200));
-        transitEngine = new TransitEngineImpl(resource -> () -> VAULT_TOKEN, new ObjectMapper(), client, vaultBaseUrl);
+        transitEngine = new TransitEngineImpl(resource -> {
+            tokenResources.add(resource);
+            return () -> VAULT_TOKEN;
+        }, new ObjectMapper(), client, vaultBaseUrl);
+    }
+
+    @Test
+    void requestsTokenForOwner() {
+        // the owner is not derived from the key name, which could be ambiguous
+        var keyName = TransitEngine.keyName("other_participant", "key");
+
+        assertThat(transitEngine.generateKey(PARTICIPANT_CONTEXT_ID, keyName, "ed25519")).isSucceeded();
+        assertThat(transitEngine.getKey(PARTICIPANT_CONTEXT_ID, keyName)).isSucceeded();
+
+        assertThat(tokenResources).isNotEmpty().containsOnly(PARTICIPANT_CONTEXT_ID);
     }
 
     @Test
     void generateKey() {
         var keyName = "test-key-" + UUID.randomUUID();
-        var result = transitEngine.generateKey(keyName, "ed25519");
+        var result = transitEngine.generateKey(PARTICIPANT_CONTEXT_ID, keyName, "ed25519");
         assertThat(result).isSucceeded().satisfies(desc -> {
             assertThat(desc.getData().getKeys()).hasSize(1);
             assertThat(desc.getData().getLatestVersion()).isEqualTo(1);
@@ -81,40 +99,40 @@ class TransitEngineImplIntegrationTest {
     @ValueSource(strings = { "EdDSA", "eddsa", "EDDSA" })
     void generateKey_wrongKeyType(String keyType) {
         var keyName = "test-key-" + UUID.randomUUID();
-        var result = transitEngine.generateKey(keyName, keyType);
+        var result = transitEngine.generateKey(PARTICIPANT_CONTEXT_ID, keyName, keyType);
         assertThat(result).isFailed();
     }
 
     @Test
     void rotateKey() {
         var keyName = "test-key-" + UUID.randomUUID();
-        assertThat(transitEngine.generateKey(keyName, "ed25519")).isSucceeded();
-        var result = transitEngine.rotateKey(keyName);
+        assertThat(transitEngine.generateKey(PARTICIPANT_CONTEXT_ID, keyName, "ed25519")).isSucceeded();
+        var result = transitEngine.rotateKey(PARTICIPANT_CONTEXT_ID, keyName);
         assertThat(result).isSucceeded();
     }
 
     @Test
     void rotateKey_notExist() {
         var keyName = "not-exist";
-        var result = transitEngine.rotateKey(keyName);
+        var result = transitEngine.rotateKey(PARTICIPANT_CONTEXT_ID, keyName);
         assertThat(result).isFailed().detail().contains("not found");
     }
 
     @Test
     void rotateKey_severalTimes() {
         var keyName = "test-key-" + UUID.randomUUID();
-        assertThat(transitEngine.generateKey(keyName, "ed25519")).isSucceeded();
-        assertThat(transitEngine.rotateKey(keyName)).isSucceeded();
-        assertThat(transitEngine.rotateKey(keyName)).isSucceeded();
-        assertThat(transitEngine.rotateKey(keyName)).isSucceeded();
+        assertThat(transitEngine.generateKey(PARTICIPANT_CONTEXT_ID, keyName, "ed25519")).isSucceeded();
+        assertThat(transitEngine.rotateKey(PARTICIPANT_CONTEXT_ID, keyName)).isSucceeded();
+        assertThat(transitEngine.rotateKey(PARTICIPANT_CONTEXT_ID, keyName)).isSucceeded();
+        assertThat(transitEngine.rotateKey(PARTICIPANT_CONTEXT_ID, keyName)).isSucceeded();
     }
 
     @Test
     void getKey() {
         var keyName = "test-key-" + UUID.randomUUID();
-        assertThat(transitEngine.generateKey(keyName, "ed25519")).isSucceeded();
+        assertThat(transitEngine.generateKey(PARTICIPANT_CONTEXT_ID, keyName, "ed25519")).isSucceeded();
 
-        var result = transitEngine.getKey(keyName);
+        var result = transitEngine.getKey(PARTICIPANT_CONTEXT_ID, keyName);
         assertThat(result).isSucceeded()
                 .satisfies(desc -> {
                     assertThat(desc.getData().getKeys()).hasSize(1);
@@ -124,24 +142,24 @@ class TransitEngineImplIntegrationTest {
 
     @Test
     void getKey_notExist() {
-        assertThat(transitEngine.getKey("not-exist")).isFailed().detail().contains("404");
+        assertThat(transitEngine.getKey(PARTICIPANT_CONTEXT_ID, "not-exist")).isFailed().detail().contains("404");
     }
 
     @Test
     void generateKey_whenAlreadyExists_shouldOverwrite() {
         var keyName = "test-key-" + UUID.randomUUID();
-        assertThat(transitEngine.generateKey(keyName, "ed25519")).isSucceeded();
-        assertThat(transitEngine.generateKey(keyName, "ed25519")).isSucceeded();
+        assertThat(transitEngine.generateKey(PARTICIPANT_CONTEXT_ID, keyName, "ed25519")).isSucceeded();
+        assertThat(transitEngine.generateKey(PARTICIPANT_CONTEXT_ID, keyName, "ed25519")).isSucceeded();
     }
 
     @Test
     void getKey_afterRotation_hasMultipleVersions() {
         var keyName = "test-key-" + UUID.randomUUID();
-        assertThat(transitEngine.generateKey(keyName, "ed25519")).isSucceeded();
-        assertThat(transitEngine.rotateKey(keyName)).isSucceeded();
-        assertThat(transitEngine.rotateKey(keyName)).isSucceeded();
+        assertThat(transitEngine.generateKey(PARTICIPANT_CONTEXT_ID, keyName, "ed25519")).isSucceeded();
+        assertThat(transitEngine.rotateKey(PARTICIPANT_CONTEXT_ID, keyName)).isSucceeded();
+        assertThat(transitEngine.rotateKey(PARTICIPANT_CONTEXT_ID, keyName)).isSucceeded();
 
-        var result = transitEngine.getKey(keyName);
+        var result = transitEngine.getKey(PARTICIPANT_CONTEXT_ID, keyName);
         assertThat(result).isSucceeded().satisfies(desc -> {
             assertThat(desc.getData().getKeys()).hasSize(3);
             assertThat(desc.getData().getLatestVersion()).isEqualTo(3);
@@ -152,17 +170,17 @@ class TransitEngineImplIntegrationTest {
     void generateKey_whenInvalidToken_shouldFail() {
         var vaultBaseUrl = "http://%s:%d".formatted(VAULT.getHost(), VAULT.getMappedPort(8200));
         var engineWithBadToken = new TransitEngineImpl(resource -> () -> "wrong-token", new ObjectMapper(), client, vaultBaseUrl);
-        assertThat(engineWithBadToken.generateKey("test-key-" + UUID.randomUUID(), "ed25519")).isFailed();
+        assertThat(engineWithBadToken.generateKey(PARTICIPANT_CONTEXT_ID, "test-key-" + UUID.randomUUID(), "ed25519")).isFailed();
     }
 
     @Test
     void rotateKey_severalTimes_incrementsLatestVersion() {
         var keyName = "test-key-" + UUID.randomUUID();
-        assertThat(transitEngine.generateKey(keyName, "ed25519")).isSucceeded();
-        assertThat(transitEngine.rotateKey(keyName)).isSucceeded();
-        assertThat(transitEngine.rotateKey(keyName)).isSucceeded();
+        assertThat(transitEngine.generateKey(PARTICIPANT_CONTEXT_ID, keyName, "ed25519")).isSucceeded();
+        assertThat(transitEngine.rotateKey(PARTICIPANT_CONTEXT_ID, keyName)).isSucceeded();
+        assertThat(transitEngine.rotateKey(PARTICIPANT_CONTEXT_ID, keyName)).isSucceeded();
 
-        var result = transitEngine.getKey(keyName);
+        var result = transitEngine.getKey(PARTICIPANT_CONTEXT_ID, keyName);
         assertThat(result).isSucceeded().satisfies(desc ->
                 assertThat(desc.getData().getLatestVersion()).isEqualTo(3));
     }
@@ -170,97 +188,97 @@ class TransitEngineImplIntegrationTest {
     @Test
     void setMinEncryptionKeyVersion() {
         var keyName = "test-key-" + UUID.randomUUID();
-        assertThat(transitEngine.generateKey(keyName, "ed25519")).isSucceeded();
-        assertThat(transitEngine.rotateKey(keyName)).isSucceeded();
+        assertThat(transitEngine.generateKey(PARTICIPANT_CONTEXT_ID, keyName, "ed25519")).isSucceeded();
+        assertThat(transitEngine.rotateKey(PARTICIPANT_CONTEXT_ID, keyName)).isSucceeded();
 
-        assertThat(transitEngine.setMinEncryptionKeyVersion(keyName, 2)).isSucceeded();
+        assertThat(transitEngine.setMinEncryptionKeyVersion(PARTICIPANT_CONTEXT_ID, keyName, 2)).isSucceeded();
     }
 
     @Test
     void setMinEncryptionKeyVersion_whenKeyNotExist() {
-        assertThat(transitEngine.setMinEncryptionKeyVersion("not-exist", 1)).isFailed();
+        assertThat(transitEngine.setMinEncryptionKeyVersion(PARTICIPANT_CONTEXT_ID, "not-exist", 1)).isFailed();
     }
 
     @Test
     void setMinEncryptionKeyVersion_whenVersionHigherThanLatest_shouldFail() {
         var keyName = "test-key-" + UUID.randomUUID();
-        assertThat(transitEngine.generateKey(keyName, "ed25519")).isSucceeded();
+        assertThat(transitEngine.generateKey(PARTICIPANT_CONTEXT_ID, keyName, "ed25519")).isSucceeded();
 
-        assertThat(transitEngine.setMinEncryptionKeyVersion(keyName, 99)).isFailed();
+        assertThat(transitEngine.setMinEncryptionKeyVersion(PARTICIPANT_CONTEXT_ID, keyName, 99)).isFailed();
     }
 
     @Test
     void setMinEncryptionKeyVersion_whenNegativeVersion_shouldThrow() {
-        assertThatThrownBy(() -> transitEngine.setMinEncryptionKeyVersion("any-key", -1))
+        assertThatThrownBy(() -> transitEngine.setMinEncryptionKeyVersion(PARTICIPANT_CONTEXT_ID, "any-key", -1))
                 .isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
     void setMinDecryptionKeyVersion() {
         var keyName = "test-key-" + UUID.randomUUID();
-        assertThat(transitEngine.generateKey(keyName, "ed25519")).isSucceeded();
-        assertThat(transitEngine.rotateKey(keyName)).isSucceeded();
+        assertThat(transitEngine.generateKey(PARTICIPANT_CONTEXT_ID, keyName, "ed25519")).isSucceeded();
+        assertThat(transitEngine.rotateKey(PARTICIPANT_CONTEXT_ID, keyName)).isSucceeded();
 
-        assertThat(transitEngine.setMinDecryptionKeyVersion(keyName, 2)).isSucceeded();
+        assertThat(transitEngine.setMinDecryptionKeyVersion(PARTICIPANT_CONTEXT_ID, keyName, 2)).isSucceeded();
     }
 
     @Test
     void setMinDecryptionKeyVersion_whenKeyNotExist() {
-        assertThat(transitEngine.setMinDecryptionKeyVersion("not-exist", 1)).isFailed();
+        assertThat(transitEngine.setMinDecryptionKeyVersion(PARTICIPANT_CONTEXT_ID, "not-exist", 1)).isFailed();
     }
 
     @Test
     void setMinDecryptionKeyVersion_whenVersionHigherThanLatest_shouldFail() {
         var keyName = "test-key-" + UUID.randomUUID();
-        assertThat(transitEngine.generateKey(keyName, "ed25519")).isSucceeded();
+        assertThat(transitEngine.generateKey(PARTICIPANT_CONTEXT_ID, keyName, "ed25519")).isSucceeded();
 
-        assertThat(transitEngine.setMinDecryptionKeyVersion(keyName, 99)).isFailed();
+        assertThat(transitEngine.setMinDecryptionKeyVersion(PARTICIPANT_CONTEXT_ID, keyName, 99)).isFailed();
     }
 
     @Test
     void setMinDecryptionKeyVersion_whenNegativeVersion_shouldThrow() {
-        assertThatThrownBy(() -> transitEngine.setMinDecryptionKeyVersion("any-key", -1))
+        assertThatThrownBy(() -> transitEngine.setMinDecryptionKeyVersion(PARTICIPANT_CONTEXT_ID, "any-key", -1))
                 .isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
     void setMinAvailableVersion_whenMinEncVersionNotSet() {
         var keyName = "test-key-" + UUID.randomUUID();
-        assertThat(transitEngine.generateKey(keyName, "ed25519")).isSucceeded();
-        assertThat(transitEngine.rotateKey(keyName)).isSucceeded();
-        assertThat(transitEngine.rotateKey(keyName)).isSucceeded();
+        assertThat(transitEngine.generateKey(PARTICIPANT_CONTEXT_ID, keyName, "ed25519")).isSucceeded();
+        assertThat(transitEngine.rotateKey(PARTICIPANT_CONTEXT_ID, keyName)).isSucceeded();
+        assertThat(transitEngine.rotateKey(PARTICIPANT_CONTEXT_ID, keyName)).isSucceeded();
         // min_available_version must be <= min_decryption_version, so raise that first
-        assertThat(transitEngine.setMinDecryptionKeyVersion(keyName, 2)).isSucceeded();
-        assertThat(transitEngine.setMinAvailableVersion(keyName, 2)).isFailed();
+        assertThat(transitEngine.setMinDecryptionKeyVersion(PARTICIPANT_CONTEXT_ID, keyName, 2)).isSucceeded();
+        assertThat(transitEngine.setMinAvailableVersion(PARTICIPANT_CONTEXT_ID, keyName, 2)).isFailed();
     }
 
     @Test
     void setMinAvailableVersion() {
         var keyName = "test-key-" + UUID.randomUUID();
-        assertThat(transitEngine.generateKey(keyName, "ed25519")).isSucceeded();
-        assertThat(transitEngine.rotateKey(keyName)).isSucceeded();
-        assertThat(transitEngine.rotateKey(keyName)).isSucceeded();
+        assertThat(transitEngine.generateKey(PARTICIPANT_CONTEXT_ID, keyName, "ed25519")).isSucceeded();
+        assertThat(transitEngine.rotateKey(PARTICIPANT_CONTEXT_ID, keyName)).isSucceeded();
+        assertThat(transitEngine.rotateKey(PARTICIPANT_CONTEXT_ID, keyName)).isSucceeded();
         // min_available_version must be <= min_decryption_version, so raise that first
-        assertThat(transitEngine.setMinDecryptionKeyVersion(keyName, 2)).isSucceeded();
-        assertThat(transitEngine.setMinEncryptionKeyVersion(keyName, 2)).isSucceeded();
-        assertThat(transitEngine.setMinAvailableVersion(keyName, 2)).isSucceeded();
+        assertThat(transitEngine.setMinDecryptionKeyVersion(PARTICIPANT_CONTEXT_ID, keyName, 2)).isSucceeded();
+        assertThat(transitEngine.setMinEncryptionKeyVersion(PARTICIPANT_CONTEXT_ID, keyName, 2)).isSucceeded();
+        assertThat(transitEngine.setMinAvailableVersion(PARTICIPANT_CONTEXT_ID, keyName, 2)).isSucceeded();
     }
 
     @Test
     void setMinAvailableVersion_whenKeyNotExist() {
-        assertThat(transitEngine.setMinAvailableVersion("not-exist", 1)).isFailed();
+        assertThat(transitEngine.setMinAvailableVersion(PARTICIPANT_CONTEXT_ID, "not-exist", 1)).isFailed();
     }
 
     @Test
     void setMinAvailableVersion_whenNegativeVersion_shouldThrow() {
-        assertThatThrownBy(() -> transitEngine.setMinAvailableVersion("any-key", -1))
+        assertThatThrownBy(() -> transitEngine.setMinAvailableVersion(PARTICIPANT_CONTEXT_ID, "any-key", -1))
                 .isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
     void sign() {
         var keyName = "test-key-" + UUID.randomUUID();
-        assertThat(transitEngine.generateKey(keyName, "ed25519")).isSucceeded();
+        assertThat(transitEngine.generateKey(PARTICIPANT_CONTEXT_ID, keyName, "ed25519")).isSucceeded();
 
         var payload = """
                 {
@@ -268,7 +286,7 @@ class TransitEngineImplIntegrationTest {
                     "testkey2": 42
                 }
                 """;
-        var result = transitEngine.sign(keyName, payload);
+        var result = transitEngine.sign(PARTICIPANT_CONTEXT_ID, keyName, payload);
         assertThat(result).isSucceeded().satisfies(sig -> {
             assertThat(sig).isNotBlank().startsWith("vault:v1:");
         });
@@ -277,7 +295,7 @@ class TransitEngineImplIntegrationTest {
     @Test
     void sign_whenPayloadB64_shouldDoubleEncode() {
         var keyName = "test-key-" + UUID.randomUUID();
-        assertThat(transitEngine.generateKey(keyName, "ed25519")).isSucceeded();
+        assertThat(transitEngine.generateKey(PARTICIPANT_CONTEXT_ID, keyName, "ed25519")).isSucceeded();
 
         var payload = """
                 {
@@ -286,7 +304,7 @@ class TransitEngineImplIntegrationTest {
                 }
                 """;
         var encoded = Base64.getEncoder().encodeToString(payload.getBytes());
-        var result = transitEngine.sign(keyName, encoded);
+        var result = transitEngine.sign(PARTICIPANT_CONTEXT_ID, keyName, encoded);
         assertThat(result).isSucceeded().satisfies(sig -> {
             assertThat(sig).isNotBlank().startsWith("vault:v1:");
         });
@@ -295,11 +313,11 @@ class TransitEngineImplIntegrationTest {
     @Test
     void sign_afterRotation_usesLatestKeyVersion() {
         var keyName = "test-key-" + UUID.randomUUID();
-        assertThat(transitEngine.generateKey(keyName, "ed25519")).isSucceeded();
-        assertThat(transitEngine.rotateKey(keyName)).isSucceeded();
+        assertThat(transitEngine.generateKey(PARTICIPANT_CONTEXT_ID, keyName, "ed25519")).isSucceeded();
+        assertThat(transitEngine.rotateKey(PARTICIPANT_CONTEXT_ID, keyName)).isSucceeded();
 
         var payload = Base64.getEncoder().encodeToString("test-payload".getBytes());
-        var result = transitEngine.sign(keyName, payload);
+        var result = transitEngine.sign(PARTICIPANT_CONTEXT_ID, keyName, payload);
         assertThat(result).isSucceeded().satisfies(sig -> {
             assertThat(sig).isNotBlank().startsWith("vault:v2:");
         });
@@ -308,92 +326,92 @@ class TransitEngineImplIntegrationTest {
     @Test
     void sign_whenKeyNotExist_shouldFail() {
         var payload = Base64.getEncoder().encodeToString("test-payload".getBytes());
-        assertThat(transitEngine.sign("not-exist", payload)).isFailed();
+        assertThat(transitEngine.sign(PARTICIPANT_CONTEXT_ID, "not-exist", payload)).isFailed();
     }
 
     @Test
     void verify() {
         var keyName = "test-key-" + UUID.randomUUID();
-        assertThat(transitEngine.generateKey(keyName, "ed25519")).isSucceeded();
+        assertThat(transitEngine.generateKey(PARTICIPANT_CONTEXT_ID, keyName, "ed25519")).isSucceeded();
 
         var payload = "test-payload";
-        var signature = transitEngine.sign(keyName, payload).getContent();
-        assertThat(transitEngine.verify(keyName, payload, signature)).isSucceeded();
+        var signature = transitEngine.sign(PARTICIPANT_CONTEXT_ID, keyName, payload).getContent();
+        assertThat(transitEngine.verify(PARTICIPANT_CONTEXT_ID, keyName, payload, signature)).isSucceeded();
     }
 
     @Test
     void verify_afterRotation_oldSignatureStillValid() {
         var keyName = "test-key-" + UUID.randomUUID();
-        assertThat(transitEngine.generateKey(keyName, "ed25519")).isSucceeded();
+        assertThat(transitEngine.generateKey(PARTICIPANT_CONTEXT_ID, keyName, "ed25519")).isSucceeded();
 
         var payload = "test-payload";
-        var signature = transitEngine.sign(keyName, payload).getContent();
-        assertThat(transitEngine.rotateKey(keyName)).isSucceeded();
+        var signature = transitEngine.sign(PARTICIPANT_CONTEXT_ID, keyName, payload).getContent();
+        assertThat(transitEngine.rotateKey(PARTICIPANT_CONTEXT_ID, keyName)).isSucceeded();
 
-        assertThat(transitEngine.verify(keyName, payload, signature)).isSucceeded();
+        assertThat(transitEngine.verify(PARTICIPANT_CONTEXT_ID, keyName, payload, signature)).isSucceeded();
     }
 
     @Test
     void verify_whenSignatureInvalid_shouldFail() {
         var keyName = "test-key-" + UUID.randomUUID();
-        assertThat(transitEngine.generateKey(keyName, "ed25519")).isSucceeded();
+        assertThat(transitEngine.generateKey(PARTICIPANT_CONTEXT_ID, keyName, "ed25519")).isSucceeded();
 
-        assertThat(transitEngine.verify(keyName, "test-payload", "vault:v1:invalidsignature")).isFailed();
+        assertThat(transitEngine.verify(PARTICIPANT_CONTEXT_ID, keyName, "test-payload", "vault:v1:invalidsignature")).isFailed();
     }
 
     @Test
     void verify_whenKeyNotExist_shouldFail() {
-        assertThat(transitEngine.verify("not-exist", "test-payload", "vault:v1:invalidsignature")).isFailed();
+        assertThat(transitEngine.verify(PARTICIPANT_CONTEXT_ID, "not-exist", "test-payload", "vault:v1:invalidsignature")).isFailed();
     }
 
     @Test
     void verify_whenPayloadTampered_shouldFail() {
         var keyName = "test-key-" + UUID.randomUUID();
-        assertThat(transitEngine.generateKey(keyName, "ed25519")).isSucceeded();
+        assertThat(transitEngine.generateKey(PARTICIPANT_CONTEXT_ID, keyName, "ed25519")).isSucceeded();
 
-        var signature = transitEngine.sign(keyName, "original-payload").getContent();
-        assertThat(transitEngine.verify(keyName, "tampered-payload", signature)).isFailed();
+        var signature = transitEngine.sign(PARTICIPANT_CONTEXT_ID, keyName, "original-payload").getContent();
+        assertThat(transitEngine.verify(PARTICIPANT_CONTEXT_ID, keyName, "tampered-payload", signature)).isFailed();
     }
 
     @Test
     void signAndVerify_failsOnOldSignature() {
         var keyName = "test-key-" + UUID.randomUUID();
-        assertThat(transitEngine.generateKey(keyName, "ed25519")).isSucceeded();
+        assertThat(transitEngine.generateKey(PARTICIPANT_CONTEXT_ID, keyName, "ed25519")).isSucceeded();
 
         var payload = "test-payload";
-        var signature = transitEngine.sign(keyName, payload).getContent();
-        assertThat(transitEngine.rotateKey(keyName)).isSucceeded(); // latest version is now 2
-        assertThat(transitEngine.setMinDecryptionKeyVersion(keyName, 2)).isSucceeded();
+        var signature = transitEngine.sign(PARTICIPANT_CONTEXT_ID, keyName, payload).getContent();
+        assertThat(transitEngine.rotateKey(PARTICIPANT_CONTEXT_ID, keyName)).isSucceeded(); // latest version is now 2
+        assertThat(transitEngine.setMinDecryptionKeyVersion(PARTICIPANT_CONTEXT_ID, keyName, 2)).isSucceeded();
 
-        assertThat(transitEngine.verify(keyName, payload, signature)).isFailed().detail().contains("ciphertext or signature version is disallowed by policy (too old)");
+        assertThat(transitEngine.verify(PARTICIPANT_CONTEXT_ID, keyName, payload, signature)).isFailed().detail().contains("ciphertext or signature version is disallowed by policy (too old)");
     }
 
     @Test
     void signAndVerify_failsOnOldKey() {
         var keyName = "test-key-" + UUID.randomUUID();
-        assertThat(transitEngine.generateKey(keyName, "ed25519")).isSucceeded();
+        assertThat(transitEngine.generateKey(PARTICIPANT_CONTEXT_ID, keyName, "ed25519")).isSucceeded();
 
         var payload = "test-payload";
-        var signature = transitEngine.sign(keyName, payload).getContent();
-        assertThat(transitEngine.rotateKey(keyName)).isSucceeded();
-        assertThat(transitEngine.setMinEncryptionKeyVersion(keyName, 2)).isSucceeded();
-        assertThat(transitEngine.setMinDecryptionKeyVersion(keyName, 2)).isSucceeded();
-        assertThat(transitEngine.setMinAvailableVersion(keyName, 2)).isSucceeded();
+        var signature = transitEngine.sign(PARTICIPANT_CONTEXT_ID, keyName, payload).getContent();
+        assertThat(transitEngine.rotateKey(PARTICIPANT_CONTEXT_ID, keyName)).isSucceeded();
+        assertThat(transitEngine.setMinEncryptionKeyVersion(PARTICIPANT_CONTEXT_ID, keyName, 2)).isSucceeded();
+        assertThat(transitEngine.setMinDecryptionKeyVersion(PARTICIPANT_CONTEXT_ID, keyName, 2)).isSucceeded();
+        assertThat(transitEngine.setMinAvailableVersion(PARTICIPANT_CONTEXT_ID, keyName, 2)).isSucceeded();
 
-        assertThat(transitEngine.verify(keyName, payload, signature)).isFailed().detail().contains("ciphertext or signature version is disallowed by policy (too old)");
+        assertThat(transitEngine.verify(PARTICIPANT_CONTEXT_ID, keyName, payload, signature)).isFailed().detail().contains("ciphertext or signature version is disallowed by policy (too old)");
     }
 
     @Test
     void deleteKey() {
         var keyName = "test-key-" + UUID.randomUUID();
-        assertThat(transitEngine.generateKey(keyName, "ed25519")).isSucceeded();
+        assertThat(transitEngine.generateKey(PARTICIPANT_CONTEXT_ID, keyName, "ed25519")).isSucceeded();
 
-        assertThat(transitEngine.deleteKey(keyName)).isSucceeded();
-        assertThat(transitEngine.getKey(keyName)).isFailed().detail().contains("404");
+        assertThat(transitEngine.deleteKey(PARTICIPANT_CONTEXT_ID, keyName)).isSucceeded();
+        assertThat(transitEngine.getKey(PARTICIPANT_CONTEXT_ID, keyName)).isFailed().detail().contains("404");
     }
 
     @Test
     void deleteKey_whenKeyNotExist_shouldFail() {
-        assertThat(transitEngine.deleteKey("not-exist")).isFailed();
+        assertThat(transitEngine.deleteKey(PARTICIPANT_CONTEXT_ID, "not-exist")).isFailed();
     }
 }

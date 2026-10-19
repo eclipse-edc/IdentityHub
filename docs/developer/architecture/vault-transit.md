@@ -60,7 +60,8 @@ and verification without additional Vault calls.
 
 The key name is derived from the participant context ID and the key alias, following the convention `participant_<participantContextId>_<privateKeyAlias>` (see below). This allows multiple participants to safely use the same Vault instance without key name collisions.
 
-NB: the `privateKeyAlias` must only contain alphanumeric characters, dashes, or underscores.
+NB: the `privateKeyAlias` must only contain alphanumeric characters or dashes. An alias that contains an underscore is
+rejected with a `400 Bad Request` error, because the underscore separates the segments of the key name.
 
 Supported key types are: `ed25519` (default), `ecdsa-p256`, `ecdsa-p384`, `ecdsa-p521`, `rsa-2048`, `rsa-3072`,
 `rsa-4096`.
@@ -145,20 +146,26 @@ vault secrets enable transit
 Each Identity Hub instance (or its Kubernetes service account) requires a Vault policy that grants access to the Transit paths it will use. Because key names are prefixed with the participant context ID (see below), the policy can scope permissions tightly:
 
 ```hcl
-# Allow managing keys for participants belonging to this IdentityHub. Each participant only has access to # their own keys due to the participant_<participant-id> prefix.
-path "transit/keys/participant_<participant-id>*" {
+# Allow managing keys for participants belonging to this IdentityHub. Each participant only has access to
+# their own keys due to the participant_<participant-id>_ prefix.
+path "transit/keys/participant_<participant-id>_*" {
   capabilities = ["read", "create", "update", "delete", "list"]
 }
 
-path "transit/sign/participant_<participant-id>*" {
+path "transit/sign/participant_<participant-id>_*" {
   capabilities = ["create", "update"]
 }
 
-# add this if verifying signatures via Vault as well, otherwise verification can be done locally with the # public key
-path "transit/verify/participant_<participant-id>*" {
+# add this if verifying signatures via Vault as well, otherwise verification can be done locally with the
+# public key
+path "transit/verify/participant_<participant-id>_*" {
   capabilities = ["create", "update"]
 }
 ```
+
+The trailing separator matters: without it, the policy of participant `alice` would also match the keys of participant
+`alice-2`. The policy only isolates participants whose IDs do not contain an underscore, since the keys of participant
+`alice_b` also start with `participant_alice_`.
 
 For Kubernetes-based deployments, Vault's Kubernetes auth method can be used to bind this policy to the service account running Identity Hub. The [JAD reference project](#reference-implementation) demonstrates this setup in
 detail.
@@ -176,7 +183,9 @@ For example, a participant context with ID `alice` and a key alias of `signing-k
 
 This prefix-based convention makes it straightforward to write narrow Vault policies and to identify keys by their owning participant context.
 
-Note that the `privateKeyAlias` must only contain alphanumeric characters, dashes, or underscores to ensure valid Vault key names.
+Note that the `privateKeyAlias` must only contain alphanumeric characters or dashes to ensure valid and unambiguous
+Vault key names. Identity Hub always requests the Vault token for the participant context that owns a key pair, it
+never derives the participant context from the key name.
 
 ## Configuration
 

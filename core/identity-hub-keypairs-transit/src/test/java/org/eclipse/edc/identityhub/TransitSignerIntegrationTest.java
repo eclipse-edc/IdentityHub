@@ -46,6 +46,7 @@ import static org.mockito.Mockito.mock;
 @Testcontainers
 class TransitSignerIntegrationTest {
     static final String VAULT_TOKEN = "root";
+    static final String PARTICIPANT_CONTEXT_ID = "test-participant";
     @Container
     static final VaultContainer<?> VAULT = new VaultContainer<>("hashicorp/vault")
             .withVaultToken(VAULT_TOKEN)
@@ -69,7 +70,7 @@ class TransitSignerIntegrationTest {
 
     @Test
     void sign_withNonExistentKey_throwsException() {
-        var signer = new TransitSigner(transitEngine, "nonexistent-key");
+        var signer = new TransitSigner(transitEngine, PARTICIPANT_CONTEXT_ID, "nonexistent-key");
         var jwsHeader = new JWSHeader.Builder(JWSAlgorithm.RS256).build();
         var claimsSet = new JWTClaimsSet.Builder().issuer("test-issuer").build();
         var signedJwt = new SignedJWT(jwsHeader, claimsSet);
@@ -82,8 +83,8 @@ class TransitSignerIntegrationTest {
     @Test
     void sign_multipleJwts_allParseable() throws JOSEException, ParseException {
         var keyName = "multi-sign-key";
-        assertThat(transitEngine.generateKey(keyName, "ed25519")).isSucceeded();
-        var signer = new TransitSigner(transitEngine, keyName);
+        assertThat(transitEngine.generateKey(PARTICIPANT_CONTEXT_ID, keyName, "ed25519")).isSucceeded();
+        var signer = new TransitSigner(transitEngine, PARTICIPANT_CONTEXT_ID, keyName);
 
         for (var i = 0; i < 3; i++) {
             var jwsHeader = new JWSHeader.Builder(JWSAlgorithm.EdDSA).keyID("key-" + i).build();
@@ -99,8 +100,8 @@ class TransitSignerIntegrationTest {
     @Test
     void sign_withRsaKey() throws JOSEException, ParseException {
         var keyName = "rsa-test-key";
-        assertThat(transitEngine.generateKey(keyName, "rsa-2048")).isSucceeded();
-        var signer = new TransitSigner(transitEngine, keyName);
+        assertThat(transitEngine.generateKey(PARTICIPANT_CONTEXT_ID, keyName, "rsa-2048")).isSucceeded();
+        var signer = new TransitSigner(transitEngine, PARTICIPANT_CONTEXT_ID, keyName);
 
         var jwsHeader = new JWSHeader.Builder(JWSAlgorithm.PS256).keyID("rsa-key-id").build();
         var claimsSet = new JWTClaimsSet.Builder()
@@ -120,8 +121,8 @@ class TransitSignerIntegrationTest {
     @Test
     void sign_withEcKey() throws JOSEException, ParseException {
         var keyName = "rsa-test-key";
-        assertThat(transitEngine.generateKey(keyName, "ecdsa-p521")).isSucceeded();
-        var signer = new TransitSigner(transitEngine, keyName);
+        assertThat(transitEngine.generateKey(PARTICIPANT_CONTEXT_ID, keyName, "ecdsa-p521")).isSucceeded();
+        var signer = new TransitSigner(transitEngine, PARTICIPANT_CONTEXT_ID, keyName);
 
         var jwsHeader = new JWSHeader.Builder(JWSAlgorithm.ES512).keyID("ec-key-id").build();
         var claimsSet = new JWTClaimsSet.Builder()
@@ -141,8 +142,8 @@ class TransitSignerIntegrationTest {
     void sign_withEd25519() {
         var keyName = "test-key";
         var keyId = "test-key-id";
-        assertThat(transitEngine.generateKey(keyName, "ed25519")).isSucceeded();
-        var signer = new TransitSigner(transitEngine, keyName);
+        assertThat(transitEngine.generateKey(PARTICIPANT_CONTEXT_ID, keyName, "ed25519")).isSucceeded();
+        var signer = new TransitSigner(transitEngine, PARTICIPANT_CONTEXT_ID, keyName);
 
         var jwsHeader = new JWSHeader.Builder(JWSAlgorithm.Ed25519).keyID(keyId).build();
         var claimsSet = new JWTClaimsSet.Builder()
@@ -158,8 +159,8 @@ class TransitSignerIntegrationTest {
     void sign_withEdDsa() throws JOSEException, ParseException {
         var keyName = "test-key";
         var keyId = "test-key-id";
-        assertThat(transitEngine.generateKey(keyName, "ed25519")).isSucceeded();
-        var signer = new TransitSigner(transitEngine, keyName);
+        assertThat(transitEngine.generateKey(PARTICIPANT_CONTEXT_ID, keyName, "ed25519")).isSucceeded();
+        var signer = new TransitSigner(transitEngine, PARTICIPANT_CONTEXT_ID, keyName);
 
         var jwsHeader = new JWSHeader.Builder(JWSAlgorithm.EdDSA).keyID(keyId).build();
         var claimsSet = new JWTClaimsSet.Builder()
@@ -186,12 +187,12 @@ class TransitSignerIntegrationTest {
 
     @Test
     void verifyJcaContext() {
-        assertThat(new TransitSigner(transitEngine, "foobar").getJCAContext()).isNotNull();
+        assertThat(new TransitSigner(transitEngine, PARTICIPANT_CONTEXT_ID, "foobar").getJCAContext()).isNotNull();
     }
 
     @Test
     void verifyAlgorithms() {
-        assertThat(new TransitSigner(transitEngine, "foobar").supportedJWSAlgorithms()).isNotEmpty();
+        assertThat(new TransitSigner(transitEngine, PARTICIPANT_CONTEXT_ID, "foobar").supportedJWSAlgorithms()).isNotEmpty();
     }
 
 }

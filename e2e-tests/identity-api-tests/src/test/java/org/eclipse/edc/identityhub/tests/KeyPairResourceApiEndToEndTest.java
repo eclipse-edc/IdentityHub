@@ -14,6 +14,9 @@
 
 package org.eclipse.edc.identityhub.tests;
 
+import com.nimbusds.jose.JOSEException;
+import com.nimbusds.jose.jwk.Curve;
+import com.nimbusds.jose.jwk.gen.ECKeyGenerator;
 import io.restassured.http.Header;
 import org.eclipse.edc.api.authentication.OauthServerEndToEndExtension;
 import org.eclipse.edc.iam.decentralizedclaims.sts.spi.store.StsAccountStore;
@@ -216,6 +219,34 @@ public class KeyPairResourceApiEndToEndTest {
                                     evt.getKeyId().equals(keyDesc.getKeyId());
                         }));
                     });
+        }
+
+        @Test
+        void addKeyPair_withPrivateJwk_shouldFail(IdentityHub identityHub, EventRouter router) throws JOSEException {
+            var token = authorizeUser(PARTICIPANT_CONTEXT_ID, identityHub);
+            // registered once the participant context and its initial key pair exist
+            var subscriber = mock(EventSubscriber.class);
+            router.registerSync(KeyPairAdded.class, subscriber);
+
+            // a full key pair, pasted by mistake, must not end up in the DID document
+            var keyDesc = identityHub.createKeyDescriptor(PARTICIPANT_CONTEXT_ID)
+                    .keyId(UUID.randomUUID().toString())
+                    .keyGeneratorParams(null)
+                    .publicKeyJwk(new ECKeyGenerator(Curve.P_256).generate().toJSONObject())
+                    .build();
+            identityHub.getIdentityEndpoint().baseRequest()
+                    .contentType(JSON)
+                    .header(token)
+                    .body(keyDesc)
+                    .put("/v1/participants/%s/keypairs".formatted(PARTICIPANT_CONTEXT_ID))
+                    .then()
+                    .log().ifValidationFails()
+                    .statusCode(400)
+                    .body(containsString("must not contain private key material"));
+
+            assertThat(identityHub.getKeyPairsForParticipant(PARTICIPANT_CONTEXT_ID))
+                    .noneMatch(kpr -> kpr.getKeyId().equals(keyDesc.getKeyId()));
+            verifyNoInteractions(subscriber);
         }
 
         @Test
@@ -1102,6 +1133,33 @@ public class KeyPairResourceApiEndToEndTest {
                                     evt.getKeyId().equals(keyDesc.getKeyId());
                         }));
                     });
+        }
+
+        @Test
+        void addKeyPair_withAliasContainingSeparator_shouldFail(IdentityHub identityHub, EventRouter router) {
+            var token = authorizeUser(PARTICIPANT_CONTEXT_ID, identityHub);
+            // registered once the participant context and its initial key pair exist
+            var subscriber = mock(EventSubscriber.class);
+            router.registerSync(KeyPairAdded.class, subscriber);
+
+            // the alias is the last segment of the Transit key name
+            var keyDesc = identityHub.createKeyDescriptor(PARTICIPANT_CONTEXT_ID)
+                    .keyId(UUID.randomUUID().toString())
+                    .privateKeyAlias("signing_1")
+                    .build();
+            identityHub.getIdentityEndpoint().baseRequest()
+                    .contentType(JSON)
+                    .header(token)
+                    .body(keyDesc)
+                    .put("/v1/participants/%s/keypairs".formatted(PARTICIPANT_CONTEXT_ID))
+                    .then()
+                    .log().ifValidationFails()
+                    .statusCode(400)
+                    .body(containsString("must not contain '_'"));
+
+            assertThat(identityHub.getKeyPairsForParticipant(PARTICIPANT_CONTEXT_ID))
+                    .noneMatch(kpr -> kpr.getKeyId().equals(keyDesc.getKeyId()));
+            verifyNoInteractions(subscriber);
         }
 
         @ParameterizedTest(name = "with algorithm {0}")

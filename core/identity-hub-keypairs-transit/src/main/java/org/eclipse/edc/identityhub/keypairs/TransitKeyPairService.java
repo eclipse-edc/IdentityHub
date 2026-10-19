@@ -60,6 +60,7 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import static java.util.Optional.ofNullable;
+import static org.eclipse.edc.identityhub.transit.TransitEngine.KEY_NAME_SEPARATOR;
 import static org.eclipse.edc.identityhub.transit.TransitEngine.SUPPORTED_KEY_TYPES;
 import static org.eclipse.edc.participantcontext.spi.types.ParticipantContextState.ACTIVATED;
 import static org.eclipse.edc.participantcontext.spi.types.ParticipantContextState.CREATED;
@@ -98,6 +99,10 @@ public class TransitKeyPairService implements KeyPairService, EventSubscriber {
         if ((keyDescriptor.getPublicKeyJwk() != null && !keyDescriptor.getPublicKeyJwk().isEmpty()) || keyDescriptor.getPublicKeyPem() != null) {
             return ServiceResult.badRequest("Importing externally generated keys into the KeyPairService is not supported.");
         }
+        // the alias is the last segment of the Transit key name, c.f. TransitEngine#keyName
+        if (keyDescriptor.getPrivateKeyAlias().contains(KEY_NAME_SEPARATOR)) {
+            return ServiceResult.badRequest("The privateKeyAlias '%s' must not contain '%s'.".formatted(keyDescriptor.getPrivateKeyAlias(), KEY_NAME_SEPARATOR));
+        }
 
         return transactionContext.execute(() -> {
 
@@ -123,10 +128,10 @@ public class TransitKeyPairService implements KeyPairService, EventSubscriber {
 
             var keyName = generateKeyName(participantContextId, keyDescriptor.getPrivateKeyAlias());
             // an existing key is never taken over: it belongs to another key pair, which would then share its key material
-            if (transitEngine.getKey(keyName).succeeded()) {
+            if (transitEngine.getKey(participantContextId, keyName).succeeded()) {
                 return ServiceResult.conflict("A Transit key with name '%s' already exists.".formatted(keyName));
             }
-            var keyResult = transitEngine.generateKey(keyName, type);
+            var keyResult = transitEngine.generateKey(participantContextId, keyName, type);
             if (keyResult.failed()) {
                 return ServiceResult.from(keyResult.mapEmpty());
             }
@@ -137,7 +142,7 @@ public class TransitKeyPairService implements KeyPairService, EventSubscriber {
             try {
                 var publicKey = keyResult.getContent().getLatestVersion();
                 if (publicKey.failed()) {
-                    discardKey(keyName);
+                    discardKey(participantContextId, keyName);
                     return ServiceResult.from(publicKey.mapEmpty());
                 }
 
@@ -155,11 +160,11 @@ public class TransitKeyPairService implements KeyPairService, EventSubscriber {
                         .build();
                 createResult = keyPairResourceStore.create(newResource);
             } catch (RuntimeException e) {
-                discardKey(keyName);
+                discardKey(participantContextId, keyName);
                 throw e;
             }
             if (createResult.failed()) {
-                discardKey(keyName);
+                discardKey(participantContextId, keyName);
                 return ServiceResult.from(createResult);
             }
 
@@ -177,7 +182,7 @@ public class TransitKeyPairService implements KeyPairService, EventSubscriber {
     @Override
     public void discardKeyMaterial(String participantContextId, KeyDescriptor keyDescriptor) {
         // addKeyPair always generates the key in Transit, importing a key is not supported
-        discardKey(generateKeyName(participantContextId, keyDescriptor.getPrivateKeyAlias()));
+        discardKey(participantContextId, generateKeyName(participantContextId, keyDescriptor.getPrivateKeyAlias()));
     }
 
     @Override
@@ -204,12 +209,12 @@ public class TransitKeyPairService implements KeyPairService, EventSubscriber {
 
                 // have Transit rotate the key, and create a copy of the keypairResource
                 var keyName = oldKey.getPrivateKeyAlias();
-                var rotateResult = transitEngine.rotateKey(keyName);
+                var rotateResult = transitEngine.rotateKey(participantContextId, keyName);
                 if (rotateResult.failed()) {
                     return ServiceResult.from(rotateResult);
                 }
-                var keyVersion = transitEngine.getKey(keyName)
-                        .compose(tkd -> transitEngine.setMinEncryptionKeyVersion(keyName, tkd.getData().getLatestVersion()).compose(u -> Result.success(tkd)))
+                var keyVersion = transitEngine.getKey(participantContextId, keyName)
+                        .compose(tkd -> transitEngine.setMinEncryptionKeyVersion(participantContextId, keyName, tkd.getData().getLatestVersion()).compose(u -> Result.success(tkd)))
                         .compose(TransitKeyDescriptor::getLatestVersion);
 
                 return recordKeyChange(oldKey, newKeyDesc, keyVersion, key -> key.rotate(duration), (listener, key) -> listener.rotated(key, newKeyDesc));
@@ -243,14 +248,14 @@ public class TransitKeyPairService implements KeyPairService, EventSubscriber {
 
                 // there is no "revoke" action in Transit, so we rotate the key and trim to the latest version
                 var keyName = oldKey.getPrivateKeyAlias();
-                var rotateResult = transitEngine.rotateKey(keyName);
+                var rotateResult = transitEngine.rotateKey(participantContextId, keyName);
                 if (rotateResult.failed()) {
                     return ServiceResult.from(rotateResult);
                 }
-                var keyVersion = transitEngine.getKey(keyName)
-                        .compose(tkd -> transitEngine.setMinEncryptionKeyVersion(keyName, tkd.getData().getLatestVersion())
-                                .compose(u -> transitEngine.setMinDecryptionKeyVersion(keyName, tkd.getData().getLatestVersion()))
-                                .compose(u -> transitEngine.setMinAvailableVersion(keyName, tkd.getData().getLatestVersion()))
+                var keyVersion = transitEngine.getKey(participantContextId, keyName)
+                        .compose(tkd -> transitEngine.setMinEncryptionKeyVersion(participantContextId, keyName, tkd.getData().getLatestVersion())
+                                .compose(u -> transitEngine.setMinDecryptionKeyVersion(participantContextId, keyName, tkd.getData().getLatestVersion()))
+                                .compose(u -> transitEngine.setMinAvailableVersion(participantContextId, keyName, tkd.getData().getLatestVersion()))
                                 .compose(u -> Result.success(tkd)))
                         .compose(TransitKeyDescriptor::getLatestVersion);
 
@@ -382,7 +387,7 @@ public class TransitKeyPairService implements KeyPairService, EventSubscriber {
                     .compose(list -> {
                         var errors = list.stream()
                                 .map(r -> keyPairResourceStore.deleteById(r.getId())
-                                        .onSuccess(v -> transitEngine.deleteKey(r.getPrivateKeyAlias())
+                                        .onSuccess(v -> transitEngine.deleteKey(r.getParticipantContextId(), r.getPrivateKeyAlias())
                                                 .onFailure(f -> monitor.warning("Failed to delete key '%s' from Vault Transit engine: %s".formatted(r.getPrivateKeyAlias(), f.getFailureDetail())))))
                                 .filter(StoreResult::failed)
                                 .map(AbstractResult::getFailureDetail)
@@ -448,6 +453,7 @@ public class TransitKeyPairService implements KeyPairService, EventSubscriber {
                     .keyId(ofNullable(newKeyDesc).map(KeyDescriptor::getKeyId).orElse(oldKey.getKeyId()))
                     .state(KeyPairState.ACTIVATED)
                     .isDefaultPair(true)
+                    // the successor is a new version of the same Transit key, so the alias of the successor descriptor is not used
                     .privateKeyAlias(oldKey.getPrivateKeyAlias())
                     .serializedPublicKey(decodePublicKeyToJwk(keyVersion.getContent().getPublicKey()))
                     .timestamp(clock.millis())
@@ -484,8 +490,8 @@ public class TransitKeyPairService implements KeyPairService, EventSubscriber {
     /**
      * Deletes a Transit key whose key pair is not added after all.
      */
-    private void discardKey(String keyName) {
-        transitEngine.deleteKey(keyName)
+    private void discardKey(String participantContextId, String keyName) {
+        transitEngine.deleteKey(participantContextId, keyName)
                 .onFailure(f -> monitor.warning("Failed to delete the Transit key '%s' of a key pair that was not added, it must be deleted manually: %s"
                         .formatted(keyName, f.getFailureDetail())));
     }

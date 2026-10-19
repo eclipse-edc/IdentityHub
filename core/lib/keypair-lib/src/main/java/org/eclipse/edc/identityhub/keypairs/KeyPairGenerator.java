@@ -25,13 +25,15 @@ import java.security.SecureRandom;
 import java.security.spec.ECGenParameterSpec;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * Convenience class, that takes an algorithm name and generator parameters and creates a {@link KeyPair}.
  * Supports the following algorithms:
  * <ul>
- *     <li>RSA: parameters may contain a {@code length} entry, defaults to 2048</li>
- *     <li>EC: parameters may contain a {@code curve} entry, defaults to {@code "secp256r1"}. Curves must be given as std names.</li>
+ *     <li>RSA: parameters may contain a {@code length} entry, defaults to 2048. Only 2048, 3072 and 4096 are supported.</li>
+ *     <li>EC: parameters may contain a {@code curve} entry, defaults to {@code "secp256r1"}. Curves must be given as std names,
+ *     only secp256r1, secp384r1 and secp521r1 are supported.</li>
  *     <li>EdDSA: parameters may contain a {@code curve} entry, defaults to {@code "Ed25519"}. Only supports Ed25519 and X25519</li>
  * </ul>
  */
@@ -45,6 +47,9 @@ public class KeyPairGenerator {
     public static final List<String> SUPPORTED_ALGORITHMS = List.of(ALGORITHM_EC, ALGORITHM_RSA, ALGORITHM_EDDSA);
     public static final List<String> SUPPORTED_EDDSA_CURVES = List.of(CURVE_ED25519, CURVE_X25519);
     public static final int RSA_DEFAULT_LENGTH = 2048;
+    // the time it takes to generate an RSA key grows steeply with its length, and is not bounded by the JDK in any useful way
+    public static final List<Integer> SUPPORTED_RSA_LENGTHS = List.of(RSA_DEFAULT_LENGTH, 3072, 4096);
+    public static final List<String> SUPPORTED_EC_CURVES = List.of("secp256r1", "secp384r1", "secp521r1");
     private static final String RSA_PARAM_LENGTH = "length";
     private static final String EC_PARAM_CURVE = "curve";
     private static final String EC_DEFAULT_CURVE = "secp256r1";
@@ -57,25 +62,43 @@ public class KeyPairGenerator {
      * @return A {@link KeyPair}, or a failure indicating what went wrong.
      */
     public static Result<KeyPair> generateKeyPair(Map<String, Object> parameters) {
-        var algorithm = parameters.get(ALGORITHM_ENTRY).toString();
+        var algorithm = stringParameter(parameters, ALGORITHM_ENTRY, null);
         if (StringUtils.isNullOrBlank(algorithm)) {
             return generateEdDsa(CURVE_ED25519);
         }
         algorithm = algorithm.toUpperCase();
-        if (SUPPORTED_ALGORITHMS.contains(algorithm)) {
-            return switch (algorithm) {
-                case ALGORITHM_RSA ->
-                        generateRsa(Integer.parseInt(parameters.getOrDefault(RSA_PARAM_LENGTH, RSA_DEFAULT_LENGTH).toString()));
-                case ALGORITHM_EC -> generateEc(parameters.getOrDefault(EC_PARAM_CURVE, EC_DEFAULT_CURVE).toString());
-                case ALGORITHM_EDDSA ->
-                        generateEdDsa(parameters.getOrDefault(EC_PARAM_CURVE, CURVE_ED25519).toString());
-                default -> Result.failure(notSupportedError(algorithm));
-            };
+        return switch (algorithm) {
+            case ALGORITHM_RSA -> rsaLength(parameters).compose(KeyPairGenerator::generateRsa);
+            case ALGORITHM_EC -> generateEc(stringParameter(parameters, EC_PARAM_CURVE, EC_DEFAULT_CURVE));
+            case ALGORITHM_EDDSA -> generateEdDsa(stringParameter(parameters, EC_PARAM_CURVE, CURVE_ED25519));
+            default -> Result.failure(notSupportedError(algorithm));
+        };
+    }
+
+    private static String stringParameter(Map<String, Object> parameters, String name, String defaultValue) {
+        var value = parameters.get(name);
+        return value == null ? defaultValue : value.toString();
+    }
+
+    private static Result<Integer> rsaLength(Map<String, Object> parameters) {
+        var length = stringParameter(parameters, RSA_PARAM_LENGTH, String.valueOf(RSA_DEFAULT_LENGTH));
+        try {
+            var parsed = Integer.parseInt(length.trim());
+            if (SUPPORTED_RSA_LENGTHS.contains(parsed)) {
+                return Result.success(parsed);
+            }
+        } catch (NumberFormatException ignored) {
+            // reported below, like any other unsupported length
         }
-        return Result.failure(notSupportedError(algorithm));
+        return Result.failure("Unsupported RSA key length: %s. Currently only these are supported: %s."
+                .formatted(length, SUPPORTED_RSA_LENGTHS.stream().map(String::valueOf).collect(Collectors.joining(","))));
     }
 
     private static Result<KeyPair> generateEc(String stdName) {
+        if (!SUPPORTED_EC_CURVES.contains(stdName.toLowerCase())) {
+            return Result.failure("Error generating EC keys: %s is not a valid or supported EC curve std name. Currently only these are supported: %s."
+                    .formatted(stdName, String.join(",", SUPPORTED_EC_CURVES)));
+        }
         try {
             var javaGenerator = java.security.KeyPairGenerator.getInstance(ALGORITHM_EC);
             javaGenerator.initialize(new ECGenParameterSpec(stdName));

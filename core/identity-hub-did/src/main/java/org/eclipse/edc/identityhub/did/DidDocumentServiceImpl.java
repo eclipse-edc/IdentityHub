@@ -20,6 +20,7 @@ import io.opentelemetry.instrumentation.annotations.WithSpan;
 import org.eclipse.edc.iam.did.spi.document.DidDocument;
 import org.eclipse.edc.iam.did.spi.document.Service;
 import org.eclipse.edc.iam.did.spi.document.VerificationMethod;
+import org.eclipse.edc.identityhub.keypairs.PublicKeyJwk;
 import org.eclipse.edc.identityhub.spi.did.DidDocumentPublisherRegistry;
 import org.eclipse.edc.identityhub.spi.did.DidDocumentService;
 import org.eclipse.edc.identityhub.spi.did.model.DidResource;
@@ -299,11 +300,13 @@ public class DidDocumentServiceImpl implements DidDocumentService, EventSubscrib
             // add the public key as verification method to all did resources
             var serialized = event.getPublicKeySerialized();
             
-            // only convert if not already in JWK format
+            // only convert if not already in JWK format. The DID document is public, so only the public part of the key is
+            // published, also for key pairs that were stored with private key material
             var jwkResult = tryParseJwk(serialized)
                     .onFailure(f -> monitor.debug("Serialized key is not JWK (message: %s), attempting to convert".formatted(f.getFailureDetail())))
                     .recover(f -> keyParserRegistry.parse(serialized)
-                            .map(pk -> CryptoConverter.createJwk(new KeyPair((PublicKey) pk, null))));
+                            .map(pk -> CryptoConverter.createJwk(new KeyPair((PublicKey) pk, null))))
+                    .compose(PublicKeyJwk::publicPart);
 
             if (jwkResult.failed()) {
                 monitor.warning("Error adding KeyPair '%s' to DID Document of participant '%s': %s".formatted(event.getKeyPairResource().getId(), event.getParticipantContextId(), jwkResult.getFailureDetail()));
