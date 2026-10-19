@@ -31,6 +31,7 @@ import static org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialForm
 import static org.eclipse.edc.junit.assertions.AbstractResultAssert.assertThat;
 
 public abstract class CredentialDefinitionStoreTestBase {
+    protected static final String PARTICIPANT_CONTEXT_ID = "test-participant";
 
     @Test
     void create() {
@@ -62,6 +63,30 @@ public abstract class CredentialDefinitionStoreTestBase {
         var result2 = getStore().create(credentialDefinition);
 
         assertThat(result2).isFailed().detail().contains("already exists");
+    }
+
+    @Test
+    void create_whenIdExistsInOtherParticipantContext_shouldSucceed() {
+        var definition = createCredentialDefinition();
+        getStore().create(definition);
+        var other = createCredentialDefinitionBuilder(definition.getId(), "OtherType").participantContextId("other-participant").build();
+
+        assertThat(getStore().create(other)).isSucceeded();
+        assertThat(getStore().findById(PARTICIPANT_CONTEXT_ID, definition.getId())).isSucceeded()
+                .extracting(CredentialDefinition::getCredentialType).isEqualTo(definition.getCredentialType());
+        assertThat(getStore().findById("other-participant", definition.getId())).isSucceeded()
+                .extracting(CredentialDefinition::getCredentialType).isEqualTo("OtherType");
+    }
+
+    @Test
+    void update_whenParticipantContextChanges_shouldReturnNotFound() {
+        var definition = createCredentialDefinition();
+        getStore().create(definition);
+        var moved = createCredentialDefinitionBuilder(definition.getId(), "OtherType").participantContextId("other-participant").build();
+
+        assertThat(getStore().update(moved)).isFailed().detail().contains("does not exist.");
+        assertThat(getStore().findById(PARTICIPANT_CONTEXT_ID, definition.getId())).isSucceeded()
+                .extracting(CredentialDefinition::getCredentialType).isEqualTo(definition.getCredentialType());
     }
 
     @Test
@@ -100,13 +125,32 @@ public abstract class CredentialDefinitionStoreTestBase {
         var context = createCredentialDefinition();
         getStore().create(context);
 
-        var deleteRes = getStore().deleteById(context.getId());
+        var deleteRes = getStore().deleteById(context.getParticipantContextId(), context.getId());
         assertThat(deleteRes).isSucceeded();
     }
 
     @Test
     void delete_whenNotExists() {
-        assertThat(getStore().deleteById("not-exist")).isFailed()
+        assertThat(getStore().deleteById(PARTICIPANT_CONTEXT_ID, "not-exist")).isFailed()
+                .detail().contains("does not exist.");
+    }
+
+    @Test
+    void delete_whenOwnedByOtherParticipantContext_shouldFail() {
+        var definition = createCredentialDefinition();
+        getStore().create(definition);
+
+        assertThat(getStore().deleteById("other-participant", definition.getId())).isFailed()
+                .detail().contains("does not exist.");
+        assertThat(getStore().findById(PARTICIPANT_CONTEXT_ID, definition.getId())).isSucceeded();
+    }
+
+    @Test
+    void findById_whenOwnedByOtherParticipantContext_shouldReturnNotFound() {
+        var definition = createCredentialDefinition();
+        getStore().create(definition);
+
+        assertThat(getStore().findById("other-participant", definition.getId())).isFailed()
                 .detail().contains("does not exist.");
     }
 
@@ -115,7 +159,7 @@ public abstract class CredentialDefinitionStoreTestBase {
     protected CredentialDefinition.Builder createCredentialDefinitionBuilder(String id, String type) {
         return CredentialDefinition.Builder.newInstance()
                 .id(id)
-                .participantContextId(UUID.randomUUID().toString())
+                .participantContextId(PARTICIPANT_CONTEXT_ID)
                 .credentialType(type)
                 .formatFrom(VC1_0_JWT)
                 .jsonSchemaUrl("http://example.com/schema");
@@ -201,6 +245,7 @@ public abstract class CredentialDefinitionStoreTestBase {
                     .attestations(Set.of("att1", "att2"))
                     .build();
             var def2 = createCredentialDefinitionBuilder("id2", "Iso9001Cert")
+                    .participantContextId("other-participant")
                     .attestations(Set.of("att2", "att3"))
                     .build();
 
@@ -275,6 +320,7 @@ public abstract class CredentialDefinitionStoreTestBase {
                     .attestations(Set.of("att1", "att2"))
                     .build();
             var def2 = createCredentialDefinitionBuilder("id2", "Iso9001Cert")
+                    .participantContextId("other-participant")
                     .attestations(Set.of("att2", "att3"))
                     .build();
 

@@ -54,7 +54,7 @@ public class HolderApiEndToEndTest {
         @AfterEach
         void teardown(HolderService holderService, IdentityHubParticipantContextService pcService) {
             holderService.queryHolders(QuerySpec.max()).getContent()
-                    .forEach(p -> holderService.deleteHolder(p.getHolderId()).getContent());
+                    .forEach(p -> holderService.deleteHolder(p.getParticipantContextId(), p.getHolderId()).getContent());
 
             pcService.query(QuerySpec.max()).getContent()
                     .forEach(pc -> pcService.deleteParticipantContext(pc.getParticipantContextId()).getContent());
@@ -152,7 +152,7 @@ public class HolderApiEndToEndTest {
                     .then()
                     .statusCode(200);
 
-            assertThat(service.findById("test-participant-id")).isSucceeded()
+            assertThat(service.findById(USER, "test-participant-id")).isSucceeded()
                     .satisfies(holder -> {
                         assertThat(holder.getHolderName()).isEqualTo("Foo");
                     });

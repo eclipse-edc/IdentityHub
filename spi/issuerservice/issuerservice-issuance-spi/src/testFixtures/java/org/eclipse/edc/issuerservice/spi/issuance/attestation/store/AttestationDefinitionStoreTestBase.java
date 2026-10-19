@@ -22,12 +22,12 @@ import org.eclipse.edc.spi.result.StoreFailure;
 import org.junit.jupiter.api.Test;
 
 import java.util.Map;
-import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.edc.junit.assertions.AbstractResultAssert.assertThat;
 
 public abstract class AttestationDefinitionStoreTestBase {
+    private static final String PARTICIPANT_CONTEXT_ID = "test-participant";
 
     @Test
     void create() {
@@ -47,12 +47,35 @@ public abstract class AttestationDefinitionStoreTestBase {
         var att = createAttestationDefinition("test-id", "test-type", Map.of("foo", "bar"));
         getStore().create(att);
 
-        assertThat(getStore().resolveDefinition("test-id")).usingRecursiveComparison().isEqualTo(att);
+        assertThat(getStore().resolveDefinition(PARTICIPANT_CONTEXT_ID, "test-id")).usingRecursiveComparison().isEqualTo(att);
+    }
+
+    @Test
+    void create_whenIdExistsInOtherParticipantContext_shouldSucceed() {
+        var att = createAttestationDefinition("test-id", "test-type", Map.of("foo", "bar"));
+        getStore().create(att);
+        var other = AttestationDefinition.Builder.newInstance()
+                .id("test-id")
+                .attestationType("other-type")
+                .configuration(Map.of())
+                .participantContextId("other-participant")
+                .build();
+
+        assertThat(getStore().create(other)).isSucceeded();
+        assertThat(getStore().resolveDefinition(PARTICIPANT_CONTEXT_ID, "test-id")).usingRecursiveComparison().isEqualTo(att);
+        assertThat(getStore().resolveDefinition("other-participant", "test-id")).usingRecursiveComparison().isEqualTo(other);
+    }
+
+    @Test
+    void resolveDefinition_whenOwnedByOtherParticipantContext_shouldReturnNull() {
+        getStore().create(createAttestationDefinition("test-id", "test-type", Map.of("foo", "bar")));
+
+        assertThat(getStore().resolveDefinition("other-participant", "test-id")).isNull();
     }
 
     @Test
     void resolveDefinition_whenNotExists() {
-        assertThat(getStore().resolveDefinition("test-id")).isNull();
+        assertThat(getStore().resolveDefinition(PARTICIPANT_CONTEXT_ID, "test-id")).isNull();
     }
 
     @Test
@@ -63,7 +86,7 @@ public abstract class AttestationDefinitionStoreTestBase {
         var updatedAtt = createAttestationDefinition("test-id", "test-type", Map.of("bar", "baz"));
         assertThat(getStore().update(updatedAtt)).isSucceeded();
 
-        var dbAtt = getStore().resolveDefinition("test-id");
+        var dbAtt = getStore().resolveDefinition(PARTICIPANT_CONTEXT_ID, "test-id");
         assertThat(dbAtt).isNotNull()
                 .extracting(AttestationDefinition::getConfiguration)
                 .satisfies(config -> assertThat(config).hasSize(1).containsEntry("bar", "baz"));
@@ -81,13 +104,21 @@ public abstract class AttestationDefinitionStoreTestBase {
         var att = createAttestationDefinition("test-id", "test-type", Map.of("foo", "bar"));
         getStore().create(att);
 
-        assertThat(getStore().deleteById("test-id")).isSucceeded();
+        assertThat(getStore().deleteById(PARTICIPANT_CONTEXT_ID, "test-id")).isSucceeded();
         assertThat(getStore().query(QuerySpec.max())).isSucceeded().satisfies(list -> assertThat(list).isEmpty());
     }
 
     @Test
+    void deleteById_whenOwnedByOtherParticipantContext_shouldFail() {
+        getStore().create(createAttestationDefinition("test-id", "test-type", Map.of("foo", "bar")));
+
+        assertThat(getStore().deleteById("other-participant", "test-id")).isFailed().detail().contains("does not exist.");
+        assertThat(getStore().resolveDefinition(PARTICIPANT_CONTEXT_ID, "test-id")).isNotNull();
+    }
+
+    @Test
     void deleteById_whenNotExists() {
-        assertThat(getStore().deleteById("test-id")).isFailed().detail().contains("does not exist.");
+        assertThat(getStore().deleteById(PARTICIPANT_CONTEXT_ID, "test-id")).isFailed().detail().contains("does not exist.");
     }
 
     @Test
@@ -192,7 +223,7 @@ public abstract class AttestationDefinitionStoreTestBase {
                 .attestationType(type)
                 .configuration(configuration)
                 .privateProperties(privateProperties)
-                .participantContextId(UUID.randomUUID().toString())
+                .participantContextId(PARTICIPANT_CONTEXT_ID)
                 .build();
     }
 

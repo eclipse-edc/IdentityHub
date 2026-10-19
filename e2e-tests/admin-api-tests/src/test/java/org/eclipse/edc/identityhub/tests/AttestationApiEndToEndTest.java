@@ -71,10 +71,10 @@ public class AttestationApiEndToEndTest {
         @AfterEach
         void teardown(AttestationDefinitionStore store, HolderStore holderStore, IdentityHubParticipantContextService pcService) {
             store.query(QuerySpec.max()).getContent()
-                    .forEach(att -> store.deleteById(att.getId()));
+                    .forEach(att -> store.deleteById(att.getParticipantContextId(), att.getId()));
 
             holderStore.query(QuerySpec.max()).getContent()
-                    .forEach(participant -> holderStore.deleteById(participant.getHolderId()));
+                    .forEach(participant -> holderStore.deleteById(participant.getParticipantContextId(), participant.getHolderId()));
 
             pcService.query(QuerySpec.max()).getContent()
                     .forEach(pc -> pcService.deleteParticipantContext(pc.getParticipantContextId()).getContent());
@@ -91,7 +91,7 @@ public class AttestationApiEndToEndTest {
                     .log().ifValidationFails()
                     .statusCode(201);
 
-            assertThat(store.resolveDefinition("test-id")).isNotNull();
+            assertThat(store.resolveDefinition(USER, "test-id")).isNotNull();
         }
 
         @Test

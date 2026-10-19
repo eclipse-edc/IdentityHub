@@ -57,10 +57,10 @@ public class SqlHolderStore extends AbstractSqlStore implements HolderStore {
     }
 
     @Override
-    public StoreResult<Holder> findById(String id) {
+    public StoreResult<Holder> findById(String participantContextId, String id) {
         return transactionContext.execute(() -> {
             try (var connection = getConnection()) {
-                return ofNullable(findByIdInternal(connection, id))
+                return ofNullable(findByIdInternal(connection, participantContextId, id))
                         .map(StoreResult::success)
                         .orElseGet(() -> StoreResult.notFound(notFoundErrorMessage(id)));
             } catch (SQLException e) {
@@ -74,7 +74,7 @@ public class SqlHolderStore extends AbstractSqlStore implements HolderStore {
         var id = holder.getHolderId();
         return transactionContext.execute(() -> {
             try (var connection = getConnection()) {
-                if (findByIdInternal(connection, id) != null) {
+                if (findByIdInternal(connection, holder.getParticipantContextId(), id) != null) {
                     return alreadyExists(alreadyExistsErrorMessage(id));
                 }
 
@@ -108,16 +108,16 @@ public class SqlHolderStore extends AbstractSqlStore implements HolderStore {
         Objects.requireNonNull(id);
         return transactionContext.execute(() -> {
             try (var connection = getConnection()) {
-                if (findByIdInternal(connection, id) != null) {
+                if (findByIdInternal(connection, holder.getParticipantContextId(), id) != null) {
                     queryExecutor.execute(connection,
                             statements.getUpdateTemplate(),
-                            holder.getHolderId(),
                             holder.getDid(),
                             holder.getHolderName(),
                             holder.getCreatedAt(),
                             holder.getLastModifiedAt(),
                             holder.isAnonymous(),
                             toJson(holder.getProperties()),
+                            holder.getParticipantContextId(),
                             holder.getHolderId()
                     );
                     return StoreResult.success();
@@ -142,13 +142,13 @@ public class SqlHolderStore extends AbstractSqlStore implements HolderStore {
     }
 
     @Override
-    public StoreResult<Void> deleteById(String holderId) {
+    public StoreResult<Void> deleteById(String participantContextId, String holderId) {
         Objects.requireNonNull(holderId);
         return transactionContext.execute(() -> {
             try (var connection = getConnection()) {
-                if (findByIdInternal(connection, holderId) != null) {
+                if (findByIdInternal(connection, participantContextId, holderId) != null) {
                     var stmt = statements.getDeleteByIdTemplate();
-                    queryExecutor.execute(connection, stmt, holderId);
+                    queryExecutor.execute(connection, stmt, participantContextId, holderId);
                     return success();
                 }
                 return StoreResult.notFound(notFoundErrorMessage(holderId));
@@ -158,10 +158,10 @@ public class SqlHolderStore extends AbstractSqlStore implements HolderStore {
         });
     }
 
-    private Holder findByIdInternal(Connection connection, String id) {
+    private Holder findByIdInternal(Connection connection, String participantContextId, String id) {
         return transactionContext.execute(() -> {
             var stmt = statements.getFindByIdTemplate();
-            return queryExecutor.single(connection, false, this::mapResultSet, stmt, id);
+            return queryExecutor.single(connection, false, this::mapResultSet, stmt, participantContextId, id);
         });
     }
 

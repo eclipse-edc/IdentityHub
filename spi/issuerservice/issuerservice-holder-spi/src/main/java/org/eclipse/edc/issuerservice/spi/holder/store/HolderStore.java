@@ -21,27 +21,30 @@ import org.eclipse.edc.spi.result.StoreResult;
 import java.util.Collection;
 
 /**
- * Stores {@link Holder} objects and provides basic CRUD operations
+ * Stores {@link Holder} objects and provides basic CRUD operations. Holder IDs are only unique within a participant
+ * context, so a holder is identified by its participant context ID and its ID.
  */
 public interface HolderStore {
 
     /**
      * Find a {@link Holder} by its ID
      *
-     * @param id The holder's ID (NOT the DID!)
+     * @param participantContextId The ID of the participant context that owns the holder
+     * @param id                   The holder's ID (NOT the DID!)
      */
-    StoreResult<Holder> findById(String id);
+    StoreResult<Holder> findById(String participantContextId, String id);
 
     /**
      * Stores the holder in the database
      *
      * @param holder the {@link Holder}
-     * @return success if stored, a failure if a Holder with the same ID already exists
+     * @return success if stored, a failure if the participant context already has a Holder with the same ID
      */
     StoreResult<Void> create(Holder holder);
 
     /**
-     * Updates the holder with the given data. Existing data will be overwritten with the given object.
+     * Updates the holder with the given data. Existing data will be overwritten with the given object, except the ID and
+     * the participant context ID, which identify the holder.
      *
      * @param holder a (fully populated) {@link Holder}
      * @return success if updated, a failure if not exist
@@ -59,10 +62,11 @@ public interface HolderStore {
     /**
      * Deletes a holder with the given ID
      *
-     * @param holderId the holder ID
+     * @param participantContextId the ID of the participant context that owns the holder
+     * @param holderId             the holder ID
      * @return success if deleted, a failure otherwise
      */
-    StoreResult<Void> deleteById(String holderId);
+    StoreResult<Void> deleteById(String participantContextId, String holderId);
 
     default String alreadyExistsErrorMessage(String id) {
         return "A Holder with ID '%s' already exists.".formatted(id);

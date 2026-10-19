@@ -64,10 +64,10 @@ public class SqlCredentialDefinitionStore extends AbstractSqlStore implements Cr
     }
 
     @Override
-    public StoreResult<CredentialDefinition> findById(String id) {
+    public StoreResult<CredentialDefinition> findById(String participantContextId, String id) {
         return transactionContext.execute(() -> {
             try (var connection = getConnection()) {
-                return ofNullable(findByIdInternal(connection, id))
+                return ofNullable(findByIdInternal(connection, participantContextId, id))
                         .map(StoreResult::success)
                         .orElseGet(() -> StoreResult.notFound(notFoundErrorMessage(id)));
             } catch (SQLException e) {
@@ -81,7 +81,7 @@ public class SqlCredentialDefinitionStore extends AbstractSqlStore implements Cr
         var id = credentialDefinition.getId();
         return transactionContext.execute(() -> {
             try (var connection = getConnection()) {
-                if (findByIdInternal(connection, id) != null) {
+                if (findByIdInternal(connection, credentialDefinition.getParticipantContextId(), id) != null) {
                     return alreadyExists(alreadyExistsErrorMessage(id));
                 }
 
@@ -121,7 +121,7 @@ public class SqlCredentialDefinitionStore extends AbstractSqlStore implements Cr
         Objects.requireNonNull(id);
         return transactionContext.execute(() -> {
             try (var connection = getConnection()) {
-                if (findByIdInternal(connection, id) == null) {
+                if (findByIdInternal(connection, credentialDefinition.getParticipantContextId(), id) == null) {
                     return StoreResult.notFound(notFoundErrorMessage(id));
                 }
 
@@ -138,6 +138,7 @@ public class SqlCredentialDefinitionStore extends AbstractSqlStore implements Cr
                         credentialDefinition.getValidity(),
                         credentialDefinition.getFormat(),
                         clock.millis(),
+                        credentialDefinition.getParticipantContextId(),
                         credentialDefinition.getId()
                 );
                 return StoreResult.success();
@@ -161,13 +162,13 @@ public class SqlCredentialDefinitionStore extends AbstractSqlStore implements Cr
     }
 
     @Override
-    public StoreResult<Void> deleteById(String id) {
+    public StoreResult<Void> deleteById(String participantContextId, String id) {
         Objects.requireNonNull(id);
         return transactionContext.execute(() -> {
             try (var connection = getConnection()) {
-                if (findByIdInternal(connection, id) != null) {
+                if (findByIdInternal(connection, participantContextId, id) != null) {
                     var stmt = statements.getDeleteByIdTemplate();
-                    queryExecutor.execute(connection, stmt, id);
+                    queryExecutor.execute(connection, stmt, participantContextId, id);
                     return success();
                 }
                 return StoreResult.notFound(notFoundErrorMessage(id));
@@ -177,10 +178,10 @@ public class SqlCredentialDefinitionStore extends AbstractSqlStore implements Cr
         });
     }
 
-    private CredentialDefinition findByIdInternal(Connection connection, String id) {
+    private CredentialDefinition findByIdInternal(Connection connection, String participantContextId, String id) {
         return transactionContext.execute(() -> {
             var stmt = statements.getFindByIdTemplate();
-            return queryExecutor.single(connection, false, this::mapResultSet, stmt, id);
+            return queryExecutor.single(connection, false, this::mapResultSet, stmt, participantContextId, id);
         });
     }
 

@@ -103,7 +103,7 @@ public class IssuerCredentialOfferServiceImpl implements IssuerCredentialOfferSe
     }
 
     private ServiceResult<Offer> prepareOffer(String participantContextId, String holderId, Collection<String> credentialObjectIds, @Nullable String offerReason) {
-        var holder = holderStore.findById(holderId);
+        var holder = holderStore.findById(participantContextId, holderId);
         if (holder.failed()) {
             return ServiceResult.from(holder.mapFailure());
         }

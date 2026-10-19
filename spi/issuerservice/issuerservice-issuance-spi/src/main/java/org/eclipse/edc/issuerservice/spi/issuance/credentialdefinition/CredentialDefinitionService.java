@@ -38,10 +38,11 @@ public interface CredentialDefinitionService {
     /**
      * Deletes a credential definition.
      *
+     * @param participantContextId   the ID of the participant context that owns the credential definition
      * @param credentialDefinitionId the ID of the credential definition to delete
      * @return a service result indicating success or failure
      */
-    ServiceResult<Void> deleteCredentialDefinition(String credentialDefinitionId);
+    ServiceResult<Void> deleteCredentialDefinition(String participantContextId, String credentialDefinitionId);
 
     /**
      * Updates an existing credential definition.
@@ -63,8 +64,9 @@ public interface CredentialDefinitionService {
     /**
      * Finds a credential definition by ID.
      *
+     * @param participantContextId   the ID of the participant context that owns the credential definition
      * @param credentialDefinitionId the ID of the credential definition to find
      * @return a service result containing the credential definition, if found
      */
-    ServiceResult<CredentialDefinition> findCredentialDefinitionById(String credentialDefinitionId);
+    ServiceResult<CredentialDefinition> findCredentialDefinitionById(String participantContextId, String credentialDefinitionId);
 }

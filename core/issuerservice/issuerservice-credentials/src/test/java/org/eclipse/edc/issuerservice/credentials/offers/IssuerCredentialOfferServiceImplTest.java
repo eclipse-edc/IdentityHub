@@ -97,7 +97,7 @@ class IssuerCredentialOfferServiceImplTest {
     @BeforeEach
     void setUp() {
         when(httpClient.execute(any(), (Function<Response, Result<String>>) any())).thenReturn(success("{}"));
-        when(holderStore.findById(HOLDER_ID)).thenReturn(StoreResult.success(holder()));
+        when(holderStore.findById(PARTICIPANT_CONTEXT_ID, HOLDER_ID)).thenReturn(StoreResult.success(holder()));
         when(sts.createToken(anyString(), anyMap(), isNull())).thenReturn(success(TokenRepresentation.Builder.newInstance().token("test-token").build()));
         when(credentialServiceUrlResolver.resolve(anyString())).thenReturn(success(HOLDER_CS_ENDPOINT));
         when(participantContextService.getParticipantContext(eq(PARTICIPANT_CONTEXT_ID))).thenReturn(ServiceResult.success(issuerParticipant()));
@@ -142,7 +142,7 @@ class IssuerCredentialOfferServiceImplTest {
     @Test
     void sendCredentialOffer_shouldOnlyReadWithinTransaction() {
         Map<String, Integer> transactions = new ConcurrentHashMap<>();
-        when(holderStore.findById(HOLDER_ID)).thenAnswer(i -> {
+        when(holderStore.findById(PARTICIPANT_CONTEXT_ID, HOLDER_ID)).thenAnswer(i -> {
             transactions.put("holder", transactionContext.currentTransaction());
             return StoreResult.success(holder());
         });
@@ -175,7 +175,7 @@ class IssuerCredentialOfferServiceImplTest {
         var result = credentialOfferService.sendCredentialOffer(PARTICIPANT_CONTEXT_ID, HOLDER_ID, List.of(CREDENTIAL_OBJECT_UD), null);
 
         assertThat(result).isSucceeded();
-        verify(holderStore).findById(eq(HOLDER_ID));
+        verify(holderStore).findById(eq(PARTICIPANT_CONTEXT_ID), eq(HOLDER_ID));
         verify(participantContextService).getParticipantContext(eq(PARTICIPANT_CONTEXT_ID));
         verify(sts).createToken(anyString(), anyMap(), isNull());
         verify(credentialServiceUrlResolver).resolve(anyString());
@@ -189,18 +189,18 @@ class IssuerCredentialOfferServiceImplTest {
         var result = credentialOfferService.sendCredentialOffer(PARTICIPANT_CONTEXT_ID, HOLDER_ID, List.of("not-exist"), null);
 
         assertThat(result).isFailed();
-        verify(holderStore).findById(eq(HOLDER_ID));
+        verify(holderStore).findById(eq(PARTICIPANT_CONTEXT_ID), eq(HOLDER_ID));
         verify(participantContextService).getParticipantContext(eq(PARTICIPANT_CONTEXT_ID));
         verifyNoMoreInteractions(holderStore, credentialServiceUrlResolver, participantContextService, sts, httpClient);
     }
 
     @Test
     void sendCredentialOffer_holderNotExist() {
-        when(holderStore.findById(HOLDER_ID)).thenReturn(StoreResult.notFound("foobar"));
+        when(holderStore.findById(PARTICIPANT_CONTEXT_ID, HOLDER_ID)).thenReturn(StoreResult.notFound("foobar"));
         var result = credentialOfferService.sendCredentialOffer(PARTICIPANT_CONTEXT_ID, HOLDER_ID, List.of(CREDENTIAL_OBJECT_UD), null);
 
         assertThat(result).isFailed().detail().contains("foobar");
-        verify(holderStore).findById(eq(HOLDER_ID));
+        verify(holderStore).findById(eq(PARTICIPANT_CONTEXT_ID), eq(HOLDER_ID));
         verifyNoMoreInteractions(participantContextService, credentialServiceUrlResolver, sts, httpClient);
 
     }
@@ -211,7 +211,7 @@ class IssuerCredentialOfferServiceImplTest {
         var result = credentialOfferService.sendCredentialOffer(PARTICIPANT_CONTEXT_ID, HOLDER_ID, List.of(CREDENTIAL_OBJECT_UD), null);
 
         assertThat(result).isFailed().detail().contains("not reachable");
-        verify(holderStore).findById(eq(HOLDER_ID));
+        verify(holderStore).findById(eq(PARTICIPANT_CONTEXT_ID), eq(HOLDER_ID));
         verify(participantContextService).getParticipantContext(eq(PARTICIPANT_CONTEXT_ID));
         verify(credentialServiceUrlResolver).resolve(anyString());
         verify(sts).createToken(anyString(), anyMap(), isNull());
@@ -225,7 +225,7 @@ class IssuerCredentialOfferServiceImplTest {
         var result = credentialOfferService.sendCredentialOffer(PARTICIPANT_CONTEXT_ID, HOLDER_ID, List.of(CREDENTIAL_OBJECT_UD), null);
 
         assertThat(result).isFailed().detail().contains("not found");
-        verify(holderStore).findById(eq(HOLDER_ID));
+        verify(holderStore).findById(eq(PARTICIPANT_CONTEXT_ID), eq(HOLDER_ID));
         verify(participantContextService).getParticipantContext(eq(PARTICIPANT_CONTEXT_ID));
         verifyNoMoreInteractions(holderStore, participantContextService, credentialServiceUrlResolver, sts, httpClient);
     }
@@ -236,7 +236,7 @@ class IssuerCredentialOfferServiceImplTest {
         var result = credentialOfferService.sendCredentialOffer(PARTICIPANT_CONTEXT_ID, HOLDER_ID, List.of(CREDENTIAL_OBJECT_UD), null);
 
         assertThat(result).isFailed().detail().contains("not resolvable");
-        verify(holderStore).findById(eq(HOLDER_ID));
+        verify(holderStore).findById(eq(PARTICIPANT_CONTEXT_ID), eq(HOLDER_ID));
         verify(participantContextService).getParticipantContext(eq(PARTICIPANT_CONTEXT_ID));
         verify(credentialServiceUrlResolver).resolve(anyString());
         verifyNoMoreInteractions(holderStore, participantContextService, credentialServiceUrlResolver, sts, httpClient);
@@ -248,7 +248,7 @@ class IssuerCredentialOfferServiceImplTest {
         var result = credentialOfferService.sendCredentialOffer(PARTICIPANT_CONTEXT_ID, HOLDER_ID, List.of(CREDENTIAL_OBJECT_UD), null);
 
         assertThat(result).isFailed().detail().contains("random STS failure");
-        verify(holderStore).findById(eq(HOLDER_ID));
+        verify(holderStore).findById(eq(PARTICIPANT_CONTEXT_ID), eq(HOLDER_ID));
         verify(participantContextService).getParticipantContext(eq(PARTICIPANT_CONTEXT_ID));
         verify(credentialServiceUrlResolver).resolve(anyString());
         verify(sts).createToken(anyString(), anyMap(), isNull());
@@ -266,7 +266,7 @@ class IssuerCredentialOfferServiceImplTest {
         var result = credentialOfferService.sendCredentialOffer(PARTICIPANT_CONTEXT_ID, HOLDER_ID, List.of(CREDENTIAL_OBJECT_UD), null);
 
         assertThat(result).isFailed().detail().contains("transformation failure");
-        verify(holderStore).findById(eq(HOLDER_ID));
+        verify(holderStore).findById(eq(PARTICIPANT_CONTEXT_ID), eq(HOLDER_ID));
         verify(participantContextService).getParticipantContext(eq(PARTICIPANT_CONTEXT_ID));
         verify(sts).createToken(anyString(), anyMap(), isNull());
         verify(credentialServiceUrlResolver).resolve(anyString());

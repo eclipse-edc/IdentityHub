@@ -50,13 +50,13 @@ public class AttestationDefinitionServiceImpl implements AttestationDefinitionSe
     }
 
     @Override
-    public ServiceResult<Void> deleteAttestation(String attestationId) {
-        return transactionContext.execute(() -> from(attestationDefinitionStore.deleteById(attestationId)));
+    public ServiceResult<Void> deleteAttestation(String participantContextId, String attestationId) {
+        return transactionContext.execute(() -> from(attestationDefinitionStore.deleteById(participantContextId, attestationId)));
     }
 
     @Override
-    public ServiceResult<AttestationDefinition> getAttestationById(String attestationId) {
-        return transactionContext.execute(() -> ofNullable(attestationDefinitionStore.resolveDefinition(attestationId))
+    public ServiceResult<AttestationDefinition> getAttestationById(String participantContextId, String attestationId) {
+        return transactionContext.execute(() -> ofNullable(attestationDefinitionStore.resolveDefinition(participantContextId, attestationId))
                 .map(ServiceResult::success)
                 .orElseGet(() -> ServiceResult.notFound("No attestation with id %s was found".formatted(attestationId))));
     }

@@ -79,10 +79,10 @@ public class DcpIssuerMetadataApiEndToEndTest {
         @AfterEach
         void teardown(HolderService holderService, CredentialDefinitionService credentialDefinitionService) {
             holderService.queryHolders(QuerySpec.max()).getContent()
-                    .forEach(p -> holderService.deleteHolder(p.getHolderId()).getContent());
+                    .forEach(p -> holderService.deleteHolder(p.getParticipantContextId(), p.getHolderId()).getContent());
 
             credentialDefinitionService.queryCredentialDefinitions(QuerySpec.max()).getContent()
-                    .forEach(c -> credentialDefinitionService.deleteCredentialDefinition(c.getId()).getContent());
+                    .forEach(c -> credentialDefinitionService.deleteCredentialDefinition(c.getParticipantContextId(), c.getId()).getContent());
         }
 
         @Test

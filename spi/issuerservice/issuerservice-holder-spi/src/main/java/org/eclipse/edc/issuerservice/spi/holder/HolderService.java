@@ -24,11 +24,11 @@ public interface HolderService {
 
     ServiceResult<Void> createHolder(Holder holder);
 
-    ServiceResult<Void> deleteHolder(String holderId);
+    ServiceResult<Void> deleteHolder(String participantContextId, String holderId);
 
     ServiceResult<Void> updateHolder(Holder holder);
 
     ServiceResult<Collection<Holder>> queryHolders(QuerySpec querySpec);
 
-    ServiceResult<Holder> findById(String holderId);
+    ServiceResult<Holder> findById(String participantContextId, String holderId);
 }

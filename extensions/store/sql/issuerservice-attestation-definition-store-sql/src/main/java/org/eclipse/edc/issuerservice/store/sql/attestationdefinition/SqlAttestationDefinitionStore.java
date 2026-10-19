@@ -59,10 +59,10 @@ public class SqlAttestationDefinitionStore extends AbstractSqlStore implements A
     }
 
     @Override
-    public @Nullable AttestationDefinition resolveDefinition(String id) {
+    public @Nullable AttestationDefinition resolveDefinition(String participantContextId, String id) {
         return transactionContext.execute(() -> {
             try (var connection = getConnection()) {
-                return findByIdInternal(connection, id);
+                return findByIdInternal(connection, participantContextId, id);
             } catch (SQLException e) {
                 throw new EdcPersistenceException(e);
             }
@@ -74,7 +74,7 @@ public class SqlAttestationDefinitionStore extends AbstractSqlStore implements A
         var id = attestationDefinition.getId();
         return transactionContext.execute(() -> {
             try (var connection = getConnection()) {
-                if (findByIdInternal(connection, id) != null) {
+                if (findByIdInternal(connection, attestationDefinition.getParticipantContextId(), id) != null) {
                     return alreadyExists(alreadyExistsErrorMessage(id));
                 }
 
@@ -107,7 +107,7 @@ public class SqlAttestationDefinitionStore extends AbstractSqlStore implements A
         Objects.requireNonNull(id);
         return transactionContext.execute(() -> {
             try (var connection = getConnection()) {
-                if (findByIdInternal(connection, id) != null) {
+                if (findByIdInternal(connection, attestationDefinition.getParticipantContextId(), id) != null) {
 
                     queryExecutor.execute(connection,
                             statements.getUpdateTemplate(),
@@ -115,6 +115,7 @@ public class SqlAttestationDefinitionStore extends AbstractSqlStore implements A
                             toJson(attestationDefinition.getConfiguration()),
                             toJson(attestationDefinition.getPrivateProperties()),
                             attestationDefinition.getLastModifiedAt(),
+                            attestationDefinition.getParticipantContextId(),
                             id
                     );
                     return StoreResult.success();
@@ -127,13 +128,13 @@ public class SqlAttestationDefinitionStore extends AbstractSqlStore implements A
     }
 
     @Override
-    public StoreResult<Void> deleteById(String id) {
+    public StoreResult<Void> deleteById(String participantContextId, String id) {
         Objects.requireNonNull(id);
         return transactionContext.execute(() -> {
             try (var connection = getConnection()) {
-                if (findByIdInternal(connection, id) != null) {
+                if (findByIdInternal(connection, participantContextId, id) != null) {
                     var stmt = statements.getDeleteByIdTemplate();
-                    queryExecutor.execute(connection, stmt, id);
+                    queryExecutor.execute(connection, stmt, participantContextId, id);
                     return success();
                 }
                 return StoreResult.notFound(notFoundErrorMessage(id));
@@ -155,10 +156,10 @@ public class SqlAttestationDefinitionStore extends AbstractSqlStore implements A
         });
     }
 
-    private AttestationDefinition findByIdInternal(Connection connection, String id) {
+    private AttestationDefinition findByIdInternal(Connection connection, String participantContextId, String id) {
         return transactionContext.execute(() -> {
             var stmt = statements.getFindByIdTemplate();
-            return queryExecutor.single(connection, false, this::mapResultSet, stmt, id);
+            return queryExecutor.single(connection, false, this::mapResultSet, stmt, participantContextId, id);
         });
     }
 

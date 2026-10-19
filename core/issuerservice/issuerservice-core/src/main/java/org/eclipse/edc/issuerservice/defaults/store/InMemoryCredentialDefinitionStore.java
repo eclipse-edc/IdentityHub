@@ -14,65 +14,27 @@
 
 package org.eclipse.edc.issuerservice.defaults.store;
 
-import org.eclipse.edc.identityhub.store.InMemoryEntityStore;
+import org.eclipse.edc.identityhub.store.InMemoryParticipantResourceStore;
 import org.eclipse.edc.issuerservice.spi.issuance.credentialdefinition.store.CredentialDefinitionStore;
 import org.eclipse.edc.issuerservice.spi.issuance.model.CredentialDefinition;
 import org.eclipse.edc.spi.query.QueryResolver;
-import org.eclipse.edc.spi.result.StoreResult;
 import org.eclipse.edc.store.ReflectionBasedQueryResolver;
 
-import static org.eclipse.edc.spi.result.StoreResult.alreadyExists;
-import static org.eclipse.edc.spi.result.StoreResult.notFound;
-import static org.eclipse.edc.spi.result.StoreResult.success;
-
-public class InMemoryCredentialDefinitionStore extends InMemoryEntityStore<CredentialDefinition> implements CredentialDefinitionStore {
+public class InMemoryCredentialDefinitionStore extends InMemoryParticipantResourceStore<CredentialDefinition> implements CredentialDefinitionStore {
 
     @Override
-    public StoreResult<Void> create(CredentialDefinition credentialDefinition) {
-        lock.writeLock().lock();
-        try {
-            if (store.containsKey(credentialDefinition.getId())) {
-                return alreadyExists(alreadyExistsErrorMessage(credentialDefinition.getId()));
-            }
-            store.put(credentialDefinition.getId(), credentialDefinition);
-            return success(null);
-        } finally {
-            lock.writeLock().unlock();
-        }
+    protected String getResourceId(CredentialDefinition entity) {
+        return entity.getId();
     }
 
     @Override
-    public StoreResult<Void> update(CredentialDefinition credentialDefinition) {
-        lock.writeLock().lock();
-        try {
-            if (!store.containsKey(credentialDefinition.getId())) {
-                return notFound(notFoundErrorMessage(credentialDefinition.getId()));
-            }
-            store.put(credentialDefinition.getId(), credentialDefinition);
-
-            return success();
-        } finally {
-            lock.writeLock().unlock();
-        }
+    protected String notFoundMessage(String id) {
+        return notFoundErrorMessage(id);
     }
 
     @Override
-    public StoreResult<Void> deleteById(String id) {
-        lock.writeLock().lock();
-        try {
-            if (!store.containsKey(id)) {
-                return notFound(notFoundErrorMessage(id));
-            }
-            store.remove(id);
-            return success();
-        } finally {
-            lock.writeLock().unlock();
-        }
-    }
-
-    @Override
-    protected String getId(CredentialDefinition newObject) {
-        return newObject.getId();
+    protected String alreadyExistsMessage(String id) {
+        return alreadyExistsErrorMessage(id);
     }
 
     @Override

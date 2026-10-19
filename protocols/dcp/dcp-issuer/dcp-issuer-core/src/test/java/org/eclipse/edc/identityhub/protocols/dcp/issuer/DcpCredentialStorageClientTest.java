@@ -104,7 +104,7 @@ class DcpCredentialStorageClientTest {
         when(objectMapper.writeValueAsString(any())).thenAnswer(invocation -> invocation.getArgument(0).toString());
         when(typeManager.getMapper("test")).thenReturn(objectMapper);
         when(participantContextStore.findById(PARTICIPANT_CONTEXT_ID)).thenReturn(StoreResult.success(participantContext()));
-        when(holderStore.findById(HOLDER_ID)).thenReturn(StoreResult.success(holder()));
+        when(holderStore.findById(PARTICIPANT_CONTEXT_ID, HOLDER_ID)).thenReturn(StoreResult.success(holder()));
         when(credentialServiceUrlResolver.resolve(HOLDER_DID)).thenReturn(Result.success(CREDENTIAL_SERVICE_URL));
         when(secureTokenService.createToken(anyString(), anyMap(), isNull())).thenReturn(Result.success(TokenRepresentation.Builder.newInstance().token("si-token").build()));
         when(httpClient.execute(any(Request.class))).thenReturn(response(200));
@@ -166,7 +166,7 @@ class DcpCredentialStorageClientTest {
     @DisplayName("B5.5: delivery fails when the holder does not exist (e.g. deleted after acceptance)")
     @Test
     void deliverCredentials_whenHolderNotFound_returnsFailure() {
-        when(holderStore.findById(HOLDER_ID)).thenReturn(StoreResult.notFound("not found"));
+        when(holderStore.findById(PARTICIPANT_CONTEXT_ID, HOLDER_ID)).thenReturn(StoreResult.notFound("not found"));
 
         var result = client.deliverCredentials(issuanceProcess(), List.of(credential()));
 

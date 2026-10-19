@@ -53,9 +53,9 @@ public class AttestationPipelineImpl implements AttestationPipeline, Attestation
         var holder = context.holder();
         var participantContextId = holder != null ? holder.getParticipantContextId() : null;
         for (var attestationId : attestations) {
-            var definition = store.resolveDefinition(attestationId);
             // attestations of other participant contexts are treated as if they did not exist
-            if (definition == null || !definition.getParticipantContextId().equals(participantContextId)) {
+            var definition = participantContextId == null ? null : store.resolveDefinition(participantContextId, attestationId);
+            if (definition == null) {
                 return Result.failure("Attestation with ID '%s' not found".formatted(attestationId));
             }
 

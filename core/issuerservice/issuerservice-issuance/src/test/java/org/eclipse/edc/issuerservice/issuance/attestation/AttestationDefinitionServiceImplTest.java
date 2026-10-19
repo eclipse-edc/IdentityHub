@@ -69,29 +69,29 @@ class AttestationDefinitionServiceImplTest {
 
     @Test
     void deleteAttestation() {
-        when(attestationDefinitionStore.deleteById(anyString())).thenReturn(StoreResult.success());
+        when(attestationDefinitionStore.deleteById(anyString(), anyString())).thenReturn(StoreResult.success());
 
-        assertThat(attestationDefinitionService.deleteAttestation("id"))
+        assertThat(attestationDefinitionService.deleteAttestation("participant-id", "id"))
                 .isSucceeded();
-        verify(attestationDefinitionStore).deleteById(any());
+        verify(attestationDefinitionStore).deleteById("participant-id", "id");
         verifyNoMoreInteractions(attestationDefinitionStore);
     }
 
     @Test
     void getAttestationById() {
 
-        when(attestationDefinitionStore.resolveDefinition(anyString())).thenReturn(createAttestationDefinition("1", "type", Map.of()));
+        when(attestationDefinitionStore.resolveDefinition(anyString(), anyString())).thenReturn(createAttestationDefinition("1", "type", Map.of()));
 
-        assertThat(attestationDefinitionService.getAttestationById("participant-id"))
+        assertThat(attestationDefinitionService.getAttestationById("participant-id", "1"))
                 .isSucceeded();
     }
 
     @Test
     void getAttestationById_whenNotFound() {
 
-        when(attestationDefinitionStore.resolveDefinition(anyString())).thenReturn(null);
+        when(attestationDefinitionStore.resolveDefinition(anyString(), anyString())).thenReturn(null);
 
-        assertThat(attestationDefinitionService.getAttestationById("participant-id"))
+        assertThat(attestationDefinitionService.getAttestationById("participant-id", "1"))
                 .isFailed();
     }
 

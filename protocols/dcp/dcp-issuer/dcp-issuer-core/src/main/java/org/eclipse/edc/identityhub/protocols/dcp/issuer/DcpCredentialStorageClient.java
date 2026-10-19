@@ -108,7 +108,7 @@ public class DcpCredentialStorageClient implements CredentialStorageClient {
         try {
             var issuerDid = participantContextStore.findById(issuanceProcess.getParticipantContextId()).map(ParticipantContext::getIdentity)
                     .orElseThrow(failure -> new EdcException("Participant context not found"));
-            var participantDid = holderStore.findById(issuanceProcess.getHolderId()).map(Holder::getDid)
+            var participantDid = holderStore.findById(issuanceProcess.getParticipantContextId(), issuanceProcess.getHolderId()).map(Holder::getDid)
                     .orElseThrow(failure -> new EdcException("Participant not found"));
 
             var credentialServiceBaseUrl = credentialServiceUrlResolver.resolve(participantDid)

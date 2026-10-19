@@ -53,10 +53,6 @@ public class IssuerHolderAdminApiExtension implements ServiceExtension {
         webService.registerResource(IdentityHubApiContext.ISSUERADMIN, controller);
     }
 
-    public Holder findById(String holderId) {
-        return holderService.findById(holderId).getContent();
-    }
-
     private ParticipantResource findById(String owner, String id) {
         var query = QuerySpec.Builder.newInstance()
                 .filter(new Criterion("holderId", "=", id))

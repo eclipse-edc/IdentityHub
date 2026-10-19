@@ -22,10 +22,12 @@ CREATE TABLE IF NOT EXISTS attestation_definitions
     private_properties           JSON       DEFAULT '{}'    ,
     created_date                 BIGINT     NOT NULL        ,
     last_modified_date           BIGINT     NOT NULL        ,
-    PRIMARY KEY (id)
+    CONSTRAINT attestation_definitions_participant_id_pk PRIMARY KEY (participant_context_id, id)
 );
-
-CREATE UNIQUE INDEX IF NOT EXISTS attestation_definition_ix
-    ON attestation_definitions (id);
+-- migration of tables in which the attestation definition ID was unique across all participant contexts. The unique
+-- index takes the place of the composite primary key, and is a no-op if the table already has it
+ALTER TABLE attestation_definitions DROP CONSTRAINT IF EXISTS attestation_definitions_pkey;
+DROP INDEX IF EXISTS attestation_definition_ix;
+CREATE UNIQUE INDEX IF NOT EXISTS attestation_definitions_participant_id_pk ON attestation_definitions (participant_context_id, id);
 
 

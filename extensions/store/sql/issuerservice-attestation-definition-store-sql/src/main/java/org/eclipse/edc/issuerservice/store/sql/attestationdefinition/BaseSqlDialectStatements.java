@@ -20,6 +20,7 @@ import org.eclipse.edc.sql.translation.PostgresqlOperatorTranslator;
 import org.eclipse.edc.sql.translation.SqlQueryStatement;
 
 import static java.lang.String.format;
+import static org.eclipse.edc.sql.statement.SqlExecuteStatement.equalTo;
 
 public class BaseSqlDialectStatements implements AttestationDefinitionStoreStatements {
     @Override
@@ -45,17 +46,17 @@ public class BaseSqlDialectStatements implements AttestationDefinitionStoreState
                 .jsonColumn(getConfigurationColumn())
                 .jsonColumn(getPrivatePropertiesColumn())
                 .column(getLastModifiedTimestampColumn())
-                .update(getAttestationDefinitionTable(), getIdColumn());
+                .update(getAttestationDefinitionTable(), equalTo(getParticipantContextIdColumn()), equalTo(getIdColumn()));
     }
 
     @Override
     public String getDeleteByIdTemplate() {
-        return executeStatement().delete(getAttestationDefinitionTable(), getIdColumn());
+        return executeStatement().delete(getAttestationDefinitionTable(), equalTo(getParticipantContextIdColumn()), equalTo(getIdColumn()));
     }
 
     @Override
     public String getFindByIdTemplate() {
-        return format("SELECT * FROM %s WHERE %s = ?", getAttestationDefinitionTable(), getIdColumn());
+        return format("SELECT * FROM %s WHERE %s = ? AND %s = ?", getAttestationDefinitionTable(), getParticipantContextIdColumn(), getIdColumn());
 
     }
 

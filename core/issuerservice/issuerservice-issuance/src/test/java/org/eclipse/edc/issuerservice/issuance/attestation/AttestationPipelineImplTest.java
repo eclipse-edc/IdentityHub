@@ -52,7 +52,7 @@ class AttestationPipelineImplTest {
         var store = mock(AttestationDefinitionStore.class);
         var attestationContext = attestationContext();
 
-        when(store.resolveDefinition(eq("a123"))).thenReturn(attestationDefinition);
+        when(store.resolveDefinition(eq(PARTICIPANT_CONTEXT_ID), eq("a123"))).thenReturn(attestationDefinition);
 
         var pipeline = new AttestationPipelineImpl(store);
 
@@ -69,7 +69,7 @@ class AttestationPipelineImplTest {
         assertThat(results.getContent()).contains(entry("test", "value"));
 
 
-        verify(store).resolveDefinition("a123");
+        verify(store).resolveDefinition(PARTICIPANT_CONTEXT_ID, "a123");
         verify(attestationSource).execute(isA(AttestationContext.class));
         verify(sourceFactory).createSource(isA(AttestationDefinition.class));
     }
@@ -82,8 +82,8 @@ class AttestationPipelineImplTest {
 
         var store = mock(AttestationDefinitionStore.class);
         var attestationContext = attestationContext();
-        when(store.resolveDefinition(eq("a123"))).thenReturn(attestationDefinition1);
-        when(store.resolveDefinition(eq("a456"))).thenReturn(attestationDefinition2);
+        when(store.resolveDefinition(eq(PARTICIPANT_CONTEXT_ID), eq("a123"))).thenReturn(attestationDefinition1);
+        when(store.resolveDefinition(eq(PARTICIPANT_CONTEXT_ID), eq("a456"))).thenReturn(attestationDefinition2);
 
         var pipeline = new AttestationPipelineImpl(store);
 
@@ -98,7 +98,7 @@ class AttestationPipelineImplTest {
         var results = pipeline.evaluate(new LinkedHashSet<>(List.of("a123", "a456")), attestationContext);
         assertThat(results).isFailed();
 
-        verify(store).resolveDefinition("a123");
+        verify(store).resolveDefinition(PARTICIPANT_CONTEXT_ID, "a123");
         verify(sourceFactory, times(1)).createSource(isA(AttestationDefinition.class));
         verify(failedSource, times(1)).execute(isA(AttestationContext.class));
     }
@@ -111,7 +111,7 @@ class AttestationPipelineImplTest {
                 .participantContextId("otherParticipantContextId")
                 .configuration(Map.of()).build();
         var store = mock(AttestationDefinitionStore.class);
-        when(store.resolveDefinition(eq("a123"))).thenReturn(attestationDefinition);
+        when(store.resolveDefinition(eq("otherParticipantContextId"), eq("a123"))).thenReturn(attestationDefinition);
 
         var pipeline = new AttestationPipelineImpl(store);
         var sourceFactory = mock(AttestationSourceFactory.class);
@@ -131,7 +131,7 @@ class AttestationPipelineImplTest {
         var store = mock(AttestationDefinitionStore.class);
         var attestationContext = attestationContext();
         // the store cannot resolve the attestation id
-        when(store.resolveDefinition(eq("unknown-id"))).thenReturn(null);
+        when(store.resolveDefinition(eq(PARTICIPANT_CONTEXT_ID), eq("unknown-id"))).thenReturn(null);
 
         var pipeline = new AttestationPipelineImpl(store);
 
@@ -148,7 +148,7 @@ class AttestationPipelineImplTest {
         var attestationDefinition = createAttestationDefinition("a123", "unregistered-type", Map.of());
         var store = mock(AttestationDefinitionStore.class);
         var attestationContext = attestationContext();
-        when(store.resolveDefinition(eq("a123"))).thenReturn(attestationDefinition);
+        when(store.resolveDefinition(eq(PARTICIPANT_CONTEXT_ID), eq("a123"))).thenReturn(attestationDefinition);
 
         // no AttestationSourceFactory is registered for "unregistered-type"
         var pipeline = new AttestationPipelineImpl(store);

@@ -22,15 +22,16 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Collection;
 
 /**
- * Persists attestation definitions.
+ * Persists attestation definitions. Attestation definition IDs are only unique within a participant context, so an
+ * attestation definition is identified by its participant context ID and its ID.
  */
 public interface AttestationDefinitionStore {
 
     /**
-     * Returns a definition for the id or null if not found.
+     * Returns the definition of the participant context with the id, or null if not found.
      */
     @Nullable
-    AttestationDefinition resolveDefinition(String id);
+    AttestationDefinition resolveDefinition(String participantContextId, String id);
 
     /**
      * Persists a new attestation definition.
@@ -38,14 +39,14 @@ public interface AttestationDefinitionStore {
     StoreResult<Void> create(AttestationDefinition credentialResource);
 
     /**
-     * Updates an existing attestation definition.
+     * Updates an existing attestation definition, except its ID and participant context ID, which identify it.
      */
     StoreResult<Void> update(AttestationDefinition credentialResource);
 
     /**
      * Removes an attestation from persistent storage.
      */
-    StoreResult<Void> deleteById(String id);
+    StoreResult<Void> deleteById(String participantContextId, String id);
 
     /**
      * Queries for attestation definitions
@@ -61,6 +62,6 @@ public interface AttestationDefinitionStore {
     }
 
     default String notFoundErrorMessage(String id) {
-        return "A Credential definition ID '%s' does not exist.".formatted(id);
+        return "An Attestation definition with ID '%s' does not exist.".formatted(id);
     }
 }
