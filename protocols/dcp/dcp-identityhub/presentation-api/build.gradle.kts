@@ -23,6 +23,7 @@ dependencies {
     api(project(":spi:verifiable-credential-spi"))
     api(project(":protocols:dcp:dcp-spi"))
     api(libs.edc.spi.core)
+    implementation(project(":core:lib:common-lib"))
     implementation(project(":protocols:dcp:dcp-identityhub:credentials-api-configuration"))
     implementation(libs.edc.spi.dcp)
     implementation(libs.edc.lib.core)

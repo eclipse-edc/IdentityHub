@@ -46,6 +46,7 @@ import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 import static org.eclipse.edc.iam.decentralizedclaims.spi.DcpConstants.DSPACE_DCP_NAMESPACE_V_1_0;
 import static org.eclipse.edc.identityhub.protocols.dcp.spi.DcpConstants.DCP_SCOPE_V_1_0;
 import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialMessage.CREDENTIAL_MESSAGE_TERM;
+import static org.eclipse.edc.identityhub.verification.AuthenticationFailures.idTokenVerificationFailed;
 import static org.eclipse.edc.web.spi.exception.ServiceResultHandler.exceptionMapper;
 
 @Consumes(APPLICATION_JSON)
@@ -90,7 +91,7 @@ public class StorageApiController implements StorageApi {
         var authToken = authHeader.replace("Bearer ", "").trim();
 
         var participantContext = participantContextService.getParticipantContext(participantContextId)
-                .orElseThrow((f) -> new AuthenticationFailedException("Invalid participant"));
+                .orElseThrow(idTokenVerificationFailed(monitor, "Participant context '%s' could not be resolved".formatted(participantContextId)));
         var holderDid = participantContext.getDid();
 
         // the message is needed for the checks preceding the token verification
@@ -111,18 +112,11 @@ public class StorageApiController implements StorageApi {
                     var origin = credentialWriter.checkOrigin(credentialMessage.getHolderPid(), unverified.issuer(), participantContextId);
                     return origin.succeeded() ? Result.<Void>success() : Result.<Void>failure(origin.getFailureDetail());
                 })
-                .orElseThrow(f -> {
-                    monitor.debug("Rejected credential message before verifying its ID token: %s".formatted(f.getFailureDetail()));
-                    return new AuthenticationFailedException("ID token verification failed");
-                });
+                .orElseThrow(idTokenVerificationFailed(monitor, "Rejected credential message before verifying its ID token"));
 
         // validate Issuer's SI token
         var issuerClaims = issuerTokenVerifier.verify(participantContext, authToken)
-                .orElseThrow(f -> {
-                    // the failure may describe the outcome of resolving the sender's DID, which is not for the caller to see
-                    monitor.debug("ID token verification failed: %s".formatted(f.getFailureDetail()));
-                    return new AuthenticationFailedException("ID token verification failed");
-                });
+                .orElseThrow(idTokenVerificationFailed(monitor, "ID token verification failed"));
 
         // the token was verified against the DID document of its issuer, so the 'iss' claim identifies who delivers here
         var issuerDid = issuerClaims.getStringClaim(JwtRegisteredClaimNames.ISSUER);

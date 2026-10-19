@@ -45,7 +45,7 @@ class CredentialObjectResolverTest {
     private final JsonLd jsonLd = mock();
     private final TypeTransformerRegistry transformerRegistry = mock();
 
-    private final CredentialObjectResolver resolver = new CredentialObjectResolver(didResolverRegistry, httpClient, jsonLd, transformerRegistry);
+    private final CredentialObjectResolver resolver = new CredentialObjectResolver(didResolverRegistry, httpClient, jsonLd, transformerRegistry, mock());
 
     @Test
     void resolve_whenNoSparseEntries_shouldReturnUnchanged() {
@@ -98,7 +98,8 @@ class CredentialObjectResolverTest {
 
         var sparse = CredentialObject.Builder.newInstance().id("credential-object-id").build();
 
-        AbstractResultAssert.assertThat(resolver.resolve(ISSUER_DID, List.of(sparse))).isFailed();
+        AbstractResultAssert.assertThat(resolver.resolve(ISSUER_DID, List.of(sparse))).isFailed()
+                .detail().isEqualTo("The Issuer's metadata could not be fetched");
         verifyNoInteractions(httpClient);
     }
 
@@ -112,7 +113,7 @@ class CredentialObjectResolverTest {
         var sparse = CredentialObject.Builder.newInstance().id("credential-object-id").build();
 
         AbstractResultAssert.assertThat(resolver.resolve(ISSUER_DID, List.of(sparse))).isFailed()
-                .detail().contains("IssuerService");
+                .detail().isEqualTo("The Issuer's metadata could not be fetched");
         verifyNoInteractions(httpClient);
     }
 
@@ -120,11 +121,12 @@ class CredentialObjectResolverTest {
     @SuppressWarnings("unchecked")
     void resolve_whenMetadataRequestFails_shouldFail() {
         stubDidDocument();
-        when(httpClient.execute(any(), any(Function.class))).thenReturn(Result.failure("Error fetching Issuer metadata"));
+        when(httpClient.execute(any(), any(Function.class))).thenReturn(Result.failure("Error fetching Issuer metadata: code: '500', message: 'internal detail'"));
 
         var sparse = CredentialObject.Builder.newInstance().id("credential-object-id").build();
 
-        AbstractResultAssert.assertThat(resolver.resolve(ISSUER_DID, List.of(sparse))).isFailed();
+        AbstractResultAssert.assertThat(resolver.resolve(ISSUER_DID, List.of(sparse))).isFailed()
+                .detail().isEqualTo("The Issuer's metadata could not be fetched");
     }
 
     @SuppressWarnings("unchecked")

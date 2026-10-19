@@ -130,7 +130,7 @@ class CredentialRequestApiControllerTest extends RestControllerTestBase {
 
         assertThatThrownBy(() -> controller().requestCredential(participantContextId, createObjectBuilder().build(), "Bearer " + generateJwt()))
                 .isExactlyInstanceOf(AuthenticationFailedException.class)
-                .hasMessageContaining("Invalid issuer");
+                .hasMessage("ID token verification failed");
 
         verifyNoInteractions(dcpIssuerService);
     }

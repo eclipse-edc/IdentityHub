@@ -124,6 +124,13 @@ public class CredentialWriterImpl implements CredentialWriter {
 
     @Override
     public ServiceResult<Void> reject(String holderPid, String issuerPid, String issuerDid, @Nullable String rejectionReason, String participantContextId) {
+        // a rejection that may not act on the request at all must not lease it, or else the lease of a request of
+        // another participant context would become observable
+        var originResult = checkOrigin(holderPid, issuerDid, participantContextId);
+        if (originResult.failed()) {
+            return originResult;
+        }
+
         return transactionContext.execute(() -> {
 
             var holderRequestResult = holderCredentialRequestStore.findByIdAndLease(holderPid);
@@ -201,8 +208,7 @@ public class CredentialWriterImpl implements CredentialWriter {
         }
 
         if (!holderRequest.getIssuerDid().equals(issuerDid)) {
-            return ServiceResult.unauthorized("HolderCredentialRequest '%s' was sent to Issuer '%s', so credentials delivered by '%s' are not accepted"
-                    .formatted(holderPid, holderRequest.getIssuerDid(), issuerDid));
+            return ServiceResult.unauthorized("HolderCredentialRequest '%s' was not sent to Issuer '%s'".formatted(holderPid, issuerDid));
         }
         return success();
     }

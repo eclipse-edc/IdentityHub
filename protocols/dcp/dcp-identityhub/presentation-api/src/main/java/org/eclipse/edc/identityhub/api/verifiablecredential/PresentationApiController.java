@@ -25,8 +25,6 @@ import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.Response;
 import org.eclipse.edc.iam.decentralizedclaims.spi.model.PresentationQueryMessage;
-import org.eclipse.edc.identityhub.spi.participantcontext.IdentityHubParticipantContextService;
-import org.eclipse.edc.identityhub.spi.participantcontext.model.IdentityHubParticipantContext;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.generator.VerifiablePresentationService;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.resolution.CredentialQueryResolver;
 import org.eclipse.edc.identityhub.spi.verification.SelfIssuedTokenVerifier;
@@ -55,7 +53,7 @@ import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 import static org.eclipse.edc.iam.decentralizedclaims.spi.DcpConstants.DSPACE_DCP_NAMESPACE_V_1_0;
 import static org.eclipse.edc.iam.decentralizedclaims.spi.model.PresentationQueryMessage.PRESENTATION_QUERY_MESSAGE_TERM;
 import static org.eclipse.edc.identityhub.protocols.dcp.spi.DcpConstants.DCP_SCOPE_V_1_0;
-import static org.eclipse.edc.web.spi.exception.ServiceResultHandler.exceptionMapper;
+import static org.eclipse.edc.identityhub.verification.AuthenticationFailures.idTokenVerificationFailed;
 
 @Consumes(APPLICATION_JSON)
 @Produces(APPLICATION_JSON)
@@ -68,7 +66,6 @@ public class PresentationApiController implements PresentationApi {
     private final SelfIssuedTokenVerifier selfIssuedTokenVerifier;
     private final VerifiablePresentationService verifiablePresentationService;
     private final Monitor monitor;
-    private final IdentityHubParticipantContextService participantContextService;
     private final JsonLd jsonLd;
 
     private final Map<JsonLdNamespace, String> protocols = Map.of(
@@ -76,14 +73,13 @@ public class PresentationApiController implements PresentationApi {
     );
 
     public PresentationApiController(JsonObjectValidatorRegistry validatorRegistry, TypeTransformerRegistry transformerRegistry, CredentialQueryResolver queryResolver,
-                                     SelfIssuedTokenVerifier selfIssuedTokenVerifier, VerifiablePresentationService verifiablePresentationService, Monitor monitor, IdentityHubParticipantContextService participantContextService, JsonLd jsonLd) {
+                                     SelfIssuedTokenVerifier selfIssuedTokenVerifier, VerifiablePresentationService verifiablePresentationService, Monitor monitor, JsonLd jsonLd) {
         this.validatorRegistry = validatorRegistry;
         this.transformerRegistry = transformerRegistry;
         this.queryResolver = queryResolver;
         this.selfIssuedTokenVerifier = selfIssuedTokenVerifier;
         this.verifiablePresentationService = verifiablePresentationService;
         this.monitor = monitor;
-        this.participantContextService = participantContextService;
         this.jsonLd = jsonLd;
     }
 
@@ -102,17 +98,10 @@ public class PresentationApiController implements PresentationApi {
 
         token = token.replace("Bearer", "").trim();
 
-        // verify that the participant actually exists
-        participantContextService.getParticipantContext(participantContextId)
-                .orElseThrow(exceptionMapper(IdentityHubParticipantContext.class, participantContextId));
-
-        // verify and validate the requestor's SI token, before the query is processed
+        // verify and validate the requestor's SI token, before the query is processed. An unknown participant context
+        // fails the verification as well, so that its existence cannot be told from the response
         var issuerScopes = selfIssuedTokenVerifier.verify(token, participantContextId)
-                .orElseThrow(f -> {
-                    // the failure may describe the outcome of resolving the sender's DID, which is not for the caller to see
-                    monitor.debug("ID token verification failed: %s".formatted(f.getFailureDetail()));
-                    return new AuthenticationFailedException("ID token verification failed");
-                });
+                .orElseThrow(idTokenVerificationFailed(monitor, "ID token verification failed"));
 
         query = jsonLd.expand(query)
                 .orElseThrow(f -> {

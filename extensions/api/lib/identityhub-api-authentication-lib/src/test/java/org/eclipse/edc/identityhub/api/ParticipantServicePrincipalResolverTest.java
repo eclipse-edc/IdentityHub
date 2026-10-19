@@ -38,7 +38,7 @@ class ParticipantServicePrincipalResolverTest {
 
     private final IdentityHubParticipantContextService participantContextService = mock();
     private final Vault vault = mock();
-    private final ParticipantServicePrincipalResolver resolver = new ParticipantServicePrincipalResolver(participantContextService, vault);
+    private final ParticipantServicePrincipalResolver resolver = new ParticipantServicePrincipalResolver(participantContextService, vault, mock());
 
     @BeforeEach
     void setUp() {
@@ -60,7 +60,19 @@ class ParticipantServicePrincipalResolverTest {
         when(vault.resolveSecret(PARTICIPANT_CONTEXT_ID, "test-alias")).thenReturn(API_KEY);
 
         var otherKey = Base64.getEncoder().encodeToString(PARTICIPANT_CONTEXT_ID.getBytes()) + ".other-secret";
-        assertThatThrownBy(() -> resolver.findByCredential(otherKey)).isInstanceOf(AuthenticationFailedException.class);
+        assertThatThrownBy(() -> resolver.findByCredential(otherKey)).isInstanceOf(AuthenticationFailedException.class)
+                .hasMessage("Invalid API token");
+    }
+
+    @Test
+    void findByCredential_whenParticipantNotFound_shouldThrowSameErrorAsForWrongKey() {
+        var unknownId = "unknown-participant";
+        when(participantContextService.getParticipantContext(unknownId)).thenReturn(ServiceResult.notFound("ParticipantContext with ID '%s' does not exist.".formatted(unknownId)));
+
+        var apiKey = Base64.getEncoder().encodeToString(unknownId.getBytes()) + ".secret-part";
+        assertThatThrownBy(() -> resolver.findByCredential(apiKey)).isInstanceOf(AuthenticationFailedException.class)
+                .hasMessage("Invalid API token");
+        verifyNoInteractions(vault);
     }
 
     @Test

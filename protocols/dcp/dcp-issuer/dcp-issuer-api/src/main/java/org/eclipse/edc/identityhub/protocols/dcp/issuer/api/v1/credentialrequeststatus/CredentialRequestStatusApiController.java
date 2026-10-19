@@ -37,6 +37,7 @@ import org.eclipse.edc.web.spi.exception.AuthenticationFailedException;
 
 import static jakarta.ws.rs.core.HttpHeaders.AUTHORIZATION;
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
+import static org.eclipse.edc.identityhub.verification.AuthenticationFailures.idTokenVerificationFailed;
 import static org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcessStates.from;
 import static org.eclipse.edc.participantcontext.spi.types.ParticipantResource.queryByParticipantContextId;
 
@@ -74,20 +75,19 @@ public class CredentialRequestStatusApiController implements CredentialRequestSt
 
 
         var participantContext = participantContextService.getParticipantContext(participantContextId)
-                .orElseThrow((f) -> new AuthenticationFailedException("Invalid issuer"));
+                .orElseThrow(idTokenVerificationFailed(monitor, "Participant context '%s' could not be resolved".formatted(participantContextId)));
 
         var tokenRepresentation = TokenRepresentation.Builder.newInstance().token(authToken).build();
 
         var requestContext = tokenValidator.verify(participantContext, tokenRepresentation)
-                .orElseThrow(f -> {
-                    // the failure may describe the outcome of resolving the sender's DID, which is not for the caller to see
-                    monitor.debug("ID token verification failed: %s".formatted(f.getFailureDetail()));
-                    return new AuthenticationFailedException("ID token verification failed");
-                });
+                .orElseThrow(idTokenVerificationFailed(monitor, "ID token verification failed"));
 
         var status = fetchByParticipant(participantContextId, requestContext.holder(), credentialRequestId)
                 .map(this::toCredentialStatus)
-                .orElseThrow((f) -> new AuthenticationFailedException("Invalid credential request %s: %s".formatted(credentialRequestId, f.getFailureDetail())));
+                .orElseThrow(f -> {
+                    monitor.debug("Credential request '%s' could not be found: %s".formatted(credentialRequestId, f.getFailureDetail()));
+                    return new AuthenticationFailedException("Invalid credential request");
+                });
 
         return dcpRegistry.transform(status, JsonObject.class)
                 .orElseThrow(f -> new EdcException("Error creating response body: " + f.getFailureDetail()));

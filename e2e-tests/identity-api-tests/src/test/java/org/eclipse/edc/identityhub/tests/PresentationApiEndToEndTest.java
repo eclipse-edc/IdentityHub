@@ -323,6 +323,22 @@ public class PresentationApiEndToEndTest {
         }
 
         @Test
+        void query_participantNotFound_shouldReturn401(IdentityHub identityHub) throws JOSEException {
+            var token = generateSiToken();
+            identityHub.getCredentialsEndpoint().baseRequest()
+                    .contentType(JSON)
+                    .header(AUTHORIZATION, "Bearer " + token)
+                    .body(VALID_QUERY_WITH_SCOPE)
+                    .post("/v1/participants/%s/presentations/query".formatted("unknown-participant"))
+                    .then()
+                    .log().ifValidationFails()
+                    // answered like a failed token verification, so the participant's existence cannot be told
+                    .statusCode(401)
+                    .body("[0].type", equalTo("AuthenticationFailed"))
+                    .body("[0].message", equalTo("ID token verification failed"));
+        }
+
+        @Test
         void query_spoofedKeyId_shouldReturn401(IdentityHub identityHub) throws JOSEException {
             var spoofedKey = generateEcKey("did:web:spoofed#key1");
 
