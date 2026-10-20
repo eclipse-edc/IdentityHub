@@ -56,8 +56,9 @@ public interface IdentityHubParticipantContextService {
      */
     default ServiceResult<IdentityHubParticipantContext> rejectIfDeactivated(String participantContextId) {
         var participantContext = getParticipantContext(participantContextId);
+        // the lookup fails with not-found if the participant context does not exist
         if (participantContext.failed()) {
-            return ServiceResult.notFound("ParticipantContext '%s' does not exist.".formatted(participantContextId));
+            return participantContext;
         }
         if (participantContext.getContent().getStateAsEnum() == ParticipantContextState.DEACTIVATED) {
             return ServiceResult.badRequest("ParticipantContext '%s' is deactivated.".formatted(participantContextId));
