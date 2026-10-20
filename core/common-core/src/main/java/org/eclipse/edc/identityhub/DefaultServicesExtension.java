@@ -30,6 +30,7 @@ import org.eclipse.edc.identityhub.spi.transformation.ScopeMappingRegistry;
 import org.eclipse.edc.identityhub.spi.transformation.ScopeToCriterionTransformer;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialOfferStore;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialStore;
+import org.eclipse.edc.identityhub.verification.RequiredJtiValidationRule;
 import org.eclipse.edc.jsonld.spi.JsonLd;
 import org.eclipse.edc.jwt.spi.signer.JwsSignerProvider;
 import org.eclipse.edc.jwt.validation.jti.JtiValidationStore;
@@ -45,7 +46,6 @@ import org.eclipse.edc.spi.system.ExecutorInstrumentation;
 import org.eclipse.edc.spi.system.ServiceExtension;
 import org.eclipse.edc.spi.system.ServiceExtensionContext;
 import org.eclipse.edc.token.rules.ExpirationIssuedAtValidationRule;
-import org.eclipse.edc.token.rules.JtiValidationRule;
 import org.eclipse.edc.token.rules.NotBeforeValidationRule;
 import org.eclipse.edc.token.spi.TokenValidationRulesRegistry;
 
@@ -92,8 +92,6 @@ public class DefaultServicesExtension implements ServiceExtension {
     @Inject
     private PrivateKeyResolver privateKeyResolver;
     @Inject
-    private JtiValidationStore jwtValidationStore;
-    @Inject
     private Clock clock;
     @Inject
     private CriterionOperatorRegistry criterionOperatorRegistry;
@@ -130,8 +128,8 @@ public class DefaultServicesExtension implements ServiceExtension {
         registry.addRule(DCP_PRESENTATION_ACCESS_TOKEN_CONTEXT, new NotBeforeValidationRule(clock, 5, true));
 
         if (activateJtiCheck) {
-            registry.addRule(DCP_PRESENTATION_SELF_ISSUED_TOKEN_CONTEXT, new JtiValidationRule(jtiValidationStore, context.getMonitor()));
-            registry.addRule(DCP_PRESENTATION_ACCESS_TOKEN_CONTEXT, new JtiValidationRule(jwtValidationStore, context.getMonitor()));
+            registry.addRule(DCP_PRESENTATION_SELF_ISSUED_TOKEN_CONTEXT, new RequiredJtiValidationRule(jtiValidationStore, context.getMonitor()));
+            registry.addRule(DCP_PRESENTATION_ACCESS_TOKEN_CONTEXT, new RequiredJtiValidationRule(jtiValidationStore, context.getMonitor()));
         } else {
             context.getMonitor().warning("JWT Token ID (\"jti\" claim) Validation is not active. Please consider setting '%s=true' for protection against replay attacks".formatted(ACCESSTOKEN_JTI_VALIDATION_ACTIVATE));
         }

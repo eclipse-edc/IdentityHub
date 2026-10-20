@@ -16,6 +16,7 @@ package org.eclipse.edc.identityhub;
 
 import org.eclipse.edc.boot.system.injection.ObjectFactory;
 import org.eclipse.edc.identityhub.accesstoken.rules.ClaimIsPresentRule;
+import org.eclipse.edc.identityhub.verification.RequiredJtiValidationRule;
 import org.eclipse.edc.junit.extensions.DependencyInjectionExtension;
 import org.eclipse.edc.jwt.validation.jti.JtiValidationStore;
 import org.eclipse.edc.spi.persistence.EdcPersistenceException;
@@ -24,7 +25,6 @@ import org.eclipse.edc.spi.system.ExecutorInstrumentation;
 import org.eclipse.edc.spi.system.ServiceExtensionContext;
 import org.eclipse.edc.spi.system.configuration.ConfigFactory;
 import org.eclipse.edc.token.rules.ExpirationIssuedAtValidationRule;
-import org.eclipse.edc.token.rules.JtiValidationRule;
 import org.eclipse.edc.token.rules.NotBeforeValidationRule;
 import org.eclipse.edc.token.spi.TokenValidationRulesRegistry;
 import org.junit.jupiter.api.BeforeEach;
@@ -85,11 +85,11 @@ class DefaultServicesExtensionTest {
         verify(registry).addRule(eq("dcp-si"), isA(ClaimIsPresentRule.class));
         verify(registry).addRule(eq("dcp-si"), isA(ExpirationIssuedAtValidationRule.class));
         verify(registry).addRule(eq("dcp-si"), isA(NotBeforeValidationRule.class));
-        verify(registry).addRule(eq("dcp-si"), isA(JtiValidationRule.class));
+        verify(registry).addRule(eq("dcp-si"), isA(RequiredJtiValidationRule.class));
         verify(registry).addRule(eq("dcp-access-token"), isA(ClaimIsPresentRule.class));
         verify(registry).addRule(eq("dcp-access-token"), isA(ExpirationIssuedAtValidationRule.class));
         verify(registry).addRule(eq("dcp-access-token"), isA(NotBeforeValidationRule.class));
-        verify(registry).addRule(eq("dcp-access-token"), isA(JtiValidationRule.class));
+        verify(registry).addRule(eq("dcp-access-token"), isA(RequiredJtiValidationRule.class));
         verifyNoMoreInteractions(registry);
     }
 

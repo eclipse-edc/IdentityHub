@@ -58,7 +58,8 @@ class KeyPairResourcePublicKeyResolverTest {
     private final KeyPairResourceStore resourceStore = mock();
     private final KeyParserRegistry parserRegistry = new KeyParserRegistryImpl();
     private final Monitor monitor = mock();
-    private final KeyPairResourcePublicKeyResolver resolver = new KeyPairResourcePublicKeyResolver(resourceStore, parserRegistry, monitor, fallbackService);
+    private final KeyPairResourcePublicKeyResolver resolver = new KeyPairResourcePublicKeyResolver(resourceStore, parserRegistry, monitor, null);
+    private final KeyPairResourcePublicKeyResolver resolverWithFallback = new KeyPairResourcePublicKeyResolver(resourceStore, parserRegistry, monitor, fallbackService);
 
     @BeforeEach
     void setUp() {
@@ -76,11 +77,21 @@ class KeyPairResourcePublicKeyResolverTest {
     }
 
     @Test
+    void resolveKey_whenNotFoundInStore_noFallback() {
+        when(resourceStore.query(any(QuerySpec.class))).thenReturn(StoreResult.success(Collections.emptyList()));
+
+        assertThat(resolver.resolveKey("test-key", "participantId")).isFailed()
+                .detail().isEqualTo("No KeyPairResource with keyId 'test-key' was found.");
+        verify(resourceStore).query(any(QuerySpec.class));
+        verifyNoInteractions(fallbackService, monitor);
+    }
+
+    @Test
     void resolveKey_whenNotFoundInStore_foundInVault() throws JOSEException {
         when(resourceStore.query(any(QuerySpec.class))).thenReturn(StoreResult.success(Collections.emptyList()));
         when(fallbackService.resolveKey(anyString())).thenReturn(Result.success(createPublicKeyJwk().toPublicKey()));
 
-        assertThat(resolver.resolveKey("test-key", "participantId")).isSucceeded();
+        assertThat(resolverWithFallback.resolveKey("test-key", "participantId")).isSucceeded();
 
         verify(resourceStore).query(any(QuerySpec.class));
         verify(fallbackService).resolveKey(anyString());
@@ -104,7 +115,7 @@ class KeyPairResourcePublicKeyResolverTest {
         when(resourceStore.query(any(QuerySpec.class))).thenReturn(StoreResult.success(Collections.emptyList()));
         when(fallbackService.resolveKey(anyString())).thenReturn(Result.failure("not found"));
 
-        assertThat(resolver.resolveKey("test-key", "participantId")).isFailed()
+        assertThat(resolverWithFallback.resolveKey("test-key", "participantId")).isFailed()
                 .detail()
                 .contains("not found");
 

@@ -23,6 +23,7 @@ import org.eclipse.edc.keys.spi.LocalPublicKeyService;
 import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.spi.query.Criterion;
 import org.eclipse.edc.spi.result.Result;
+import org.jetbrains.annotations.Nullable;
 
 import java.security.PublicKey;
 
@@ -30,20 +31,26 @@ import static org.eclipse.edc.participantcontext.spi.types.ParticipantResource.q
 
 
 /**
- * This {@link org.eclipse.edc.keys.spi.LocalPublicKeyService} resolves this IdentityHub's own public keys by querying the {@link KeyPairResourceStore}.
- * The rationale being that public keys should be represented as a {@link org.eclipse.edc.identityhub.spi.keypair.model.KeyPairResource}.
+ * Resolves this IdentityHub's own public keys by querying the {@link KeyPairResourceStore}. The rationale being that public keys
+ * should be represented as a {@link org.eclipse.edc.identityhub.spi.keypair.model.KeyPairResource}.
  * <p>
- * If no such {@link org.eclipse.edc.identityhub.spi.keypair.model.KeyPairResource} is found, this service will fall back to e.g. looking up the keys from the vault. Note that this
- * would be a strong indication of a data inconsistency.
+ * If no such {@link org.eclipse.edc.identityhub.spi.keypair.model.KeyPairResource} is found, resolution fails, unless a fallback
+ * {@link LocalPublicKeyService} is configured, which e.g. looks up the keys from the vault. That lookup is not scoped to the participant
+ * context, and a missing {@link org.eclipse.edc.identityhub.spi.keypair.model.KeyPairResource} is a strong indication of a data inconsistency.
  */
 public class KeyPairResourcePublicKeyResolver {
 
     private final KeyPairResourceStore keyPairResourceStore;
     private final KeyParserRegistry keyParserRegistry;
     private final Monitor monitor;
-    private final LocalPublicKeyService fallbackResolver;
+    private final @Nullable LocalPublicKeyService fallbackResolver;
 
-    public KeyPairResourcePublicKeyResolver(KeyPairResourceStore keyPairResourceStore, KeyParserRegistry registry, Monitor monitor, LocalPublicKeyService fallbackResolver) {
+    /**
+     * Creates the resolver.
+     *
+     * @param fallbackResolver resolves keys that are not found in the {@link KeyPairResourceStore}, or {@code null} if those keys must not be resolved.
+     */
+    public KeyPairResourcePublicKeyResolver(KeyPairResourceStore keyPairResourceStore, KeyParserRegistry registry, Monitor monitor, @Nullable LocalPublicKeyService fallbackResolver) {
 
         this.keyPairResourceStore = keyPairResourceStore;
         this.keyParserRegistry = registry;
@@ -59,7 +66,7 @@ public class KeyPairResourcePublicKeyResolver {
      * Only key pairs with the {@link KeyPairUsage#TOKEN_SIGNING} usage are considered. Revoked key pairs are rejected, as are ambiguous matches,
      * i.e. if more than one non-revoked key pair has the same key ID.
      * <p>
-     * As a fallback, if the PublicKey is not found in storage, the resolver falls back to the {@link LocalPublicKeyService}.
+     * If the PublicKey is not found in storage, resolution fails, unless a fallback {@link LocalPublicKeyService} is configured.
      *
      * @param publicKeyId          The fully-qualified ID of the public key. For example: {@code did:web:someparticipant#key-123}.
      * @param participantContextId The participant context ID of the requestor
@@ -76,6 +83,9 @@ public class KeyPairResourcePublicKeyResolver {
 
         var resources = result.getContent();
         if (resources.isEmpty()) {
+            if (fallbackResolver == null) {
+                return Result.failure("No KeyPairResource with keyId '%s' was found.".formatted(publicKeyId));
+            }
             monitor.warning("No KeyPairResource with keyId '%s' was found for participant '%s' in the store. Will attempt to resolve from the Vault. ".formatted(publicKeyId, participantContextId) +
                     "This could be an indication of a data inconsistency, it is recommended to revoke and regenerate keys!");
             return fallbackResolver.resolveKey(publicKeyId); // attempt to resolve from vault
