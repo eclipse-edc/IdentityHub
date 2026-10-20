@@ -97,10 +97,16 @@ public class CoreServicesExtension implements ServiceExtension {
 
     public static final String NAME = "IdentityHub Core Services Extension";
     public static final long DEFAULT_PRESENTATION_VALIDITY_SECONDS = 60;
+    public static final String ACCESS_TOKEN_KEY_FALLBACK_SETTING = "edc.iam.accesstoken.publickey.fallback.enabled";
 
     @Setting(description = "How long a JWT Verifiable Presentation is valid after it was created, in seconds. Determines the presentation's 'exp' claim.",
             defaultValue = DEFAULT_PRESENTATION_VALIDITY_SECONDS + "", key = "edc.iam.presentation.validity")
     private long presentationValiditySeconds;
+
+    @Setting(description = "Verifies access tokens with keys from the vault or 'edc.iam.publickeys' if the participant context has no matching key pair. " +
+            "That lookup is not scoped to the participant context, so this should only be enabled for keys that are not managed as key pairs.",
+            defaultValue = "false", key = ACCESS_TOKEN_KEY_FALLBACK_SETTING)
+    private boolean accessTokenKeyFallback;
 
     @Setting(description = IssuerEndpoints.RESTRICT_DESCRIPTION, key = IssuerEndpoints.RESTRICT_SETTING, defaultValue = "false")
     private boolean restrictIssuerEndpoints;
@@ -188,6 +194,9 @@ public class CoreServicesExtension implements ServiceExtension {
         suiteRegistry.register(IdentityHubConstants.JWS_2020_SIGNATURE_SUITE, new Jws2020SignatureSuite(JacksonJsonLd.createObjectMapper()));
         eventRouter.registerSync(ParticipantContextDeleted.class,
                 new HolderDataCleanup(credentialStore, holderCredentialRequestStore, credentialOfferStore, transactionContext, context.getMonitor()));
+        if (accessTokenKeyFallback) {
+            context.getMonitor().warning("'%s' is enabled: access tokens are also verified with keys that do not belong to a key pair of the participant context.".formatted(ACCESS_TOKEN_KEY_FALLBACK_SETTING));
+        }
     }
 
     @Override
@@ -202,7 +211,8 @@ public class CoreServicesExtension implements ServiceExtension {
 
     @Provider
     public SelfIssuedTokenVerifier createAccessTokenVerifier(ServiceExtensionContext context) {
-        var keyResolver = new KeyPairResourcePublicKeyResolver(store, keyParserRegistry, context.getMonitor(), fallbackService);
+        // access tokens are issued by this IdentityHub with a key pair of the participant context, so other keys are only used if enabled
+        var keyResolver = new KeyPairResourcePublicKeyResolver(store, keyParserRegistry, context.getMonitor(), accessTokenKeyFallback ? fallbackService : null);
         return new SelfIssuedTokenVerifierImpl(tokenValidationService, keyResolver, tokenValidationRulesRegistry, publicKeyResolver, participantContextService, clock);
     }
 

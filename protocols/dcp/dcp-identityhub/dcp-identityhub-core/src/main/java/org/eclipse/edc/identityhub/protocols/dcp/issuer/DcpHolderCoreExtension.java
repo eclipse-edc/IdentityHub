@@ -17,6 +17,7 @@ package org.eclipse.edc.identityhub.protocols.dcp.issuer;
 import org.eclipse.edc.iam.did.spi.resolution.DidPublicKeyResolver;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.DcpIssuerTokenVerifier;
 import org.eclipse.edc.identityhub.verification.IssuerKeyIdRule;
+import org.eclipse.edc.identityhub.verification.RequiredJtiValidationRule;
 import org.eclipse.edc.identityhub.verification.SelfIssuedTokenPrecheck;
 import org.eclipse.edc.jwt.validation.jti.JtiValidationStore;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
@@ -28,7 +29,6 @@ import org.eclipse.edc.spi.system.ServiceExtension;
 import org.eclipse.edc.spi.system.ServiceExtensionContext;
 import org.eclipse.edc.token.rules.AudienceValidationRule;
 import org.eclipse.edc.token.rules.ExpirationIssuedAtValidationRule;
-import org.eclipse.edc.token.rules.JtiValidationRule;
 import org.eclipse.edc.token.rules.NotBeforeValidationRule;
 import org.eclipse.edc.token.spi.TokenValidationRule;
 import org.eclipse.edc.token.spi.TokenValidationService;
@@ -62,7 +62,7 @@ public class DcpHolderCoreExtension implements ServiceExtension {
             if (jtiValidationStore == null) {
                 throw new EdcException("JTI validation is activated ('%s') but no JtiValidationStore is provided.".formatted(ACCESSTOKEN_JTI_VALIDATION_ACTIVATE));
             }
-            rules.add(new JtiValidationRule(jtiValidationStore, context.getMonitor()));
+            rules.add(new RequiredJtiValidationRule(jtiValidationStore, context.getMonitor()));
         }
         rules.addAll(List.of(
                 new IssuerEqualsSubjectRule(),
