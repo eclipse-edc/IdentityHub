@@ -91,6 +91,7 @@ include(":extensions:api:identity-api:keypair-api")
 include(":extensions:api:identityhub-api-authentication")
 include(":extensions:api:identityhub-api-authorization")
 include(":extensions:api:lib:identityhub-api-authentication-lib")
+include(":extensions:api:lib:identityhub-api-authorization-lib")
 
 // Issuer Admin API
 include(":extensions:api:issuer-admin-api:issuer-admin-api-configuration")

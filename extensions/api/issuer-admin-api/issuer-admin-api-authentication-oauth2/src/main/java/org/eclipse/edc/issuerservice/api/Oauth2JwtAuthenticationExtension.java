@@ -17,6 +17,7 @@ package org.eclipse.edc.issuerservice.api;
 import org.eclipse.edc.api.authentication.filter.JwtValidatorFilter;
 import org.eclipse.edc.api.authentication.filter.ServicePrincipalAuthenticationFilter;
 import org.eclipse.edc.api.authorization.filter.ScopeBasedAccessFeature;
+import org.eclipse.edc.identityhub.api.authentication.Oauth2TokenRules;
 import org.eclipse.edc.identityhub.spi.participantcontext.IssuerAdminApiScopes;
 import org.eclipse.edc.identityhub.spi.webcontext.IdentityHubApiContext;
 import org.eclipse.edc.keys.resolver.JwksPublicKeyResolver;
@@ -31,25 +32,20 @@ import org.eclipse.edc.spi.EdcException;
 import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.spi.system.ServiceExtension;
 import org.eclipse.edc.spi.system.ServiceExtensionContext;
-import org.eclipse.edc.token.rules.ExpirationIssuedAtValidationRule;
-import org.eclipse.edc.token.rules.IssuerEqualsValidationRule;
-import org.eclipse.edc.token.rules.NotBeforeValidationRule;
-import org.eclipse.edc.token.spi.TokenValidationRule;
 import org.eclipse.edc.token.spi.TokenValidationService;
 import org.eclipse.edc.web.spi.WebService;
 
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.time.Clock;
-import java.util.ArrayList;
-import java.util.List;
 
 import static org.eclipse.edc.issuerservice.api.Oauth2JwtAuthenticationExtension.NAME;
 
 @Extension(NAME)
 public class Oauth2JwtAuthenticationExtension implements ServiceExtension {
     public static final String NAME = "Issuer Admin API OAuth2/JWT Authentication Extension";
-    public static final String CONFIG_ISSUER = "edc.iam.oauth2.issuer";
+    public static final String CONFIG_ISSUER = Oauth2TokenRules.CONFIG_ISSUER;
+    public static final String CONFIG_AUDIENCE = Oauth2TokenRules.CONFIG_AUDIENCE;
     public static final String CONFIG_CACHE_VALIDITY = "edc.iam.oauth2.jwks.cache.validity";
     public static final String CONFIG_JWKS_URL = "edc.iam.oauth2.jwks.url";
     public static final String CONFIG_VALIDITY_LEEWAY = "edc.iam.oauth2.validity.leeway";
@@ -84,8 +80,8 @@ public class Oauth2JwtAuthenticationExtension implements ServiceExtension {
         webService.registerResource(alias, new ServicePrincipalAuthenticationFilter(participantContextService, IssuerAdminApiScopes.ADMIN));
 
         var resolver = JwksPublicKeyResolver.create(keyParserRegistry, oauthConfiguration.jwksUrl(), monitor, oauthConfiguration.cacheValidityInMillis());
-        webService.registerResource(alias, new JwtValidatorFilter(tokenValidationService, resolver,
-                getRules()));
+        var rules = Oauth2TokenRules.create(clock, oauthConfiguration.validityLeewaySec(), oauthConfiguration.expectedIssuer(), oauthConfiguration.expectedAudience(), monitor);
+        webService.registerResource(alias, new JwtValidatorFilter(tokenValidationService, resolver, rules));
     }
 
     private void validateConfig(OauthConfiguration oauthConfiguration) {
@@ -103,22 +99,12 @@ public class Oauth2JwtAuthenticationExtension implements ServiceExtension {
         }
     }
 
-    private List<TokenValidationRule> getRules() {
-        var list = new ArrayList<TokenValidationRule>();
-        list.add(new NotBeforeValidationRule(clock, oauthConfiguration.validityLeewaySec, true));
-        list.add(new ExpirationIssuedAtValidationRule(clock, oauthConfiguration.validityLeewaySec, false));
-
-        if (oauthConfiguration.expectedIssuer != null) {
-            monitor.warning("Config value '%s' not set. Tokens will not be validated against the issuer claim.".formatted(CONFIG_ISSUER));
-            list.add(new IssuerEqualsValidationRule(oauthConfiguration.expectedIssuer));
-        }
-        return list;
-    }
-
     @Settings
     record OauthConfiguration(
             @Setting(key = CONFIG_ISSUER, description = "Expected value for the 'iss' claim for tokens coming from the OAuth2 server. If this is omitted, the 'iss' claim is not validated", required = false)
             String expectedIssuer,
+            @Setting(key = CONFIG_AUDIENCE, description = "Audience that the 'aud' claim of tokens coming from the OAuth2 server must contain. If this is omitted, the 'aud' claim is not validated", required = false)
+            String expectedAudience,
             @Setting(key = CONFIG_JWKS_URL, description = "Absolute URL where the JWKS of the OAuth2 server is hosted")
             String jwksUrl,
             @Setting(key = CONFIG_CACHE_VALIDITY, description = "Time (in ms) that cached JWKS are cached", defaultValue = "" + FIVE_MINUTES, min = 0)

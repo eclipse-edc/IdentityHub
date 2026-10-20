@@ -19,6 +19,7 @@ plugins {
 
 dependencies {
     api(project(":spi:identity-hub-spi"))
+    implementation(project(":extensions:api:lib:identityhub-api-authorization-lib"))
     implementation(libs.edc.spi.core)
     implementation(libs.jakarta.rsApi)
 
