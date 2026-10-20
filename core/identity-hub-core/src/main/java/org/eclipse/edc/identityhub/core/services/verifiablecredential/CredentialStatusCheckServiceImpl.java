@@ -23,6 +23,10 @@ import org.eclipse.edc.spi.result.Result;
 import org.jetbrains.annotations.Nullable;
 
 import java.time.Clock;
+import java.util.Arrays;
+import java.util.Locale;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import static org.eclipse.edc.spi.result.Result.failure;
 import static org.eclipse.edc.spi.result.Result.success;
@@ -48,16 +52,18 @@ public class CredentialStatusCheckServiceImpl implements CredentialStatusCheckSe
             return success(VcStatus.EXPIRED);
         }
 
+        Set<String> statusPurposes;
         try {
-            if (isRevoked(credential)) {
-                return success(VcStatus.REVOKED); //irreversible, cannot be overwritten
-            }
-            if (isSuspended(credential)) {
-                return success(VcStatus.SUSPENDED);
-            }
-
+            statusPurposes = fetchStatusPurposes(credential);
         } catch (EdcException ex) {
             return failure(ex.getMessage());
+        }
+
+        if (statusPurposes.contains(REVOCATION)) {
+            return success(VcStatus.REVOKED); //irreversible, cannot be overwritten
+        }
+        if (statusPurposes.contains(SUSPENSION)) {
+            return success(VcStatus.SUSPENDED);
         }
 
         if (isExpired(credential)) {
@@ -98,23 +104,28 @@ public class CredentialStatusCheckServiceImpl implements CredentialStatusCheckSe
         return cred.getIssuanceDate().isAfter(now);
     }
 
-    // returns true if the revocation service returns "suspension"
-    private boolean isSuspended(VerifiableCredentialResource resource) {
-        return SUSPENSION.equalsIgnoreCase(fetchRevocationStatus(resource));
-    }
-
-    // returns true if the revocation service returns "revocation"
-    private boolean isRevoked(VerifiableCredentialResource resource) {
-        return REVOCATION.equalsIgnoreCase(fetchRevocationStatus(resource));
-    }
-
-    @Nullable
-    private String fetchRevocationStatus(VerifiableCredentialResource resource) {
+    // returns the purposes of all status entries that are set, e.g. "revocation" or "suspension"
+    private Set<String> fetchStatusPurposes(VerifiableCredentialResource resource) {
         var cred = resource.getVerifiableCredential().credential();
         if (cred == null) {
-            return null;
+            return Set.of();
         }
-        return revocationServiceRegistry.getRevocationStatus(cred)
+        var status = revocationServiceRegistry.getRevocationStatus(cred)
                 .orElseThrow(f -> new EdcException(f.getFailureDetail()));
+        return parseStatusPurposes(status);
+    }
+
+    /**
+     * The revocation service reports the purposes of all status entries of a credential that are set as one string,
+     * separated by commas, e.g. "revocation, suspension" for a credential that has several status entries.
+     */
+    private Set<String> parseStatusPurposes(@Nullable String status) {
+        if (status == null) {
+            return Set.of();
+        }
+        return Arrays.stream(status.split(","))
+                .map(purpose -> purpose.trim().toLowerCase(Locale.ROOT))
+                .filter(purpose -> !purpose.isEmpty())
+                .collect(Collectors.toSet());
     }
 }

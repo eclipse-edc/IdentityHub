@@ -23,12 +23,15 @@ import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredentialC
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialResource;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialStore;
 import org.eclipse.edc.junit.extensions.DependencyInjectionExtension;
+import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.spi.result.StoreResult;
 import org.eclipse.edc.spi.system.Hostname;
 import org.eclipse.edc.spi.system.ServiceExtensionContext;
 import org.eclipse.edc.spi.system.configuration.ConfigFactory;
 import org.eclipse.edc.transaction.spi.TransactionContext;
+import org.eclipse.edc.web.spi.WebService;
+import org.eclipse.edc.web.spi.configuration.PortMappingRegistry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -40,8 +43,12 @@ import java.util.Map;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(DependencyInjectionExtension.class)
@@ -56,6 +63,7 @@ class LocalStatusListCredentialPublisherExtensionTest {
     private static final String CREDENTIAL_ID = "credentialId";
     private static final String TEST_CREDENTIAL = "TestCredential";
     private static final String DID_WEB_ISSUER = "did:web:issuer";
+    private final Monitor monitor = mock();
     private final VerifiableCredential credential = VerifiableCredential.Builder.newInstance()
             .type(TEST_CREDENTIAL)
             .credentialSubject(new CredentialSubject())
@@ -92,6 +100,9 @@ class LocalStatusListCredentialPublisherExtensionTest {
         context.registerService(TransactionContext.class, transactionContext);
         context.registerService(CredentialStore.class, credentialStore);
         context.registerService(Hostname.class, hostname);
+        context.registerService(Monitor.class, monitor);
+        context.registerService(PortMappingRegistry.class, mock());
+        context.registerService(WebService.class, mock());
 
         when(transactionContext.execute((TransactionContext.ResultTransactionBlock<String>) any())).thenAnswer(invocation -> {
             TransactionContext.ResultTransactionBlock<String> block = invocation.getArgument(0);
@@ -117,5 +128,21 @@ class LocalStatusListCredentialPublisherExtensionTest {
         Result<String> result = getStatusListPublisherResult(factory);
         String defaultUrl = "http://%s:%s%s".formatted(DEFAULT_HOST, DEFAULT_PORT, DEFAULT_STATUS_LIST_PATH);
         assertEquals(defaultUrl + "/" + CREDENTIAL_ID, result.getContent());
+    }
+
+    @Test
+    void initialize_whenCallbackAddressIsNotSet_shouldWarn(ServiceExtensionContext context, ObjectFactory factory) {
+        factory.constructInstance(LocalStatusListCredentialPublisherExtension.class).initialize(context);
+
+        verify(monitor).warning(contains("does not use https"));
+    }
+
+    @Test
+    void initialize_whenCallbackAddressUsesHttps_shouldNotWarn(ServiceExtensionContext context, ObjectFactory factory) {
+        when(context.getConfig()).thenReturn(ConfigFactory.fromMap(Map.of(CUSTOM_STATUS_LIST_CALLBACK_ADDRESS, "https://example.com" + DEFAULT_STATUS_LIST_PATH)));
+
+        factory.constructInstance(LocalStatusListCredentialPublisherExtension.class).initialize(context);
+
+        verify(monitor, never()).warning(anyString());
     }
 }

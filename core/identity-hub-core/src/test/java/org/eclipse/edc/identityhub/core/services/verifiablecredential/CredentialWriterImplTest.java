@@ -14,6 +14,7 @@
 
 package org.eclipse.edc.identityhub.core.services.verifiablecredential;
 
+import com.nimbusds.jwt.JWTClaimsSet;
 import org.assertj.core.api.Assertions;
 import org.eclipse.edc.iam.did.spi.resolution.DidPublicKeyResolver;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat;
@@ -36,17 +37,22 @@ import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.spi.query.SortOrder;
 import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.spi.result.ServiceFailure;
+import org.eclipse.edc.spi.result.ServiceResult;
 import org.eclipse.edc.spi.result.StoreResult;
+import org.eclipse.edc.token.TokenValidationServiceImpl;
 import org.eclipse.edc.token.spi.TokenValidationService;
 import org.eclipse.edc.transform.spi.TypeTransformerRegistry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 
 import java.time.Clock;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -56,6 +62,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static org.eclipse.edc.identityhub.spi.credential.request.model.HolderRequestState.ISSUED;
 import static org.eclipse.edc.identityhub.spi.credential.request.model.HolderRequestState.REQUESTED;
 import static org.eclipse.edc.identityhub.spi.credential.request.model.HolderRequestState.REQUESTING;
+import static org.eclipse.edc.identityhub.verifiablecredentials.testfixtures.VerifiableCredentialTestUtil.buildSignedJwt;
+import static org.eclipse.edc.identityhub.verifiablecredentials.testfixtures.VerifiableCredentialTestUtil.generateEcKey;
 import static org.eclipse.edc.junit.assertions.AbstractResultAssert.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
@@ -86,7 +94,7 @@ class CredentialWriterImplTest {
     private final Monitor monitor = mock();
     private final TrackingTransactionContext transactionContext = new TrackingTransactionContext();
     private final CredentialWriterImpl credentialWriter = new CredentialWriterImpl(credentialStore, credentialTransformerRegistry, transactionContext,
-            JacksonJsonLd.createObjectMapper(), holderCredentialRequestStore, tokenValidationService, publicKeyResolver, monitor, Clock.systemUTC());
+            JacksonJsonLd.createObjectMapper(), holderCredentialRequestStore, tokenValidationService, publicKeyResolver, monitor, Clock.systemUTC(), false);
 
     @BeforeEach
     void setUp() {
@@ -143,6 +151,67 @@ class CredentialWriterImplTest {
         assertThat(result).isFailed().detail().contains("Could not verify the credential's proof").contains("invalid signature");
         verify(holderCredentialRequestStore, never()).findByIdAndLease(anyString());
         verifyNoInteractions(credentialStore);
+    }
+
+    @Test
+    void write_signedByKeyOfIssuer_shouldStore() {
+        var result = writeSigned(claims().issuer(ISSUER_DID), ISSUER_DID + "#key-1");
+
+        assertThat(result).isSucceeded();
+        verify(credentialStore).create(any());
+    }
+
+    @Test
+    void write_withoutIssClaim_shouldStore() {
+        // a credential secured with JOSE may name its issuer in the credential only
+        var result = writeSigned(claims(), ISSUER_DID + "#key-1");
+
+        assertThat(result).isSucceeded();
+    }
+
+    @Test
+    void write_notYetValid_shouldStore() {
+        var result = writeSigned(claims().issuer(ISSUER_DID).notBeforeTime(Date.from(Instant.now().plusSeconds(3600))), ISSUER_DID + "#key-1");
+
+        assertThat(result).isSucceeded();
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"did:web:other#key-1", "did:web:issuer:sub#key-1", "did:web:issuerX#key-1", "#key-1"})
+    void write_signedByKeyOfOtherDid_shouldNotStore(String keyId) {
+        var result = writeSigned(claims().issuer(ISSUER_DID), keyId);
+
+        assertThat(result).isFailed().detail().contains("does not belong to Issuer");
+        verify(publicKeyResolver, never()).resolveKey(anyString());
+        verifyNoInteractions(credentialStore);
+    }
+
+    @Test
+    void write_issClaimOfOtherIssuer_shouldNotStore() {
+        var result = writeSigned(claims().issuer("did:web:other"), ISSUER_DID + "#key-1");
+
+        assertThat(result).isFailed().detail().contains("does not match Issuer");
+        verifyNoInteractions(credentialStore);
+    }
+
+    @Test
+    void write_expired_shouldNotStore() {
+        var result = writeSigned(claims().issuer(ISSUER_DID).expirationTime(Date.from(Instant.now().minusSeconds(60))), ISSUER_DID + "#key-1");
+
+        assertThat(result).isFailed().detail().contains("expired");
+        verifyNoInteractions(credentialStore);
+    }
+
+    @Test
+    void write_unverifiableFormat_whenRejectionEnabled_shouldNotStore() {
+        var rejectingWriter = new CredentialWriterImpl(credentialStore, credentialTransformerRegistry, transactionContext,
+                JacksonJsonLd.createObjectMapper(), holderCredentialRequestStore, tokenValidationService, publicKeyResolver, monitor, Clock.systemUTC(), true);
+
+        var result = rejectingWriter.write("holderPid", HOLDER_DID, "issuerPid", ISSUER_DID, Set.of(new CredentialWriteRequest("raw-cred", CredentialFormat.VC1_0_LD.toString())), PARTICIPANT_ID);
+
+        assertThat(result).isFailed().detail().contains("cannot be verified");
+        verifyNoInteractions(tokenValidationService, credentialStore);
+        verify(holderCredentialRequestStore, never()).findByIdAndLease(anyString());
     }
 
     @Test
@@ -596,6 +665,27 @@ class CredentialWriterImplTest {
         Assertions.assertThat(result.reason()).isEqualTo(ServiceFailure.Reason.NOT_FOUND);
         Assertions.assertThat(request.stateAsEnum()).isEqualTo(REQUESTED);
         verify(holderCredentialRequestStore, never()).findByIdAndLease(anyString());
+    }
+
+    /**
+     * Delivers a credential signed with a key that the DID resolver returns for any key ID, and verifies it with the
+     * actual token validation.
+     */
+    private ServiceResult<Void> writeSigned(JWTClaimsSet.Builder claims, String keyId) {
+        var key = generateEcKey(keyId);
+        when(publicKeyResolver.resolveKey(anyString())).thenAnswer(i -> Result.success(key.toPublicKey()));
+        when(credentialTransformerRegistry.transform(isA(String.class), eq(VerifiableCredential.class)))
+                .thenReturn(Result.success(createCredential().build()));
+        when(credentialStore.create(any())).thenReturn(StoreResult.success());
+        var writer = new CredentialWriterImpl(credentialStore, credentialTransformerRegistry, transactionContext, JacksonJsonLd.createObjectMapper(),
+                holderCredentialRequestStore, new TokenValidationServiceImpl(), publicKeyResolver, monitor, Clock.systemUTC(), false);
+
+        var rawCredential = buildSignedJwt(claims.build(), key).serialize();
+        return writer.write("holderPid", HOLDER_DID, "issuerPid", ISSUER_DID, Set.of(new CredentialWriteRequest(rawCredential, TEST_CREDENTIAL_FORMAT)), PARTICIPANT_ID);
+    }
+
+    private JWTClaimsSet.Builder claims() {
+        return new JWTClaimsSet.Builder().subject(HOLDER_DID).claim("vc", Map.of());
     }
 
     /**

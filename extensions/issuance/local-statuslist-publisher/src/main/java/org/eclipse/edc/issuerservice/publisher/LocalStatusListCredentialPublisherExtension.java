@@ -41,6 +41,7 @@ import static org.eclipse.edc.spi.constants.CoreConstants.JSON_LD;
 public class LocalStatusListCredentialPublisherExtension implements ServiceExtension {
     public static final String NAME = "IssuerService Default Services Extension";
     private static final String STATUS_LIST = "statuslist";
+    private static final String CALLBACK_ADDRESS_SETTING = "edc.statuslist.callback.address";
 
     @Inject
     private CredentialStore store;
@@ -63,7 +64,7 @@ public class LocalStatusListCredentialPublisherExtension implements ServiceExten
     @Configuration
     private StatusListCredentialEndpointConfig config;
 
-    @Setting(description = "Configures endpoint for reaching the StatusList API.", key = "edc.statuslist.callback.address", required = false)
+    @Setting(description = "Configures endpoint for reaching the StatusList API.", key = CALLBACK_ADDRESS_SETTING, required = false)
     private String callbackAddress;
 
     @Override
@@ -76,6 +77,14 @@ public class LocalStatusListCredentialPublisherExtension implements ServiceExten
         portMappingRegistry.register(new PortMapping(STATUS_LIST, config.port(), config.path()));
 
         webServer.registerResource(STATUS_LIST, new StatusListCredentialController(store, monitor, () -> typeManager.getMapper(JSON_LD)));
+
+        // holders fetch the status lists from this address to check the status of their credentials. Over plain HTTP,
+        // anybody on the path can replace a status list
+        var baseUrl = baseUrl();
+        if (!baseUrl.startsWith("https://")) {
+            monitor.warning("Status list credentials are published at '%s', which does not use https. Set '%s' to an https address."
+                    .formatted(baseUrl, CALLBACK_ADDRESS_SETTING));
+        }
     }
 
     @Provider(isDefault = true)
