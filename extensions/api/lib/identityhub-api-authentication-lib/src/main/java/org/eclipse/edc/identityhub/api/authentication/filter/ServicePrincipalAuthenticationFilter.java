@@ -24,6 +24,7 @@ import jakarta.ws.rs.core.SecurityContext;
 import org.eclipse.edc.api.auth.spi.ParticipantPrincipal;
 import org.eclipse.edc.identityhub.spi.authentication.ServicePrincipal;
 import org.eclipse.edc.identityhub.spi.authentication.ServicePrincipalResolver;
+import org.eclipse.edc.web.spi.exception.AuthenticationFailedException;
 
 import java.security.Principal;
 
@@ -63,7 +64,14 @@ public class ServicePrincipalAuthenticationFilter implements ContainerRequestFil
         } else {
             var apiKey = apiKeyHeader.get(0);
 
-            var servicePrincipal = servicePrincipalResolver.findByCredential(apiKey);
+            ServicePrincipal servicePrincipal;
+            try {
+                servicePrincipal = servicePrincipalResolver.findByCredential(apiKey);
+            } catch (AuthenticationFailedException e) {
+                // this filter runs before a resource is matched, so the exception could not be mapped to a response
+                containerRequestContext.abortWith(Response.status(Response.Status.UNAUTHORIZED).build());
+                return;
+            }
             var principal = new ParticipantPrincipal(servicePrincipal.getName(), servicePrincipal.getScope());
             containerRequestContext.setSecurityContext(new SecurityContext() {
                 @Override

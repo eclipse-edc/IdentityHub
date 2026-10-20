@@ -79,6 +79,7 @@ class StorageApiControllerTest extends RestControllerTestBase {
 
     @BeforeEach
     void setUp() {
+        when(participantContextService.rejectIfDeactivated(any())).thenCallRealMethod();
         when(transformerRegistry.forContext(eq(DCP_SCOPE_V_1_0))).thenReturn(transformerRegistry);
         when(transformerRegistry.transform(isA(JsonObject.class), eq(CredentialMessage.class)))
                 .thenReturn(Result.success(credentialMessage()));
@@ -160,6 +161,23 @@ class StorageApiControllerTest extends RestControllerTestBase {
                 .body(containsString("ID token verification failed"))
                 .body(not(containsString("foo")));
         // the message is not processed for a participant that does not exist
+        verifyNoInteractions(validatorRegistry, transformerRegistry, issuerTokenVerifier);
+    }
+
+    @Test
+    void storeCredential_participantDeactivated_shouldReturn401() {
+        var participantContext = participantContext();
+        participantContext.deactivate();
+        when(participantContextService.getParticipantContext(anyString())).thenReturn(ServiceResult.success(participantContext));
+
+        baseRequest()
+                .header("Authorization", "Bearer " + generateJwt())
+                .body(credentialMessageJson())
+                .post()
+                .then()
+                .log().ifValidationFails()
+                .statusCode(401)
+                .body(containsString("ID token verification failed"));
         verifyNoInteractions(validatorRegistry, transformerRegistry, issuerTokenVerifier);
     }
 

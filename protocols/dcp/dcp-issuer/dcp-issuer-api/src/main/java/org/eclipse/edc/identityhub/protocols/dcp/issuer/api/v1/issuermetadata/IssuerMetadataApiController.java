@@ -51,7 +51,7 @@ public class IssuerMetadataApiController implements IssuerMetadataApi {
     @Override
     public JsonObject getIssuerMetadata(@PathParam("participantContextId") String participantContextId, @HeaderParam(AUTHORIZATION) String authHeader) {
 
-        var participantContext = participantContextService.getParticipantContext(participantContextId)
+        var participantContext = participantContextService.rejectIfDeactivated(participantContextId)
                 .orElseThrow((f) -> new AuthenticationFailedException("Invalid issuer"));
 
         var metadata = issuerMetadataService.getIssuerMetadata(participantContext)

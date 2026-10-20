@@ -17,6 +17,7 @@ package org.eclipse.edc.identityhub.spi.credential.request.store;
 import org.eclipse.edc.identityhub.spi.credential.request.model.HolderCredentialRequest;
 import org.eclipse.edc.spi.persistence.StateEntityStore;
 import org.eclipse.edc.spi.query.QuerySpec;
+import org.eclipse.edc.spi.result.StoreResult;
 
 import java.util.Collection;
 
@@ -27,4 +28,11 @@ public interface HolderCredentialRequestStore extends StateEntityStore<HolderCre
 
     Collection<HolderCredentialRequest> query(QuerySpec query);
 
+    /**
+     * Deletes a request. A request that is leased by someone else is not deleted.
+     *
+     * @param id the ID of the request
+     * @return success, or a failure if the request does not exist or is leased
+     */
+    StoreResult<Void> deleteById(String id);
 }

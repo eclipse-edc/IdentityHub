@@ -195,6 +195,37 @@ public abstract class HolderCredentialRequestStoreTestBase {
     }
 
     @Nested
+    class DeleteById {
+        @Test
+        void deleteById() {
+            var request = createHolderRequest();
+            getStore().save(request);
+
+            AbstractResultAssert.assertThat(getStore().deleteById(request.getId())).isSucceeded();
+            assertThat(getStore().findById(request.getId())).isNull();
+        }
+
+        @Test
+        void deleteById_whenNotFound_expectNotFound() {
+            AbstractResultAssert.assertThat(getStore().deleteById("not-existing-id")).isFailed()
+                    .extracting(StoreFailure::getReason)
+                    .isEqualTo(StoreFailure.Reason.NOT_FOUND);
+        }
+
+        @Test
+        void deleteById_whenLeasedBySomeoneElse_expectAlreadyLeased() {
+            var request = createHolderRequest();
+            getStore().save(request);
+            leaseEntity(request.getId(), "someone-else");
+
+            AbstractResultAssert.assertThat(getStore().deleteById(request.getId())).isFailed()
+                    .extracting(StoreFailure::getReason)
+                    .isEqualTo(StoreFailure.Reason.ALREADY_LEASED);
+            assertThat(getStore().findById(request.getId())).isNotNull();
+        }
+    }
+
+    @Nested
     class NextNotLeased {
         @Test
         void shouldReturnNotLeasedItems() {

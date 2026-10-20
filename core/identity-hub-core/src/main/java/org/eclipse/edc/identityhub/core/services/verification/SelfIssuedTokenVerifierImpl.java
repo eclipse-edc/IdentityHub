@@ -76,7 +76,7 @@ public class SelfIssuedTokenVerifierImpl implements SelfIssuedTokenVerifier {
     public Result<List<String>> verify(String token, String participantContextId) {
         Objects.requireNonNull(participantContextId, "Participant Context ID is mandatory.");
 
-        var participantDidResult = participantContextService.getParticipantContext(participantContextId);
+        var participantDidResult = participantContextService.rejectIfDeactivated(participantContextId);
 
         if (participantDidResult.failed()) {
             return Result.failure(participantDidResult.getFailureDetail());

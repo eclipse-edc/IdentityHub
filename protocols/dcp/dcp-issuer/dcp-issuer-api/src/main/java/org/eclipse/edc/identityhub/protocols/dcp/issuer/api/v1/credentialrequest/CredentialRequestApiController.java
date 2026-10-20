@@ -89,7 +89,7 @@ public class CredentialRequestApiController implements CredentialRequestApi {
         var credentialMessage = dcpTransformerRegistry.transform(message, CredentialRequestMessage.class).orElseThrow(InvalidRequestException::new);
         var tokenRepresentation = TokenRepresentation.Builder.newInstance().token(token).build();
 
-        var participantContext = participantContextService.getParticipantContext(participantContextId)
+        var participantContext = participantContextService.rejectIfDeactivated(participantContextId)
                 .orElseThrow(idTokenVerificationFailed(monitor, "Participant context '%s' could not be resolved".formatted(participantContextId)));
 
         var participant = tokenValidator.verify(participantContext, tokenRepresentation)

@@ -30,6 +30,7 @@ import org.eclipse.edc.spi.result.ServiceResult;
 import org.eclipse.edc.transform.spi.TypeTransformerRegistry;
 import org.eclipse.edc.web.jersey.testfixtures.RestControllerTestBase;
 import org.eclipse.edc.web.spi.exception.AuthenticationFailedException;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EmptySource;
@@ -60,6 +61,11 @@ public class IssuerMetadataApiControllerTest extends RestControllerTestBase {
     private final DcpIssuerMetadataService issuerMetadataService = mock();
     private final String participantContextId = "participantContextId";
 
+    @BeforeEach
+    void setUp() {
+        when(participantContextService.rejectIfDeactivated(any())).thenCallRealMethod();
+    }
+
     @ParameterizedTest
     @NullSource
     @EmptySource
@@ -81,6 +87,19 @@ public class IssuerMetadataApiControllerTest extends RestControllerTestBase {
     @Test
     void issuerMetadata_participantNotFound_shouldReturn401() {
         when(participantContextService.getParticipantContext(eq(participantContextId))).thenReturn(ServiceResult.notFound("not found"));
+
+        assertThatThrownBy(() -> controller().getIssuerMetadata(participantContextId, generateJwt()))
+                .isExactlyInstanceOf(AuthenticationFailedException.class)
+                .hasMessageContaining("Invalid issuer");
+
+        verifyNoInteractions(issuerMetadataService, dcpIssuerTokenVerifier);
+    }
+
+    @Test
+    void issuerMetadata_participantDeactivated_shouldReturn401() {
+        var participantContext = createParticipantContext();
+        participantContext.deactivate();
+        when(participantContextService.getParticipantContext(eq(participantContextId))).thenReturn(ServiceResult.success(participantContext));
 
         assertThatThrownBy(() -> controller().getIssuerMetadata(participantContextId, generateJwt()))
                 .isExactlyInstanceOf(AuthenticationFailedException.class)

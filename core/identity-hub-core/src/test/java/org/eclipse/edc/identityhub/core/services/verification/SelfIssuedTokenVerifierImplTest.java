@@ -39,6 +39,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 class SelfIssuedTokenVerifierImplTest {
@@ -58,6 +59,7 @@ class SelfIssuedTokenVerifierImplTest {
 
     @BeforeEach
     void beforeEach() {
+        when(participantContextService.rejectIfDeactivated(any())).thenCallRealMethod();
         when(participantContextService.getParticipantContext(anyString())).thenReturn(ServiceResult.success(createParticipantContext()));
     }
 
@@ -70,6 +72,17 @@ class SelfIssuedTokenVerifierImplTest {
                 .satisfies(strings -> Assertions.assertThat(strings).containsOnly(JwtCreationUtil.TEST_SCOPE));
         verify(tokenValidationSerivce, times(3)).validate(anyString(), any(PublicKeyResolver.class), anyList());
 
+    }
+
+    @Test
+    void verify_participantContextDeactivated_shouldFail() {
+        var participantContext = createParticipantContext();
+        participantContext.deactivate();
+        when(participantContextService.getParticipantContext(anyString())).thenReturn(ServiceResult.success(participantContext));
+
+        AbstractResultAssert.assertThat(verifier.verify(JwtCreationUtil.generateSiToken(OWN_DID, OTHER_PARTICIPANT_DID), PARTICIPANT_CONTEXT_ID)).isFailed()
+                .detail().contains("deactivated");
+        verifyNoInteractions(tokenValidationSerivce);
     }
 
     @Test
