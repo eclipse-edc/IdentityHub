@@ -30,6 +30,8 @@ import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.CredentialUsa
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStatus;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialResource;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialStore;
+import org.eclipse.edc.jwt.spi.JwtRegisteredClaimNames;
+import org.eclipse.edc.keys.spi.PublicKeyResolver;
 import org.eclipse.edc.spi.EdcException;
 import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.spi.query.Criterion;
@@ -37,6 +39,7 @@ import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.query.SortOrder;
 import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.spi.result.ServiceResult;
+import org.eclipse.edc.token.spi.TokenValidationRule;
 import org.eclipse.edc.token.spi.TokenValidationService;
 import org.eclipse.edc.transaction.spi.TransactionContext;
 import org.eclipse.edc.transform.spi.TypeTransformerRegistry;
@@ -69,10 +72,11 @@ public class CredentialWriterImpl implements CredentialWriter {
     private final DidPublicKeyResolver publicKeyResolver;
     private final Monitor monitor;
     private final Clock clock;
+    private final boolean rejectUnverifiedCredentials;
 
     public CredentialWriterImpl(CredentialStore credentialStore, TypeTransformerRegistry credentialTransformerRegistry, TransactionContext transactionContext, ObjectMapper objectMapper,
                                 HolderCredentialRequestStore holderCredentialRequestStore, TokenValidationService tokenValidationService, DidPublicKeyResolver publicKeyResolver,
-                                Monitor monitor, Clock clock) {
+                                Monitor monitor, Clock clock, boolean rejectUnverifiedCredentials) {
         this.monitor = monitor;
         this.clock = clock;
         this.credentialStore = credentialStore;
@@ -82,6 +86,7 @@ public class CredentialWriterImpl implements CredentialWriter {
         this.holderCredentialRequestStore = holderCredentialRequestStore;
         this.tokenValidationService = tokenValidationService;
         this.publicKeyResolver = publicKeyResolver;
+        this.rejectUnverifiedCredentials = rejectUnverifiedCredentials;
     }
 
     @Override
@@ -95,7 +100,7 @@ public class CredentialWriterImpl implements CredentialWriter {
         // verifying a proof may resolve the Issuer's DID. It is therefore done before the transaction is opened and the
         // request is leased, so that waiting for the DID document neither holds a database connection nor the request.
         // The request may change in the meantime, so all checks are made again once it is leased.
-        var proofResult = verifyProofs(holderPid, writeRequests);
+        var proofResult = verifyProofs(holderPid, issuerDid, writeRequests);
         if (proofResult.failed()) {
             return proofResult;
         }
@@ -375,15 +380,15 @@ public class CredentialWriterImpl implements CredentialWriter {
     }
 
     /**
-     * Verifies that the delivered credentials actually carry the Issuer's signature, because only those are stored.
+     * Verifies that the delivered credentials actually carry the signature of the Issuer that delivered them, because only those are stored.
      */
-    private ServiceResult<Void> verifyProofs(String holderPid, Collection<CredentialWriteRequest> writeRequests) {
+    private ServiceResult<Void> verifyProofs(String holderPid, String issuerDid, Collection<CredentialWriteRequest> writeRequests) {
         for (var writeRequest : writeRequests) {
             var format = CredentialProfile.formatForProfile(writeRequest.credentialFormat());
             if (format.failed()) {
                 return format.mapFailure();
             }
-            var proofResult = verifyProof(writeRequest.rawCredential(), format.getContent());
+            var proofResult = verifyProof(writeRequest.rawCredential(), format.getContent(), issuerDid);
             if (proofResult.failed()) {
                 monitor.warning("Rejecting a credential delivered for request '%s': %s".formatted(holderPid, proofResult.getFailureDetail()));
                 return ServiceResult.badRequest("Could not verify the credential's proof: %s".formatted(proofResult.getFailureDetail()));
@@ -393,18 +398,59 @@ public class CredentialWriterImpl implements CredentialWriter {
     }
 
     /**
-     * Verifies that a credential was actually signed by its Issuer. Token-based credentials are verified against the key
-     * material resolved from the Issuer's DID document. Credentials carrying an embedded Linked-Data proof are not
-     * verified here, as that requires a different verification suite.
+     * Verifies that a credential was actually signed by the Issuer that delivered it. Token-based credentials are verified
+     * against the key material resolved from that Issuer's DID document, so a key of any other DID is not accepted, and
+     * must not have expired. Credentials carrying an embedded Linked-Data proof are not verified here, as that requires a
+     * different verification suite. They are rejected if so configured, and stored with a warning otherwise.
      */
-    private Result<Void> verifyProof(String rawCredential, CredentialFormat format) {
+    private Result<Void> verifyProof(String rawCredential, CredentialFormat format, String issuerDid) {
         if (format != CredentialFormat.VC1_0_JWT && format != CredentialFormat.VC2_0_JOSE) {
+            if (rejectUnverifiedCredentials) {
+                return Result.failure("credentials in format '%s' cannot be verified".formatted(format));
+            }
             monitor.warning("Received a credential in format '%s', which is stored without verifying its proof. Only '%s' and '%s' credentials are verified."
                     .formatted(format, CredentialFormat.VC1_0_JWT, CredentialFormat.VC2_0_JOSE));
             return Result.success();
         }
-        var result = tokenValidationService.validate(rawCredential, publicKeyResolver, List.of());
+        var result = tokenValidationService.validate(rawCredential, issuerKeyResolver(publicKeyResolver, issuerDid),
+                List.of(issuerRule(issuerDid), expirationRule(clock)));
         return result.failed() ? Result.failure(result.getFailureDetail()) : Result.success();
+    }
+
+    /**
+     * Resolves only keys of the Issuer's own DID. The DID part of the key ID is compared literally, so that a key
+     * named by the credential is never resolved from a different DID document.
+     */
+    private PublicKeyResolver issuerKeyResolver(PublicKeyResolver resolver, String issuerDid) {
+        return keyId -> keyId != null && keyId.startsWith(issuerDid + "#")
+                ? resolver.resolveKey(keyId)
+                : Result.failure("Key ID '%s' does not belong to Issuer '%s'".formatted(keyId, issuerDid));
+    }
+
+    /**
+     * A credential secured with JOSE may leave out the 'iss' claim, as its issuer is part of the credential itself,
+     * which is compared to the Issuer separately. If it is present, it must name the Issuer.
+     */
+    private TokenValidationRule issuerRule(String issuerDid) {
+        return (token, additional) -> {
+            var iss = token.getStringClaim(JwtRegisteredClaimNames.ISSUER);
+            return iss == null || iss.equals(issuerDid)
+                    ? Result.success()
+                    : Result.failure("Claim 'iss' ('%s') does not match Issuer '%s'".formatted(iss, issuerDid));
+        };
+    }
+
+    /**
+     * A credential is not required to expire, but one that has already expired is not stored. A credential that is not
+     * valid yet is accepted, as it is stored as {@link VcStatus#NOT_YET_VALID}.
+     */
+    private TokenValidationRule expirationRule(Clock clock) {
+        return (token, additional) -> {
+            var exp = token.getInstantClaim(JwtRegisteredClaimNames.EXPIRATION_TIME);
+            return exp == null || exp.isAfter(clock.instant())
+                    ? Result.success()
+                    : Result.failure("The credential has expired");
+        };
     }
 
     private ServiceResult<VerifiableCredentialResource> convertToResource(CredentialWriteRequest credentialWriteRequest, String participantContextId) {

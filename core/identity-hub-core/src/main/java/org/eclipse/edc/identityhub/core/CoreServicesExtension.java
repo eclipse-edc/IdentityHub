@@ -98,6 +98,7 @@ public class CoreServicesExtension implements ServiceExtension {
     public static final String NAME = "IdentityHub Core Services Extension";
     public static final long DEFAULT_PRESENTATION_VALIDITY_SECONDS = 60;
     public static final String ACCESS_TOKEN_KEY_FALLBACK_SETTING = "edc.iam.accesstoken.publickey.fallback.enabled";
+    public static final String REJECT_UNVERIFIED_CREDENTIALS_SETTING = "edc.iam.credential.delivery.reject.unverified";
 
     @Setting(description = "How long a JWT Verifiable Presentation is valid after it was created, in seconds. Determines the presentation's 'exp' claim.",
             defaultValue = DEFAULT_PRESENTATION_VALIDITY_SECONDS + "", key = "edc.iam.presentation.validity")
@@ -107,6 +108,11 @@ public class CoreServicesExtension implements ServiceExtension {
             "That lookup is not scoped to the participant context, so this should only be enabled for keys that are not managed as key pairs.",
             defaultValue = "false", key = ACCESS_TOKEN_KEY_FALLBACK_SETTING)
     private boolean accessTokenKeyFallback;
+
+    @Setting(description = "Rejects delivered credentials in formats whose proof cannot be verified, such as credentials with an embedded Linked-Data proof. " +
+            "If disabled, they are stored with a warning.",
+            defaultValue = "false", key = REJECT_UNVERIFIED_CREDENTIALS_SETTING)
+    private boolean rejectUnverifiedCredentials;
 
     @Setting(description = IssuerEndpoints.RESTRICT_DESCRIPTION, key = IssuerEndpoints.RESTRICT_SETTING, defaultValue = "false")
     private boolean restrictIssuerEndpoints;
@@ -247,7 +253,7 @@ public class CoreServicesExtension implements ServiceExtension {
     public CredentialWriter createCredentialWriter(ServiceExtensionContext context) {
         var objectMapper = typeManager.getMapper(JSON_LD);
         return new CredentialWriterImpl(credentialStore, typeTransformerRegistry, transactionContext, objectMapper, holderCredentialRequestStore, tokenValidationService, publicKeyResolver,
-                context.getMonitor(), clock);
+                context.getMonitor(), clock, rejectUnverifiedCredentials);
     }
 
     @Provider

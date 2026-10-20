@@ -25,6 +25,8 @@ import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCre
 import org.eclipse.edc.spi.result.Result;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.time.Clock;
 import java.time.Instant;
@@ -35,7 +37,6 @@ import java.util.UUID;
 import static org.eclipse.edc.junit.assertions.AbstractResultAssert.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -117,6 +118,27 @@ class CredentialStatusCheckServiceImplTest {
     @Test
     void checkStatus_whenSuspended() {
         when(revocationServiceRegistry.getRevocationStatus(any())).thenReturn(Result.success("suspension"));
+        var credential = createCredentialBuilder(createVerifiableCredential().build()).build();
+
+        assertThat(service.checkStatus(credential))
+                .isSucceeded()
+                .isEqualTo(VcStatus.SUSPENDED);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"revocation, revocation", "suspension, revocation", "revocation, suspension, suspension", "Revocation"})
+    void checkStatus_whenSeveralStatusEntries_revocationTakesPrecedence(String status) {
+        when(revocationServiceRegistry.getRevocationStatus(any())).thenReturn(Result.success(status));
+        var credential = createCredentialBuilder(createVerifiableCredential().build()).build();
+
+        assertThat(service.checkStatus(credential))
+                .isSucceeded()
+                .isEqualTo(VcStatus.REVOKED);
+    }
+
+    @Test
+    void checkStatus_whenSeveralSuspensionEntries() {
+        when(revocationServiceRegistry.getRevocationStatus(any())).thenReturn(Result.success("suspension, suspension"));
         var credential = createCredentialBuilder(createVerifiableCredential().build()).build();
 
         assertThat(service.checkStatus(credential))
@@ -268,7 +290,7 @@ class CredentialStatusCheckServiceImplTest {
         assertThat(service.checkStatus(createCredentialBuilder(credential).state(VcStatus.ISSUED).build()))
                 .isSucceeded()
                 .isEqualTo(VcStatus.SUSPENDED);
-        verify(revocationServiceRegistry, times(2)).getRevocationStatus(credential);
+        verify(revocationServiceRegistry).getRevocationStatus(credential);
         verifyNoMoreInteractions(revocationServiceRegistry);
     }
 
