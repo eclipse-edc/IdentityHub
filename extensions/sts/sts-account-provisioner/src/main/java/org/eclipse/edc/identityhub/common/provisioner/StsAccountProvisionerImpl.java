@@ -87,4 +87,10 @@ public class StsAccountProvisionerImpl implements EventSubscriber, StsAccountPro
         }
         return ServiceResult.success(new AccountCredentials(manifest.getDid(), secret));
     }
+
+    @Override
+    public ServiceResult<String> regenerateClientSecret(String participantContextId) {
+        return stsAccountService.findById(participantContextId)
+                .compose(account -> stsAccountService.updateSecret(participantContextId, account.getId(), account.getSecretAlias(), stsClientSecretGenerator.generateClientSecret(null)));
+    }
 }

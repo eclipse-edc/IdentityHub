@@ -25,4 +25,13 @@ public interface StsAccountProvisioner {
     String CLIENT_SECRET_PROPERTY = "clientSecret";
 
     ServiceResult<AccountCredentials> create(ParticipantManifest manifest);
+
+    /**
+     * Replaces the client secret of the STS account of a participant context with a new, random one. The new secret is
+     * stored under the same alias as the old one.
+     *
+     * @param participantContextId the ID of the participant context
+     * @return the new client secret, or a failure, e.g. if the participant context has no STS account
+     */
+    ServiceResult<String> regenerateClientSecret(String participantContextId);
 }

@@ -83,6 +83,18 @@ public interface ParticipantContextApi {
     )
     String regenerateParticipantToken(String participantContextId, SecurityContext securityContext);
 
+    @Operation(description = "Regenerates the client secret of the STS account of a ParticipantContext and returns the new secret. The previous secret is no longer valid.",
+            operationId = "regenerateStsClientSecret",
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "The client secret was regenerated successfully", content = {@Content(schema = @Schema(implementation = String.class))}),
+                    @ApiResponse(responseCode = "401", description = "The request could not be completed, because either the authentication was missing or was not valid.",
+                            content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json")),
+                    @ApiResponse(responseCode = "404", description = "A ParticipantContext with the given ID does not exist, or it has no STS account.",
+                            content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json"))
+            }
+    )
+    String regenerateStsClientSecret(String participantContextId, SecurityContext securityContext);
+
     @Operation(description = "Activates or deactivates a ParticipantContext. This operation is idempotent, i.e. activating an already active ParticipantContext is a NOOP. Requires elevated access.",
             operationId = "activateParticipant",
             requestBody = @RequestBody(content = @Content(schema = @Schema(implementation = ParticipantManifest.class), mediaType = "application/json")),

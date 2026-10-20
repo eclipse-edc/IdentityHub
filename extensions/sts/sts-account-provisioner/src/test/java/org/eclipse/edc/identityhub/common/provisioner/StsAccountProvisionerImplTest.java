@@ -46,6 +46,7 @@ import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.startsWith;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -118,6 +119,28 @@ class StsAccountProvisionerImplTest {
                 .satisfies(f -> assertThat(f.getReason()).isEqualTo(ServiceFailure.Reason.UNEXPECTED))
                 .detail().contains("vault down");
         verify(accountServiceMock).createAccount(any(), anyString());
+    }
+
+    @Test
+    void regenerateClientSecret() {
+        var account = createStsClient().participantContextId(PARTICIPANT_CONTEXT_ID).build();
+        when(accountServiceMock.findById(PARTICIPANT_CONTEXT_ID)).thenReturn(ServiceResult.success(account));
+        when(accountServiceMock.updateSecret(eq(PARTICIPANT_CONTEXT_ID), eq(account.getId()), eq(account.getSecretAlias()), anyString()))
+                .thenAnswer(a -> ServiceResult.success(a.getArgument(3)));
+
+        var result = accountProvisioner.regenerateClientSecret(PARTICIPANT_CONTEXT_ID);
+
+        assertThat(result).isSucceeded().isNotNull();
+        verify(accountServiceMock).updateSecret(PARTICIPANT_CONTEXT_ID, account.getId(), account.getSecretAlias(), result.getContent());
+    }
+
+    @Test
+    void regenerateClientSecret_whenNoAccount_shouldFail() {
+        when(accountServiceMock.findById(PARTICIPANT_CONTEXT_ID)).thenReturn(ServiceResult.notFound("foo"));
+
+        assertThat(accountProvisioner.regenerateClientSecret(PARTICIPANT_CONTEXT_ID)).isFailed()
+                .satisfies(f -> assertThat(f.getReason()).isEqualTo(ServiceFailure.Reason.NOT_FOUND));
+        verify(accountServiceMock, never()).updateSecret(anyString(), anyString(), anyString(), anyString());
     }
 
     @Test

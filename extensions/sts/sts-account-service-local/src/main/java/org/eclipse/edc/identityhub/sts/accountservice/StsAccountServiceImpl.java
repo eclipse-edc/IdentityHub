@@ -19,8 +19,8 @@ import org.eclipse.edc.iam.decentralizedclaims.sts.spi.service.StsAccountService
 import org.eclipse.edc.iam.decentralizedclaims.sts.spi.service.StsClientSecretGenerator;
 import org.eclipse.edc.iam.decentralizedclaims.sts.spi.store.StsAccountStore;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantManifest;
+import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.spi.query.QuerySpec;
-import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.spi.result.ServiceResult;
 import org.eclipse.edc.spi.security.Vault;
 import org.eclipse.edc.transaction.spi.TransactionContext;
@@ -36,6 +36,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Optional.ofNullable;
 import static org.eclipse.edc.spi.result.ServiceResult.from;
 import static org.eclipse.edc.spi.result.ServiceResult.fromFailure;
+import static org.eclipse.edc.spi.result.ServiceResult.notFound;
 import static org.eclipse.edc.spi.result.ServiceResult.success;
 import static org.eclipse.edc.spi.result.ServiceResult.unauthorized;
 import static org.eclipse.edc.spi.result.ServiceResult.unexpected;
@@ -50,12 +51,14 @@ public class StsAccountServiceImpl implements StsAccountService {
     private final TransactionContext transactionContext;
     private final Vault vault;
     private final StsClientSecretGenerator secretGenerator;
+    private final Monitor monitor;
 
-    public StsAccountServiceImpl(StsAccountStore accountStore, TransactionContext transactionContext, Vault vault, StsClientSecretGenerator secretGenerator) {
+    public StsAccountServiceImpl(StsAccountStore accountStore, TransactionContext transactionContext, Vault vault, StsClientSecretGenerator secretGenerator, Monitor monitor) {
         this.stsAccountStore = accountStore;
         this.transactionContext = transactionContext;
         this.vault = vault;
         this.secretGenerator = secretGenerator;
+        this.monitor = monitor;
     }
 
     @Override
@@ -108,32 +111,44 @@ public class StsAccountServiceImpl implements StsAccountService {
 
         Objects.requireNonNull(newSecretAlias, "Secret alias cannot be null");
 
+        var secret = ofNullable(newSecret).orElseGet(() -> secretGenerator.generateClientSecret(null));
         var oldAlias = new AtomicReference<String>();
-        // generate new secret if needed
-        newSecret = ofNullable(newSecret).orElseGet(() -> secretGenerator.generateClientSecret(null));
 
-        var updateResult = transactionContext.execute(() -> stsAccountStore.findById(id)
-                .compose(stsAccount -> {
-                    oldAlias.set(stsAccount.getSecretAlias());
-                    stsAccount.updateSecretAlias(newSecretAlias);
-                    return stsAccountStore.update(stsAccount);
-                }));
+        ServiceResult<Void> updateResult = transactionContext.execute(() -> {
+            var account = stsAccountStore.findById(id).orElse(f -> null);
+            if (account == null || !participantContextId.equals(account.getParticipantContextId())) {
+                return notFound(format("An STS account with ID '%s' does not exist.", id));
+            }
+            oldAlias.set(account.getSecretAlias());
 
-        if (updateResult.succeeded()) {
-            var oldSecretAlias = oldAlias.get();
-            Result<Void> vaultInteractionResult = Result.success();
-
-            if (!oldSecretAlias.equals(newSecretAlias)) {
-                vaultInteractionResult = vaultInteractionResult.merge(vault.deleteSecret(participantContextId, oldSecretAlias));
+            // the new secret is stored before the account refers to it, so that the account always has a secret
+            var storeResult = vault.storeSecret(participantContextId, newSecretAlias, secret);
+            if (storeResult.failed()) {
+                return unexpected(format("Failed to store the new client secret: %s", storeResult.getFailureDetail()));
+            }
+            if (newSecretAlias.equals(account.getSecretAlias())) {
+                return success();
             }
 
-            var finalNewSecret = newSecret;
-            vaultInteractionResult = vaultInteractionResult.compose(v -> vault.storeSecret(participantContextId, newSecretAlias, finalNewSecret));
-            return vaultInteractionResult.succeeded()
-                    ? success(newSecretAlias)
-                    : unexpected(vaultInteractionResult.getFailureDetail());
+            account.updateSecretAlias(newSecretAlias);
+            var accountUpdateResult = stsAccountStore.update(account);
+            if (accountUpdateResult.failed()) {
+                // the account still refers to the old secret
+                vault.deleteSecret(participantContextId, newSecretAlias);
+                return fromFailure(accountUpdateResult);
+            }
+            return success();
+        });
+
+        if (updateResult.failed()) {
+            return updateResult.mapFailure();
         }
-        return fromFailure(updateResult);
+        // the old secret is only deleted once the account refers to the new one
+        if (!newSecretAlias.equals(oldAlias.get())) {
+            vault.deleteSecret(participantContextId, oldAlias.get())
+                    .onFailure(f -> monitor.warning(format("Failed to delete the previous client secret of STS account '%s'. It must be deleted manually: %s", id, f.getFailureDetail())));
+        }
+        return success(secret);
     }
 
     @Override

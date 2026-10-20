@@ -120,6 +120,27 @@ class IdentityHubParticipantContextApiControllerTest extends RestControllerTestB
     }
 
     @Test
+    void regenerateStsClientSecret() {
+        when(participantContextServiceMock.regenerateStsClientSecret(any())).thenReturn(ServiceResult.success("new-client-secret"));
+        baseRequest()
+                .post("/%s/sts/secret".formatted(PARTICIPANT_ID))
+                .then()
+                .statusCode(200)
+                .body(equalTo("new-client-secret"));
+        verify(participantContextServiceMock).regenerateStsClientSecret(PARTICIPANT_ID);
+    }
+
+    @Test
+    void regenerateStsClientSecret_notFound() {
+        when(participantContextServiceMock.regenerateStsClientSecret(any())).thenReturn(ServiceResult.notFound("foo-bar"));
+        baseRequest()
+                .post("/%s/sts/secret".formatted(PARTICIPANT_ID))
+                .then()
+                .statusCode(404);
+        verify(participantContextServiceMock).regenerateStsClientSecret(PARTICIPANT_ID);
+    }
+
+    @Test
     void activateParticipant() {
         when(participantContextServiceMock.updateParticipant(any(), any())).thenReturn(ServiceResult.success());
         baseRequest()

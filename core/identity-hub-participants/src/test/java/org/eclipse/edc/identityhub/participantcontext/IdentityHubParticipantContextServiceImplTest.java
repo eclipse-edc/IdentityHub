@@ -520,6 +520,25 @@ class IdentityHubParticipantContextServiceImplTest {
     }
 
     @Test
+    void regenerateStsClientSecret() {
+        when(participantContextStore.findById(anyString())).thenReturn(StoreResult.success(createContext()));
+        when(stsAccountProvisioner.regenerateClientSecret("test-id")).thenReturn(ServiceResult.success("new-secret"));
+
+        assertThat(participantContextService.regenerateStsClientSecret("test-id")).isSucceeded().isEqualTo("new-secret");
+
+        verify(stsAccountProvisioner).regenerateClientSecret("test-id");
+    }
+
+    @Test
+    void regenerateStsClientSecret_whenNotFound() {
+        when(participantContextStore.findById(anyString())).thenReturn(StoreResult.notFound("foo"));
+
+        assertThat(participantContextService.regenerateStsClientSecret("test-id")).isFailed().detail().isEqualTo("foo");
+
+        verify(stsAccountProvisioner, never()).regenerateClientSecret(anyString());
+    }
+
+    @Test
     void regenerateApiToken_whenNotFound() {
         when(participantContextStore.findById(anyString())).thenReturn(StoreResult.notFound("foo"));
 
