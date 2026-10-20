@@ -92,7 +92,7 @@ public class CredentialOfferApiController implements CredentialOfferApi {
         }
         var authToken = authHeader.replace("Bearer ", "").trim();
 
-        var participantContext = participantContextService.getParticipantContext(participantContextId)
+        var participantContext = participantContextService.rejectIfDeactivated(participantContextId)
                 .orElseThrow(idTokenVerificationFailed(monitor, "Participant context '%s' could not be resolved".formatted(participantContextId)));
 
         // validate Issuer's SI token, before the offer is processed

@@ -21,6 +21,8 @@ import org.eclipse.edc.iam.decentralizedclaims.sts.service.StsClientTokenGenerat
 import org.eclipse.edc.iam.decentralizedclaims.sts.spi.model.StsAccountTokenAdditionalParams;
 import org.eclipse.edc.identityhub.spi.keypair.KeyPairService;
 import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairResource;
+import org.eclipse.edc.identityhub.spi.participantcontext.IdentityHubParticipantContextService;
+import org.eclipse.edc.identityhub.spi.participantcontext.model.IdentityHubParticipantContext;
 import org.eclipse.edc.junit.annotations.ComponentTest;
 import org.eclipse.edc.jwt.validation.jti.JtiValidationStore;
 import org.eclipse.edc.keys.KeyParserRegistryImpl;
@@ -69,6 +71,7 @@ public class StsAccountTokenIssuanceIntegrationTest {
     private final KeyParserRegistry keyParserRegistry = new KeyParserRegistryImpl();
     private final JtiValidationStore jtiValidationStore = mock();
     private final KeyPairService keyPairService = mock();
+    private final IdentityHubParticipantContextService participantContextService = mock();
     private StsClientTokenGeneratorServiceImpl tokenGeneratorService;
 
     @BeforeEach
@@ -89,8 +92,14 @@ public class StsAccountTokenIssuanceIntegrationTest {
                         .usage(TOKEN_SIGNING)
                         .build()));
 
+        when(participantContextService.getParticipantContext(anyString())).thenAnswer(i -> ServiceResult.success(IdentityHubParticipantContext.Builder.newInstance()
+                .id(i.getArgument(0))
+                .did("did:web:" + i.getArgument(0))
+                .apiTokenAlias("api-token-alias")
+                .build()));
+        when(participantContextService.rejectIfDeactivated(any())).thenCallRealMethod();
         tokenGeneratorService = new StsClientTokenGeneratorServiceImpl(60 * 5, new EmbeddedSecureTokenService(new NoopTransactionContext(), 60 * 5,
-                new JwtGenerationService(new DefaultJwsSignerProvider(privateKeyResolver)), Clock.systemUTC(), keyPairService));
+                new JwtGenerationService(new DefaultJwsSignerProvider(privateKeyResolver)), Clock.systemUTC(), keyPairService, participantContextService));
     }
 
     @Test

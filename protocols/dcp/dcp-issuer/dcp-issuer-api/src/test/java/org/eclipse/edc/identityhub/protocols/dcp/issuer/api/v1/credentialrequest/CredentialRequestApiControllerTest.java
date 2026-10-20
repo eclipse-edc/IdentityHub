@@ -35,6 +35,7 @@ import org.eclipse.edc.web.spi.exception.AuthenticationFailedException;
 import org.eclipse.edc.web.spi.exception.InvalidRequestException;
 import org.eclipse.edc.web.spi.exception.NotAuthorizedException;
 import org.eclipse.edc.web.spi.exception.ValidationFailureException;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.sql.Date;
@@ -72,6 +73,11 @@ class CredentialRequestApiControllerTest extends RestControllerTestBase {
     private final JsonLdNamespace namespace = DSPACE_DCP_NAMESPACE_V_1_0;
     private final IdentityHubParticipantContextService participantContextService = mock();
     private final String participantContextId = "participantContextId";
+
+    @BeforeEach
+    void setUp() {
+        when(participantContextService.rejectIfDeactivated(any())).thenCallRealMethod();
+    }
 
     @Test
     void requestCredential_tokenNotPresent_shouldReturn401() {
@@ -127,6 +133,22 @@ class CredentialRequestApiControllerTest extends RestControllerTestBase {
         var requestMessage = createCredentialRequestMessage();
         when(typeTransformerRegistry.transform(isA(JsonObject.class), eq(CredentialRequestMessage.class))).thenReturn(Result.success(requestMessage));
         when(participantContextService.getParticipantContext(eq(participantContextId))).thenReturn(ServiceResult.notFound("not found"));
+
+        assertThatThrownBy(() -> controller().requestCredential(participantContextId, createObjectBuilder().build(), "Bearer " + generateJwt()))
+                .isExactlyInstanceOf(AuthenticationFailedException.class)
+                .hasMessage("ID token verification failed");
+
+        verifyNoInteractions(dcpIssuerService);
+    }
+
+    @Test
+    void requestCredential_participantDeactivated_shouldReturn401() {
+        when(validatorRegistryMock.validate(eq(namespace.toIri(CREDENTIAL_REQUEST_MESSAGE_TERM)), any())).thenReturn(success());
+        var requestMessage = createCredentialRequestMessage();
+        when(typeTransformerRegistry.transform(isA(JsonObject.class), eq(CredentialRequestMessage.class))).thenReturn(Result.success(requestMessage));
+        var participantContext = createParticipantContext();
+        participantContext.deactivate();
+        when(participantContextService.getParticipantContext(eq(participantContextId))).thenReturn(ServiceResult.success(participantContext));
 
         assertThatThrownBy(() -> controller().requestCredential(participantContextId, createObjectBuilder().build(), "Bearer " + generateJwt()))
                 .isExactlyInstanceOf(AuthenticationFailedException.class)

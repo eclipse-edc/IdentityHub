@@ -72,6 +72,7 @@ class CredentialOfferApiControllerTest extends RestControllerTestBase {
 
     @BeforeEach
     void setUp() {
+        when(participantContextService.rejectIfDeactivated(any())).thenCallRealMethod();
         when(validatorRegistry.validate(anyString(), any())).thenReturn(ValidationResult.success());
 
         when(credentialObjectResolver.resolve(any(), any())).thenAnswer(i -> Result.success(i.getArgument(1)));
@@ -156,6 +157,26 @@ class CredentialOfferApiControllerTest extends RestControllerTestBase {
                 // answered like a failed token verification, so the participant's existence cannot be told
                 .body(containsString("ID token verification failed"))
                 .body(not(containsString("foobar")));
+    }
+
+    @Test
+    void offerCredential_participantDeactivated_expect401() {
+        when(participantContextService.getParticipantContext(anyString())).thenReturn(ServiceResult.success(
+                IdentityHubParticipantContext.Builder.newInstance()
+                        .participantContextId("test-id")
+                        .did("did:web:test-id")
+                        .state(ParticipantContextState.DEACTIVATED)
+                        .apiTokenAlias("test-alias")
+                        .build()
+        ));
+        baseRequest()
+                .body(createRequestBody())
+                .post()
+                .then()
+                .log().ifValidationFails()
+                .statusCode(401)
+                .body(containsString("ID token verification failed"));
+        verifyNoInteractions(offerService);
     }
 
     @Test

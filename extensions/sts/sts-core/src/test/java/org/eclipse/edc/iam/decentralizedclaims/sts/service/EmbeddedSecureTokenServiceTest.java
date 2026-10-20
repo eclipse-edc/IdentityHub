@@ -17,7 +17,10 @@ package org.eclipse.edc.iam.decentralizedclaims.sts.service;
 import org.eclipse.edc.identityhub.spi.keypair.KeyPairService;
 import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairResource;
 import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairState;
+import org.eclipse.edc.identityhub.spi.participantcontext.IdentityHubParticipantContextService;
+import org.eclipse.edc.identityhub.spi.participantcontext.model.IdentityHubParticipantContext;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyPairUsage;
+import org.eclipse.edc.participantcontext.spi.types.ParticipantContextState;
 import org.eclipse.edc.spi.iam.TokenRepresentation;
 import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.spi.result.ServiceResult;
@@ -42,6 +45,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
@@ -50,16 +54,31 @@ class EmbeddedSecureTokenServiceTest {
     public static final String TEST_PARTICIPANT = "test-participant";
     private final TokenGenerationService tokenGenerationService = mock();
     private final KeyPairService keyPairService = mock();
-    private final EmbeddedSecureTokenService sts = new EmbeddedSecureTokenService(new NoopTransactionContext(), 10 * 60, tokenGenerationService, Clock.systemUTC(), keyPairService);
+    private final IdentityHubParticipantContextService participantContextService = mock();
+    private final EmbeddedSecureTokenService sts = new EmbeddedSecureTokenService(new NoopTransactionContext(), 10 * 60, tokenGenerationService, Clock.systemUTC(),
+            keyPairService, participantContextService);
 
     @BeforeEach
     void setup() {
-        when(keyPairService.getActiveKeyPairForUsage(eq(TEST_PARTICIPANT), eq(KeyPairUsage.TOKEN_SIGNING)))
-                .thenReturn(success(createKeyPair()));
+        when(participantContextService.getParticipantContext(TEST_PARTICIPANT)).thenReturn(success(createParticipantContext(ParticipantContextState.ACTIVATED)));
+        when(participantContextService.rejectIfDeactivated(any())).thenCallRealMethod();
 
         when(keyPairService.getActiveKeyPairForUsage(eq(TEST_PARTICIPANT), eq(KeyPairUsage.TOKEN_SIGNING)))
                 .thenReturn(success(createKeyPair()));
 
+        when(keyPairService.getActiveKeyPairForUsage(eq(TEST_PARTICIPANT), eq(KeyPairUsage.TOKEN_SIGNING)))
+                .thenReturn(success(createKeyPair()));
+
+    }
+
+    @Test
+    void createToken_whenParticipantContextDeactivated_shouldFail() {
+        when(participantContextService.getParticipantContext(TEST_PARTICIPANT)).thenReturn(success(createParticipantContext(ParticipantContextState.DEACTIVATED)));
+
+        var result = sts.createToken(TEST_PARTICIPANT, Map.of(), null);
+
+        assertThat(result.failed()).isTrue();
+        verifyNoInteractions(tokenGenerationService);
     }
 
     @Test
@@ -182,6 +201,15 @@ class EmbeddedSecureTokenServiceTest {
                 .privateKeyAlias(TEST_PRIVATEKEY_ID)
                 .serializedPublicKey("JWK-GOES-HERE")
                 .state(KeyPairState.ACTIVATED)
+                .build();
+    }
+
+    private IdentityHubParticipantContext createParticipantContext(ParticipantContextState state) {
+        return IdentityHubParticipantContext.Builder.newInstance()
+                .id(TEST_PARTICIPANT)
+                .did("did:web:" + TEST_PARTICIPANT)
+                .apiTokenAlias("api-token-alias")
+                .state(state)
                 .build();
     }
 }

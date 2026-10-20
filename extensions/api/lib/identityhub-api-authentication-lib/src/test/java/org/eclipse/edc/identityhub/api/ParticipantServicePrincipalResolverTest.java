@@ -27,6 +27,7 @@ import java.util.Base64;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -42,6 +43,7 @@ class ParticipantServicePrincipalResolverTest {
 
     @BeforeEach
     void setUp() {
+        when(participantContextService.rejectIfDeactivated(any())).thenCallRealMethod();
         when(participantContextService.getParticipantContext(PARTICIPANT_CONTEXT_ID)).thenReturn(ServiceResult.success(createContext()));
     }
 
@@ -76,6 +78,23 @@ class ParticipantServicePrincipalResolverTest {
     }
 
     @Test
+    void findByCredential_whenParticipantDeactivated_shouldThrowSameErrorAsForWrongKey() {
+        when(participantContextService.getParticipantContext(PARTICIPANT_CONTEXT_ID)).thenReturn(ServiceResult.success(createContext(ParticipantContextState.DEACTIVATED)));
+        when(vault.resolveSecret(PARTICIPANT_CONTEXT_ID, "test-alias")).thenReturn(API_KEY);
+
+        assertThatThrownBy(() -> resolver.findByCredential(API_KEY)).isInstanceOf(AuthenticationFailedException.class)
+                .hasMessage("Invalid API token");
+    }
+
+    @Test
+    void findByCredential_whenParticipantCreated_shouldSucceed() {
+        when(participantContextService.getParticipantContext(PARTICIPANT_CONTEXT_ID)).thenReturn(ServiceResult.success(createContext(ParticipantContextState.CREATED)));
+        when(vault.resolveSecret(PARTICIPANT_CONTEXT_ID, "test-alias")).thenReturn(API_KEY);
+
+        assertThat(resolver.findByCredential(API_KEY).getPrincipal()).isEqualTo(PARTICIPANT_CONTEXT_ID);
+    }
+
+    @Test
     void findByCredential_whenApiKeyNotInVault_shouldThrow() {
         when(vault.resolveSecret(PARTICIPANT_CONTEXT_ID, "test-alias")).thenReturn(null);
 
@@ -95,10 +114,14 @@ class ParticipantServicePrincipalResolverTest {
     }
 
     private IdentityHubParticipantContext createContext() {
+        return createContext(ParticipantContextState.ACTIVATED);
+    }
+
+    private IdentityHubParticipantContext createContext(ParticipantContextState state) {
         return IdentityHubParticipantContext.Builder.newInstance()
                 .id(PARTICIPANT_CONTEXT_ID)
                 .did("did:web:test")
-                .state(ParticipantContextState.ACTIVATED)
+                .state(state)
                 .apiTokenAlias("test-alias")
                 .build();
     }

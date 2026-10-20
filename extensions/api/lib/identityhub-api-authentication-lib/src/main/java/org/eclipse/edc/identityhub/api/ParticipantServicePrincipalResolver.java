@@ -74,7 +74,7 @@ class ParticipantServicePrincipalResolver implements ServicePrincipalResolver {
     }
 
     private ServicePrincipal findByPrincipal(String principal) {
-        return participantContextService.getParticipantContext(principal)
+        return participantContextService.rejectIfDeactivated(principal)
                 .map(this::toUser)
                 .orElseThrow(f -> {
                     // answered like a wrong API key, so that the participant's existence cannot be told from the response

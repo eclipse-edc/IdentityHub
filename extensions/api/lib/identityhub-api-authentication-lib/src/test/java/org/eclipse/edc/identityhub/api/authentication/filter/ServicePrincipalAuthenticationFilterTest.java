@@ -26,7 +26,6 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 import java.util.Map;
 
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -80,7 +79,9 @@ class ServicePrincipalAuthenticationFilterTest {
         when(request.getHeaders()).thenReturn(headers(Map.of("x-api-key", "test-token")));
         when(servicePrincipalResolver.findByCredential(eq("test-token"))).thenThrow(new AuthenticationFailedException("test-message"));
 
-        assertThatThrownBy(() -> filter.filter(request)).isInstanceOf(AuthenticationFailedException.class);
+        filter.filter(request);
+
+        verify(request).abortWith(argThat(response -> response.getStatus() == 401));
     }
 
     private MultivaluedMap<String, String> headers(Map<String, String> headers) {
