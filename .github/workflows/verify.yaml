@@ -28,6 +28,7 @@ jobs:
       - uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
         with:
           cache-provider: basic
+          cache-disabled: true
           cache-read-only: true
       - name: Run Checkstyle
         run: ./gradlew checkstyleMain checkstyleTest checkstyleTestFixtures
@@ -40,6 +41,7 @@ jobs:
       - uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
         with:
           cache-provider: basic
+          cache-disabled: true
           cache-read-only: true
       - name: Run Javadoc
         run: ./gradlew javadoc
@@ -52,6 +54,7 @@ jobs:
       - uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
         with:
           cache-provider: basic
+          cache-disabled: true
       - name: Unit tests
         run: ./gradlew test
 
@@ -88,6 +91,7 @@ jobs:
       - uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
         with:
           cache-provider: basic
+          cache-disabled: true
           cache-read-only: true
 
       - name: Compile
@@ -104,6 +108,7 @@ jobs:
       - uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
         with:
           cache-provider: basic
+          cache-disabled: true
           cache-read-only: true
 
       - name: Postgresql Tests
@@ -117,6 +122,7 @@ jobs:
       - uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
         with:
           cache-provider: basic
+          cache-disabled: true
           cache-read-only: true
 
       - name: TCK Tests
