@@ -14,9 +14,10 @@
 
 package org.eclipse.edc.identityhub.api.configuration;
 
-import jakarta.ws.rs.core.SecurityContext;
 import org.eclipse.edc.api.auth.spi.AuthorizationService;
-import org.eclipse.edc.participantcontext.spi.types.ParticipantResource;
+import org.eclipse.edc.identityhub.api.authorization.AllowAllAuthorizationService;
+import org.eclipse.edc.identityhub.api.authorization.ApiScopeFilter;
+import org.eclipse.edc.identityhub.spi.participantcontext.IssuerAdminApiScopes;
 import org.eclipse.edc.runtime.metamodel.annotation.Configuration;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;
@@ -24,7 +25,6 @@ import org.eclipse.edc.runtime.metamodel.annotation.Provider;
 import org.eclipse.edc.runtime.metamodel.annotation.Setting;
 import org.eclipse.edc.runtime.metamodel.annotation.Settings;
 import org.eclipse.edc.spi.EdcException;
-import org.eclipse.edc.spi.result.ServiceResult;
 import org.eclipse.edc.spi.system.ServiceExtension;
 import org.eclipse.edc.spi.system.ServiceExtensionContext;
 import org.eclipse.edc.spi.system.apiversion.ApiVersionService;
@@ -36,7 +36,6 @@ import org.eclipse.edc.web.spi.configuration.PortMappingRegistry;
 import tools.jackson.databind.DeserializationFeature;
 
 import java.io.IOException;
-import java.util.function.BiFunction;
 import java.util.stream.Stream;
 
 import static org.eclipse.edc.identityhub.api.configuration.IssuerAdminApiConfigurationExtension.NAME;
@@ -68,6 +67,7 @@ public class IssuerAdminApiConfigurationExtension implements ServiceExtension {
     @Override
     public void initialize(ServiceExtensionContext context) {
         portMappingRegistry.register(new PortMapping(ISSUERADMIN, apiConfiguration.port(), apiConfiguration.path()));
+        webService.registerResource(ISSUERADMIN, new ApiScopeFilter(IssuerAdminApiScopes.NAMESPACE));
 
         // TODO: this should be registered by default, upstream.
         webService.registerResource(ISSUERADMIN, new JsonMapperProvider(typeManager));
@@ -76,8 +76,8 @@ public class IssuerAdminApiConfigurationExtension implements ServiceExtension {
     }
 
     @Provider(isDefault = true)
-    public AuthorizationService authorizationService() {
-        return new AllowAllAuthorizationService();
+    public AuthorizationService authorizationService(ServiceExtensionContext context) {
+        return new AllowAllAuthorizationService(context.getMonitor(), "Issuer Admin API");
     }
 
     private void registerVersionInfo(ClassLoader resourceClassLoader) {
@@ -102,20 +102,6 @@ public class IssuerAdminApiConfigurationExtension implements ServiceExtension {
             @Setting(key = "web.http." + ISSUERADMIN + ".path", description = "Path for " + ISSUERADMIN + " api context", defaultValue = "/api/issuer")
             String path
     ) {
-
-    }
-
-    private static class AllowAllAuthorizationService implements AuthorizationService {
-
-        @Override
-        public ServiceResult<Void> authorize(SecurityContext securityContext, String resourceOwnerId, String resourceId, Class<? extends ParticipantResource> resourceClass) {
-            return ServiceResult.success();
-        }
-
-        @Override
-        public void addLookupFunction(Class<?> resourceClass, BiFunction<String, String, ParticipantResource> checkFunction) {
-
-        }
 
     }
 }
