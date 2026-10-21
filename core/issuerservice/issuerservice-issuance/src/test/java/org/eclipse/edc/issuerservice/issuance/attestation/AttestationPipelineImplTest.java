@@ -104,6 +104,24 @@ class AttestationPipelineImplTest {
     }
 
     @Test
+    void evaluate_whenSourceReturnsNoContent_shouldFail() {
+        var attestationDefinition = createAttestationDefinition("a123", "testType", Map.of());
+        var store = mock(AttestationDefinitionStore.class);
+        when(store.resolveDefinition(eq(PARTICIPANT_CONTEXT_ID), eq("a123"))).thenReturn(attestationDefinition);
+
+        var pipeline = new AttestationPipelineImpl(store);
+        var attestationSource = mock(AttestationSource.class);
+        when(attestationSource.execute(isA(AttestationContext.class))).thenReturn(success(null));
+        var sourceFactory = mock(AttestationSourceFactory.class);
+        when(sourceFactory.createSource(isA(AttestationDefinition.class))).thenReturn(attestationSource);
+        pipeline.registerFactory("testType", sourceFactory);
+
+        var result = pipeline.evaluate(Set.of("a123"), attestationContext());
+
+        assertThat(result).isFailed().detail().contains("a123");
+    }
+
+    @Test
     void evaluate_whenAttestationOfOtherParticipantContext_shouldFail() {
         var attestationDefinition = AttestationDefinition.Builder.newInstance()
                 .id("a123")

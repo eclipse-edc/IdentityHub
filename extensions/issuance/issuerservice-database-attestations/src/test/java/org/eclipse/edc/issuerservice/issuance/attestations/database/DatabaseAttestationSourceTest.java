@@ -81,10 +81,19 @@ class DatabaseAttestationSourceTest {
     }
 
     @Test
-    void createAttestationSource_whenIdNotFound() {
-        var map = attestationSource.execute(new TestAttestationContext("holder-notexist", Map.of()));
+    void createAttestationSource_whenIdNotFound_andRequired_shouldFail() {
+        var result = attestationSource.execute(new TestAttestationContext("holder-notexist", Map.of()));
 
-        assertThat(map).isSucceeded().isNull();
+        assertThat(result).isFailed().detail().contains("holder-notexist");
+    }
+
+    @Test
+    void createAttestationSource_whenIdNotFound_andNotRequired_shouldReturnEmptyClaims() {
+        var source = createSource(tableName, "holder_id", false);
+
+        var result = source.execute(new TestAttestationContext("holder-notexist", Map.of()));
+
+        assertThat(result).isSucceeded().satisfies(m -> Assertions.assertThat(m).isEmpty());
     }
 
     @Test
@@ -122,8 +131,12 @@ class DatabaseAttestationSourceTest {
     }
 
     private DatabaseAttestationSource createSource(String tableName, String idColumn) {
+        return createSource(tableName, idColumn, true);
+    }
+
+    private DatabaseAttestationSource createSource(String tableName, String idColumn, boolean required) {
         return new DatabaseAttestationSource(extension.getDatasourceName(),
-                true,
+                required,
                 ObjectMapper::new,
                 tableName,
                 extension.getDataSourceRegistry(),
