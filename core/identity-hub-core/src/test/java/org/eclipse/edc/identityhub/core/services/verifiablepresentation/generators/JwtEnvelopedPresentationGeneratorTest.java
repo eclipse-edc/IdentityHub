@@ -36,6 +36,11 @@ import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.ObjectMapper;
 
 import java.text.ParseException;
+import java.time.Clock;
+import java.time.Duration;
+import java.time.Instant;
+import java.time.ZoneOffset;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
@@ -51,6 +56,8 @@ class JwtEnvelopedPresentationGeneratorTest extends PresentationGeneratorTest {
     private static final Map<String, Object> ADDITIONAL_DATA = Map.of(
             "controller", "did:web:test"
     );
+    private static final Instant NOW = Instant.parse("2020-01-01T10:00:00Z");
+    private static final Duration LIFETIME = Duration.ofMinutes(5);
     private final JwsSignerProvider signerProvider = mock();
     private final String participantContextId = "test-participant";
     private final TokenGenerationService tokenGenerator = new JwtGenerationService(signerProvider);
@@ -65,7 +72,7 @@ class JwtEnvelopedPresentationGeneratorTest extends PresentationGeneratorTest {
         when(signerProvider.createJwsSigner(eq(participantContextId), anyString())).thenReturn(Result.failure("not found"));
         when(signerProvider.createJwsSigner(eq(participantContextId), eq(PRIVATE_KEY_ALIAS))).thenReturn(Result.success(new ECDSASigner(vpSigningKey)));
 
-        generator = new JwtEnvelopedPresentationGenerator(mock(), tokenGenerator);
+        generator = new JwtEnvelopedPresentationGenerator(mock(), Clock.fixed(NOW, ZoneOffset.UTC), tokenGenerator, LIFETIME);
     }
 
     @SuppressWarnings("unchecked")
@@ -83,7 +90,7 @@ class JwtEnvelopedPresentationGeneratorTest extends PresentationGeneratorTest {
         assertThat(header.getKeyID()).isEqualTo("did:web:test#" + PUBLIC_KEY_ID);
         var claims = extractJwtClaims(vpJwt);
 
-        assertThat(claims.getClaims()).hasSize(3)
+        assertThat(claims.getClaims()).hasSize(7)
                 .containsKey("@context")
                 .containsKey("id")
                 .containsEntry("type", "EnvelopedVerifiablePresentation");
@@ -93,7 +100,7 @@ class JwtEnvelopedPresentationGeneratorTest extends PresentationGeneratorTest {
 
         var vpToken = envelopedVp.replace("data:application/vp+jwt", "");
         var vpClaims = extractJwtClaims(vpToken);
-        assertThat(vpClaims.getClaims()).hasSize(4)
+        assertThat(vpClaims.getClaims()).hasSize(8)
                 .containsEntry("holder", issuerId)
                 .containsEntry("type", "VerifiablePresentation")
                 .containsKey("@context")
@@ -160,7 +167,7 @@ class JwtEnvelopedPresentationGeneratorTest extends PresentationGeneratorTest {
         assertThat(header.getKeyID()).isEqualTo("did:web:test#" + PUBLIC_KEY_ID);
         var claims = extractJwtClaims(vpJwt);
 
-        assertThat(claims.getClaims()).hasSize(3)
+        assertThat(claims.getClaims()).hasSize(7)
                 .containsKey("@context")
                 .containsKey("id")
                 .containsEntry("type", "EnvelopedVerifiablePresentation");
@@ -170,7 +177,7 @@ class JwtEnvelopedPresentationGeneratorTest extends PresentationGeneratorTest {
 
         var vpToken = envelopedVp.replace("data:application/vp+jwt", "");
         var vpClaims = extractJwtClaims(vpToken);
-        assertThat(vpClaims.getClaims()).hasSize(4)
+        assertThat(vpClaims.getClaims()).hasSize(8)
                 .containsEntry("holder", issuerId)
                 .containsEntry("type", "VerifiablePresentation")
                 .containsKey("@context")
@@ -182,6 +189,25 @@ class JwtEnvelopedPresentationGeneratorTest extends PresentationGeneratorTest {
         assertThat(credentials).describedAs("Credentials array should be empty").isEmpty();
     }
 
+
+    @Test
+    void createPresentation_bindsVpTokenAndEnvelopeToAudienceAndLifetime() {
+        var additionalData = Map.<String, Object>of("controller", "did:web:test", "aud", "did:web:verifier");
+
+        var vpJwt = generator.generatePresentation(participantContextId, List.of(), PRIVATE_KEY_ALIAS, PUBLIC_KEY_ID, issuerId, additionalData);
+
+        var envelopeClaims = extractJwtClaims(vpJwt);
+        var vpClaims = extractJwtClaims(envelopeClaims.getClaim("id").toString().replace("data:application/vp+jwt,", ""));
+        assertThat(List.of(envelopeClaims, vpClaims)).allSatisfy(claims -> {
+            assertThat(claims.getIssuer()).isEqualTo(issuerId);
+            assertThat(claims.getAudience()).containsExactly("did:web:verifier");
+            assertThat(claims.getIssueTime()).isEqualTo(Date.from(NOW));
+            assertThat(claims.getNotBeforeTime()).isNull();
+            assertThat(claims.getExpirationTime()).isEqualTo(Date.from(NOW.plus(LIFETIME)));
+            assertThat(claims.getJWTID()).isNotBlank();
+        });
+        assertThat(envelopeClaims.getJWTID()).isNotEqualTo(vpClaims.getJWTID());
+    }
 
     @Test
     void generatePresentation_noAdditionalData() {

@@ -28,6 +28,7 @@ import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredentialContainer;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.generator.PresentationGenerator;
 import org.eclipse.edc.jsonld.spi.JsonLdKeywords;
+import org.eclipse.edc.jwt.spi.JwtRegisteredClaimNames;
 import org.eclipse.edc.keys.spi.PrivateKeyResolver;
 import org.eclipse.edc.security.signature.jws2020.JsonWebKeyPair;
 import org.eclipse.edc.security.signature.jws2020.Jws2020ProofDraft;
@@ -36,15 +37,18 @@ import org.eclipse.edc.spi.EdcException;
 import org.eclipse.edc.spi.types.TypeManager;
 import org.eclipse.edc.verifiablecredentials.linkeddata.LdpIssuer;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import tools.jackson.core.JacksonException;
 
 import java.net.URI;
 import java.security.KeyPair;
 import java.security.PrivateKey;
 import java.time.Clock;
+import java.time.Duration;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 import static org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat.VC1_0_LD;
@@ -70,10 +74,16 @@ public class LdpPresentationGenerator implements PresentationGenerator<JsonObjec
     private final TypeManager typeManager;
     private final String typeContext;
     private final Clock clock;
+    private final Duration vpLifetime;
 
+    /**
+     * Creates Linked-Data presentations.
+     *
+     * @param vpLifetime how long a presentation is valid after it was created, i.e. the difference between the {@code expires} and {@code created} options of its proof
+     */
     public LdpPresentationGenerator(PrivateKeyResolver privateKeyResolver,
                                     SignatureSuiteRegistry signatureSuiteRegistry, String defaultSignatureSuite, LdpIssuer ldpIssuer,
-                                    TypeManager typeManager, String typeContext, Clock clock) {
+                                    TypeManager typeManager, String typeContext, Clock clock, Duration vpLifetime) {
         this.privateKeyResolver = privateKeyResolver;
         this.signatureSuiteRegistry = signatureSuiteRegistry;
         this.defaultSignatureSuite = defaultSignatureSuite;
@@ -81,6 +91,7 @@ public class LdpPresentationGenerator implements PresentationGenerator<JsonObjec
         this.typeManager = typeManager;
         this.typeContext = typeContext;
         this.clock = clock;
+        this.vpLifetime = vpLifetime;
     }
 
     /**
@@ -105,6 +116,7 @@ public class LdpPresentationGenerator implements PresentationGenerator<JsonObjec
      * @param additionalData       The additional data to be included in the presentation.
      *                             It must contain a "types" field and optionally, a "suite" field to indicate the desired signature suite.
      *                             If the "suite" parameter is specified, it must be a W3C identifier for signature suites.
+     *                             If it contains an "aud" field, that is used as the "domain" of the proof.
      * @return The created presentation as a JsonObject.
      * @throws IllegalArgumentException If the additional data does not contain "types",
      *                                  if no {@link SignatureSuite} is found for the provided suite identifier,
@@ -144,7 +156,8 @@ public class LdpPresentationGenerator implements PresentationGenerator<JsonObjec
                 .add(VERIFIABLE_CREDENTIAL_PROPERTY, toJsonArray(credentials))
                 .build();
 
-        return signPresentation(presentationObject, suite, suiteIdentifier, pk, publicKeyId, additionalData.get(CONTROLLER_ADDITIONAL_DATA).toString());
+        var audience = Optional.ofNullable(additionalData.get(JwtRegisteredClaimNames.AUDIENCE)).map(Object::toString).orElse(null);
+        return signPresentation(presentationObject, suite, suiteIdentifier, pk, publicKeyId, additionalData.get(CONTROLLER_ADDITIONAL_DATA).toString(), audience);
     }
 
     @NotNull
@@ -163,7 +176,8 @@ public class LdpPresentationGenerator implements PresentationGenerator<JsonObjec
         return array.build();
     }
 
-    private JsonObject signPresentation(JsonObject presentationObject, SignatureSuite suite, String suiteIdentifier, PrivateKey pk, String publicKeyId, String controller) {
+    private JsonObject signPresentation(JsonObject presentationObject, SignatureSuite suite, String suiteIdentifier, PrivateKey pk, String publicKeyId, String controller,
+                                        @Nullable String audience) {
         var composedKeyId = publicKeyId;
         if (!publicKeyId.startsWith(controller)) {
             composedKeyId = controller + "#" + publicKeyId;
@@ -177,10 +191,14 @@ public class LdpPresentationGenerator implements PresentationGenerator<JsonObjec
 
         var keypair = new JsonWebKeyPair(keyIdUri, verificationMethodType, controllerUri, jwk);
 
+        var now = clock.instant();
         var proofDraft = Jws2020ProofDraft.Builder.newInstance()
                 .proofPurpose(ASSERTION_METHOD)
                 .verificationMethod(new JsonWebKeyPair(keyIdUri, verificationMethodType, controllerUri, null))
-                .created(clock.instant())
+                .created(now)
+                .expires(now.plus(vpLifetime))
+                .domain(audience)
+                .challenge(UUID.randomUUID().toString())
                 .mapper(typeManager.getMapper(typeContext))
                 .build();
 

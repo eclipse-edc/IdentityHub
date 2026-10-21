@@ -89,6 +89,21 @@ class VerifiablePresentationServiceImplTest {
     }
 
     @Test
+    void generate_containsOnlyLdpVc_passesAudience() {
+        when(registry.createPresentation(eq(TEST_PARTICIPANT_CONTEXT_ID), any(), eq(VC1_0_LD), any())).thenReturn(jsonObject(LDP_VP_WITH_PROOF));
+        presentationService = new VerifiablePresentationServiceImpl(registry, monitor);
+
+        var result = presentationService.createPresentation(TEST_PARTICIPANT_CONTEXT_ID, List.of(createCredential(VC1_0_LD)), null, TEST_AUDIENCE);
+
+        assertThat(result).isSucceeded();
+        verify(registry).createPresentation(
+                eq(TEST_PARTICIPANT_CONTEXT_ID),
+                anyList(),
+                eq(VC1_0_LD),
+                argThat(additional -> TEST_AUDIENCE.equals(additional.get(JwtRegisteredClaimNames.AUDIENCE)) && additional.containsKey("types")));
+    }
+
+    @Test
     void generate_mixedVcs() {
         when(registry.createPresentation(eq(TEST_PARTICIPANT_CONTEXT_ID), any(), eq(VC1_0_LD), any())).thenReturn(jsonObject(LDP_VP_WITH_PROOF));
         when(registry.createPresentation(eq(TEST_PARTICIPANT_CONTEXT_ID), any(), eq(VC1_0_JWT), any())).thenReturn(JWT_VP);

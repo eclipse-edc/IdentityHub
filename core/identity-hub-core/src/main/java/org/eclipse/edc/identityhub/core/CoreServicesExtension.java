@@ -100,7 +100,8 @@ public class CoreServicesExtension implements ServiceExtension {
     public static final String ACCESS_TOKEN_KEY_FALLBACK_SETTING = "edc.iam.accesstoken.publickey.fallback.enabled";
     public static final String REJECT_UNVERIFIED_CREDENTIALS_SETTING = "edc.iam.credential.delivery.reject.unverified";
 
-    @Setting(description = "How long a JWT Verifiable Presentation is valid after it was created, in seconds. Determines the presentation's 'exp' claim.",
+    @Setting(description = "How long a Verifiable Presentation is valid after it was created, in seconds. Determines the 'exp' claim of JWT presentations " +
+            "and the proof 'expires' of Linked-Data presentations.",
             defaultValue = DEFAULT_PRESENTATION_VALIDITY_SECONDS + "", key = "edc.iam.presentation.validity")
     private long presentationValiditySeconds;
 
@@ -233,13 +234,14 @@ public class CoreServicesExtension implements ServiceExtension {
             presentationCreatorRegistry = new PresentationCreatorRegistryImpl(keyPairService, participantContextService, transactionContext);
             var jwtGenerationService = new JwtGenerationService(jwsSignerProvider);
             var monitor = context.getMonitor();
-            presentationCreatorRegistry.addCreator(new JwtPresentationGenerator(clock, jwtGenerationService, presentationValidity(monitor)), CredentialFormat.VC1_0_JWT);
+            var presentationValidity = presentationValidity(monitor);
+            presentationCreatorRegistry.addCreator(new JwtPresentationGenerator(clock, jwtGenerationService, presentationValidity), CredentialFormat.VC1_0_JWT);
 
             var ldpIssuer = LdpIssuer.Builder.newInstance().jsonLd(jsonLd).monitor(monitor).build();
-            presentationCreatorRegistry.addCreator(new LdpPresentationGenerator(privateKeyResolver, signatureSuiteRegistry, IdentityHubConstants.JWS_2020_SIGNATURE_SUITE, ldpIssuer, typeManager, JSON_LD, clock),
+            presentationCreatorRegistry.addCreator(new LdpPresentationGenerator(privateKeyResolver, signatureSuiteRegistry, IdentityHubConstants.JWS_2020_SIGNATURE_SUITE, ldpIssuer, typeManager, JSON_LD, clock, presentationValidity),
                     CredentialFormat.VC1_0_LD);
 
-            presentationCreatorRegistry.addCreator(new JwtEnvelopedPresentationGenerator(monitor, jwtGenerationService), CredentialFormat.VC2_0_JOSE);
+            presentationCreatorRegistry.addCreator(new JwtEnvelopedPresentationGenerator(monitor, clock, jwtGenerationService, presentationValidity), CredentialFormat.VC2_0_JOSE);
         }
         return presentationCreatorRegistry;
     }

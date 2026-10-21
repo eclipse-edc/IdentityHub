@@ -15,6 +15,7 @@
 package org.eclipse.edc.identityhub.core.services.verifiablepresentation.generators;
 
 import com.nimbusds.jose.jwk.Curve;
+import jakarta.json.JsonObject;
 import org.eclipse.edc.iam.decentralizedclaims.spi.verification.SignatureSuiteRegistry;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredentialContainer;
@@ -38,9 +39,14 @@ import tools.jackson.databind.ObjectMapper;
 import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
 import java.time.Clock;
+import java.time.Duration;
+import java.time.Instant;
+import java.time.ZoneOffset;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static com.apicatalog.vc.VcVocab.SECURITY_VOCAB;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.eclipse.edc.identityhub.spi.model.IdentityHubConstants.DID_CONTEXT_URL;
@@ -57,6 +63,8 @@ class LdpPresentationGeneratorTest extends PresentationGeneratorTest {
             "types", List.of("VerifiablePresentation", "SomeOtherPresentationType"),
             "controller", "did:web:test"
     );
+    private static final Instant NOW = Instant.parse("2020-01-01T10:00:00Z");
+    private static final Duration LIFETIME = Duration.ofMinutes(5);
 
     private final PrivateKeyResolver privateKeyResolver = mock();
     private final TypeManager typeManager = mock();
@@ -81,7 +89,7 @@ class LdpPresentationGeneratorTest extends PresentationGeneratorTest {
                 .monitor(mock())
                 .build();
         creator = new LdpPresentationGenerator(privateKeyResolver, signatureSuiteRegistryMock, IdentityHubConstants.JWS_2020_SIGNATURE_SUITE, ldpIssuer,
-                typeManager, "test", Clock.systemUTC());
+                typeManager, "test", Clock.fixed(NOW, ZoneOffset.UTC), LIFETIME);
 
         when(typeManager.getMapper("test")).thenReturn(JacksonJsonLd.createObjectMapper());
     }
@@ -95,6 +103,28 @@ class LdpPresentationGeneratorTest extends PresentationGeneratorTest {
         var result = creator.generatePresentation(participantContextId, List.of(vcc), PRIVATE_KEY_ALIAS, PUBLIC_KEY_ID, issuerId, ADDITIONAL_DATA);
         assertThat(result).isNotNull();
         assertThat(result.get("https://w3id.org/security#proof")).isNotNull();
+    }
+
+    @Test
+    void createPresentation_bindsProofToAudienceAndLifetime() {
+        var additionalData = new HashMap<>(ADDITIONAL_DATA);
+        additionalData.put("aud", "did:web:verifier");
+
+        var result = creator.generatePresentation(participantContextId, List.of(), PRIVATE_KEY_ALIAS, PUBLIC_KEY_ID, issuerId, additionalData);
+
+        var proof = proof(result);
+        assertThat(proofValue(proof, "domain")).isEqualTo("did:web:verifier");
+        assertThat(proofValue(proof, "expiration")).isEqualTo(NOW.plus(LIFETIME).toString());
+        assertThat(proofValue(proof, "challenge")).isNotBlank();
+    }
+
+    @Test
+    void createPresentation_withoutAudience_proofHasNoDomain() {
+        var result = creator.generatePresentation(participantContextId, List.of(), PRIVATE_KEY_ALIAS, PUBLIC_KEY_ID, issuerId, ADDITIONAL_DATA);
+
+        var proof = proof(result);
+        assertThat(proof).doesNotContainKey(SECURITY_VOCAB + "domain");
+        assertThat(proofValue(proof, "expiration")).isEqualTo(NOW.plus(LIFETIME).toString());
     }
 
     @Override
@@ -178,4 +208,12 @@ class LdpPresentationGeneratorTest extends PresentationGeneratorTest {
         return jld;
     }
 
+
+    private static JsonObject proof(JsonObject presentation) {
+        return presentation.getJsonArray(SECURITY_VOCAB + "proof").getJsonObject(0).getJsonArray("@graph").getJsonObject(0);
+    }
+
+    private static String proofValue(JsonObject proof, String term) {
+        return proof.getJsonArray(SECURITY_VOCAB + term).getJsonObject(0).getString("@value");
+    }
 }

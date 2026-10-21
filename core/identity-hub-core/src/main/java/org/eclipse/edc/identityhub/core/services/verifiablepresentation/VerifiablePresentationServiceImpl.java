@@ -30,7 +30,6 @@ import org.jetbrains.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 import static com.nimbusds.jwt.JWTClaimNames.AUDIENCE;
@@ -86,7 +85,9 @@ public class VerifiablePresentationServiceImpl implements VerifiablePresentation
         }
 
         if (!ldp11Vcs.isEmpty()) {
-            JsonObject ld11Vp = registry.createPresentation(participantContextId, ldp11Vcs, VC1_0_LD, Map.of(TYPE_ADDITIONAL_DATA, List.of(VERIFIABLE_PRESENTATION_TYPE)));
+            var additionalDataLdp = new HashMap<String, Object>(additionalDataJwt);
+            additionalDataLdp.put(TYPE_ADDITIONAL_DATA, List.of(VERIFIABLE_PRESENTATION_TYPE));
+            JsonObject ld11Vp = registry.createPresentation(participantContextId, ldp11Vcs, VC1_0_LD, additionalDataLdp);
             vpToken.add(ld11Vp);
         }
 

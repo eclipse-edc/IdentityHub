@@ -32,11 +32,11 @@ import java.time.Duration;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
 import static org.eclipse.edc.identityhub.core.services.verifiablepresentation.generators.PresentationGeneratorConstants.CONTROLLER_ADDITIONAL_DATA;
 import static org.eclipse.edc.identityhub.core.services.verifiablepresentation.generators.PresentationGeneratorConstants.VERIFIABLE_CREDENTIAL_PROPERTY;
 import static org.eclipse.edc.identityhub.core.services.verifiablepresentation.generators.PresentationGeneratorConstants.VP_TYPE_PROPERTY;
+import static org.eclipse.edc.identityhub.core.services.verifiablepresentation.generators.PresentationTokenClaims.presentationTokenClaims;
 
 /**
  * JwtPresentationCreator is an implementation of the PresentationCreator interface that generates Verifiable Presentations in JWT format.
@@ -128,12 +128,10 @@ public class JwtPresentationGenerator implements PresentationGenerator<String> {
 
     private TokenDecorator vpDecorator(List<String> rawVcs, String issuerId) {
         var now = clock.instant();
-        return tp -> tp.claims(JwtRegisteredClaimNames.ISSUER, issuerId)
-                .claims(JwtRegisteredClaimNames.ISSUED_AT, Date.from(now))
+        var registeredClaims = presentationTokenClaims(now, vpLifetime, issuerId, null);
+        return tp -> registeredClaims.decorate(tp)
                 .claims(JwtRegisteredClaimNames.NOT_BEFORE, Date.from(now))
-                .claims(JwtRegisteredClaimNames.JWT_ID, UUID.randomUUID().toString())
-                .claims(VERIFIABLE_PRESENTATION_CLAIM, createVpClaim(rawVcs))
-                .claims(JwtRegisteredClaimNames.EXPIRATION_TIME, Date.from(now.plus(vpLifetime)));
+                .claims(VERIFIABLE_PRESENTATION_CLAIM, createVpClaim(rawVcs));
     }
 
     private Map<String, Object> createVpClaim(List<String> rawVcs) {
