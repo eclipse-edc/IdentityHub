@@ -46,7 +46,7 @@ public class IssuerAdminApiAuthenticationExtension implements ServiceExtension {
     @Override
     public void initialize(ServiceExtensionContext context) {
         var alias = IdentityHubApiContext.ISSUERADMIN;
-        webService.registerResource(alias, new ScopeBasedAccessFeature());
+        webService.registerResource(alias, new ScopeBasedAccessFeature(context.getMonitor()));
         webService.registerResource(alias, new ServicePrincipalAuthenticationFilter(new ParticipantServicePrincipalResolver(participantContextService, vault, context.getMonitor())));
     }
 }
