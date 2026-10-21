@@ -72,6 +72,9 @@ public class AttestationPipelineImpl implements AttestationPipeline, Attestation
             if (result.failed()) {
                 return result;
             }
+            if (result.getContent() == null) {
+                return Result.failure("Attestation with ID '%s' did not produce any claims".formatted(attestationId));
+            }
             collated.putAll(result.getContent());
         }
         return Result.success(collated);

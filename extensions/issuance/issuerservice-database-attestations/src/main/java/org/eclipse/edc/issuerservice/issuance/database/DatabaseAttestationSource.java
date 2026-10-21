@@ -29,6 +29,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Supplier;
 
+import static org.eclipse.edc.spi.result.Result.failure;
+import static org.eclipse.edc.spi.result.Result.success;
+
 /**
  * Resolves an attestation from a Postgres database. The resulting input claims map is resolved by executing a {@code SELECT} statement
  * against the database. Each column name in the result set is a key in the claims map.
@@ -71,17 +74,23 @@ public class DatabaseAttestationSource extends AbstractSqlStore implements Attes
     @Override
     public Result<Map<String, Object>> execute(AttestationContext context) {
         if (!SqlIdentifiers.isValidTableName(tableName)) {
-            return Result.failure("Invalid table name '%s'".formatted(tableName));
+            return failure("Invalid table name '%s'".formatted(tableName));
         }
         if (!SqlIdentifiers.isValidColumnName(idColumn)) {
-            return Result.failure("Invalid ID column name '%s'".formatted(idColumn));
+            return failure("Invalid ID column name '%s'".formatted(idColumn));
         }
         var participantContextId = context.participantContextId();
         return transactionContext.execute(() -> {
             try (var connection = getConnection()) {
 
                 var query = "SELECT * FROM %s where %s = ?".formatted(tableName, idColumn);
-                return Result.success(queryExecutor.single(connection, true, this::mapGenericResult, query, participantContextId));
+                var claims = queryExecutor.single(connection, true, this::mapGenericResult, query, participantContextId);
+                if (claims == null) {
+                    return required ?
+                            failure("No attestation found in table '%s' for '%s'".formatted(tableName, participantContextId)) :
+                            success(Map.of());
+                }
+                return success(claims);
 
             } catch (SQLException e) {
                 throw new RuntimeException(e);
