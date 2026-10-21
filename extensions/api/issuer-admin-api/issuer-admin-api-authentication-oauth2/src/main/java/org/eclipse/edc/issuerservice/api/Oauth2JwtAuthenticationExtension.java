@@ -76,7 +76,7 @@ public class Oauth2JwtAuthenticationExtension implements ServiceExtension {
 
         validateConfig(oauthConfiguration);
 
-        webService.registerResource(alias, new ScopeBasedAccessFeature());
+        webService.registerResource(alias, new ScopeBasedAccessFeature(monitor));
         webService.registerResource(alias, new ServicePrincipalAuthenticationFilter(participantContextService, IssuerAdminApiScopes.ADMIN));
 
         var resolver = JwksPublicKeyResolver.create(keyParserRegistry, oauthConfiguration.jwksUrl(), monitor, oauthConfiguration.cacheValidityInMillis());

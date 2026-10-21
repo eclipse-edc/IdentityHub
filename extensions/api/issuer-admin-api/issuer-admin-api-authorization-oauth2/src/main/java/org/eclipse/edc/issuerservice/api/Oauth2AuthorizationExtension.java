@@ -43,7 +43,7 @@ public class Oauth2AuthorizationExtension implements ServiceExtension {
     @Override
     public void initialize(ServiceExtensionContext context) {
         var alias = IdentityHubApiContext.ISSUERADMIN;
-        webService.registerResource(alias, new ScopeBasedAccessFeature());
+        webService.registerResource(alias, new ScopeBasedAccessFeature(context.getMonitor()));
     }
 
     @Provider
