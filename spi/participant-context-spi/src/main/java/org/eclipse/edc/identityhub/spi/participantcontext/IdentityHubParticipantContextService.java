@@ -85,6 +85,15 @@ public interface IdentityHubParticipantContextService {
     ServiceResult<String> regenerateApiToken(String participantContextId);
 
     /**
+     * Re-generates the client secret of the STS account of a participant context. The client secret is overwritten in the
+     * vault using the same alias as before, so the old secret is no longer valid.
+     *
+     * @param participantContextId The participant ID to regenerate the client secret for.
+     * @return the new client secret, or a failure, e.g. if the participant context has no STS account
+     */
+    ServiceResult<String> regenerateStsClientSecret(String participantContextId);
+
+    /**
      * Applies a modification function to the {@link IdentityHubParticipantContext} and persists the changed object in the database.
      *
      * @param participantContextId The ID of the participant to modify

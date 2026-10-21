@@ -73,24 +73,27 @@ public interface StsAccountService {
 
 
     /**
-     * Updates the client secret associated with this {@link StsAccount}. The old secret is removed from the {@link org.eclipse.edc.spi.security.Vault},
-     * and the new secret is stored using the given alias. If the new secret is {@code null}, one is generated at random.
+     * Updates the client secret associated with this {@link StsAccount}. The new secret is stored in the {@link org.eclipse.edc.spi.security.Vault}
+     * using the given alias before the account is switched to that alias, and the old secret is removed afterwards. If the alias
+     * does not change, the stored secret is replaced. If the new secret is {@code null}, one is generated at random.
      *
-     * @param participantContextId The ID of the participant context for which the presentation is being generated.
+     * @param participantContextId The ID of the participant context that owns the account.
      * @param id                   the ID of the {@link StsAccount} to update
      * @param secretAlias          The alias under which the new secret is stored in the {@link org.eclipse.edc.spi.security.Vault}
      * @param newSecret            The new client secret. If null, a new one is generated.
-     * @return A successful result, or a failure indicating what went wrong.
+     * @return A result containing the new client secret, or a failure indicating what went wrong. If the account does not
+     *         belong to the participant context, the result is "not found".
      */
     ServiceResult<String> updateSecret(String participantContextId, String id, String secretAlias, @Nullable String newSecret);
 
     /**
-     * Updates the client secret associated with this {@link StsAccount}. The old secret is removed from the {@link org.eclipse.edc.spi.security.Vault},
-     * and the new secret is stored using the given alias. A new secret is generated at random.
+     * Updates the client secret associated with this {@link StsAccount} with a secret that is generated at random. See
+     * {@link #updateSecret(String, String, String, String)}.
      *
-     * @param id       the ID of the {@link StsAccount} to update
-     * @param newAlias The alias under which the new secret is stored in the {@link org.eclipse.edc.spi.security.Vault}
-     * @return A successful result, or a failure indicating what went wrong.
+     * @param participantContextId The ID of the participant context that owns the account.
+     * @param id                   the ID of the {@link StsAccount} to update
+     * @param newAlias             The alias under which the new secret is stored in the {@link org.eclipse.edc.spi.security.Vault}
+     * @return A result containing the new client secret, or a failure indicating what went wrong.
      */
     default ServiceResult<String> updateSecret(String participantContextId, String id, String newAlias) {
         return updateSecret(participantContextId, id, newAlias, null);

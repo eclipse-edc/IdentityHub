@@ -57,7 +57,8 @@ public class StsApiEndToEndTest {
                 "web.http.path", "/api",
                 "web.http.port", String.valueOf(getFreePort()),
                 "web.http.sts.path", "/sts",
-                "web.http.sts.port", String.valueOf(PORT)
+                "web.http.sts.port", String.valueOf(PORT),
+                "web.http.sts.host", "127.0.0.1"
         ));
     }
 

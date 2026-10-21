@@ -91,6 +91,16 @@ public class ParticipantContextApiController implements ParticipantContextApi {
 
     @Override
     @POST
+    @RequiredScope("identity-api:participants:write")
+    @Path("/{participantContextId}/sts/secret")
+    public String regenerateStsClientSecret(@PathParam("participantContextId") String participantContextId, @Context SecurityContext securityContext) {
+        return authorizationService.authorize(securityContext, participantContextId, participantContextId, IdentityHubParticipantContext.class)
+                .compose(u -> participantContextService.regenerateStsClientSecret(participantContextId))
+                .orElseThrow(exceptionMapper(IdentityHubParticipantContext.class, participantContextId));
+    }
+
+    @Override
+    @POST
     @RequiredScope("identity-api:admin")
     @Path("/{participantContextId}/state")
     public void activateParticipant(@PathParam("participantContextId") String participantContextId, @QueryParam("isActive") boolean isActive) {

@@ -21,11 +21,13 @@ import org.eclipse.edc.runtime.metamodel.annotation.Inject;
 import org.eclipse.edc.runtime.metamodel.annotation.Setting;
 import org.eclipse.edc.runtime.metamodel.annotation.Settings;
 import org.eclipse.edc.spi.EdcException;
+import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.spi.system.ServiceExtension;
 import org.eclipse.edc.spi.system.ServiceExtensionContext;
 import org.eclipse.edc.spi.system.apiversion.ApiVersionService;
 import org.eclipse.edc.spi.system.apiversion.VersionRecord;
 import org.eclipse.edc.spi.types.TypeManager;
+import org.eclipse.edc.web.jetty.JettyService;
 import org.eclipse.edc.web.spi.configuration.PortMapping;
 import org.eclipse.edc.web.spi.configuration.PortMappingRegistry;
 import tools.jackson.databind.DeserializationFeature;
@@ -50,6 +52,8 @@ public class StsApiConfigurationExtension implements ServiceExtension {
     private TypeManager typeManager;
     @Inject
     private ApiVersionService apiVersionService;
+    @Inject(required = false)
+    private JettyService jettyService;
 
     @Override
     public String name() {
@@ -59,7 +63,23 @@ public class StsApiConfigurationExtension implements ServiceExtension {
     @Override
     public void initialize(ServiceExtensionContext context) {
         portMappingRegistry.register(new PortMapping(IdentityHubApiContext.STS, apiConfiguration.port(), apiConfiguration.path()));
+        bindHost(apiConfiguration.host(), context.getMonitor());
         registerVersionInfo(getClass().getClassLoader());
+    }
+
+    private void bindHost(String host, Monitor monitor) {
+        if (host == null) {
+            return;
+        }
+        if (jettyService == null) {
+            monitor.warning("The %s API cannot be bound to host '%s', because the runtime does not use Jetty. It listens on all network interfaces.".formatted(IdentityHubApiContext.STS, host));
+            return;
+        }
+        jettyService.addConnectorConfigurationCallback(connector -> {
+            if (IdentityHubApiContext.STS.equals(connector.getName())) {
+                connector.setHost(host);
+            }
+        });
     }
 
     private void registerVersionInfo(ClassLoader resourceClassLoader) {
@@ -82,7 +102,10 @@ public class StsApiConfigurationExtension implements ServiceExtension {
             @Setting(key = "web.http." + IdentityHubApiContext.STS + ".port", description = "Port for " + IdentityHubApiContext.STS + " api context", defaultValue = DEFAULT_STS_PORT + "")
             int port,
             @Setting(key = "web.http." + IdentityHubApiContext.STS + ".path", description = "Path for " + IdentityHubApiContext.STS + " api context", defaultValue = DEFAULT_STS_PATH)
-            String path
+            String path,
+            @Setting(key = "web.http." + IdentityHubApiContext.STS + ".host", required = false,
+                    description = "Host name or IP address of the network interface the " + IdentityHubApiContext.STS + " api context listens on. Listens on all interfaces if not set.")
+            String host
     ) {
 
     }

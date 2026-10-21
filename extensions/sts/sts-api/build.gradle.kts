@@ -23,6 +23,8 @@ dependencies {
     api(project(":spi:sts-spi"))
     implementation(project(":spi:identity-hub-spi"))
     implementation(libs.jakarta.rsApi)
+    implementation(libs.edc.core.jetty)
+    implementation(libs.jetty.server)
 
     testImplementation(libs.edc.junit)
     testImplementation(testFixtures(libs.edc.core.jersey))

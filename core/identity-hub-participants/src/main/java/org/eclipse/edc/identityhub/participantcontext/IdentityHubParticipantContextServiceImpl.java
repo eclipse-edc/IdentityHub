@@ -194,6 +194,12 @@ public class IdentityHubParticipantContextServiceImpl implements IdentityHubPart
     }
 
     @Override
+    public ServiceResult<String> regenerateStsClientSecret(String participantContextId) {
+        return getParticipantContext(participantContextId)
+                .compose(pc -> stsAccountProvisioner.regenerateClientSecret(participantContextId));
+    }
+
+    @Override
     @WithSpan(value = "participant-context.update", kind = SpanKind.INTERNAL)
     public ServiceResult<Void> updateParticipant(String participantContextId, Consumer<IdentityHubParticipantContext> modificationFunction) {
         return transactionContext.execute(() -> {

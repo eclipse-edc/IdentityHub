@@ -16,6 +16,7 @@ package org.eclipse.edc.identityhub.tests;
 
 import io.restassured.http.ContentType;
 import io.restassured.http.Header;
+import io.restassured.response.ValidatableResponse;
 import org.eclipse.edc.api.authentication.OauthServerEndToEndExtension;
 import org.eclipse.edc.iam.decentralizedclaims.sts.spi.store.StsAccountStore;
 import org.eclipse.edc.iam.did.spi.document.DidDocument;
@@ -697,6 +698,42 @@ public class IdentityHubParticipantContextApiEndToEndTest {
         }
 
         @Test
+        void regenerateStsClientSecret(IdentityHub identityHub, StsAccountStore accountStore, Vault vault) {
+            var participantContextId = "another-user";
+            var userAuth = authorizeUser(participantContextId, identityHub);
+            var account = accountStore.findById(participantContextId).getContent();
+            var oldSecret = vault.resolveSecret(participantContextId, account.getSecretAlias());
+
+            var newSecret = identityHub.getIdentityEndpoint().baseRequest()
+                    .header(userAuth)
+                    .contentType(ContentType.JSON)
+                    .post("/v1/participants/%s/sts/secret".formatted(participantContextId))
+                    .then()
+                    .log().ifError()
+                    .statusCode(200)
+                    .extract().body().asString();
+
+            assertThat(newSecret).isNotEqualTo(oldSecret)
+                    .isEqualTo(vault.resolveSecret(participantContextId, account.getSecretAlias()));
+            stsTokenRequest(identityHub, account.getClientId(), oldSecret).statusCode(401);
+            stsTokenRequest(identityHub, account.getClientId(), newSecret).statusCode(200);
+        }
+
+        @Test
+        void regenerateStsClientSecret_whenNoStsAccount_shouldReturn404(IdentityHub identityHub, IdentityHubParticipantContextService participantContextService) {
+            var manifest = createNewParticipant().provisionStsAccount(false).build();
+            participantContextService.createParticipantContext(manifest).orElseThrow(f -> new AssertionError(f.getFailureDetail()));
+
+            identityHub.getIdentityEndpoint().baseRequest()
+                    .header(authorizeUser(SUPER_USER, identityHub))
+                    .contentType(ContentType.JSON)
+                    .post("/v1/participants/%s/sts/secret".formatted(manifest.getParticipantContextId()))
+                    .then()
+                    .log().ifValidationFails()
+                    .statusCode(404);
+        }
+
+        @Test
         void updateScopes(IdentityHub identityHub) {
             var participantContextId = "some-user";
             identityHub.createParticipant(participantContextId);
@@ -802,6 +839,18 @@ public class IdentityHubParticipantContextApiEndToEndTest {
         }
 
         protected abstract Header authorizeUser(String participantContextId, IdentityHub identityHub);
+
+        private ValidatableResponse stsTokenRequest(IdentityHub identityHub, String clientId, String clientSecret) {
+            return identityHub.getStsEndpoint().baseRequest()
+                    .contentType("application/x-www-form-urlencoded")
+                    .formParam("grant_type", "client_credentials")
+                    .formParam("client_id", clientId)
+                    .formParam("client_secret", clientSecret)
+                    .formParam("audience", "audience")
+                    .post("/token")
+                    .then()
+                    .log().ifValidationFails();
+        }
 
     }
 

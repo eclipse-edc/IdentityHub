@@ -61,6 +61,15 @@ the [API documentation](https://eclipse-edc.github.io/IdentityHub/openapi/identi
 > Please note that this API is explicitly _not_ intended to store or update VerifiableCredentials. This process is
 > defined in the DCP specification and must be done via the Storage API.
 
+## Secure Token Service (STS) API
+
+If the embedded STS is used, its token endpoint is served on the `sts` context (by default on port `9292`). Clients
+authenticate with their client ID and client secret, so like the Identity API, the STS API must **not** be exposed to the
+internet. It is only meant to be called by the participant's own components, e.g. its connector.
+
+By default, the STS context listens on all network interfaces. To restrict it to one interface, e.g. the loopback
+interface when the connector runs on the same host, set `web.http.sts.host` to that interface's host name or IP address.
+
 ## Observability API
 
 The Observability API is intended to provide information about the application health to the Docker daemon via Docker
