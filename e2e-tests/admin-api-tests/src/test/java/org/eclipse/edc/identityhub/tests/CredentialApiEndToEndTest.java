@@ -82,6 +82,7 @@ import static org.eclipse.edc.identityhub.tests.TestData.EXAMPLE_REVOCATION_CRED
 import static org.eclipse.edc.identityhub.tests.TestData.ISSUER_RUNTIME_NAME;
 import static org.eclipse.edc.identityhub.tests.TestData.exampleRevocationCredential;
 import static org.eclipse.edc.identityhub.tests.TestData.exampleRevocationCredentialWithStatusBitSet;
+import static org.eclipse.edc.identityhub.tests.fixtures.RawCredentials.rawCredential;
 import static org.eclipse.edc.identityhub.tests.fixtures.TestFunctions.authorizeOauth2;
 import static org.eclipse.edc.identityhub.tests.fixtures.TestFunctions.authorizeTokenBased;
 import static org.eclipse.edc.util.io.Ports.getFreePort;
@@ -127,7 +128,7 @@ public class CredentialApiEndToEndTest {
                 .issuerId("issuer-id")
                 .holderId("holder-id")
                 .id(credentialId)
-                .credential(new VerifiableCredentialContainer("JWT_STRING", CredentialFormat.VC1_0_JWT, cred))
+                .credential(new VerifiableCredentialContainer(rawCredential(cred, CredentialFormat.VC1_0_JWT), CredentialFormat.VC1_0_JWT, cred))
                 .participantContextId(participantContextId)
                 .build();
     }
@@ -141,7 +142,7 @@ public class CredentialApiEndToEndTest {
                     .holderId("holder-id")
                     .id(UUID.randomUUID().toString())
                     .participantContextId(USER)
-                    .credential(new VerifiableCredentialContainer(credentialJwt, CredentialFormat.VC1_0_JWT, credential))
+                    .credential(new VerifiableCredentialContainer(credentialJwt, CredentialFormat.VC2_0_JOSE, credential))
                     .build();
         } catch (JacksonException e) {
             throw new RuntimeException(e);
