@@ -41,6 +41,7 @@ import static org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialForm
 import static org.eclipse.edc.identityhub.core.services.verifiablepresentation.generators.LdpPresentationGenerator.TYPE_ADDITIONAL_DATA;
 
 public class VerifiablePresentationServiceImpl implements VerifiablePresentationService {
+    private static final List<CredentialFormat> PRESENTED_FORMATS = List.of(VC1_0_JWT, VC1_0_LD, VC2_0_JOSE);
     private final PresentationCreatorRegistry registry;
     private final Monitor monitor;
 
@@ -74,6 +75,13 @@ public class VerifiablePresentationServiceImpl implements VerifiablePresentation
         var ldp11Vcs = ofNullable(groups.get(VC1_0_LD)).orElseGet(List::of);
         var jwt20Vcs = ofNullable(groups.get(VC2_0_JOSE)).orElseGet(List::of);
 
+        var omittedVcs = credentials.stream()
+                .filter(vc -> !PRESENTED_FORMATS.contains(vc.format()))
+                .map(vc -> "%s -> %s".formatted(vc.credential().getId(), vc.format()))
+                .toList();
+        if (!omittedVcs.isEmpty()) {
+            monitor.warning("The following credentials are left out of the presentation, because only credentials in formats %s can be presented: %s".formatted(PRESENTED_FORMATS, omittedVcs));
+        }
 
         var vpToken = new ArrayList<>();
         var additionalDataJwt = new HashMap<String, Object>();

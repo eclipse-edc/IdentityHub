@@ -27,6 +27,7 @@ import org.eclipse.edc.jsonld.util.JacksonJsonLd;
 import org.eclipse.edc.jwt.spi.JwtRegisteredClaimNames;
 import org.eclipse.edc.spi.monitor.Monitor;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentMatchers;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.ObjectMapper;
 
@@ -38,6 +39,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat.VC1_0_JWT;
 import static org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat.VC1_0_LD;
 import static org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat.VC2_0_JOSE;
+import static org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat.VC2_0_SD_JWT;
 import static org.eclipse.edc.identityhub.core.services.verifiablepresentation.generators.TestData.EMPTY_LDP_VP;
 import static org.eclipse.edc.identityhub.core.services.verifiablepresentation.generators.TestData.JWT_VP;
 import static org.eclipse.edc.identityhub.core.services.verifiablepresentation.generators.TestData.LDP_VP_WITH_PROOF;
@@ -45,6 +47,7 @@ import static org.eclipse.edc.identityhub.core.services.verifiablepresentation.g
 import static org.eclipse.edc.junit.assertions.AbstractResultAssert.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.ArgumentMatchers.eq;
@@ -162,6 +165,35 @@ class VerifiablePresentationServiceImplTest {
         presentationService.createPresentation(TEST_PARTICIPANT_CONTEXT_ID, List.of(), PresentationDefinition.Builder.newInstance().id("test-id").build(), null);
         verify(monitor).warning(contains("A PresentationDefinition was submitted, but is currently ignored by the generator."));
 
+    }
+
+    @Test
+    void generate_credentialsInFormatsThatAreNotPresented_shouldLogWarning() {
+        when(registry.createPresentation(eq(TEST_PARTICIPANT_CONTEXT_ID), any(), eq(VC1_0_JWT), any())).thenReturn(JWT_VP);
+        presentationService = new VerifiablePresentationServiceImpl(registry, monitor);
+        var sdJwtCredential = new VerifiableCredentialContainer("foobar", VC2_0_SD_JWT, VerifiableCredential.Builder.newInstance()
+                .id("sd-jwt-credential")
+                .type("VerifiableCredential")
+                .credentialSubject(CredentialSubject.Builder.newInstance().id("test-subject").claim("test-claim", "test-value").build())
+                .issuer(new Issuer("test-issuer", Map.of()))
+                .issuanceDate(Instant.now())
+                .build());
+
+        var result = presentationService.createPresentation(TEST_PARTICIPANT_CONTEXT_ID, List.of(createCredential(VC1_0_JWT), sdJwtCredential), null, null);
+
+        assertThat(result).isSucceeded();
+        assertThat(result.getContent().getPresentation()).hasSize(1);
+        verify(monitor).warning(ArgumentMatchers.<String>argThat(message -> message.contains("left out of the presentation") && message.contains("sd-jwt-credential -> VC2_0_SD_JWT")));
+    }
+
+    @Test
+    void generate_allCredentialsPresented_shouldNotLogWarning() {
+        when(registry.createPresentation(eq(TEST_PARTICIPANT_CONTEXT_ID), any(), eq(VC1_0_JWT), any())).thenReturn(JWT_VP);
+        presentationService = new VerifiablePresentationServiceImpl(registry, monitor);
+
+        presentationService.createPresentation(TEST_PARTICIPANT_CONTEXT_ID, List.of(createCredential(VC1_0_JWT)), null, null);
+
+        verify(monitor, never()).warning(anyString());
     }
 
     protected VerifiableCredential createDummyCredential() {

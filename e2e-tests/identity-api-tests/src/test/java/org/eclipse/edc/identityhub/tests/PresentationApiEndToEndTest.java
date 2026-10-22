@@ -86,6 +86,7 @@ import static io.restassured.http.ContentType.JSON;
 import static jakarta.ws.rs.core.HttpHeaders.AUTHORIZATION;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.edc.iam.decentralizedclaims.spi.DcpConstants.DSPACE_DCP_V_1_0_CONTEXT;
+import static org.eclipse.edc.identityhub.tests.fixtures.RawCredentials.rawCredential;
 import static org.eclipse.edc.identityhub.tests.fixtures.TestData.IH_RUNTIME_NAME;
 import static org.eclipse.edc.identityhub.tests.fixtures.TestData.VC_EXAMPLE;
 import static org.eclipse.edc.identityhub.tests.fixtures.TestData.VC_EXAMPLE_2;
@@ -488,7 +489,7 @@ public class PresentationApiEndToEndTest {
             var cred = OBJECT_MAPPER.readValue(TestData.VC_EXAMPLE, VerifiableCredential.class);
             var res = VerifiableCredentialResource.Builder.newHolder()
                     .state(VcStatus.ISSUED)
-                    .credential(new VerifiableCredentialContainer(TestData.VC_EXAMPLE, CredentialFormat.VC1_0_JWT, cred))
+                    .credential(new VerifiableCredentialContainer(rawCredential(TestData.VC_EXAMPLE, CredentialFormat.VC1_0_JWT), CredentialFormat.VC1_0_JWT, cred))
                     .issuerId("https://example.edu/issuers/565049")
                     .holderId("did:example:ebfeb1f712ebc6f1c276e12ec21")
                     .participantContextId(TEST_PARTICIPANT_CONTEXT_ID)
@@ -497,7 +498,7 @@ public class PresentationApiEndToEndTest {
 
             var res1 = VerifiableCredentialResource.Builder.newHolder()
                     .state(VcStatus.ISSUED)
-                    .credential(new VerifiableCredentialContainer(TestData.VC_EXAMPLE, CredentialFormat.VC2_0_JOSE, cred))
+                    .credential(new VerifiableCredentialContainer(rawCredential(TestData.VC_EXAMPLE, CredentialFormat.VC2_0_JOSE), CredentialFormat.VC2_0_JOSE, cred))
                     .issuerId("https://example.edu/issuers/565049")
                     .holderId("did:example:ebfeb1f712ebc6f1c276e12ec21")
                     .participantContextId(TEST_PARTICIPANT_CONTEXT_ID)
@@ -596,7 +597,7 @@ public class PresentationApiEndToEndTest {
             // create the credential in the store
             var res = VerifiableCredentialResource.Builder.newHolder()
                     .state(VcStatus.from(vcStateCode))
-                    .credential(new VerifiableCredentialContainer(vcContent, CredentialFormat.VC1_0_JWT, cred))
+                    .credential(new VerifiableCredentialContainer(rawCredential(vcContent, CredentialFormat.VC1_0_JWT), CredentialFormat.VC1_0_JWT, cred))
                     .issuerId("https://example.edu/issuers/565049")
                     .holderId("did:example:ebfeb1f712ebc6f1c276e12ec21")
                     .participantContextId(TEST_PARTICIPANT_CONTEXT_ID)
@@ -680,7 +681,7 @@ public class PresentationApiEndToEndTest {
             var cred = OBJECT_MAPPER.readValue(TestData.VC_EXAMPLE, VerifiableCredential.class);
             var res = VerifiableCredentialResource.Builder.newHolder()
                     .state(VcStatus.ISSUED)
-                    .credential(new VerifiableCredentialContainer(TestData.VC_EXAMPLE, CredentialFormat.VC1_0_JWT, cred))
+                    .credential(new VerifiableCredentialContainer(rawCredential(TestData.VC_EXAMPLE, CredentialFormat.VC1_0_JWT), CredentialFormat.VC1_0_JWT, cred))
                     .issuerId("https://example.edu/issuers/565049")
                     .holderId("did:example:ebfeb1f712ebc6f1c276e12ec21")
                     .participantContextId(TEST_PARTICIPANT_CONTEXT_ID)
@@ -714,7 +715,7 @@ public class PresentationApiEndToEndTest {
             var cred = OBJECT_MAPPER.readValue(TestData.VC_EXAMPLE, VerifiableCredential.class);
             var res = VerifiableCredentialResource.Builder.newHolder()
                     .state(VcStatus.ISSUED)
-                    .credential(new VerifiableCredentialContainer(TestData.VC_EXAMPLE, CredentialFormat.VC1_0_JWT, cred))
+                    .credential(new VerifiableCredentialContainer(rawCredential(TestData.VC_EXAMPLE, CredentialFormat.VC1_0_JWT), CredentialFormat.VC1_0_JWT, cred))
                     .issuerId("https://example.edu/issuers/565049")
                     .holderId("did:example:ebfeb1f712ebc6f1c276e12ec21")
                     .participantContextId(TEST_PARTICIPANT_CONTEXT_ID)
@@ -726,7 +727,7 @@ public class PresentationApiEndToEndTest {
             var issuedCred = OBJECT_MAPPER.readValue(TestData.VC_EXAMPLE_2, VerifiableCredential.class);
             var resIssuanceTracker = VerifiableCredentialResource.Builder.newIssuanceTracker()
                     .state(VcStatus.ISSUED)
-                    .credential(new VerifiableCredentialContainer(TestData.VC_EXAMPLE_2, CredentialFormat.VC1_0_JWT, issuedCred))
+                    .credential(new VerifiableCredentialContainer(rawCredential(TestData.VC_EXAMPLE_2, CredentialFormat.VC1_0_JWT), CredentialFormat.VC1_0_JWT, issuedCred))
                     .issuerId("https://example.edu/issuers/565049")
                     .holderId("did:example:ebfeb1f712ebc6f1c276e12ec21")
                     .participantContextId(TEST_PARTICIPANT_CONTEXT_ID)
@@ -988,11 +989,11 @@ public class PresentationApiEndToEndTest {
 
                 var credentials = (List<Object>) map.get("verifiableCredential");
                 return credentials.stream().map(s -> {
-                    if (s instanceof String json) {
-
+                    if (s instanceof String vcJwt) {
+                        // VCDM 1.1 JWT credentials carry the credential in their "vc" claim
                         try {
-                            return OBJECT_MAPPER.readValue(json, VerifiableCredential.class);
-                        } catch (JacksonException e) {
+                            return OBJECT_MAPPER.convertValue(SignedJWT.parse(vcJwt).getJWTClaimsSet().getClaim("vc"), VerifiableCredential.class);
+                        } catch (ParseException e) {
                             throw new RuntimeException(e);
                         }
                     } else {
@@ -1055,7 +1056,7 @@ public class PresentationApiEndToEndTest {
             var cred = OBJECT_MAPPER.readValue(jsonContent, VerifiableCredential.class);
             var res = VerifiableCredentialResource.Builder.newHolder()
                     .state(VcStatus.ISSUED)
-                    .credential(new VerifiableCredentialContainer(jsonContent, format, cred))
+                    .credential(new VerifiableCredentialContainer(rawCredential(jsonContent, format), format, cred))
                     .issuerId("https://example.edu/issuers/565049")
                     .holderId("did:example:ebfeb1f712ebc6f1c276e12ec21")
                     .participantContextId(TEST_PARTICIPANT_CONTEXT_ID)

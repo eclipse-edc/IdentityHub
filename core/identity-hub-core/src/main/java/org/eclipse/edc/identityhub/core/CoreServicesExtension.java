@@ -55,6 +55,7 @@ import org.eclipse.edc.identityhub.spi.verifiablecredentials.offer.CredentialOff
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.resolution.CredentialQueryResolver;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialOfferStore;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialStore;
+import org.eclipse.edc.identityhub.spi.verifiablecredentials.validation.CredentialFormatValidator;
 import org.eclipse.edc.identityhub.spi.verification.SelfIssuedTokenVerifier;
 import org.eclipse.edc.identityhub.statemachine.IdentityHubStateMachineConfiguration;
 import org.eclipse.edc.jsonld.spi.JsonLd;
@@ -99,11 +100,17 @@ public class CoreServicesExtension implements ServiceExtension {
     public static final long DEFAULT_PRESENTATION_VALIDITY_SECONDS = 60;
     public static final String ACCESS_TOKEN_KEY_FALLBACK_SETTING = "edc.iam.accesstoken.publickey.fallback.enabled";
     public static final String REJECT_UNVERIFIED_CREDENTIALS_SETTING = "edc.iam.credential.delivery.reject.unverified";
+    public static final String PLAIN_VCDM20_PRESENTATION_SETTING = "edc.iam.presentation.vcdm20.plain.enabled";
 
     @Setting(description = "How long a Verifiable Presentation is valid after it was created, in seconds. Determines the 'exp' claim of JWT presentations " +
             "and the proof 'expires' of Linked-Data presentations.",
             defaultValue = DEFAULT_PRESENTATION_VALIDITY_SECONDS + "", key = "edc.iam.presentation.validity")
     private long presentationValiditySeconds;
+
+    @Setting(description = "Returns VCDM 2.0 presentations as the VP JWT itself, as defined by VC-JOSE-COSE, instead of wrapping it in an 'EnvelopedVerifiablePresentation' " +
+            "that is signed again as a JWT. Only enable this if all verifiers accept plain VP JWTs.",
+            defaultValue = "false", key = PLAIN_VCDM20_PRESENTATION_SETTING)
+    private boolean plainVcdm20Presentation;
 
     @Setting(description = "Verifies access tokens with keys from the vault or 'edc.iam.publickeys' if the participant context has no matching key pair. " +
             "That lookup is not scoped to the participant context, so this should only be enabled for keys that are not managed as key pairs.",
@@ -241,7 +248,7 @@ public class CoreServicesExtension implements ServiceExtension {
             presentationCreatorRegistry.addCreator(new LdpPresentationGenerator(privateKeyResolver, signatureSuiteRegistry, IdentityHubConstants.JWS_2020_SIGNATURE_SUITE, ldpIssuer, typeManager, JSON_LD, clock, presentationValidity),
                     CredentialFormat.VC1_0_LD);
 
-            presentationCreatorRegistry.addCreator(new JwtEnvelopedPresentationGenerator(monitor, clock, jwtGenerationService, presentationValidity), CredentialFormat.VC2_0_JOSE);
+            presentationCreatorRegistry.addCreator(new JwtEnvelopedPresentationGenerator(monitor, clock, jwtGenerationService, presentationValidity, plainVcdm20Presentation), CredentialFormat.VC2_0_JOSE);
         }
         return presentationCreatorRegistry;
     }
@@ -255,7 +262,7 @@ public class CoreServicesExtension implements ServiceExtension {
     public CredentialWriter createCredentialWriter(ServiceExtensionContext context) {
         var objectMapper = typeManager.getMapper(JSON_LD);
         return new CredentialWriterImpl(credentialStore, typeTransformerRegistry, transactionContext, objectMapper, holderCredentialRequestStore, tokenValidationService, publicKeyResolver,
-                context.getMonitor(), clock, rejectUnverifiedCredentials);
+                new CredentialFormatValidator(), context.getMonitor(), clock, rejectUnverifiedCredentials);
     }
 
     @Provider

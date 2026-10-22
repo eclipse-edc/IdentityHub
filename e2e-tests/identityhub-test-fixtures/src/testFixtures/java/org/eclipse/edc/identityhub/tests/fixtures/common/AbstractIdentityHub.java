@@ -63,6 +63,7 @@ import static java.lang.String.format;
 import static org.eclipse.edc.identityhub.spi.webcontext.IdentityHubApiContext.IDENTITY;
 import static org.eclipse.edc.identityhub.spi.webcontext.IdentityHubApiContext.IH_DID;
 import static org.eclipse.edc.identityhub.spi.webcontext.IdentityHubApiContext.STS;
+import static org.eclipse.edc.identityhub.tests.fixtures.RawCredentials.rawCredential;
 import static org.eclipse.edc.participantcontext.spi.types.ParticipantResource.queryByParticipantContextId;
 
 /**
@@ -253,7 +254,7 @@ public abstract class AbstractIdentityHub {
                 .participantContextId(participantContextId)
                 .holderId("holderId")
                 .issuerId("issuerId")
-                .credential(new VerifiableCredentialContainer("rawVc", CredentialFormat.VC1_0_JWT, credential))
+                .credential(new VerifiableCredentialContainer(rawCredential(credential, CredentialFormat.VC1_0_JWT), CredentialFormat.VC1_0_JWT, credential))
                 .build();
         credentialStore.create(resource).orElseThrow(f -> new EdcException(f.getFailureDetail()));
         return resource.getId();

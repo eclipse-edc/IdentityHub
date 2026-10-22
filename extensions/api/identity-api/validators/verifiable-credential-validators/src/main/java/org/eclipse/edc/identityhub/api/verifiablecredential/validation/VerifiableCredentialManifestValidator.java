@@ -14,15 +14,26 @@
 
 package org.eclipse.edc.identityhub.api.verifiablecredential.validation;
 
+import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredentialContainer;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialManifest;
 import org.eclipse.edc.validator.spi.ValidationResult;
 import org.eclipse.edc.validator.spi.Validator;
 
 import static org.eclipse.edc.validator.spi.ValidationResult.failure;
-import static org.eclipse.edc.validator.spi.ValidationResult.success;
 import static org.eclipse.edc.validator.spi.Violation.violation;
 
 public class VerifiableCredentialManifestValidator implements Validator<VerifiableCredentialManifest> {
+    private final Validator<VerifiableCredentialContainer> credentialFormatValidator;
+
+    /**
+     * Validates manifests of credentials that are imported or updated.
+     *
+     * @param credentialFormatValidator validates that the raw credential matches its declared format
+     */
+    public VerifiableCredentialManifestValidator(Validator<VerifiableCredentialContainer> credentialFormatValidator) {
+        this.credentialFormatValidator = credentialFormatValidator;
+    }
+
     @Override
     public ValidationResult validate(VerifiableCredentialManifest input) {
         if (input == null) {
@@ -43,6 +54,6 @@ public class VerifiableCredentialManifestValidator implements Validator<Verifiab
             return failure(violation("VerifiableCredential was null", "credential.credential"));
         }
 
-        return success();
+        return credentialFormatValidator.validate(container);
     }
 }
