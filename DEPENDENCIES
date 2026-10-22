@@ -50,7 +50,7 @@ maven/mavencentral/com.github.jknack/handlebars/4.3.1, MIT AND Apache-2.0, appro
 maven/mavencentral/com.google.code.findbugs/jsr305/3.0.2, Apache-2.0 and CC-BY-2.5, approved, #15220
 maven/mavencentral/com.google.code.gson/gson/2.13.2, Apache-2.0, approved, #20656
 maven/mavencentral/com.google.crypto.tink/tink/1.23.0, Apache-2.0, approved, #29832
-maven/mavencentral/com.google.crypto.tink/tink/1.24.0, , restricted, clearlydefined
+maven/mavencentral/com.google.crypto.tink/tink/1.24.0, Apache-2.0, approved, #32571
 maven/mavencentral/com.google.errorprone/error_prone_annotations/2.41.0, Apache-2.0, approved, #22631
 maven/mavencentral/com.google.guava/failureaccess/1.0.3, Apache-2.0, approved, CQ22654
 maven/mavencentral/com.google.guava/guava/33.5.0-jre, Apache-2.0 AND CC0-1.0 AND CC-PDDC, approved, #23378
@@ -92,12 +92,12 @@ maven/mavencentral/io.opentelemetry/opentelemetry-common/1.66.0, Apache-2.0, app
 maven/mavencentral/io.opentelemetry/opentelemetry-common/1.67.0, Apache-2.0, approved, #32463
 maven/mavencentral/io.opentelemetry/opentelemetry-context/1.66.0, Apache-2.0, approved, #32020
 maven/mavencentral/io.opentelemetry/opentelemetry-context/1.67.0, Apache-2.0, approved, #32464
-maven/mavencentral/io.rest-assured/json-path/6.2.0, , restricted, clearlydefined
-maven/mavencentral/io.rest-assured/rest-assured-common/6.2.0, , restricted, clearlydefined
+maven/mavencentral/io.rest-assured/json-path/6.2.0, Apache-2.0, approved, #32568
+maven/mavencentral/io.rest-assured/rest-assured-common/6.2.0, Apache-2.0, approved, #32572
 maven/mavencentral/io.rest-assured/rest-assured/6.0.1, Apache-2.0, approved, #29907
 maven/mavencentral/io.rest-assured/rest-assured/6.1.0, Apache-2.0, approved, #32462
-maven/mavencentral/io.rest-assured/rest-assured/6.2.0, , restricted, clearlydefined
-maven/mavencentral/io.rest-assured/xml-path/6.2.0, , restricted, clearlydefined
+maven/mavencentral/io.rest-assured/rest-assured/6.2.0, Apache-2.0, approved, #32566
+maven/mavencentral/io.rest-assured/xml-path/6.2.0, Apache-2.0, approved, #32570
 maven/mavencentral/io.setl/rdf-urdna/1.1, Apache-2.0, approved, clearlydefined
 maven/mavencentral/io.swagger.core.v3/swagger-annotations-jakarta/2.2.42, Apache-2.0, approved, #5947
 maven/mavencentral/io.swagger.core.v3/swagger-annotations-jakarta/2.2.55, Apache-2.0, approved, #5947
@@ -153,8 +153,8 @@ maven/mavencentral/org.apache.commons/commons-lang3/3.8.1, Apache-2.0, approved,
 maven/mavencentral/org.apache.commons/commons-pool2/2.13.1, Apache-2.0 AND CC-PDDC, approved, #25941
 maven/mavencentral/org.apache.commons/commons-text/1.3, Apache-2.0, approved, clearlydefined
 maven/mavencentral/org.apache.groovy/groovy-bom/5.0.8, Apache-2.0, approved, #26472
-maven/mavencentral/org.apache.groovy/groovy-json/5.0.8, , restricted, clearlydefined
-maven/mavencentral/org.apache.groovy/groovy-xml/5.0.8, , restricted, clearlydefined
+maven/mavencentral/org.apache.groovy/groovy-json/5.0.8, Apache-2.0, approved, #32569
+maven/mavencentral/org.apache.groovy/groovy-xml/5.0.8, Apache-2.0, approved, #32567
 maven/mavencentral/org.apache.groovy/groovy/5.0.8, Apache-2.0 AND BSD-3-Clause AND MIT AND LicenseRef-Public-Domain, approved, #26473
 maven/mavencentral/org.apache.httpcomponents.client5/httpclient5/5.5.1, Apache-2.0 AND MPL-2.0, approved, #24483
 maven/mavencentral/org.apache.httpcomponents.core5/httpcore5-h2/5.3.6, Apache-2.0, approved, #16867
@@ -355,14 +355,17 @@ maven/mavencentral/org.yaml/snakeyaml/2.3, Apache-2.0 AND (Apache-2.0 OR BSD-3-C
 maven/mavencentral/org.yaml/snakeyaml/2.4, Apache-2.0, approved, #19469
 maven/mavencentral/org.yaml/snakeyaml/2.5, Apache-2.0, approved, #23100
 maven/mavencentral/org.yaml/snakeyaml/2.6, Apache-2.0, approved, #26233
-maven/mavencentral/tools.jackson.core/jackson-core/3.2.3, BSD-2-Clause AND MIT AND BSL-1.0 AND Apache-2.0, approved, #30552
+maven/mavencentral/tools.jackson.core/jackson-core/3.2.4, BSD-2-Clause AND MIT AND BSL-1.0 AND Apache-2.0, approved, #30552
 maven/mavencentral/tools.jackson.core/jackson-databind/3.2.1, Apache-2.0, approved, #30564
 maven/mavencentral/tools.jackson.core/jackson-databind/3.2.2, Apache-2.0, approved, #30563
 maven/mavencentral/tools.jackson.core/jackson-databind/3.2.3, Apache-2.0, approved, #30563
+maven/mavencentral/tools.jackson.core/jackson-databind/3.2.4, Apache-2.0, approved, #30563
 maven/mavencentral/tools.jackson.dataformat/jackson-dataformat-yaml/3.2.1, Apache-2.0, approved, #29717
-maven/mavencentral/tools.jackson.dataformat/jackson-dataformat-yaml/3.2.3, Apache-2.0, approved, #29717
+maven/mavencentral/tools.jackson.dataformat/jackson-dataformat-yaml/3.2.4, Apache-2.0, approved, #29717
 maven/mavencentral/tools.jackson.datatype/jackson-datatype-jakarta-jsonp/3.2.1, Apache-2.0, approved, #30565
 maven/mavencentral/tools.jackson.datatype/jackson-datatype-jakarta-jsonp/3.2.2, Apache-2.0, approved, #30565
 maven/mavencentral/tools.jackson.datatype/jackson-datatype-jakarta-jsonp/3.2.3, Apache-2.0, approved, #30565
+maven/mavencentral/tools.jackson.datatype/jackson-datatype-jakarta-jsonp/3.2.4, Apache-2.0, approved, #30565
 maven/mavencentral/tools.jackson.module/jackson-module-jakarta-xmlbind-annotations/3.2.3, Apache-2.0, approved, #32333
-maven/mavencentral/tools.jackson/jackson-bom/3.2.3, Apache-2.0, approved, #29716
+maven/mavencentral/tools.jackson.module/jackson-module-jakarta-xmlbind-annotations/3.2.4, Apache-2.0, approved, #32333
+maven/mavencentral/tools.jackson/jackson-bom/3.2.4, Apache-2.0, approved, #29716
