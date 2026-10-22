@@ -46,6 +46,7 @@ import java.util.UUID;
 import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
+import static org.assertj.core.api.InstanceOfAssertFactories.LIST;
 import static org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat.VC2_0_JOSE;
 import static org.eclipse.edc.issuerservice.issuance.generator.Constants.CREDENTIAL_STATUS;
 import static org.eclipse.edc.issuerservice.issuance.generator.Constants.CREDENTIAL_SUBJECT;
@@ -106,6 +107,7 @@ class JoseVcdm20CredentialGeneratorTest {
 
         REQUIRED_CLAIMS.forEach(claim -> assertThat(extractedClaims.getClaim(claim)).describedAs("Claim '%s' cannot be null", claim).isNotNull());
         assertThat(extractJwtHeader(container.rawVc()).getKeyID()).isEqualTo("did:example:issuer#%s".formatted(PUBLIC_KEY_ID));
+        assertThat(extractJwtHeader(container.rawVc()).getType()).hasToString("vc+jwt");
 
         assertThat(extractedClaims.getStringArrayClaim(TYPE)).contains("MembershipCredential");
         assertThat(extractedClaims.getListClaim(CREDENTIAL_SUBJECT)).allSatisfy(claim -> {
@@ -133,7 +135,9 @@ class JoseVcdm20CredentialGeneratorTest {
         assertThat(container.credential()).satisfies(verifiableCredential -> {
             assertThat(verifiableCredential.getContext()).contains(W3C_CREDENTIALS_URL_V2, "http://exapmle.com/foo/bar");
         });
-
+        assertThat(extractJwtClaims(container.rawVc()).getClaim("@context"))
+                .asInstanceOf(LIST)
+                .containsExactly(W3C_CREDENTIALS_URL_V2, "http://exapmle.com/foo/bar");
     }
 
     @Test
@@ -247,6 +251,7 @@ class JoseVcdm20CredentialGeneratorTest {
                     .containsEntry(ID, "status-id")
                     .containsEntry(TYPE, "StatusTypeEntry")
                     .containsEntry("key", "value");
+            assertThat(SignedJWT.parse(jwt).getHeader().getType()).hasToString("vc+jwt");
         });
     }
 
@@ -273,6 +278,30 @@ class JoseVcdm20CredentialGeneratorTest {
                 .satisfiesExactly(
                         status -> assertThat((Map) status).containsEntry(ID, "status-id-1").containsEntry("statusPurpose", "revocation"),
                         status -> assertThat((Map) status).containsEntry(ID, "status-id-2").containsEntry("statusPurpose", "suspension")));
+    }
+
+    @Test
+    void signCredential_signsContextsOfCredential() {
+        // e.g. a credential read back from a store, which carries the additional context of its credential definition
+        var now = Instant.now();
+        var credential = VerifiableCredential.Builder.newInstance()
+                .contexts(List.of(W3C_CREDENTIALS_URL_V2, "https://example.com/membership/v1"))
+                .type("TestCredential")
+                .id(UUID.randomUUID().toString())
+                .issuer(new Issuer("did:web:issuer"))
+                .issuanceDate(now)
+                .expirationDate(now.plusSeconds(3600))
+                .credentialSubject(CredentialSubject.Builder.newInstance()
+                        .id("did:web:holder")
+                        .claim("foo", "bar")
+                        .build())
+                .build();
+
+        var res = jwtCredentialGenerator.signCredential(TEST_PARTICIPANT, credential, PRIVATE_KEY_ALIAS, PUBLIC_KEY_ID);
+
+        assertThat(res).isSucceeded().satisfies(jwt -> assertThat(extractJwtClaims(jwt).getClaim("@context"))
+                .asInstanceOf(LIST)
+                .containsExactly(W3C_CREDENTIALS_URL_V2, "https://example.com/membership/v1"));
     }
 
     @Test

@@ -35,6 +35,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -52,6 +53,13 @@ import static org.eclipse.edc.issuerservice.issuance.generator.Constants.W3C_CRE
 import static org.eclipse.edc.jwt.spi.JwtRegisteredClaimNames.EXPIRATION_TIME;
 
 public class JoseVcdm20CredentialGenerator implements CredentialGenerator {
+
+    /**
+     * Media type of a VCDM 2.0 credential secured with JOSE, see <a href="https://www.w3.org/TR/vc-jose-cose/">VC-JOSE-COSE</a>.
+     */
+    public static final String VC_JWT_MEDIA_TYPE = "vc+jwt";
+    private static final String JWT_TYPE_HEADER = "typ";
+    private static final TokenDecorator VC_JWT_TYPE_DECORATOR = builder -> builder.header(JWT_TYPE_HEADER, VC_JWT_MEDIA_TYPE);
 
     private final TokenGenerationService tokenGenerationService;
     private final Clock clock;
@@ -129,14 +137,16 @@ public class JoseVcdm20CredentialGenerator implements CredentialGenerator {
         };
 
         return tokenGenerationService
-                .generate(participantContextId, privateKeyAlias, decorator, new KeyIdDecorator(composedKeyId))
+                .generate(participantContextId, privateKeyAlias, decorator, new KeyIdDecorator(composedKeyId), VC_JWT_TYPE_DECORATOR)
                 .map(TokenRepresentation::getToken);
     }
 
     private Map<String, Object> createVcClaim(VerifiableCredential credential, String... types) {
-
+        var ctx = new LinkedHashSet<>();
+        ctx.add(W3C_CREDENTIALS_URL_V2);
+        ctx.addAll(credential.getContext());
         var claims = new HashMap<>(
-                Map.of(JsonLdKeywords.CONTEXT, List.of("https://www.w3.org/ns/credentials/v2"),
+                Map.of(JsonLdKeywords.CONTEXT, ctx,
                         TYPE, Arrays.asList(types),
                         ID, credential.getId(),
                         VALID_FROM, credential.getIssuanceDate().toString(),
