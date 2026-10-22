@@ -21,13 +21,17 @@ import org.eclipse.edc.issuerservice.spi.issuance.credentialdefinition.store.Cre
 import org.eclipse.edc.issuerservice.spi.issuance.model.AttestationDefinition;
 import org.eclipse.edc.issuerservice.spi.issuance.model.CredentialDefinition;
 import org.eclipse.edc.issuerservice.spi.issuance.model.CredentialRuleDefinition;
+import org.eclipse.edc.issuerservice.spi.issuance.model.MappingDefinition;
 import org.eclipse.edc.issuerservice.spi.issuance.rule.CredentialRuleDefinitionValidatorRegistry;
 import org.eclipse.edc.spi.query.Criterion;
+import org.eclipse.edc.spi.result.ServiceFailure;
 import org.eclipse.edc.spi.result.StoreResult;
 import org.eclipse.edc.transaction.spi.NoopTransactionContext;
 import org.eclipse.edc.validator.spi.ValidationResult;
 import org.eclipse.edc.validator.spi.Violation;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.List;
 import java.util.Map;
@@ -116,6 +120,42 @@ public class CredentialDefinitionServiceImplTest {
         verifyNoInteractions(credentialDefinitionStore);
     }
 
+    @ParameterizedTest
+    @ValueSource(strings = { "@context", "id", "type", "issuer", "issuanceDate", "validFrom", "expirationDate", "validUntil",
+            "credentialStatus", "credentialStatus.statusListIndex", "proof" })
+    void createCredentialDefinition_whenMappingOutputIsReserved(String output) {
+
+        var definition = credentialDefinitionBuilder()
+                .mapping(new MappingDefinition("input", output, true))
+                .build();
+
+        assertThat(credentialDefinitionService.createCredentialDefinition(definition)).isFailed()
+                .satisfies(failure -> {
+                    assertThat(failure.getReason()).isEqualTo(ServiceFailure.Reason.BAD_REQUEST);
+                    assertThat(failure.getFailureDetail()).contains(output);
+                });
+
+        verifyNoInteractions(credentialDefinitionStore);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = { "credentialSubject.foo", "credentialSubject.id", "name", "description" })
+    void createCredentialDefinition_whenMappingOutputIsAllowed(String output) {
+
+        var definition = credentialDefinitionBuilder()
+                .mapping(new MappingDefinition("input", output, true))
+                .build();
+        var attestations = definition.getAttestations().stream().map(id -> createAttestationDefinition(id, "type", Map.of()))
+                .toList();
+
+        when(attestationDefinitionStore.query(any())).thenReturn(StoreResult.success(attestations));
+        when(credentialDefinitionStore.create(definition)).thenReturn(StoreResult.success());
+        when(ruleDefinitionValidatorRegistry.validateDefinition(any())).thenReturn(ValidationResult.success());
+
+        assertThat(credentialDefinitionService.createCredentialDefinition(definition)).isSucceeded();
+
+        verify(credentialDefinitionStore).create(definition);
+    }
 
     @Test
     void updateCredentialDefinition() {
@@ -163,6 +203,42 @@ public class CredentialDefinitionServiceImplTest {
                 .detail().contains("violation");
 
         verifyNoInteractions(credentialDefinitionStore);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = { "@context", "id", "type", "issuer", "issuanceDate", "validFrom", "expirationDate", "validUntil",
+            "credentialStatus", "credentialStatus.statusListIndex", "proof" })
+    void updateCredentialDefinition_whenMappingOutputIsReserved(String output) {
+
+        var definition = credentialDefinitionBuilder()
+                .mapping(new MappingDefinition("input", output, true))
+                .build();
+
+        assertThat(credentialDefinitionService.updateCredentialDefinition(definition)).isFailed()
+                .satisfies(failure -> {
+                    assertThat(failure.getReason()).isEqualTo(ServiceFailure.Reason.BAD_REQUEST);
+                    assertThat(failure.getFailureDetail()).contains(output);
+                });
+
+        verifyNoInteractions(credentialDefinitionStore);
+    }
+
+    @Test
+    void updateCredentialDefinition_whenMappingOutputIsCredentialSubject() {
+
+        var definition = credentialDefinitionBuilder()
+                .mapping(new MappingDefinition("input", "credentialSubject.foo", true))
+                .build();
+        var attestations = definition.getAttestations().stream().map(id -> createAttestationDefinition(id, "type", Map.of()))
+                .toList();
+
+        when(attestationDefinitionStore.query(any())).thenReturn(StoreResult.success(attestations));
+        when(credentialDefinitionStore.update(definition)).thenReturn(StoreResult.success());
+        when(ruleDefinitionValidatorRegistry.validateDefinition(any())).thenReturn(ValidationResult.success());
+
+        assertThat(credentialDefinitionService.updateCredentialDefinition(definition)).isSucceeded();
+
+        verify(credentialDefinitionStore).update(definition);
     }
 
     @Test
@@ -254,13 +330,20 @@ public class CredentialDefinitionServiceImplTest {
     }
 
     private CredentialDefinition credentialDefinition(String id, String type) {
+        return credentialDefinitionBuilder(id, type).build();
+    }
+
+    private CredentialDefinition.Builder credentialDefinitionBuilder() {
+        return credentialDefinitionBuilder(UUID.randomUUID().toString(), "Membership");
+    }
+
+    private CredentialDefinition.Builder credentialDefinitionBuilder(String id, String type) {
         return CredentialDefinition.Builder.newInstance().id(id).jsonSchema("")
                 .jsonSchemaUrl("http://example.com/schema").validity(1000)
                 .attestation("test-attestation")
                 .participantContextId(UUID.randomUUID().toString())
                 .rule(new CredentialRuleDefinition("test-rule", Map.of()))
                 .credentialType(type)
-                .formatFrom(VC1_0_JWT)
-                .build();
+                .formatFrom(VC1_0_JWT);
     }
 }

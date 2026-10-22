@@ -19,6 +19,7 @@ import org.eclipse.edc.issuerservice.spi.issuance.credentialdefinition.Credentia
 import org.eclipse.edc.issuerservice.spi.issuance.credentialdefinition.store.CredentialDefinitionStore;
 import org.eclipse.edc.issuerservice.spi.issuance.model.AttestationDefinition;
 import org.eclipse.edc.issuerservice.spi.issuance.model.CredentialDefinition;
+import org.eclipse.edc.issuerservice.spi.issuance.model.MappingDefinition;
 import org.eclipse.edc.issuerservice.spi.issuance.rule.CredentialRuleDefinitionValidatorRegistry;
 import org.eclipse.edc.spi.query.Criterion;
 import org.eclipse.edc.spi.query.QuerySpec;
@@ -27,11 +28,18 @@ import org.eclipse.edc.transaction.spi.TransactionContext;
 import org.eclipse.edc.validator.spi.ValidationResult;
 
 import java.util.Collection;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import static org.eclipse.edc.spi.result.ServiceResult.from;
 
 public class CredentialDefinitionServiceImpl implements CredentialDefinitionService {
+    /**
+     * Properties of the credential that the issuer sets itself, which mappings may not write to.
+     */
+    private static final Set<String> RESERVED_OUTPUTS = Set.of("@context", "id", "type", "issuer", "issuanceDate", "validFrom",
+            "expirationDate", "validUntil", "credentialStatus", "proof");
+
     private final TransactionContext transactionContext;
     private final CredentialDefinitionStore credentialDefinitionStore;
     private final AttestationDefinitionStore attestationDefinitionStore;
@@ -76,15 +84,28 @@ public class CredentialDefinitionServiceImpl implements CredentialDefinitionServ
     }
 
     private ServiceResult<Void> internalCreate(CredentialDefinition credentialDefinition) {
-        return validateAttestations(credentialDefinition)
+        return validateMappings(credentialDefinition)
+                .compose(u -> validateAttestations(credentialDefinition))
                 .compose(u -> validateRules(credentialDefinition))
                 .compose(u -> from(credentialDefinitionStore.create(credentialDefinition)));
     }
 
     private ServiceResult<Void> internalUpdate(CredentialDefinition credentialDefinition) {
-        return validateAttestations(credentialDefinition)
+        return validateMappings(credentialDefinition)
+                .compose(u -> validateAttestations(credentialDefinition))
                 .compose(u -> validateRules(credentialDefinition))
                 .compose(u -> from(credentialDefinitionStore.update(credentialDefinition)));
+    }
+
+    private ServiceResult<Void> validateMappings(CredentialDefinition credentialDefinition) {
+        var reservedOutputs = credentialDefinition.getMappings().stream()
+                .map(MappingDefinition::output)
+                .filter(output -> RESERVED_OUTPUTS.contains(output.split("\\.")[0]))
+                .toList();
+        if (!reservedOutputs.isEmpty()) {
+            return ServiceResult.badRequest("Mappings must not write to properties set by the issuer: [%s]".formatted(String.join(",", reservedOutputs)));
+        }
+        return ServiceResult.success();
     }
 
     private ServiceResult<Void> validateAttestations(CredentialDefinition credentialDefinition) {

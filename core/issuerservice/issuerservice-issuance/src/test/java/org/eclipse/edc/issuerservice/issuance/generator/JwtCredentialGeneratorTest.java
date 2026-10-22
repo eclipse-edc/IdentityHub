@@ -77,12 +77,7 @@ public class JwtCredentialGeneratorTest {
     void generateCredential() {
 
         var subjectClaims = Map.of("name", "Foo Bar");
-        var statusClaims = Map.of("id", UUID.randomUUID().toString(),
-                "type", "BitStringStatusListEntry",
-                "statusPurpose", "revocation",
-                "statusListIndex", 42,
-                "statusCredential", "https://foo.bar/baz.json");
-        Map<String, Object> claims = Map.of("credentialSubject", subjectClaims, "credentialStatus", statusClaims);
+        Map<String, Object> claims = Map.of("credentialSubject", subjectClaims);
 
         var result = jwtCredentialGenerator.generateCredential(TEST_PARTICIPANT, createCredentialDefinition(), PRIVATE_KEY_ALIAS, PUBLIC_KEY_ID, "did:example:issuer", "did:example:participant", claims);
 
@@ -101,8 +96,6 @@ public class JwtCredentialGeneratorTest {
 
             assertThat(subject.getId()).isEqualTo("did:example:participant");
             assertThat(subject.getClaims()).isEqualTo(subjectClaims);
-
-            assertThat(verifiableCredential.getCredentialStatus()).isNotEmpty();
         });
 
 
@@ -196,6 +189,27 @@ public class JwtCredentialGeneratorTest {
         });
     }
 
+    @SuppressWarnings("rawtypes")
+    @Test
+    void generateCredential_ignoresCredentialStatusInClaims() {
+
+        var subjectClaims = Map.of("name", "Foo Bar");
+        var statusClaims = Map.of("id", UUID.randomUUID().toString(),
+                "type", "BitStringStatusListEntry",
+                "statusPurpose", "revocation",
+                "statusListIndex", 42,
+                "statusCredential", "https://foo.bar/baz.json");
+        Map<String, Object> claims = Map.of("credentialSubject", subjectClaims, "credentialStatus", statusClaims);
+
+        var result = jwtCredentialGenerator.generateCredential(TEST_PARTICIPANT, createCredentialDefinition(), PRIVATE_KEY_ALIAS, PUBLIC_KEY_ID, "did:example:issuer", "did:example:participant", claims);
+
+        assertThat(result).isSucceeded();
+        var container = result.getContent();
+        assertThat(container.credential().getCredentialStatus()).isEmpty();
+        assertThat(extractJwtClaims(container.rawVc()).getClaim(VERIFIABLE_CREDENTIAL_CLAIM))
+                .isInstanceOfSatisfying(Map.class, vcClaim -> assertThat((Map) vcClaim).doesNotContainKey("credentialStatus"));
+    }
+
     @Test
     void generateCredential_fails_whenPrivateKeyNotFound() {
 
@@ -242,7 +256,41 @@ public class JwtCredentialGeneratorTest {
         assertThat(res).isSucceeded().satisfies(jwt -> {
             assertThatNoException().isThrownBy(() -> SignedJWT.parse(jwt));
             assertThat(SignedJWT.parse(jwt).getHeader().getKeyID()).endsWith(PUBLIC_KEY_ID);
+            assertThat(extractJwtClaims(jwt).getClaim(VERIFIABLE_CREDENTIAL_CLAIM))
+                    .isInstanceOfSatisfying(Map.class, vcClaim -> assertThat(vcClaim.get("credentialStatus"))
+                            .isInstanceOfSatisfying(Map.class, status -> assertThat((Map) status)
+                                    .containsEntry("id", "status-id")
+                                    .containsEntry("type", "StatusTypeEntry")
+                                    .containsEntry("key", "value")));
         });
+    }
+
+    @Test
+    void signCredential_withMultipleStatusEntries() {
+
+        var now = Instant.now();
+        var credential = VerifiableCredential.Builder.newInstance()
+                .type("TestCredential")
+                .id(UUID.randomUUID().toString())
+                .issuer(new Issuer("did:web:issuer"))
+                .issuanceDate(now)
+                .expirationDate(now.plusSeconds(3600))
+                .credentialStatus(new CredentialStatus("status-id-1", "StatusTypeEntry", Map.of("statusPurpose", "revocation")))
+                .credentialStatus(new CredentialStatus("status-id-2", "StatusTypeEntry", Map.of("statusPurpose", "suspension")))
+                .credentialSubject(CredentialSubject.Builder.newInstance()
+                        .id(UUID.randomUUID().toString())
+                        .claim("foo", "bar")
+                        .build())
+                .build();
+        var res = jwtCredentialGenerator.signCredential(TEST_PARTICIPANT, credential, PRIVATE_KEY_ALIAS, PUBLIC_KEY_ID);
+
+        assertThat(res).isSucceeded().satisfies(jwt -> assertThat(extractJwtClaims(jwt).getClaim(VERIFIABLE_CREDENTIAL_CLAIM))
+                .isInstanceOfSatisfying(Map.class, vcClaim -> assertThat(vcClaim.get("credentialStatus"))
+                        .isInstanceOfSatisfying(List.class, statuses -> assertThat((List<?>) statuses)
+                                .hasSize(2)
+                                .satisfiesExactly(
+                                        status -> assertThat((Map) status).containsEntry("id", "status-id-1").containsEntry("statusPurpose", "revocation"),
+                                        status -> assertThat((Map) status).containsEntry("id", "status-id-2").containsEntry("statusPurpose", "suspension")))));
     }
 
     @Test

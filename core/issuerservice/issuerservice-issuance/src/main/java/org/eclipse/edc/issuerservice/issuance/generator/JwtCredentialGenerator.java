@@ -16,7 +16,6 @@ package org.eclipse.edc.issuerservice.issuance.generator;
 
 import org.eclipse.edc.iam.verifiablecredentials.spi.VcConstants;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat;
-import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialStatus;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialSubject;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.DataModelVersion;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.Issuer;
@@ -59,6 +58,7 @@ public class JwtCredentialGenerator implements CredentialGenerator {
 
     private final TokenGenerationService tokenGenerationService;
     private final Clock clock;
+    private final CredentialStatusClaims credentialStatusClaims = new CredentialStatusClaims();
 
     public JwtCredentialGenerator(TokenGenerationService tokenGenerationService, Clock clock) {
         this.tokenGenerationService = tokenGenerationService;
@@ -73,13 +73,8 @@ public class JwtCredentialGenerator implements CredentialGenerator {
             return subjectResult.mapFailure();
         }
 
-        var statusResult = createCredentialStatus(claims);
-
-        var credentialBuilder = generateVerifiableCredential(definition.getAdditionalContext(), definition.getCredentialType(), definition.getValidity(), issuerId, holderDid, subjectResult.getContent());
-
-        statusResult.onSuccess(credentialBuilder::credentialStatus);
-
-        var credential = credentialBuilder.build();
+        var credential = generateVerifiableCredential(definition.getAdditionalContext(), definition.getCredentialType(), definition.getValidity(), issuerId, holderDid, subjectResult.getContent())
+                .build();
         return signCredentialInternal(participantContextId, credential, privateKeyAlias, publicKeyId, issuerId, holderDid, VERIFIABLE_CREDENTIAL, definition.getCredentialType())
                 .map(token -> new VerifiableCredentialContainer(token, CredentialFormat.VC1_0_JWT, credential));
     }
@@ -143,18 +138,6 @@ public class JwtCredentialGenerator implements CredentialGenerator {
         return Result.success((Map<String, Object>) claims.get(CREDENTIAL_SUBJECT));
     }
 
-    @SuppressWarnings("unchecked")
-    private Result<CredentialStatus> createCredentialStatus(Map<String, Object> claims) {
-        if (!claims.containsKey(CREDENTIAL_STATUS)) {
-            return Result.failure("no credentialStatus in claims");
-        }
-        var statusClaims = (Map<String, Object>) claims.get(CREDENTIAL_STATUS);
-
-        return Result.success(new CredentialStatus((String) statusClaims.get("id"),
-                (String) statusClaims.get("type"),
-                statusClaims));
-    }
-
     private Map<String, Object> createVcClaim(VerifiableCredential verifiableCredential, String... type) {
         var ctx = new LinkedHashSet<>();
         ctx.add(VcConstants.W3C_CREDENTIALS_URL);
@@ -177,22 +160,8 @@ public class JwtCredentialGenerator implements CredentialGenerator {
             claims.put("name", verifiableCredential.getName());
         }
 
-        var status = credentialStatusClaims(verifiableCredential);
-        if (!status.isEmpty()) {
-            claims.put(CREDENTIAL_STATUS, credentialStatusClaims(verifiableCredential));
-        }
+        credentialStatusClaims.of(verifiableCredential).ifPresent(status -> claims.put(CREDENTIAL_STATUS, status));
         return claims;
-    }
-
-    private Map<String, Object> credentialStatusClaims(VerifiableCredential verifiableCredential) {
-        if (verifiableCredential.getCredentialStatus().isEmpty()) {
-            return Map.of();
-        }
-        var status = verifiableCredential.getCredentialStatus().get(0);
-        var statusMap = new HashMap<String, Object>(Map.of("id", status.id(),
-                "type", status.type()));
-        statusMap.putAll(status.additionalProperties());
-        return statusMap;
     }
 
     private Map<String, Object> credentialSubjectClaims(VerifiableCredential verifiableCredential) {

@@ -80,12 +80,7 @@ class JoseVcdm20CredentialGeneratorTest {
     @DisplayName("IS-DELIV-04: a generated vc20-bssl/jwt credential is signed and carries the properties its data model requires")
     void generateCredential() throws ParseException {
         var subjectClaims = Map.of("name", "Foo Bar");
-        var statusClaims = Map.of("id", UUID.randomUUID().toString(),
-                TYPE, "BitStringStatusListEntry",
-                "statusPurpose", "revocation",
-                "statusListIndex", 42,
-                "statusCredential", "https://foo.bar/baz.json");
-        Map<String, Object> claims = Map.of(CREDENTIAL_SUBJECT, subjectClaims, CREDENTIAL_STATUS, statusClaims);
+        Map<String, Object> claims = Map.of(CREDENTIAL_SUBJECT, subjectClaims);
 
         var result = jwtCredentialGenerator.generateCredential(TEST_PARTICIPANT, createCredentialDefinition(), PRIVATE_KEY_ALIAS, PUBLIC_KEY_ID, "did:example:issuer", "did:example:participant", claims);
 
@@ -104,8 +99,6 @@ class JoseVcdm20CredentialGeneratorTest {
 
             assertThat(subject.getId()).isEqualTo("did:example:participant");
             assertThat(subject.getClaims()).isEqualTo(subjectClaims);
-
-            assertThat(verifiableCredential.getCredentialStatus()).isNotEmpty();
         });
 
 
@@ -115,7 +108,6 @@ class JoseVcdm20CredentialGeneratorTest {
         assertThat(extractJwtHeader(container.rawVc()).getKeyID()).isEqualTo("did:example:issuer#%s".formatted(PUBLIC_KEY_ID));
 
         assertThat(extractedClaims.getStringArrayClaim(TYPE)).contains("MembershipCredential");
-        assertThat(extractedClaims.getClaim(CREDENTIAL_STATUS)).isInstanceOf(Map.class);
         assertThat(extractedClaims.getListClaim(CREDENTIAL_SUBJECT)).allSatisfy(claim -> {
             assertThat(claim).isInstanceOf(Map.class);
             //noinspection unchecked
@@ -126,12 +118,7 @@ class JoseVcdm20CredentialGeneratorTest {
     @Test
     void generateCredential_additionalContext() {
         var subjectClaims = Map.of("name", "Foo Bar");
-        var statusClaims = Map.of("id", UUID.randomUUID().toString(),
-                TYPE, "BitStringStatusListEntry",
-                "statusPurpose", "revocation",
-                "statusListIndex", 42,
-                "statusCredential", "https://foo.bar/baz.json");
-        Map<String, Object> claims = Map.of(CREDENTIAL_SUBJECT, subjectClaims, CREDENTIAL_STATUS, statusClaims);
+        Map<String, Object> claims = Map.of(CREDENTIAL_SUBJECT, subjectClaims);
 
         var cdBuilder = createCredentialDefinitionBuilder()
                 .additionalContext(List.of("http://exapmle.com/foo/bar"));
@@ -182,6 +169,24 @@ class JoseVcdm20CredentialGeneratorTest {
         REQUIRED_CLAIMS.forEach(claim -> assertThat(extractedClaims.getClaim(claim)).describedAs("Claim '%s' cannot be null", claim).isNotNull());
         assertThat(extractJwtHeader(container.rawVc()).getKeyID()).isEqualTo("did:example:issuer#%s".formatted(PUBLIC_KEY_ID));
         assertThat(extractedClaims.getClaims()).doesNotContainKey(CREDENTIAL_STATUS);
+    }
+
+    @Test
+    void generateCredential_ignoresCredentialStatusInClaims() {
+        var subjectClaims = Map.of("name", "Foo Bar");
+        var statusClaims = Map.of("id", UUID.randomUUID().toString(),
+                TYPE, "BitStringStatusListEntry",
+                "statusPurpose", "revocation",
+                "statusListIndex", 42,
+                "statusCredential", "https://foo.bar/baz.json");
+        Map<String, Object> claims = Map.of(CREDENTIAL_SUBJECT, subjectClaims, CREDENTIAL_STATUS, statusClaims);
+
+        var result = jwtCredentialGenerator.generateCredential(TEST_PARTICIPANT, createCredentialDefinition(), PRIVATE_KEY_ALIAS, PUBLIC_KEY_ID, "did:example:issuer", "did:example:participant", claims);
+
+        assertThat(result).isSucceeded();
+        var container = result.getContent();
+        assertThat(container.credential().getCredentialStatus()).isEmpty();
+        assertThat(extractJwtClaims(container.rawVc()).getClaims()).doesNotContainKey(CREDENTIAL_STATUS);
     }
 
     @Test
@@ -238,7 +243,36 @@ class JoseVcdm20CredentialGeneratorTest {
         assertThat(res).isSucceeded().satisfies(jwt -> {
             assertThatNoException().isThrownBy(() -> SignedJWT.parse(jwt));
             assertThat(SignedJWT.parse(jwt).getHeader().getKeyID()).endsWith(PUBLIC_KEY_ID);
+            assertThat(extractJwtClaims(jwt).getJSONObjectClaim(CREDENTIAL_STATUS))
+                    .containsEntry(ID, "status-id")
+                    .containsEntry(TYPE, "StatusTypeEntry")
+                    .containsEntry("key", "value");
         });
+    }
+
+    @Test
+    void signCredential_withMultipleStatusEntries() {
+        var now = Instant.now();
+        var credential = VerifiableCredential.Builder.newInstance()
+                .type("TestCredential")
+                .id(UUID.randomUUID().toString())
+                .issuer(new Issuer("did:web:issuer"))
+                .issuanceDate(now)
+                .expirationDate(now.plusSeconds(3600))
+                .credentialStatus(new CredentialStatus("status-id-1", "StatusTypeEntry", Map.of("statusPurpose", "revocation")))
+                .credentialStatus(new CredentialStatus("status-id-2", "StatusTypeEntry", Map.of("statusPurpose", "suspension")))
+                .credentialSubject(CredentialSubject.Builder.newInstance()
+                        .id(UUID.randomUUID().toString())
+                        .claim("foo", "bar")
+                        .build())
+                .build();
+        var res = jwtCredentialGenerator.signCredential(TEST_PARTICIPANT, credential, PRIVATE_KEY_ALIAS, PUBLIC_KEY_ID);
+
+        assertThat(res).isSucceeded().satisfies(jwt -> assertThat(extractJwtClaims(jwt).getListClaim(CREDENTIAL_STATUS))
+                .hasSize(2)
+                .satisfiesExactly(
+                        status -> assertThat((Map) status).containsEntry(ID, "status-id-1").containsEntry("statusPurpose", "revocation"),
+                        status -> assertThat((Map) status).containsEntry(ID, "status-id-2").containsEntry("statusPurpose", "suspension")));
     }
 
     @Test
