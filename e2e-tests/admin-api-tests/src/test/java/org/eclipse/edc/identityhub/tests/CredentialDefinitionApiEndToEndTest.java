@@ -138,6 +138,34 @@ public class CredentialDefinitionApiEndToEndTest {
         }
 
         @Test
+        void createCredentialDefinition_whenMappingOutputIsReserved(IssuerService issuer, CredentialDefinitionService service, AttestationDefinitionStore store) {
+
+            store.create(AttestationDefinition.Builder.newInstance().id("user-attestation").attestationType("type").participantContextId(USER).build());
+
+            var definition = CredentialDefinition.Builder.newInstance()
+                    .id("test-definition-id")
+                    .jsonSchema("{}")
+                    .jsonSchemaUrl("https://example.org/membership-credential-schema.json")
+                    .credentialType("MembershipCredential")
+                    .mapping(new MappingDefinition("input", "credentialStatus", true))
+                    .validity(1000)
+                    .attestation("user-attestation")
+                    .participantContextId(USER)
+                    .formatFrom(VC1_0_JWT)
+                    .build();
+
+            issuer.getAdminEndpoint().baseRequest()
+                    .contentType(ContentType.JSON)
+                    .header(authorizeUser(USER, issuer))
+                    .body(definition)
+                    .post("/v1/participants/%s/credentialdefinitions".formatted(USER))
+                    .then()
+                    .statusCode(400);
+
+            assertThat(service.findCredentialDefinitionById(USER, "test-definition-id")).isFailed();
+        }
+
+        @Test
         void createCredentialDefinition_whenExists(IssuerService issuer, CredentialDefinitionService service) {
             issuer.createParticipant(USER);
             service.createCredentialDefinition(credentialDefinition("test-definition-id", USER));

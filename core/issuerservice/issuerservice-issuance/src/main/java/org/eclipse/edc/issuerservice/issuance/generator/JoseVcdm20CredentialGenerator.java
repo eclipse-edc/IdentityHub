@@ -15,7 +15,6 @@
 package org.eclipse.edc.issuerservice.issuance.generator;
 
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat;
-import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialStatus;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialSubject;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.DataModelVersion;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.Issuer;
@@ -56,6 +55,7 @@ public class JoseVcdm20CredentialGenerator implements CredentialGenerator {
 
     private final TokenGenerationService tokenGenerationService;
     private final Clock clock;
+    private final CredentialStatusClaims credentialStatusClaims = new CredentialStatusClaims();
 
     public JoseVcdm20CredentialGenerator(TokenGenerationService tokenGenerationService, Clock clock) {
         this.tokenGenerationService = tokenGenerationService;
@@ -71,8 +71,6 @@ public class JoseVcdm20CredentialGenerator implements CredentialGenerator {
         if (subjectResult.failed()) {
             return subjectResult.mapFailure();
         }
-
-        var statusResult = createCredentialStatus(claims);
 
         var ctx = new ArrayList<>();
         ctx.add(W3C_CREDENTIALS_URL_V2);
@@ -90,8 +88,6 @@ public class JoseVcdm20CredentialGenerator implements CredentialGenerator {
                         .id(holderDid)
                         .claims(subjectResult.getContent())
                         .build());
-
-        statusResult.onSuccess(builder::credentialStatus);
 
         if (claims.containsKey(NAME)) {
             builder.name((String) claims.get(NAME));
@@ -157,10 +153,7 @@ public class JoseVcdm20CredentialGenerator implements CredentialGenerator {
             claims.put(NAME, credential.getName());
         }
 
-        var status = credentialStatusClaims(credential);
-        if (!status.isEmpty()) {
-            claims.put(CREDENTIAL_STATUS, status);
-        }
+        credentialStatusClaims.of(credential).ifPresent(status -> claims.put(CREDENTIAL_STATUS, status));
         return claims;
     }
 
@@ -174,28 +167,5 @@ public class JoseVcdm20CredentialGenerator implements CredentialGenerator {
             return Result.failure("Missing credentialSubject in claims");
         }
         return Result.success((Map<String, Object>) claims.get(CREDENTIAL_SUBJECT));
-    }
-
-    private Map<String, Object> credentialStatusClaims(VerifiableCredential verifiableCredential) {
-        if (verifiableCredential.getCredentialStatus().isEmpty()) {
-            return Map.of();
-        }
-        var status = verifiableCredential.getCredentialStatus().get(0);
-        var statusMap = new HashMap<String, Object>(Map.of(ID, status.id(),
-                "type", status.type()));
-        statusMap.putAll(status.additionalProperties());
-        return statusMap;
-    }
-
-    @SuppressWarnings("unchecked")
-    private Result<CredentialStatus> createCredentialStatus(Map<String, Object> claims) {
-        if (!claims.containsKey(CREDENTIAL_STATUS)) {
-            return Result.failure("no credentialStatus in claims");
-        }
-        var statusClaims = (Map<String, Object>) claims.get(CREDENTIAL_STATUS);
-
-        return Result.success(new CredentialStatus((String) statusClaims.get(ID),
-                (String) statusClaims.get("type"),
-                statusClaims));
     }
 }

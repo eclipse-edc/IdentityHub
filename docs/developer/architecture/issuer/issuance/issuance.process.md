@@ -132,8 +132,8 @@ credential type and requirements for issuance:
       "required": true
     },
     {
-      "input": "expiration",
-      "output": "expirationDate"
+      "input": "onboarding.membershipLevel",
+      "output": "credentialSubject.membershipLevel"
     }
   ]
 }
@@ -167,7 +167,9 @@ The following properties are defined:
 - `attestations`: The attestation sources that will be executed for an issuance request.
 - `additionalContext`: Additional JSON-LD context entries to include in the credential.
 - `rules`: The rules that will be evaluated to determine if a credential should be issued.
-- `mappings`: How data is mapped into the issued credential.
+- `mappings`: How data is mapped into the issued credential. Mappings may not write to the properties the Issuer
+  Service sets itself (`@context`, `id`, `type`, `issuer`, `issuanceDate`, `validFrom`, `expirationDate`, `validUntil`,
+  `credentialStatus` and `proof`).
 
 ### Request Processing
 
