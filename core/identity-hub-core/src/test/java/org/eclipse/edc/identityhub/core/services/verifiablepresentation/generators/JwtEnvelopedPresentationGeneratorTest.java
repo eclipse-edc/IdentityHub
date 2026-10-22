@@ -72,7 +72,7 @@ class JwtEnvelopedPresentationGeneratorTest extends PresentationGeneratorTest {
         when(signerProvider.createJwsSigner(eq(participantContextId), anyString())).thenReturn(Result.failure("not found"));
         when(signerProvider.createJwsSigner(eq(participantContextId), eq(PRIVATE_KEY_ALIAS))).thenReturn(Result.success(new ECDSASigner(vpSigningKey)));
 
-        generator = new JwtEnvelopedPresentationGenerator(mock(), Clock.fixed(NOW, ZoneOffset.UTC), tokenGenerator, LIFETIME);
+        generator = new JwtEnvelopedPresentationGenerator(mock(), Clock.fixed(NOW, ZoneOffset.UTC), tokenGenerator, LIFETIME, false);
     }
 
     @SuppressWarnings("unchecked")
@@ -88,6 +88,7 @@ class JwtEnvelopedPresentationGeneratorTest extends PresentationGeneratorTest {
 
         var header = extractJwtHeader(vpJwt);
         assertThat(header.getKeyID()).isEqualTo("did:web:test#" + PUBLIC_KEY_ID);
+        assertThat(header.getType()).hasToString("vp+jwt");
         var claims = extractJwtClaims(vpJwt);
 
         assertThat(claims.getClaims()).hasSize(7)
@@ -98,7 +99,8 @@ class JwtEnvelopedPresentationGeneratorTest extends PresentationGeneratorTest {
         var envelopedVp = claims.getClaim("id").toString();
         assertThat(envelopedVp).startsWith("data:application/vp+jwt,");
 
-        var vpToken = envelopedVp.replace("data:application/vp+jwt", "");
+        var vpToken = envelopedVp.replace("data:application/vp+jwt,", "");
+        assertThat(extractJwtHeader(vpToken).getType()).hasToString("vp+jwt");
         var vpClaims = extractJwtClaims(vpToken);
         assertThat(vpClaims.getClaims()).hasSize(8)
                 .containsEntry("holder", issuerId)
@@ -120,6 +122,30 @@ class JwtEnvelopedPresentationGeneratorTest extends PresentationGeneratorTest {
             assertThat(vcClaims.getClaims())
                     .containsKeys("validFrom", "credentialSubject", "issuer", "type", "id", "@context");
         });
+    }
+
+    @SuppressWarnings("unchecked")
+    @Test
+    void createPresentation_plainVpJwt() {
+        var plainGenerator = new JwtEnvelopedPresentationGenerator(mock(), Clock.fixed(NOW, ZoneOffset.UTC), tokenGenerator, LIFETIME, true);
+        var vcSigningKey = createKey(Curve.P_256, TestConstants.CENTRAL_ISSUER_KEY_ID);
+        var jwtVc = JwtCreationUtils.createJwt(vcSigningKey, TestConstants.CENTRAL_ISSUER_DID, "degreeSub", TestConstants.VP_HOLDER_ID, getCredential(ENVELOPED_CREDENTIAL_JSON));
+        var vcc = new VerifiableCredentialContainer(jwtVc, CredentialFormat.VC2_0_JOSE, createDummyCredential());
+
+        var vpJwt = plainGenerator.generatePresentation(participantContextId, List.of(vcc), PRIVATE_KEY_ALIAS, PUBLIC_KEY_ID, issuerId, ADDITIONAL_DATA);
+
+        var header = extractJwtHeader(vpJwt);
+        assertThat(header.getKeyID()).isEqualTo("did:web:test#" + PUBLIC_KEY_ID);
+        assertThat(header.getType()).hasToString("vp+jwt");
+
+        var vpClaims = extractJwtClaims(vpJwt);
+        assertThat(vpClaims.getClaims())
+                .containsEntry("holder", issuerId)
+                .containsEntry("type", "VerifiablePresentation")
+                .containsKeys("@context", "verifiableCredential", "exp", "iat");
+        var credentials = (List<Map<String, Object>>) vpClaims.getClaim("verifiableCredential");
+        assertThat(credentials).singleElement()
+                .satisfies(c -> assertThat(c).containsEntry("id", "data:application/vc+jwt," + jwtVc));
     }
 
     @Test
@@ -165,6 +191,7 @@ class JwtEnvelopedPresentationGeneratorTest extends PresentationGeneratorTest {
         assertThat(vpJwt).isNotNull();
         var header = extractJwtHeader(vpJwt);
         assertThat(header.getKeyID()).isEqualTo("did:web:test#" + PUBLIC_KEY_ID);
+        assertThat(header.getType()).hasToString("vp+jwt");
         var claims = extractJwtClaims(vpJwt);
 
         assertThat(claims.getClaims()).hasSize(7)
@@ -175,7 +202,8 @@ class JwtEnvelopedPresentationGeneratorTest extends PresentationGeneratorTest {
         var envelopedVp = claims.getClaim("id").toString();
         assertThat(envelopedVp).startsWith("data:application/vp+jwt,");
 
-        var vpToken = envelopedVp.replace("data:application/vp+jwt", "");
+        var vpToken = envelopedVp.replace("data:application/vp+jwt,", "");
+        assertThat(extractJwtHeader(vpToken).getType()).hasToString("vp+jwt");
         var vpClaims = extractJwtClaims(vpToken);
         assertThat(vpClaims.getClaims()).hasSize(8)
                 .containsEntry("holder", issuerId)

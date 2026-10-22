@@ -23,6 +23,7 @@ import org.eclipse.edc.identityhub.spi.transformation.DiscriminatorMappingRegist
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.CredentialRequestManager;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialResource;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialStore;
+import org.eclipse.edc.identityhub.spi.verifiablecredentials.validation.CredentialFormatValidator;
 import org.eclipse.edc.identityhub.spi.webcontext.IdentityHubApiContext;
 import org.eclipse.edc.participantcontext.spi.types.ParticipantResource;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
@@ -63,7 +64,7 @@ public class VerifiableCredentialApiExtension implements ServiceExtension {
         authorizationService.addLookupFunction(VerifiableCredentialResource.class, this::queryById);
         var registry = typeTransformerRegistry.forContext("identity-api");
         registry.register(new VerifiableCredentialManifestToVerifiableCredentialResourceTransformer());
-        var controller = new VerifiableCredentialsApiController(credentialStore, authorizationService, new VerifiableCredentialManifestValidator(), registry, credentialRequestManager, discriminatorMappingRegistry);
+        var controller = new VerifiableCredentialsApiController(credentialStore, authorizationService, new VerifiableCredentialManifestValidator(new CredentialFormatValidator()), registry, credentialRequestManager, discriminatorMappingRegistry);
         var getAllController = new GetAllCredentialsApiController(credentialStore);
         webService.registerResource(IdentityHubApiContext.IDENTITY, controller);
         webService.registerResource(IdentityHubApiContext.IDENTITY, getAllController);

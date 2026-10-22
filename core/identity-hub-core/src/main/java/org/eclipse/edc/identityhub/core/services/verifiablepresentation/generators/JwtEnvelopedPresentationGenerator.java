@@ -38,7 +38,9 @@ import static org.eclipse.edc.identityhub.core.services.verifiablepresentation.g
 
 /**
  * Creates verifiable presentations according to Version 2.0 of the Verifiable Credential Data Model, that are secured
- * with an "enveloped proof" using the JOSE (= JWT) method.
+ * with an "enveloped proof" using the JOSE (= JWT) method. The VP JWT ({@code typ: vp+jwt}) is the secured presentation.
+ * By default, it is wrapped in an {@code EnvelopedVerifiablePresentation}, which is signed again as a JWT. Optionally, the
+ * VP JWT itself is returned.
  * <p>
  * This generator should be registered in the {@link org.eclipse.edc.identityhub.spi.verifiablecredentials.generator.PresentationCreatorRegistry},
  * for the {@link CredentialFormat#VC2_0_JOSE} format.
@@ -54,21 +56,27 @@ public class JwtEnvelopedPresentationGenerator implements PresentationGenerator<
     public static final String VERIFIABLE_PRESENTATION_TYPE = "VerifiablePresentation";
     public static final String ENVELOPED_VERIFIABLE_CREDENTIAL = "EnvelopedVerifiableCredential";
     public static final String ENVELOPED_VERIFIABLE_PRESENTATION = "EnvelopedVerifiablePresentation";
+    public static final String VP_JWT_MEDIA_TYPE = "vp+jwt";
+    private static final String JWT_TYPE_HEADER = "typ";
+    private static final TokenDecorator VP_JWT_TYPE_DECORATOR = builder -> builder.header(JWT_TYPE_HEADER, VP_JWT_MEDIA_TYPE);
     private final Monitor monitor;
     private final Clock clock;
     private final TokenGenerationService tokenGenerationService;
     private final Duration vpLifetime;
+    private final boolean plainVpJwt;
 
     /**
      * Creates VCDM 2.0 presentations as enveloped JWTs.
      *
      * @param vpLifetime how long a presentation is valid after it was issued, i.e. the difference between the {@code exp} and {@code iat} claims of its JWTs
+     * @param plainVpJwt whether the VP JWT itself is returned, instead of wrapping it in a signed {@code EnvelopedVerifiablePresentation}
      */
-    public JwtEnvelopedPresentationGenerator(Monitor monitor, Clock clock, TokenGenerationService tokenGenerationService, Duration vpLifetime) {
+    public JwtEnvelopedPresentationGenerator(Monitor monitor, Clock clock, TokenGenerationService tokenGenerationService, Duration vpLifetime, boolean plainVpJwt) {
         this.monitor = monitor;
         this.clock = clock;
         this.tokenGenerationService = tokenGenerationService;
         this.vpLifetime = vpLifetime;
+        this.plainVpJwt = plainVpJwt;
     }
 
     @Override
@@ -118,9 +126,15 @@ public class JwtEnvelopedPresentationGenerator implements PresentationGenerator<
                 .claims(HOLDER_PROPERTY, issuerId)
                 .claims(VERIFIABLE_CREDENTIAL_PROPERTY, credentialArray);
 
+        var vpJwt = tokenGenerationService.generate(participantContextId, privateKeyAlias, presentationTokenGenerator,
+                presentationTokenClaims(now, vpLifetime, issuerId, audience), keyIdDecorator, VP_JWT_TYPE_DECORATOR);
+        if (plainVpJwt) {
+            return vpJwt.map(TokenRepresentation::getToken)
+                    .orElseThrow(f -> new EdcException(f.getFailureDetail()));
+        }
+
         // create the enveloped VP as JWT, signed again with the private key
-        return tokenGenerationService.generate(participantContextId, privateKeyAlias, presentationTokenGenerator,
-                        presentationTokenClaims(now, vpLifetime, issuerId, audience), keyIdDecorator)
+        return vpJwt
                 .compose(tr -> {
                     // create the enveloped presentation structure
                     TokenDecorator envelopedPresentationDecorator = builder -> builder.claims(ID_PROPERTY, "data:application/vp+jwt,%s".formatted(tr.getToken()))
@@ -128,7 +142,7 @@ public class JwtEnvelopedPresentationGenerator implements PresentationGenerator<
                             .claims(CONTEXT_PROPERTY, List.of(VC_PREFIX_V2));
                     // ... and create a JWT out of it
                     return tokenGenerationService.generate(participantContextId, privateKeyAlias, envelopedPresentationDecorator,
-                            presentationTokenClaims(now, vpLifetime, issuerId, audience), keyIdDecorator);
+                            presentationTokenClaims(now, vpLifetime, issuerId, audience), keyIdDecorator, VP_JWT_TYPE_DECORATOR);
                 })
                 .map(TokenRepresentation::getToken)
                 .orElseThrow(f -> new EdcException(f.getFailureDetail()));

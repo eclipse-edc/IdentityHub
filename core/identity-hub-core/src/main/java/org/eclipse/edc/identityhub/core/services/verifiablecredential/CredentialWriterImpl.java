@@ -43,6 +43,7 @@ import org.eclipse.edc.token.spi.TokenValidationRule;
 import org.eclipse.edc.token.spi.TokenValidationService;
 import org.eclipse.edc.transaction.spi.TransactionContext;
 import org.eclipse.edc.transform.spi.TypeTransformerRegistry;
+import org.eclipse.edc.validator.spi.Validator;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import tools.jackson.core.JacksonException;
@@ -70,13 +71,14 @@ public class CredentialWriterImpl implements CredentialWriter {
     private final HolderCredentialRequestStore holderCredentialRequestStore;
     private final TokenValidationService tokenValidationService;
     private final DidPublicKeyResolver publicKeyResolver;
+    private final Validator<VerifiableCredentialContainer> credentialFormatValidator;
     private final Monitor monitor;
     private final Clock clock;
     private final boolean rejectUnverifiedCredentials;
 
     public CredentialWriterImpl(CredentialStore credentialStore, TypeTransformerRegistry credentialTransformerRegistry, TransactionContext transactionContext, ObjectMapper objectMapper,
                                 HolderCredentialRequestStore holderCredentialRequestStore, TokenValidationService tokenValidationService, DidPublicKeyResolver publicKeyResolver,
-                                Monitor monitor, Clock clock, boolean rejectUnverifiedCredentials) {
+                                Validator<VerifiableCredentialContainer> credentialFormatValidator, Monitor monitor, Clock clock, boolean rejectUnverifiedCredentials) {
         this.monitor = monitor;
         this.clock = clock;
         this.credentialStore = credentialStore;
@@ -86,6 +88,7 @@ public class CredentialWriterImpl implements CredentialWriter {
         this.holderCredentialRequestStore = holderCredentialRequestStore;
         this.tokenValidationService = tokenValidationService;
         this.publicKeyResolver = publicKeyResolver;
+        this.credentialFormatValidator = credentialFormatValidator;
         this.rejectUnverifiedCredentials = rejectUnverifiedCredentials;
     }
 
@@ -380,13 +383,19 @@ public class CredentialWriterImpl implements CredentialWriter {
     }
 
     /**
-     * Verifies that the delivered credentials actually carry the signature of the Issuer that delivered them, because only those are stored.
+     * Verifies that the delivered credentials are in the format they were delivered as, and that they actually carry the
+     * signature of the Issuer that delivered them, because only those are stored.
      */
     private ServiceResult<Void> verifyProofs(String holderPid, String issuerDid, Collection<CredentialWriteRequest> writeRequests) {
         for (var writeRequest : writeRequests) {
             var format = CredentialProfile.formatForProfile(writeRequest.credentialFormat());
             if (format.failed()) {
                 return format.mapFailure();
+            }
+            var formatResult = credentialFormatValidator.validate(new VerifiableCredentialContainer(writeRequest.rawCredential(), format.getContent(), null));
+            if (formatResult.failed()) {
+                monitor.warning("Rejecting a credential delivered for request '%s': %s".formatted(holderPid, formatResult.getFailureDetail()));
+                return ServiceResult.badRequest("The credential does not match its format '%s': %s".formatted(writeRequest.credentialFormat(), formatResult.getFailureDetail()));
             }
             var proofResult = verifyProof(writeRequest.rawCredential(), format.getContent(), issuerDid);
             if (proofResult.failed()) {

@@ -15,6 +15,7 @@
 package org.eclipse.edc.identityhub.tests;
 
 import com.github.tomakehurst.wiremock.WireMockServer;
+import com.nimbusds.jwt.JWTClaimsSet;
 import io.restassured.http.Header;
 import org.eclipse.edc.api.authentication.OauthServerEndToEndExtension;
 import org.eclipse.edc.iam.decentralizedclaims.sts.spi.store.StsAccountStore;
@@ -74,12 +75,18 @@ import static org.eclipse.edc.identityhub.tests.fixtures.TestFunctions.authorize
 import static org.eclipse.edc.identityhub.tests.fixtures.TestFunctions.authorizeTokenBased;
 import static org.eclipse.edc.identityhub.tests.fixtures.TestFunctions.createCredential;
 import static org.eclipse.edc.identityhub.tests.fixtures.common.AbstractIdentityHub.SUPER_USER;
+import static org.eclipse.edc.identityhub.verifiablecredentials.testfixtures.VerifiableCredentialTestUtil.buildSignedJwt;
+import static org.eclipse.edc.identityhub.verifiablecredentials.testfixtures.VerifiableCredentialTestUtil.generateEcKey;
 import static org.eclipse.edc.util.io.Ports.getFreePort;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.notNullValue;
 
 public class VerifiableCredentialApiEndToEndTest {
+
+    private static final String RAW_VC = buildSignedJwt(new JWTClaimsSet.Builder()
+            .claim("vc", Map.of("@context", List.of("https://www.w3.org/2018/credentials/v1"), "type", List.of("VerifiableCredential")))
+            .build(), generateEcKey("did:web:issuer#key1")).serialize();
 
     @SuppressWarnings("JUnitMalformedDeclaration")
     abstract static class Tests {
@@ -725,7 +732,7 @@ public class VerifiableCredentialApiEndToEndTest {
 
         private VerifiableCredentialManifest.Builder createManifest(String participantContextId, VerifiableCredential vc) {
             return VerifiableCredentialManifest.Builder.newInstance()
-                    .verifiableCredentialContainer(new VerifiableCredentialContainer("rawVc", CredentialFormat.VC1_0_JWT, vc))
+                    .verifiableCredentialContainer(new VerifiableCredentialContainer(RAW_VC, CredentialFormat.VC1_0_JWT, vc))
                     .participantContextId(participantContextId);
         }
 

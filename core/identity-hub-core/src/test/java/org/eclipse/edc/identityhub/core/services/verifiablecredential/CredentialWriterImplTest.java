@@ -14,6 +14,7 @@
 
 package org.eclipse.edc.identityhub.core.services.verifiablecredential;
 
+import com.nimbusds.jose.util.JSONObjectUtils;
 import com.nimbusds.jwt.JWTClaimsSet;
 import org.assertj.core.api.Assertions;
 import org.eclipse.edc.iam.did.spi.resolution.DidPublicKeyResolver;
@@ -26,9 +27,11 @@ import org.eclipse.edc.identityhub.spi.credential.request.model.HolderCredential
 import org.eclipse.edc.identityhub.spi.credential.request.model.HolderRequestState;
 import org.eclipse.edc.identityhub.spi.credential.request.store.HolderCredentialRequestStore;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.generator.CredentialWriteRequest;
+import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.CredentialProfile;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStatus;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialResource;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialStore;
+import org.eclipse.edc.identityhub.spi.verifiablecredentials.validation.CredentialFormatValidator;
 import org.eclipse.edc.identityhub.transaction.TrackingTransactionContext;
 import org.eclipse.edc.jsonld.util.JacksonJsonLd;
 import org.eclipse.edc.keys.spi.PublicKeyResolver;
@@ -46,12 +49,15 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 
+import java.nio.charset.StandardCharsets;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -59,6 +65,8 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static org.eclipse.edc.iam.verifiablecredentials.spi.VcConstants.VC_PREFIX_V2;
+import static org.eclipse.edc.iam.verifiablecredentials.spi.VcConstants.W3C_CREDENTIALS_URL;
 import static org.eclipse.edc.identityhub.spi.credential.request.model.HolderRequestState.ISSUED;
 import static org.eclipse.edc.identityhub.spi.credential.request.model.HolderRequestState.REQUESTED;
 import static org.eclipse.edc.identityhub.spi.credential.request.model.HolderRequestState.REQUESTING;
@@ -86,6 +94,9 @@ class CredentialWriterImplTest {
     private static final String PARTICIPANT_ID = "participant";
     private static final String ISSUER_DID = "did:web:issuer";
     private static final String HOLDER_DID = "did:web:holder";
+    private static final String VCDM11_JWT = unsignedJwt(Map.of("vc", Map.of("@context", List.of(W3C_CREDENTIALS_URL))));
+    private static final String VCDM20_JWT = unsignedJwt(Map.of("@context", List.of(VC_PREFIX_V2), "type", List.of("VerifiableCredential")));
+    private static final String VCDM11_LD = "{\"@context\": [\"%s\"], \"type\": [\"VerifiableCredential\"]}".formatted(W3C_CREDENTIALS_URL);
     private final CredentialStore credentialStore = mock();
     private final TypeTransformerRegistry credentialTransformerRegistry = mock();
     private final HolderCredentialRequestStore holderCredentialRequestStore = mock();
@@ -94,7 +105,7 @@ class CredentialWriterImplTest {
     private final Monitor monitor = mock();
     private final TrackingTransactionContext transactionContext = new TrackingTransactionContext();
     private final CredentialWriterImpl credentialWriter = new CredentialWriterImpl(credentialStore, credentialTransformerRegistry, transactionContext,
-            JacksonJsonLd.createObjectMapper(), holderCredentialRequestStore, tokenValidationService, publicKeyResolver, monitor, Clock.systemUTC(), false);
+            JacksonJsonLd.createObjectMapper(), holderCredentialRequestStore, tokenValidationService, publicKeyResolver, new CredentialFormatValidator(), monitor, Clock.systemUTC(), false);
 
     @BeforeEach
     void setUp() {
@@ -117,7 +128,7 @@ class CredentialWriterImplTest {
 
         when(credentialStore.create(any())).thenReturn(StoreResult.success());
 
-        var result = credentialWriter.write("holderPid", HOLDER_DID, "issuerPid", ISSUER_DID, Set.of(new CredentialWriteRequest("raw-cred", TEST_CREDENTIAL_FORMAT)), PARTICIPANT_ID);
+        var result = credentialWriter.write("holderPid", HOLDER_DID, "issuerPid", ISSUER_DID, Set.of(new CredentialWriteRequest(VCDM11_JWT, TEST_CREDENTIAL_FORMAT)), PARTICIPANT_ID);
         assertThat(result).isSucceeded();
         verify(holderCredentialRequestStore).save(argThat(request -> request.getIssuerPid() != null));
     }
@@ -133,7 +144,7 @@ class CredentialWriterImplTest {
             return StoreResult.generalError("save failed");
         });
 
-        var result = credentialWriter.write("holderPid", HOLDER_DID, "issuerPid", ISSUER_DID, Set.of(new CredentialWriteRequest("raw-cred", TEST_CREDENTIAL_FORMAT)), PARTICIPANT_ID);
+        var result = credentialWriter.write("holderPid", HOLDER_DID, "issuerPid", ISSUER_DID, Set.of(new CredentialWriteRequest(VCDM11_JWT, TEST_CREDENTIAL_FORMAT)), PARTICIPANT_ID);
 
         assertThat(result).isFailed().detail().isEqualTo("save failed");
         // the credential was stored already, and must not be committed while the request stays REQUESTED
@@ -146,7 +157,7 @@ class CredentialWriterImplTest {
     void write_invalidProof_shouldNotLeaseRequest() {
         when(tokenValidationService.validate(anyString(), any(PublicKeyResolver.class), anyList())).thenReturn(Result.failure("invalid signature"));
 
-        var result = credentialWriter.write("holderPid", HOLDER_DID, "issuerPid", ISSUER_DID, Set.of(new CredentialWriteRequest("raw-cred", TEST_CREDENTIAL_FORMAT)), PARTICIPANT_ID);
+        var result = credentialWriter.write("holderPid", HOLDER_DID, "issuerPid", ISSUER_DID, Set.of(new CredentialWriteRequest(VCDM11_JWT, TEST_CREDENTIAL_FORMAT)), PARTICIPANT_ID);
 
         assertThat(result).isFailed().detail().contains("Could not verify the credential's proof").contains("invalid signature");
         verify(holderCredentialRequestStore, never()).findByIdAndLease(anyString());
@@ -205,9 +216,9 @@ class CredentialWriterImplTest {
     @Test
     void write_unverifiableFormat_whenRejectionEnabled_shouldNotStore() {
         var rejectingWriter = new CredentialWriterImpl(credentialStore, credentialTransformerRegistry, transactionContext,
-                JacksonJsonLd.createObjectMapper(), holderCredentialRequestStore, tokenValidationService, publicKeyResolver, monitor, Clock.systemUTC(), true);
+                JacksonJsonLd.createObjectMapper(), holderCredentialRequestStore, tokenValidationService, publicKeyResolver, new CredentialFormatValidator(), monitor, Clock.systemUTC(), true);
 
-        var result = rejectingWriter.write("holderPid", HOLDER_DID, "issuerPid", ISSUER_DID, Set.of(new CredentialWriteRequest("raw-cred", CredentialFormat.VC1_0_LD.toString())), PARTICIPANT_ID);
+        var result = rejectingWriter.write("holderPid", HOLDER_DID, "issuerPid", ISSUER_DID, Set.of(new CredentialWriteRequest(VCDM11_LD, CredentialFormat.VC1_0_LD.toString())), PARTICIPANT_ID);
 
         assertThat(result).isFailed().detail().contains("cannot be verified");
         verifyNoInteractions(tokenValidationService, credentialStore);
@@ -216,7 +227,7 @@ class CredentialWriterImplTest {
 
     @Test
     void write_fromDifferentIssuer_shouldNotVerifyProofs() {
-        var result = credentialWriter.write("holderPid", HOLDER_DID, "issuerPid", "did:web:another-issuer", Set.of(new CredentialWriteRequest("raw-cred", TEST_CREDENTIAL_FORMAT)), PARTICIPANT_ID);
+        var result = credentialWriter.write("holderPid", HOLDER_DID, "issuerPid", "did:web:another-issuer", Set.of(new CredentialWriteRequest(VCDM11_JWT, TEST_CREDENTIAL_FORMAT)), PARTICIPANT_ID);
 
         // a delivery that may not act on the request at all is rejected before any DID is resolved for it
         assertThat(result).isFailed().extracting(ServiceFailure::getReason).isEqualTo(ServiceFailure.Reason.UNAUTHORIZED);
@@ -228,7 +239,7 @@ class CredentialWriterImplTest {
     void write_noHolderRequest_shouldNotVerifyProofs() {
         when(holderCredentialRequestStore.findById(anyString())).thenReturn(null);
 
-        var result = credentialWriter.write("holderPid", HOLDER_DID, "issuerPid", ISSUER_DID, Set.of(new CredentialWriteRequest("raw-cred", TEST_CREDENTIAL_FORMAT)), PARTICIPANT_ID);
+        var result = credentialWriter.write("holderPid", HOLDER_DID, "issuerPid", ISSUER_DID, Set.of(new CredentialWriteRequest(VCDM11_JWT, TEST_CREDENTIAL_FORMAT)), PARTICIPANT_ID);
 
         assertThat(result).isFailed().extracting(ServiceFailure::getReason).isEqualTo(ServiceFailure.Reason.NOT_FOUND);
         verifyNoInteractions(tokenValidationService, credentialStore);
@@ -246,7 +257,7 @@ class CredentialWriterImplTest {
                 .thenReturn(Result.success(createCredential().build()));
         when(credentialStore.create(any())).thenReturn(StoreResult.success());
 
-        var result = credentialWriter.write("holderPid", HOLDER_DID, "issuerPid", ISSUER_DID, Set.of(new CredentialWriteRequest("raw-cred", TEST_CREDENTIAL_FORMAT)), PARTICIPANT_ID);
+        var result = credentialWriter.write("holderPid", HOLDER_DID, "issuerPid", ISSUER_DID, Set.of(new CredentialWriteRequest(VCDM11_JWT, TEST_CREDENTIAL_FORMAT)), PARTICIPANT_ID);
 
         assertThat(result).isSucceeded();
         // verifying a proof may resolve the Issuer's DID, which must neither hold a database connection nor the leased request
@@ -262,7 +273,7 @@ class CredentialWriterImplTest {
 
         when(credentialStore.create(any())).thenReturn(StoreResult.success());
 
-        var result = credentialWriter.write("holderPid", HOLDER_DID, "issuerPid", ISSUER_DID, Set.of(new CredentialWriteRequest("raw-cred", "invalid-format")), PARTICIPANT_ID);
+        var result = credentialWriter.write("holderPid", HOLDER_DID, "issuerPid", ISSUER_DID, Set.of(new CredentialWriteRequest(VCDM11_JWT, "invalid-format")), PARTICIPANT_ID);
         assertThat(result).isFailed().detail().contains("Invalid format");
     }
 
@@ -273,7 +284,7 @@ class CredentialWriterImplTest {
 
         when(credentialStore.create(any())).thenReturn(StoreResult.success());
 
-        var result = credentialWriter.write("holderPid", HOLDER_DID, "issuerPid", ISSUER_DID, Set.of(new CredentialWriteRequest("raw-cred", TEST_CREDENTIAL_FORMAT)), PARTICIPANT_ID);
+        var result = credentialWriter.write("holderPid", HOLDER_DID, "issuerPid", ISSUER_DID, Set.of(new CredentialWriteRequest(VCDM11_JWT, TEST_CREDENTIAL_FORMAT)), PARTICIPANT_ID);
         assertThat(result).isFailed().detail().contains("No credential request was made for Credentials of type");
     }
 
@@ -284,7 +295,7 @@ class CredentialWriterImplTest {
 
         when(credentialStore.create(any())).thenReturn(StoreResult.success());
 
-        var result = credentialWriter.write("holderPid", HOLDER_DID, "issuerPid", ISSUER_DID, Set.of(new CredentialWriteRequest("raw-cred", CredentialFormat.VC2_0_COSE.toString())), PARTICIPANT_ID);
+        var result = credentialWriter.write("holderPid", HOLDER_DID, "issuerPid", ISSUER_DID, Set.of(new CredentialWriteRequest(VCDM20_JWT, CredentialFormat.VC2_0_JOSE.toString())), PARTICIPANT_ID);
         assertThat(result).isFailed().detail().contains("No credential request was made for Credentials ");
     }
 
@@ -297,7 +308,7 @@ class CredentialWriterImplTest {
         when(credentialStore.queryForUpdate(any())).thenReturn(StoreResult.success(List.of(createResource("old-credential-id"))));
         when(credentialStore.update(any())).thenReturn(StoreResult.success());
 
-        var result = credentialWriter.write("holderPid", HOLDER_DID, "issuerPid", ISSUER_DID, Set.of(new CredentialWriteRequest("raw-cred", TEST_CREDENTIAL_FORMAT)), PARTICIPANT_ID);
+        var result = credentialWriter.write("holderPid", HOLDER_DID, "issuerPid", ISSUER_DID, Set.of(new CredentialWriteRequest(VCDM11_JWT, TEST_CREDENTIAL_FORMAT)), PARTICIPANT_ID);
 
         assertThat(result).isSucceeded();
         var newCredential = ArgumentCaptor.forClass(VerifiableCredentialResource.class);
@@ -325,7 +336,7 @@ class CredentialWriterImplTest {
         when(credentialTransformerRegistry.transform(isA(String.class), eq(VerifiableCredential.class)))
                 .thenReturn(Result.success(createCredential().issuer(new Issuer("did:web:other-issuer", Map.of())).build()));
 
-        var result = credentialWriter.write("holderPid", HOLDER_DID, "issuerPid", ISSUER_DID, Set.of(new CredentialWriteRequest("raw-cred", TEST_CREDENTIAL_FORMAT)), PARTICIPANT_ID);
+        var result = credentialWriter.write("holderPid", HOLDER_DID, "issuerPid", ISSUER_DID, Set.of(new CredentialWriteRequest(VCDM11_JWT, TEST_CREDENTIAL_FORMAT)), PARTICIPANT_ID);
 
         assertThat(result).isFailed().extracting(ServiceFailure::getReason).isEqualTo(ServiceFailure.Reason.UNAUTHORIZED);
         verify(credentialStore, never()).create(any());
@@ -340,7 +351,7 @@ class CredentialWriterImplTest {
                 .thenReturn(Result.success(createCredential().build()));
         when(credentialStore.create(any())).thenReturn(StoreResult.success());
 
-        var result = credentialWriter.write("holderPid", HOLDER_DID, "issuerPid", ISSUER_DID, Set.of(new CredentialWriteRequest("raw-cred", TEST_CREDENTIAL_FORMAT)), PARTICIPANT_ID);
+        var result = credentialWriter.write("holderPid", HOLDER_DID, "issuerPid", ISSUER_DID, Set.of(new CredentialWriteRequest(VCDM11_JWT, TEST_CREDENTIAL_FORMAT)), PARTICIPANT_ID);
 
         assertThat(result).isSucceeded();
         verify(credentialStore, never()).update(any());
@@ -354,7 +365,7 @@ class CredentialWriterImplTest {
         when(credentialStore.queryForUpdate(any())).thenReturn(StoreResult.success(List.of(createResource("old-credential-id"))));
         when(credentialStore.update(any())).thenReturn(StoreResult.generalError("update failed"));
 
-        var result = credentialWriter.write("holderPid", HOLDER_DID, "issuerPid", ISSUER_DID, Set.of(new CredentialWriteRequest("raw-cred", TEST_CREDENTIAL_FORMAT)), PARTICIPANT_ID);
+        var result = credentialWriter.write("holderPid", HOLDER_DID, "issuerPid", ISSUER_DID, Set.of(new CredentialWriteRequest(VCDM11_JWT, TEST_CREDENTIAL_FORMAT)), PARTICIPANT_ID);
 
         assertThat(result).isFailed().detail().contains("update failed");
     }
@@ -366,7 +377,7 @@ class CredentialWriterImplTest {
         when(credentialStore.create(any())).thenReturn(StoreResult.success());
         when(credentialStore.queryForUpdate(any())).thenReturn(StoreResult.generalError("query failed"));
 
-        var result = credentialWriter.write("holderPid", HOLDER_DID, "issuerPid", ISSUER_DID, Set.of(new CredentialWriteRequest("raw-cred", TEST_CREDENTIAL_FORMAT)), PARTICIPANT_ID);
+        var result = credentialWriter.write("holderPid", HOLDER_DID, "issuerPid", ISSUER_DID, Set.of(new CredentialWriteRequest(VCDM11_JWT, TEST_CREDENTIAL_FORMAT)), PARTICIPANT_ID);
 
         assertThat(result).isFailed().detail().contains("query failed");
     }
@@ -378,7 +389,7 @@ class CredentialWriterImplTest {
 
         when(credentialStore.create(any())).thenReturn(StoreResult.alreadyExists("foo"));
 
-        var result = credentialWriter.write("holderPid", HOLDER_DID, "issuerPid", ISSUER_DID, Set.of(new CredentialWriteRequest("raw-cred", TEST_CREDENTIAL_FORMAT)), PARTICIPANT_ID);
+        var result = credentialWriter.write("holderPid", HOLDER_DID, "issuerPid", ISSUER_DID, Set.of(new CredentialWriteRequest(VCDM11_JWT, TEST_CREDENTIAL_FORMAT)), PARTICIPANT_ID);
         // the Issuer is not told the ID of the credential that is stored already
         assertThat(result).isFailed().satisfies(failure -> {
             Assertions.assertThat(failure.getReason()).isEqualTo(ServiceFailure.Reason.CONFLICT);
@@ -393,7 +404,7 @@ class CredentialWriterImplTest {
                 .thenReturn(Result.failure("foo"));
         when(credentialStore.create(any())).thenReturn(StoreResult.success());
 
-        var result = credentialWriter.write("holderPid", HOLDER_DID, "issuerPid", ISSUER_DID, Set.of(new CredentialWriteRequest("raw-cred", TEST_CREDENTIAL_FORMAT)), PARTICIPANT_ID);
+        var result = credentialWriter.write("holderPid", HOLDER_DID, "issuerPid", ISSUER_DID, Set.of(new CredentialWriteRequest(VCDM11_JWT, TEST_CREDENTIAL_FORMAT)), PARTICIPANT_ID);
         assertThat(result).isFailed().detail().isEqualTo("foo");
     }
 
@@ -408,8 +419,8 @@ class CredentialWriterImplTest {
                 .thenReturn(StoreResult.success());
 
         var result = credentialWriter.write("holderPid", HOLDER_DID, "issuerPid", ISSUER_DID, List.of(
-                new CredentialWriteRequest("raw-cred1", TEST_CREDENTIAL_FORMAT),
-                new CredentialWriteRequest("raw-cred2", CredentialFormat.VC2_0_JOSE.toString())), PARTICIPANT_ID);
+                new CredentialWriteRequest(VCDM11_JWT, TEST_CREDENTIAL_FORMAT),
+                new CredentialWriteRequest(VCDM20_JWT, CredentialFormat.VC2_0_JOSE.toString())), PARTICIPANT_ID);
         assertThat(result).isFailed().detail()
                 .isEqualTo("A delivered credential is already stored");
     }
@@ -425,8 +436,8 @@ class CredentialWriterImplTest {
         });
 
         var result = credentialWriter.write("holderPid", HOLDER_DID, "issuerPid", ISSUER_DID, List.of(
-                new CredentialWriteRequest("raw-cred1", TEST_CREDENTIAL_FORMAT),
-                new CredentialWriteRequest("raw-cred2", TEST_CREDENTIAL_FORMAT)), PARTICIPANT_ID);
+                new CredentialWriteRequest(VCDM11_JWT, TEST_CREDENTIAL_FORMAT),
+                new CredentialWriteRequest(VCDM11_JWT, TEST_CREDENTIAL_FORMAT)), PARTICIPANT_ID);
 
         assertThat(result).isFailed();
         // the first credential was stored already, and must not be committed without the second one
@@ -442,7 +453,7 @@ class CredentialWriterImplTest {
         // e.g. the request was deleted after its origin was checked
         when(holderCredentialRequestStore.findByIdAndLease(anyString())).thenReturn(StoreResult.notFound("foo"));
 
-        var result = credentialWriter.write("holderPid", HOLDER_DID, "issuerPid", ISSUER_DID, Set.of(new CredentialWriteRequest("raw-cred", TEST_CREDENTIAL_FORMAT)), PARTICIPANT_ID);
+        var result = credentialWriter.write("holderPid", HOLDER_DID, "issuerPid", ISSUER_DID, Set.of(new CredentialWriteRequest(VCDM11_JWT, TEST_CREDENTIAL_FORMAT)), PARTICIPANT_ID);
         assertThat(result).isFailed().detail().contains("foo");
         verifyNoInteractions(credentialStore, credentialTransformerRegistry);
     }
@@ -456,7 +467,7 @@ class CredentialWriterImplTest {
                 .participantContextId(PARTICIPANT_ID)
                 .build());
 
-        var result = credentialWriter.write("holderPid", HOLDER_DID, "issuerPid", ISSUER_DID, Set.of(new CredentialWriteRequest("raw-cred", TEST_CREDENTIAL_FORMAT)), PARTICIPANT_ID);
+        var result = credentialWriter.write("holderPid", HOLDER_DID, "issuerPid", ISSUER_DID, Set.of(new CredentialWriteRequest(VCDM11_JWT, TEST_CREDENTIAL_FORMAT)), PARTICIPANT_ID);
         assertThat(result).isFailed()
                 .detail().startsWith("HolderCredentialRequest is expected to be in ");
         verifyNoInteractions(credentialStore, credentialTransformerRegistry);
@@ -493,7 +504,7 @@ class CredentialWriterImplTest {
                 .thenReturn(Result.success(createCredential().build()));
         when(credentialStore.create(any())).thenReturn(StoreResult.success());
 
-        var result = credentialWriter.write("holderPid", HOLDER_DID, "a-different-issuer-pid", ISSUER_DID, Set.of(new CredentialWriteRequest("raw-cred", TEST_CREDENTIAL_FORMAT)), PARTICIPANT_ID);
+        var result = credentialWriter.write("holderPid", HOLDER_DID, "a-different-issuer-pid", ISSUER_DID, Set.of(new CredentialWriteRequest(VCDM11_JWT, TEST_CREDENTIAL_FORMAT)), PARTICIPANT_ID);
 
         assertThat(result).isFailed();
         verify(holderCredentialRequestStore, never()).save(argThat(request -> "a-different-issuer-pid".equals(request.getIssuerPid())));
@@ -515,7 +526,7 @@ class CredentialWriterImplTest {
         when(credentialStore.create(any())).thenReturn(StoreResult.success());
 
         // write is invoked for participant A - the lookup must be scoped to that participant context
-        var result = credentialWriter.write("holderPid", HOLDER_DID, "issuerPid", ISSUER_DID, Set.of(new CredentialWriteRequest("raw-cred", TEST_CREDENTIAL_FORMAT)), PARTICIPANT_ID);
+        var result = credentialWriter.write("holderPid", HOLDER_DID, "issuerPid", ISSUER_DID, Set.of(new CredentialWriteRequest(VCDM11_JWT, TEST_CREDENTIAL_FORMAT)), PARTICIPANT_ID);
 
         // rejected (not-found/unauthorized), nothing stored, no existence leak across tenants
         assertThat(result).isFailed();
@@ -539,7 +550,7 @@ class CredentialWriterImplTest {
         when(credentialStore.create(any())).thenReturn(StoreResult.success());
 
         // the very same credential is delivered a second time
-        var result = credentialWriter.write("holderPid", HOLDER_DID, "issuerPid", ISSUER_DID, Set.of(new CredentialWriteRequest("raw-cred", TEST_CREDENTIAL_FORMAT)), PARTICIPANT_ID);
+        var result = credentialWriter.write("holderPid", HOLDER_DID, "issuerPid", ISSUER_DID, Set.of(new CredentialWriteRequest(VCDM11_JWT, TEST_CREDENTIAL_FORMAT)), PARTICIPANT_ID);
 
         // accepted, but no duplicate is written
         assertThat(result).isSucceeded();
@@ -667,6 +678,44 @@ class CredentialWriterImplTest {
         verify(holderCredentialRequestStore, never()).findByIdAndLease(anyString());
     }
 
+    @Test
+    void write_vcdm20CredentialDeclaredAsVcdm11_shouldNotStore() {
+        var result = credentialWriter.write("holderPid", HOLDER_DID, "issuerPid", ISSUER_DID, Set.of(new CredentialWriteRequest(VCDM20_JWT, CredentialProfile.DCP_PROFILE_VC11)), PARTICIPANT_ID);
+
+        assertThat(result).isFailed().detail().contains("does not match its format");
+        Assertions.assertThat(result.reason()).isEqualTo(ServiceFailure.Reason.BAD_REQUEST);
+        verifyNoInteractions(tokenValidationService, credentialStore);
+        verify(holderCredentialRequestStore, never()).findByIdAndLease(anyString());
+    }
+
+    @Test
+    void write_vcdm11CredentialDeclaredAsVcdm20_shouldNotStore() {
+        var result = credentialWriter.write("holderPid", HOLDER_DID, "issuerPid", ISSUER_DID, Set.of(new CredentialWriteRequest(VCDM11_JWT, CredentialProfile.DCP_PROFILE_VC20)), PARTICIPANT_ID);
+
+        assertThat(result).isFailed().detail().contains("does not match its format");
+        verifyNoInteractions(tokenValidationService, credentialStore);
+    }
+
+    @Test
+    void write_vcdm20LdCredentialDeclaredAsVcdm11_shouldNotStore() {
+        var vcdm20Ld = "{\"@context\": [\"%s\"], \"type\": [\"VerifiableCredential\"]}".formatted(VC_PREFIX_V2);
+
+        var result = credentialWriter.write("holderPid", HOLDER_DID, "issuerPid", ISSUER_DID, Set.of(new CredentialWriteRequest(vcdm20Ld, CredentialFormat.VC1_0_LD.toString())), PARTICIPANT_ID);
+
+        assertThat(result).isFailed().detail().contains("does not match its format");
+        verifyNoInteractions(credentialStore);
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = CredentialFormat.class, names = { "VC2_0_SD_JWT", "VC2_0_COSE" })
+    void write_formatCannotBePresented_shouldNotStore(CredentialFormat format) {
+        var result = credentialWriter.write("holderPid", HOLDER_DID, "issuerPid", ISSUER_DID, Set.of(new CredentialWriteRequest(VCDM20_JWT, format.toString())), PARTICIPANT_ID);
+
+        assertThat(result).isFailed().detail().contains("cannot be presented");
+        Assertions.assertThat(result.reason()).isEqualTo(ServiceFailure.Reason.BAD_REQUEST);
+        verifyNoInteractions(tokenValidationService, credentialStore);
+    }
+
     /**
      * Delivers a credential signed with a key that the DID resolver returns for any key ID, and verifies it with the
      * actual token validation.
@@ -678,7 +727,7 @@ class CredentialWriterImplTest {
                 .thenReturn(Result.success(createCredential().build()));
         when(credentialStore.create(any())).thenReturn(StoreResult.success());
         var writer = new CredentialWriterImpl(credentialStore, credentialTransformerRegistry, transactionContext, JacksonJsonLd.createObjectMapper(),
-                holderCredentialRequestStore, new TokenValidationServiceImpl(), publicKeyResolver, monitor, Clock.systemUTC(), false);
+                holderCredentialRequestStore, new TokenValidationServiceImpl(), publicKeyResolver, new CredentialFormatValidator(), monitor, Clock.systemUTC(), false);
 
         var rawCredential = buildSignedJwt(claims.build(), key).serialize();
         return writer.write("holderPid", HOLDER_DID, "issuerPid", ISSUER_DID, Set.of(new CredentialWriteRequest(rawCredential, TEST_CREDENTIAL_FORMAT)), PARTICIPANT_ID);
@@ -716,6 +765,12 @@ class CredentialWriterImplTest {
                 .issuer(new Issuer(ISSUER_DID, Map.of()))
                 .issuanceDate(Instant.now())
                 .credentialSubject(CredentialSubject.Builder.newInstance().id(HOLDER_DID).claim("test-claim", "test-value").build());
+    }
+
+    private static String unsignedJwt(Map<String, Object> claims) {
+        var encoder = Base64.getUrlEncoder().withoutPadding();
+        return encoder.encodeToString("{\"alg\":\"ES256\"}".getBytes(StandardCharsets.UTF_8)) + "." +
+                encoder.encodeToString(JSONObjectUtils.toJSONString(claims).getBytes(StandardCharsets.UTF_8)) + ".AAAA";
     }
 }
 

@@ -35,6 +35,7 @@ import org.eclipse.edc.identityhub.spi.participantcontext.IdentityHubParticipant
 import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyDescriptor;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyPairUsage;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantManifest;
+import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.CredentialProfile;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStatus;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialStore;
 import org.eclipse.edc.identityhub.tests.fixtures.DefaultRuntimes;
@@ -57,6 +58,8 @@ import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 import java.util.Arrays;
 import java.util.List;
@@ -94,6 +97,26 @@ public class StorageApiEndToEndTest {
 
     private static final String DB_NAME = "runtime";
 
+    /**
+     * The data models in which JWT credentials are delivered, and the DCP profile they are declared as.
+     */
+    enum JwtDataModel {
+        VCDM_1_1(CredentialProfile.DCP_PROFILE_VC11, CredentialFormat.VC1_0_JWT),
+        VCDM_2_0(CredentialProfile.DCP_PROFILE_VC20, CredentialFormat.VC2_0_JOSE);
+
+        private final String profile;
+        private final CredentialFormat format;
+
+        JwtDataModel(String profile, CredentialFormat format) {
+            this.profile = profile;
+            this.format = format;
+        }
+
+        JwtDataModel other() {
+            return this == VCDM_1_1 ? VCDM_2_0 : VCDM_1_1;
+        }
+    }
+
     @SuppressWarnings("JUnitMalformedDeclaration")
     abstract static class Tests {
 
@@ -110,6 +133,7 @@ public class StorageApiEndToEndTest {
                     .participantContextId(TEST_PARTICIPANT_CONTEXT_ID)
                     .requestedCredential("test-id1", "ExamplePersonCredential", "VC1_0_JWT")
                     .requestedCredential("test-id2", "SuperSecretCredential", "VC1_0_LD")
+                    .requestedCredential("test-id3", "ExamplePersonCredential", "VC2_0_JOSE")
                     .state(REQUESTED.code())
                     .build());
         }
@@ -136,11 +160,12 @@ public class StorageApiEndToEndTest {
         }
 
         @DisplayName("CS-STOR-01: a valid JWT credential delivery is accepted and the credential held")
-        @Test
-        void storeCredential(IdentityHub identityHub, CredentialStore credentialStore) throws JOSEException {
+        @ParameterizedTest(name = "{displayName}: {0}")
+        @EnumSource(JwtDataModel.class)
+        void storeCredential(JwtDataModel dataModel, IdentityHub identityHub, CredentialStore credentialStore) throws JOSEException {
 
             when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq(PROVIDER_DID + "#key1"))).thenReturn(Result.success(PROVIDER_KEY.toPublicKey()));
-            var credentialMessage = createCredentialMessage(createCredentialContainer());
+            var credentialMessage = createCredentialMessage(createCredentialContainer(dataModel));
             identityHub.getCredentialsEndpoint().baseRequest()
                     .contentType(ContentType.JSON)
                     .header("Authorization", "Bearer " + generateSiToken())
@@ -152,14 +177,43 @@ public class StorageApiEndToEndTest {
 
             assertThat(credentialStore.query(QuerySpec.max()).getContent())
                     .hasSize(1)
-                    .allSatisfy(vc -> assertThat(vc.getStateAsEnum()).isEqualTo(VcStatus.ISSUED));
+                    .allSatisfy(vc -> {
+                        assertThat(vc.getStateAsEnum()).isEqualTo(VcStatus.ISSUED);
+                        assertThat(vc.getVerifiableCredential().format()).isEqualTo(dataModel.format);
+                    });
+        }
+
+        @DisplayName("a JWT credential whose data model does not match its declared format is rejected with 400")
+        @ParameterizedTest(name = "{displayName}: {0}")
+        @EnumSource(JwtDataModel.class)
+        void storeCredential_dataModelDoesNotMatchFormat_shouldReject(JwtDataModel dataModel, IdentityHub identityHub, CredentialStore credentialStore) throws JOSEException {
+            when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq(PROVIDER_DID + "#key1"))).thenReturn(Result.success(PROVIDER_KEY.toPublicKey()));
+
+            // e.g. a VCDM 2.0 JWT declared as a VCDM 1.1 JWT, which would later be put into a VCDM 1.1 presentation
+            var credentialContainer = Json.createObjectBuilder()
+                    .add("credentialType", "ExamplePersonCredential")
+                    .add("payload", credentialIssuedTo(dataModel, CONSUMER_DID))
+                    .add("format", dataModel.other().profile)
+                    .build();
+
+            identityHub.getCredentialsEndpoint().baseRequest()
+                    .contentType(ContentType.JSON)
+                    .header("Authorization", "Bearer " + generateSiToken())
+                    .body(createCredentialMessage(credentialContainer))
+                    .post("/v1/participants/" + TEST_PARTICIPANT_CONTEXT_ID + "/credentials")
+                    .then()
+                    .log().ifValidationFails()
+                    .statusCode(400)
+                    .body(containsString("does not match its format"));
+
+            assertThat(credentialStore.query(QuerySpec.max()).getContent()).isEmpty();
         }
 
         @DisplayName("TOK-13: an unresolvable issuer DID is rejected with 401")
         @Test
         void storeCredential_didNotResolved(IdentityHub identityHub) {
             when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq(PROVIDER_DID + "#key1"))).thenReturn(Result.failure("not found"));
-            var credentialMessage = createCredentialMessage(createCredentialContainer());
+            var credentialMessage = createCredentialMessage(createCredentialContainer(JwtDataModel.VCDM_1_1));
             identityHub.getCredentialsEndpoint().baseRequest()
                     .contentType(ContentType.JSON)
                     .header("Authorization", "Bearer " + generateSiToken())
@@ -179,7 +233,7 @@ public class StorageApiEndToEndTest {
             var wrongKey = new ECKeyGenerator(Curve.P_256).generate();
             when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq(PROVIDER_DID + "#key1"))).thenReturn(Result.success(wrongKey.toPublicKey()));
 
-            var credentialMessage = createCredentialMessage(createCredentialContainer());
+            var credentialMessage = createCredentialMessage(createCredentialContainer(JwtDataModel.VCDM_1_1));
             identityHub.getCredentialsEndpoint().baseRequest()
                     .contentType(ContentType.JSON)
                     .header("Authorization", "Bearer " + generateSiToken(CONSUMER_DID, PROVIDER_DID))
@@ -250,7 +304,7 @@ public class StorageApiEndToEndTest {
         @Test
         void storeCredential_whenNoCredentialRequest(IdentityHub identityHub) throws JOSEException {
             when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq(PROVIDER_DID + "#key1"))).thenReturn(Result.success(PROVIDER_KEY.toPublicKey()));
-            var credentialMessage = createCredentialMessage("another_holder_pid", createCredentialContainer());
+            var credentialMessage = createCredentialMessage("another_holder_pid", createCredentialContainer(JwtDataModel.VCDM_1_1));
 
             identityHub.getCredentialsEndpoint().baseRequest()
                     .contentType(ContentType.JSON)
@@ -263,20 +317,21 @@ public class StorageApiEndToEndTest {
         }
 
         @DisplayName("Corresponding holder credential request is not in state REQUESTED, expect 400")
-        @Test
-        void storeCredential_whenCredentialRequestInWrongState(IdentityHub identityHub) throws JOSEException {
+        @ParameterizedTest(name = "{displayName}: {0}")
+        @EnumSource(JwtDataModel.class)
+        void storeCredential_whenCredentialRequestInWrongState(JwtDataModel dataModel, IdentityHub identityHub) throws JOSEException {
 
             // not CREATED, which the state machine would move on before the credentials arrive
             identityHub.storeHolderRequest(HolderCredentialRequest.Builder.newInstance()
                     .id("test-holder-id")
                     .issuerDid(PROVIDER_DID)
                     .participantContextId(TEST_PARTICIPANT_CONTEXT_ID)
-                    .requestedCredential("example-cred-id", "ExamplePersonCredential", CredentialFormat.VC1_0_JWT.toString())
+                    .requestedCredential("example-cred-id", "ExamplePersonCredential", dataModel.format.toString())
                     .state(ERROR.code())
                     .build());
 
             when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq(PROVIDER_DID + "#key1"))).thenReturn(Result.success(PROVIDER_KEY.toPublicKey()));
-            var credentialMessage = createCredentialMessage(createCredentialContainer());
+            var credentialMessage = createCredentialMessage(createCredentialContainer(dataModel));
 
             identityHub.getCredentialsEndpoint().baseRequest()
                     .contentType(ContentType.JSON)
@@ -290,19 +345,20 @@ public class StorageApiEndToEndTest {
         }
 
         @DisplayName("CS-STOR-08: a credential format that was not requested is rejected with 400")
-        @Test
-        void storeCredential_whenFormatNotRequested(IdentityHub identityHub) throws JOSEException {
+        @ParameterizedTest(name = "{displayName}: {0}")
+        @EnumSource(JwtDataModel.class)
+        void storeCredential_whenFormatNotRequested(JwtDataModel dataModel, IdentityHub identityHub) throws JOSEException {
 
             identityHub.storeHolderRequest(HolderCredentialRequest.Builder.newInstance()
                     .id("test-holder-id")
                     .issuerDid(PROVIDER_DID)
                     .participantContextId(TEST_PARTICIPANT_CONTEXT_ID)
-                    .requestedCredential("test-cred-id", "TestCredential", CredentialFormat.VC1_0_JWT.toString())
+                    .requestedCredential("test-cred-id", "ExamplePersonCredential", dataModel.other().format.toString())
                     .state(REQUESTED.code())
                     .build());
 
             when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq(PROVIDER_DID + "#key1"))).thenReturn(Result.success(PROVIDER_KEY.toPublicKey()));
-            var credentialMessage = createCredentialMessage(createCredentialContainer());
+            var credentialMessage = createCredentialMessage(createCredentialContainer(dataModel));
 
             identityHub.getCredentialsEndpoint().baseRequest()
                     .contentType(ContentType.JSON)
@@ -366,7 +422,7 @@ public class StorageApiEndToEndTest {
             var accessToken = generateJwt(CONSUMER_DID, CONSUMER_DID, otherIssuerDid, Map.of(), CONSUMER_KEY);
             var siToken = generateJwt(CONSUMER_DID, otherIssuerDid, otherIssuerDid, Map.of("token", accessToken), otherIssuerKey);
 
-            var credentialMessage = createCredentialMessage(createCredentialContainer());
+            var credentialMessage = createCredentialMessage(createCredentialContainer(JwtDataModel.VCDM_1_1));
 
             // must be rejected, because credentials may only be accepted from the issuer the request was sent to
             identityHub.getCredentialsEndpoint().baseRequest()
@@ -395,7 +451,7 @@ public class StorageApiEndToEndTest {
             var accessToken = generateJwt(CONSUMER_DID, CONSUMER_DID, untrustedIssuerDid, Map.of(), CONSUMER_KEY);
             var siToken = generateJwt(CONSUMER_DID, untrustedIssuerDid, untrustedIssuerDid, Map.of("token", accessToken), untrustedIssuerKey);
 
-            var credentialMessage = createCredentialMessage(createCredentialContainer());
+            var credentialMessage = createCredentialMessage(createCredentialContainer(JwtDataModel.VCDM_1_1));
 
             // only trusted issuers may write credentials
             identityHub.getCredentialsEndpoint().baseRequest()
@@ -413,17 +469,18 @@ public class StorageApiEndToEndTest {
 
         // CS-STOR-11: credential payload whose JWT signature does not verify against the issuer's DID key (tampered payload) -> 4xx, nothing stored (currently stored without cryptographic verification)
         @DisplayName("CS-STOR-11: a credential payload whose JWT signature does not verify is rejected")
-        @Test
-        void storeCredential_tamperedCredentialSignature_shouldReject(IdentityHub identityHub, CredentialStore credentialStore) throws JOSEException {
+        @ParameterizedTest(name = "{displayName}: {0}")
+        @EnumSource(JwtDataModel.class)
+        void storeCredential_tamperedCredentialSignature_shouldReject(JwtDataModel dataModel, IdentityHub identityHub, CredentialStore credentialStore) throws JOSEException {
             when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq(PROVIDER_DID + "#key1"))).thenReturn(Result.success(PROVIDER_KEY.toPublicKey()));
 
             // a credential that would be accepted, but its signature segment is corrupted
-            var credential = credentialIssuedTo(CONSUMER_DID);
+            var credential = credentialIssuedTo(dataModel, CONSUMER_DID);
             var tamperedPayload = credential.substring(0, credential.length() - 4) + "AAAA";
             var credentialContainer = Json.createObjectBuilder()
                     .add("credentialType", "MembershipCredential")
                     .add("payload", tamperedPayload)
-                    .add("format", CredentialFormat.VC1_0_JWT.toString())
+                    .add("format", dataModel.profile)
                     .build();
             var credentialMessage = createCredentialMessage(credentialContainer);
 
@@ -476,26 +533,19 @@ public class StorageApiEndToEndTest {
 
         // CS-STOR-12: credential whose credentialSubject.id is NOT the holder participant's DID -> 4xx, nothing stored (currently stored)
         @DisplayName("CS-STOR-12: a credential whose credentialSubject.id is not the holder's DID is rejected")
-        @Test
-        void storeCredential_subjectNotHolderDid_shouldReject(IdentityHub identityHub, CredentialStore credentialStore) throws JOSEException {
+        @ParameterizedTest(name = "{displayName}: {0}")
+        @EnumSource(JwtDataModel.class)
+        void storeCredential_subjectNotHolderDid_shouldReject(JwtDataModel dataModel, IdentityHub identityHub, CredentialStore credentialStore) throws JOSEException {
             when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq(PROVIDER_DID + "#key1"))).thenReturn(Result.success(PROVIDER_KEY.toPublicKey()));
 
             // a correctly signed VC (PROVIDER_KEY) of the requested type, but issued to a subject
             // that is NOT the holder participant's DID (the holder's DID is did:web:consumer)
-            var vcClaims = new JWTClaimsSet.Builder()
-                    .claim("@context", List.of("https://www.w3.org/ns/credentials/v2"))
-                    .claim("id", "http://issuer.example/credentials/foreign-subject")
-                    .claim("type", List.of("VerifiableCredential", "ExamplePersonCredential"))
-                    .claim("issuer", PROVIDER_DID)
-                    .claim("validFrom", "2020-01-01T00:00:00Z")
-                    .claim("credentialSubject", Map.of("id", "did:web:someone-else", "name", "Some Body"))
-                    .build();
-            var foreignSubjectVc = buildSignedJwt(vcClaims, PROVIDER_KEY).serialize();
+            var foreignSubjectVc = credentialIssuedTo(dataModel, "http://issuer.example/credentials/foreign-subject", "did:web:someone-else");
 
             var credentialContainer = Json.createObjectBuilder()
                     .add("credentialType", "ExamplePersonCredential")
                     .add("payload", foreignSubjectVc)
-                    .add("format", CredentialFormat.VC1_0_JWT.toString())
+                    .add("format", dataModel.profile)
                     .build();
             var credentialMessage = createCredentialMessage(credentialContainer);
 
@@ -521,7 +571,7 @@ public class StorageApiEndToEndTest {
 
             // a single SI token that will be used for two deliveries
             var siToken = generateSiToken();
-            var credentialMessage = createCredentialMessage(createCredentialContainer());
+            var credentialMessage = createCredentialMessage(createCredentialContainer(JwtDataModel.VCDM_1_1));
 
             // first delivery succeeds and consumes the token's jti
             identityHub.getCredentialsEndpoint().baseRequest()
@@ -594,27 +644,43 @@ public class StorageApiEndToEndTest {
                     .build();
         }
 
-        private JsonObject createCredentialContainer() {
+        private JsonObject createCredentialContainer(JwtDataModel dataModel) {
             return Json.createObjectBuilder()
                     .add("credentialType", "MembershipCredential")
-                    .add("payload", credentialIssuedTo(CONSUMER_DID))
-                    .add("format", CredentialFormat.VC1_0_JWT.toString())
+                    .add("payload", credentialIssuedTo(dataModel, CONSUMER_DID))
+                    .add("format", dataModel.profile)
                     .build();
         }
 
+        private String credentialIssuedTo(JwtDataModel dataModel, String subjectDid) {
+            return credentialIssuedTo(dataModel, "http://issuer.example/credentials/3732", subjectDid);
+        }
+
         /**
-         * A correctly signed VC of the requested type, issued to the given subject.
+         * A correctly signed JWT credential of the requested type, issued to the given subject, in the given data model.
          */
-        private String credentialIssuedTo(String subjectDid) {
-            var vcClaims = new JWTClaimsSet.Builder()
-                    .claim("@context", List.of("https://www.w3.org/ns/credentials/v2"))
-                    .claim("id", "http://issuer.example/credentials/3732")
-                    .claim("type", List.of("VerifiableCredential", "ExamplePersonCredential"))
-                    .claim("issuer", PROVIDER_DID)
-                    .claim("validFrom", "2020-01-01T00:00:00Z")
-                    .claim("credentialSubject", Map.of("id", subjectDid, "name", "Test Person"))
-                    .build();
-            return buildSignedJwt(vcClaims, PROVIDER_KEY).serialize();
+        private String credentialIssuedTo(JwtDataModel dataModel, String credentialId, String subjectDid) {
+            var vcClaims = switch (dataModel) {
+                case VCDM_1_1 -> new JWTClaimsSet.Builder()
+                        .issuer(PROVIDER_DID)
+                        .subject(subjectDid)
+                        .jwtID(credentialId)
+                        .claim("vc", Map.of(
+                                "@context", List.of("https://www.w3.org/2018/credentials/v1"),
+                                "id", credentialId,
+                                "type", List.of("VerifiableCredential", "ExamplePersonCredential"),
+                                "issuer", PROVIDER_DID,
+                                "issuanceDate", "2020-01-01T00:00:00Z",
+                                "credentialSubject", Map.of("id", subjectDid, "name", "Test Person")));
+                case VCDM_2_0 -> new JWTClaimsSet.Builder()
+                        .claim("@context", List.of("https://www.w3.org/ns/credentials/v2"))
+                        .claim("id", credentialId)
+                        .claim("type", List.of("VerifiableCredential", "ExamplePersonCredential"))
+                        .claim("issuer", PROVIDER_DID)
+                        .claim("validFrom", "2020-01-01T00:00:00Z")
+                        .claim("credentialSubject", Map.of("id", subjectDid, "name", "Test Person"));
+            };
+            return buildSignedJwt(vcClaims.build(), PROVIDER_KEY).serialize();
         }
     }
 
