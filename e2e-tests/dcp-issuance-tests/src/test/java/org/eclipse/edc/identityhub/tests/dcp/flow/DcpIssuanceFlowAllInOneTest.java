@@ -462,7 +462,9 @@ public class DcpIssuanceFlowAllInOneTest {
          */
         private void assertIsVcdm20Jose(VerifiableCredentialResource statusListCredential) throws ParseException {
             assertThat(statusListCredential.getVerifiableCredential().format()).isEqualTo(VC2_0_JOSE);
-            var claims = SignedJWT.parse(statusListCredential.getVerifiableCredential().rawVc()).getJWTClaimsSet();
+            var jwt = SignedJWT.parse(statusListCredential.getVerifiableCredential().rawVc());
+            assertThat(jwt.getHeader().getType()).hasToString("vc+jwt");
+            var claims = jwt.getJWTClaimsSet();
             assertThat(claims.getClaim("vc")).isNull();
             assertThat(claims.getClaim("@context")).asInstanceOf(LIST).containsExactly("https://www.w3.org/ns/credentials/v2");
             assertThat(claims.getStringListClaim("type")).containsExactly("VerifiableCredential", "BitstringStatusListCredential");
