@@ -24,7 +24,6 @@ import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCre
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialStore;
 import org.eclipse.edc.junit.extensions.DependencyInjectionExtension;
 import org.eclipse.edc.spi.monitor.Monitor;
-import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.spi.result.StoreResult;
 import org.eclipse.edc.spi.system.Hostname;
 import org.eclipse.edc.spi.system.ServiceExtensionContext;
@@ -78,18 +77,11 @@ class LocalStatusListCredentialPublisherExtensionTest {
             .credential(new VerifiableCredentialContainer(RAW_CREDENTIAL, CredentialFormat.VC1_0_JWT, credential))
             .build();
 
-    private static Result<String> getStatusListPublisherResult(ObjectFactory factory) {
+    private static String getStatusListPublicUrl(ObjectFactory factory) {
         var localStatusListCredentialPublisherExtension = factory.constructInstance(LocalStatusListCredentialPublisherExtension.class);
         var statusListCredentialPublisher = localStatusListCredentialPublisherExtension.createInMemoryStatusListCredentialPublisher();
         assertThat(statusListCredentialPublisher).isInstanceOf(LocalCredentialPublisher.class);
-        var credential = VerifiableCredential.Builder.newInstance().id("credentialId").type("any")
-                .issuer(new Issuer("any")).credentialSubject(new CredentialSubject()).issuanceDate(Instant.now())
-                .build();
-        var resource = VerifiableCredentialResource.Builder.newStatusList()
-                .issuerId("any").holderId("any")
-                .credential(new VerifiableCredentialContainer("any", CredentialFormat.VC1_0_JWT, credential))
-                .build();
-        return statusListCredentialPublisher.publish(resource);
+        return statusListCredentialPublisher.publicUrl(CREDENTIAL_ID);
     }
 
     @BeforeEach
@@ -118,16 +110,14 @@ class LocalStatusListCredentialPublisherExtensionTest {
     @Test
     void createInMemoryStatusListCredentialPublisher_whenCustomStatusListCallbackAddressIsSet_shouldSetStatusListWithCustomAddress(ServiceExtensionContext context, ObjectFactory factory) {
         when(context.getConfig()).thenReturn(ConfigFactory.fromMap(Map.of(CUSTOM_STATUS_LIST_CALLBACK_ADDRESS, CUSTOM_CALLBACK_ADDRESS)));
-        Result<String> result = getStatusListPublisherResult(factory);
-        assertEquals(CUSTOM_CALLBACK_ADDRESS + "/" + CREDENTIAL_ID, result.getContent());
+        assertEquals(CUSTOM_CALLBACK_ADDRESS + "/" + CREDENTIAL_ID, getStatusListPublicUrl(factory));
     }
 
     @DisplayName("Verifies if default callback address is set for status list")
     @Test
     void createInMemoryStatusListCredentialPublisher_whenCustomStatusListCallbackAddressIsNotSet_shouldSetStatusListWithDefaultAddress(ObjectFactory factory) {
-        Result<String> result = getStatusListPublisherResult(factory);
         String defaultUrl = "http://%s:%s%s".formatted(DEFAULT_HOST, DEFAULT_PORT, DEFAULT_STATUS_LIST_PATH);
-        assertEquals(defaultUrl + "/" + CREDENTIAL_ID, result.getContent());
+        assertEquals(defaultUrl + "/" + CREDENTIAL_ID, getStatusListPublicUrl(factory));
     }
 
     @Test

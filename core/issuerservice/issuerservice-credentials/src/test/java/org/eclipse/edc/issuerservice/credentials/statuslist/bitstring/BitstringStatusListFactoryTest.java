@@ -17,7 +17,6 @@ package org.eclipse.edc.issuerservice.credentials.statuslist.bitstring;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialStatus;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialResource;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialStore;
-import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.ServiceFailure;
 import org.eclipse.edc.spi.result.StoreResult;
 import org.junit.jupiter.api.Test;
@@ -33,6 +32,7 @@ import static org.eclipse.edc.spi.result.ServiceFailure.Reason.NOT_FOUND;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class BitstringStatusListFactoryTest {
@@ -47,9 +47,7 @@ class BitstringStatusListFactoryTest {
                 "statusListIndex", "1234",
                 "statusListCredential", "https://example.com/credentials/status/credentialId"));
         var statusList = VerifiableCredentialResource.Builder.newStatusList().issuerId("issuer").holderId("holder").build();
-        when(credentialStore.queryForUpdate(any())).thenReturn(StoreResult.success(emptyList()));
-        when(credentialStore.queryForUpdate(withCredentialId("https://example.com/credentials/status/credentialId")))
-                .thenReturn(StoreResult.success(List.of(statusList)));
+        when(credentialStore.queryForUpdate(any())).thenReturn(StoreResult.success(List.of(statusList)));
 
         var result = factory.create(status);
 
@@ -57,21 +55,8 @@ class BitstringStatusListFactoryTest {
             assertThat(info.index()).isEqualTo(1234);
             assertThat(info.statusListCredential()).isSameAs(statusList);
         });
-    }
-
-    @Test
-    void shouldCreateStatusInfo_whenStatusListIdentifiedByLastPathSegment() {
-        var status = new CredentialStatus("id", "BitstringStatusListEntry", Map.of(
-                "statusPurpose", "revocation",
-                "statusListIndex", "1234",
-                "statusListCredential", "https://example.com/credentials/status/credentialId"));
-        var statusList = VerifiableCredentialResource.Builder.newStatusList().issuerId("issuer").holderId("holder").build();
-        when(credentialStore.queryForUpdate(any())).thenReturn(StoreResult.success(emptyList()));
-        when(credentialStore.queryForUpdate(withCredentialId("credentialId"))).thenReturn(StoreResult.success(List.of(statusList)));
-
-        var result = factory.create(status);
-
-        assertThat(result).isSucceeded().isInstanceOfSatisfying(BitstringStatusInfo.class, info -> assertThat(info.statusListCredential()).isSameAs(statusList));
+        verify(credentialStore).queryForUpdate(argThat(querySpec -> querySpec.getFilterExpression()
+                .contains(criterion("verifiableCredential.credential.id", "=", "https://example.com/credentials/status/credentialId"))));
     }
 
     @Test
@@ -118,10 +103,5 @@ class BitstringStatusListFactoryTest {
         var result = factory.create(status);
 
         assertThat(result).isFailed().messages().contains("failure");
-    }
-
-    private QuerySpec withCredentialId(String credentialId) {
-        return argThat(querySpec -> querySpec != null && querySpec.getFilterExpression()
-                .contains(criterion("verifiableCredential.credential.id", "=", credentialId)));
     }
 }

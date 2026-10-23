@@ -23,7 +23,6 @@ import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.CredentialUsage;
-import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialResource;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialStore;
 import org.eclipse.edc.issuerservice.spi.credentials.statuslist.StatusListCredentialUrl;
 import org.eclipse.edc.spi.EdcException;
@@ -35,7 +34,6 @@ import org.eclipse.edc.web.spi.exception.ObjectConflictException;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.ObjectMapper;
 
-import java.util.Collection;
 import java.util.List;
 import java.util.function.Supplier;
 
@@ -67,14 +65,16 @@ public class StatusListCredentialController {
         }
 
         var httpUrl = context.getUriInfo().getAbsolutePath();
-        var statusListId = StatusListCredentialUrl.extractIdFromUrl(httpUrl);
+        // status list credentials are identified by their public URL, which differs from the request URL behind a proxy
+        var credentialId = StatusListCredentialUrl.createUrl(baseUrl, StatusListCredentialUrl.extractIdFromUrl(httpUrl));
 
-        // status list credentials are identified by their public URL. Those that were created before are identified by the
-        // last path segment of their URL, until they are renewed
-        var statusListCredential = findPublished(StatusListCredentialUrl.createUrl(baseUrl, statusListId));
-        if (statusListCredential.isEmpty()) {
-            statusListCredential = findPublished(statusListId);
-        }
+        var query = QuerySpec.Builder.newInstance()
+                .filter(new Criterion("verifiableCredential.credential.id", "=", credentialId))
+                .filter(new Criterion("metadata.published", "=", true))
+                .filter(new Criterion("usage", "=", CredentialUsage.StatusList.toString()))
+                .build();
+        var statusListCredential = store.query(query)
+                .orElseThrow(InvalidRequestException::new);
 
         if (statusListCredential.isEmpty()) {
             return Response.status(Response.Status.NOT_FOUND).build();
@@ -105,15 +105,5 @@ public class StatusListCredentialController {
         return Response.ok()
                 .header("Content-Type", contentType)
                 .entity(body).build();
-    }
-
-    private Collection<VerifiableCredentialResource> findPublished(String credentialId) {
-        var query = QuerySpec.Builder.newInstance()
-                .filter(new Criterion("verifiableCredential.credential.id", "=", credentialId))
-                .filter(new Criterion("metadata.published", "=", true))
-                .filter(new Criterion("usage", "=", CredentialUsage.StatusList.toString()))
-                .build();
-        return store.query(query)
-                .orElseThrow(InvalidRequestException::new);
     }
 }

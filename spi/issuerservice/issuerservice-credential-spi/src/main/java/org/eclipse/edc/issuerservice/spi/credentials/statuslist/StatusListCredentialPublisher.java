@@ -17,8 +17,6 @@ package org.eclipse.edc.issuerservice.spi.credentials.statuslist;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialResource;
 import org.eclipse.edc.spi.result.Result;
 
-import java.util.Optional;
-
 /**
  * Publishes a status list credential (Bitstring Statuslist, StatusList2021,...) to a publicly available location.
  * In many cases this will be a simple static web resource
@@ -35,15 +33,12 @@ public interface StatusListCredentialPublisher {
     Result<String> publish(VerifiableCredentialResource verifiableCredentialResource);
 
     /**
-     * The URL at which a status list credential will be published, if it is known before the status list credential is
-     * published. A status list credential uses this URL as its ID, which the Bitstring Status List requires.
+     * The URL at which a status list credential will be published. It is needed before the status list credential is
+     * signed, because a status list credential is identified by this URL, as the Bitstring Status List requires.
      *
-     * @param statusListId the ID by which the publisher derives the URL, e.g. a UUID
-     * @return the URL, or empty if the publisher only knows it after publishing. Then the status list credential is
-     *         identified by the given ID instead.
+     * @param statusListId the ID from which the publisher derives the URL, e.g. a UUID
+     * @return the URL
      */
-    default Optional<String> publicUrl(String statusListId) {
-        return Optional.empty();
-    }
+    String publicUrl(String statusListId);
 
 }

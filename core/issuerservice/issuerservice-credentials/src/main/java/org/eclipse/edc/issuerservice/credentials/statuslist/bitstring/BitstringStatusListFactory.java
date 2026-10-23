@@ -15,16 +15,11 @@
 package org.eclipse.edc.issuerservice.credentials.statuslist.bitstring;
 
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialStatus;
-import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialResource;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialStore;
-import org.eclipse.edc.issuerservice.spi.credentials.statuslist.StatusListCredentialUrl;
 import org.eclipse.edc.issuerservice.spi.credentials.statuslist.StatusListInfo;
 import org.eclipse.edc.issuerservice.spi.credentials.statuslist.StatusListInfoFactory;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.ServiceResult;
-
-import java.net.URI;
-import java.util.Collection;
 
 import static org.eclipse.edc.iam.verifiablecredentials.spi.VcConstants.BITSTRING_STATUS_LIST_PREFIX;
 import static org.eclipse.edc.iam.verifiablecredentials.spi.model.revocation.bitstringstatuslist.BitstringStatusListStatus.BITSTRING_STATUS_LIST_CREDENTIAL_LITERAL;
@@ -55,23 +50,17 @@ public class BitstringStatusListFactory implements StatusListInfoFactory {
 
         var ix = Integer.parseInt(index.toString());
 
-        var url = statusListCredentialId.toString();
+        // status list credentials are identified by the URL they are published at
+        var credentialId = statusListCredentialId.toString();
 
-        // status list credentials are identified by their URL. Those that were created before are identified by the last
-        // path segment of their URL, until they are renewed
-        return findForUpdate(url)
-                .compose(resources -> resources.isEmpty() ? findForUpdate(StatusListCredentialUrl.extractIdFromUrl(URI.create(url))) : ServiceResult.success(resources))
-                .compose(resources -> resources.size() == 1
-                        ? ServiceResult.success(resources.iterator().next())
-                        : ServiceResult.notFound("Cannot find the StatusList credential with id " + url))
-                .map(credential -> new BitstringStatusInfo(ix, credential));
-    }
-
-    private ServiceResult<Collection<VerifiableCredentialResource>> findForUpdate(String credentialId) {
         var query = QuerySpec.Builder.newInstance().filter(criterion("verifiableCredential.credential.id", "=", credentialId)).build();
 
         // the status list credential stays locked until the surrounding transaction completes, so that a status change can be
         // written back without overwriting one that another runtime made in the meantime, c.f. StatusListInfoFactory
-        return credentialStore.queryForUpdate(query).flatMap(ServiceResult::from);
+        return credentialStore.queryForUpdate(query).flatMap(ServiceResult::from)
+                .compose(resources -> resources.size() == 1
+                        ? ServiceResult.success(resources.iterator().next())
+                        : ServiceResult.notFound("Cannot find the StatusList credential with id " + credentialId))
+                .map(credential -> new BitstringStatusInfo(ix, credential));
     }
 }

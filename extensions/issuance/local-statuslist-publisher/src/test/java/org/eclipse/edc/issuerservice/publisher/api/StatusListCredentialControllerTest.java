@@ -96,18 +96,6 @@ class StatusListCredentialControllerTest extends RestControllerTestBase {
     }
 
     @Test
-    void resolveStatusListCredential_identifiedByLastPathSegment() {
-        when(store.query(any())).thenReturn(StoreResult.success(List.of()));
-        when(store.query(withCredentialId(CREDENTIAL_ID))).thenReturn(StoreResult.success(List.of(credentialResource)));
-
-        baseRequest()
-                .get("/foobar/" + CREDENTIAL_ID)
-                .then()
-                .statusCode(200)
-                .body(equalTo(RAW_CREDENTIAL));
-    }
-
-    @Test
     void resolveStatusListCredential_whenUrlNotEqual() {
         baseRequest()
                 .get("/foobar/barbaz/" + CREDENTIAL_ID)

@@ -33,19 +33,14 @@ class LocalCredentialPublisherTest {
 
     @Test
     void publicUrl() {
-        assertThat(publisher.publicUrl("status-list-id")).contains("https://issuer.example.com/statuslist/status-list-id");
+        assertThat(publisher.publicUrl("status-list-id")).isEqualTo("https://issuer.example.com/statuslist/status-list-id");
     }
 
     @Test
-    void publish_whenIdentifiedByUrl_shouldPublishAtThatUrl() {
-        var url = "https://issuer.example.com/statuslist/status-list-id";
+    void publish_shouldPublishAtUrlThatIdentifiesIt() {
+        var url = publisher.publicUrl("status-list-id");
 
         assertThat(publisher.publish(statusList(url))).isSucceeded().isEqualTo(url);
-    }
-
-    @Test
-    void publish_whenIdentifiedByUuid_shouldPublishAtUrlWithThatUuid() {
-        assertThat(publisher.publish(statusList("status-list-id"))).isSucceeded().isEqualTo("https://issuer.example.com/statuslist/status-list-id");
     }
 
     private VerifiableCredentialResource statusList(String credentialId) {
