@@ -98,8 +98,7 @@ public class CredentialApiEndToEndTest {
     public static final int STATUS_LIST_INDEX = 94567;
     public static final String USER = "user";
     protected static final DidResolverRegistry DID_RESOLVER_REGISTRY = mock();
-    private static final String STATUS_LIST_CREDENTIAL_ID = UUID.randomUUID().toString();
-    private static final String STATUS_LIST_CREDENTIAL_URL = "https://example.com/credentials/status/" + STATUS_LIST_CREDENTIAL_ID;
+    private static final String STATUS_LIST_CREDENTIAL_URL = "https://example.com/credentials/status/" + UUID.randomUUID();
     private final ObjectMapper objectMapper = new JacksonTypeManager().getMapper().rebuild()
             .enable(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
             .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
@@ -172,7 +171,7 @@ public class CredentialApiEndToEndTest {
 
         @Test
         void revoke_whenNotYetRevoked(IssuerService issuer, CredentialStore credentialStore) {
-            var statusListCredential = createRevocationCredential(exampleRevocationCredential(STATUS_LIST_CREDENTIAL_ID), EXAMPLE_REVOCATION_CREDENTIAL_JWT);
+            var statusListCredential = createRevocationCredential(exampleRevocationCredential(STATUS_LIST_CREDENTIAL_URL), EXAMPLE_REVOCATION_CREDENTIAL_JWT);
             // track the original bitstring
             var originalBitstring = statusListCredential.getVerifiableCredential().credential().getCredentialSubject().get(0).getClaim("", "encodedList");
             credentialStore.create(statusListCredential).orElseThrow(f -> new RuntimeException("Failed to create credential: " + f.getFailureDetail()));
@@ -195,7 +194,7 @@ public class CredentialApiEndToEndTest {
 
         @Test
         void revoke_whenAlreadyRevoked(IssuerService issuer, CredentialStore credentialStore) {
-            var statusListCredential = createRevocationCredential(exampleRevocationCredentialWithStatusBitSet(STATUS_LIST_CREDENTIAL_ID), EXAMPLE_REVOCATION_CREDENTIAL_JWT_WITH_STATUS_BIT_SET);
+            var statusListCredential = createRevocationCredential(exampleRevocationCredentialWithStatusBitSet(STATUS_LIST_CREDENTIAL_URL), EXAMPLE_REVOCATION_CREDENTIAL_JWT_WITH_STATUS_BIT_SET);
             // track the original bitstring
             var originalBitstring = statusListCredential.getVerifiableCredential().credential().getCredentialSubject().get(0).getClaim("", "encodedList");
             credentialStore.create(statusListCredential).orElseThrow(f -> new RuntimeException("Failed to create credential: " + f.getFailureDetail()));
@@ -235,7 +234,7 @@ public class CredentialApiEndToEndTest {
             var token = issuer.createParticipant("anotherUser").apiKey();
 
             // create revocation credential
-            var res = createRevocationCredential(exampleRevocationCredential(STATUS_LIST_CREDENTIAL_ID), EXAMPLE_REVOCATION_CREDENTIAL_JWT);
+            var res = createRevocationCredential(exampleRevocationCredential(STATUS_LIST_CREDENTIAL_URL), EXAMPLE_REVOCATION_CREDENTIAL_JWT);
 
             credentialStore.create(res).orElseThrow(f -> new RuntimeException("Failed to create credential: " + f.getFailureDetail()));
 
@@ -272,7 +271,7 @@ public class CredentialApiEndToEndTest {
         void revoke_whenWrongStatusListType(IssuerService issuer, CredentialStore credentialStore) {
 
             // create a statuslist credential which has the "revocation" bit set
-            var res = createRevocationCredential(exampleRevocationCredential(STATUS_LIST_CREDENTIAL_ID), EXAMPLE_REVOCATION_CREDENTIAL_JWT);
+            var res = createRevocationCredential(exampleRevocationCredential(STATUS_LIST_CREDENTIAL_URL), EXAMPLE_REVOCATION_CREDENTIAL_JWT);
 
             // track the original bitstring
             credentialStore.create(res).orElseThrow(f -> new RuntimeException("Failed to create credential: " + f.getFailureDetail()));
@@ -374,7 +373,7 @@ public class CredentialApiEndToEndTest {
         void checkStatus(IssuerService issuer, CredentialStore credentialStore) {
 
             // create revocation credential
-            var res = createRevocationCredential(exampleRevocationCredential(STATUS_LIST_CREDENTIAL_ID), EXAMPLE_REVOCATION_CREDENTIAL_JWT);
+            var res = createRevocationCredential(exampleRevocationCredential(STATUS_LIST_CREDENTIAL_URL), EXAMPLE_REVOCATION_CREDENTIAL_JWT);
 
             credentialStore.create(res).orElseThrow(f -> new RuntimeException("Failed to create credential: " + f.getFailureDetail()));
 
@@ -395,7 +394,7 @@ public class CredentialApiEndToEndTest {
             issuer.createParticipant(USER);
 
             // create revocation credential
-            var res = createRevocationCredential(exampleRevocationCredential(STATUS_LIST_CREDENTIAL_ID), EXAMPLE_REVOCATION_CREDENTIAL_JWT);
+            var res = createRevocationCredential(exampleRevocationCredential(STATUS_LIST_CREDENTIAL_URL), EXAMPLE_REVOCATION_CREDENTIAL_JWT);
 
             credentialStore.create(res).orElseThrow(f -> new RuntimeException("Failed to create credential: " + f.getFailureDetail()));
 
