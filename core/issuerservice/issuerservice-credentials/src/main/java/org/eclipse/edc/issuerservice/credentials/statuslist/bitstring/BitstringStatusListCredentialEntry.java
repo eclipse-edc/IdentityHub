@@ -28,7 +28,7 @@ public record BitstringStatusListCredentialEntry(int statusListIndex, Verifiable
 
     @Override
     public CredentialStatus createCredentialStatus() {
-        return new CredentialStatus(UUID.randomUUID().toString(), BITSTRING_STATUS_LIST_ENTRY,
+        return new CredentialStatus("urn:uuid:" + UUID.randomUUID(), BITSTRING_STATUS_LIST_ENTRY,
                 Map.of(
                         "statusPurpose", statusListCredential().getVerifiableCredential().credential().getCredentialSubject().get(0).getClaim("", "statusPurpose"),
                         "statusListIndex", statusListIndex(),

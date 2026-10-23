@@ -14,8 +14,6 @@
 
 package org.eclipse.edc.issuerservice.spi.credentials.statuslist;
 
-import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialResource;
-
 import java.net.URI;
 
 /**
@@ -24,15 +22,15 @@ import java.net.URI;
 public interface StatusListCredentialUrl {
 
     /**
-     * Create the status list credential url given the base url the the VC resource.
+     * Create the status list credential url given the base url and the ID of the status list.
      *
      * @param baseUrl the baseUrl.
-     * @param verifiableCredentialResource the credentials resource.
+     * @param statusListId the ID of the status list, which is the last path segment of the url.
      * @return the status list credential url.
      */
-    static String createUrl(String baseUrl, VerifiableCredentialResource verifiableCredentialResource) {
+    static String createUrl(String baseUrl, String statusListId) {
         var base = baseUrl.endsWith("/") ? baseUrl : baseUrl + "/";
-        return base + verifiableCredentialResource.getVerifiableCredential().credential().getId();
+        return base + statusListId;
     }
 
     /**

@@ -45,11 +45,13 @@ public class StatusListCredentialController {
     private final CredentialStore store;
     private final Monitor monitor;
     private final Supplier<ObjectMapper> mapper;
+    private final String baseUrl;
 
-    public StatusListCredentialController(CredentialStore store, Monitor monitor, Supplier<ObjectMapper> mapper) {
+    public StatusListCredentialController(CredentialStore store, Monitor monitor, Supplier<ObjectMapper> mapper, String baseUrl) {
         this.store = store;
         this.monitor = monitor;
         this.mapper = mapper;
+        this.baseUrl = baseUrl;
     }
 
     @GET
@@ -63,7 +65,8 @@ public class StatusListCredentialController {
         }
 
         var httpUrl = context.getUriInfo().getAbsolutePath();
-        var credentialId = StatusListCredentialUrl.extractIdFromUrl(httpUrl);
+        // status list credentials are identified by their public URL, which differs from the request URL behind a proxy
+        var credentialId = StatusListCredentialUrl.createUrl(baseUrl, StatusListCredentialUrl.extractIdFromUrl(httpUrl));
 
         var query = QuerySpec.Builder.newInstance()
                 .filter(new Criterion("verifiableCredential.credential.id", "=", credentialId))

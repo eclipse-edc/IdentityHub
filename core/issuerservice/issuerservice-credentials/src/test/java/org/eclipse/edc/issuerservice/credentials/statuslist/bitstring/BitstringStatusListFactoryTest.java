@@ -56,7 +56,7 @@ class BitstringStatusListFactoryTest {
             assertThat(info.statusListCredential()).isSameAs(statusList);
         });
         verify(credentialStore).queryForUpdate(argThat(querySpec -> querySpec.getFilterExpression()
-                .contains(criterion("verifiableCredential.credential.id", "=", "credentialId"))));
+                .contains(criterion("verifiableCredential.credential.id", "=", "https://example.com/credentials/status/credentialId"))));
     }
 
     @Test

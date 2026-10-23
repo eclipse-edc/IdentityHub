@@ -393,15 +393,18 @@ public class BitstringStatusListManager implements StatusListManager {
         // generate new bitstring status credential. The W3C Bitstring Status List builds on the VC Data Model 2.0
         var now = clock.instant();
 
+        // the Bitstring Status List requires the status list credential to be identified by the URL it is published at
+        var credentialId = publisher.publicUrl(UUID.randomUUID().toString());
+
         var credential = VerifiableCredential.Builder.newInstance()
                 .credentialSubject(CredentialSubject.Builder.newInstance()
-                        .id(UUID.randomUUID().toString())
+                        .id("urn:uuid:" + UUID.randomUUID())
                         .claim("type", BITSTRING_STATUS_LIST)
                         .claim("statusPurpose", REVOCATION)
                         .claim("encodedList", createEmptyBitstring())
                         //todo: add support for statusMessage, statusSize, etc.
                         .build())
-                .id(UUID.randomUUID().toString())
+                .id(credentialId)
                 .context(VC_PREFIX_V2)
                 .dataModelVersion(DataModelVersion.V_2_0)
                 .issuanceDate(now)

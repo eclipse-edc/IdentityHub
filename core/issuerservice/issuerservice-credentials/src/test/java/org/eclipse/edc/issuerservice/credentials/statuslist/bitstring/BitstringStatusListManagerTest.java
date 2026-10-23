@@ -89,6 +89,7 @@ class BitstringStatusListManagerTest {
     @BeforeEach
     void setUp() {
         when(publisher.publish(any())).thenReturn(Result.success(CREDENTIAL_URL));
+        when(publisher.publicUrl(any())).thenAnswer(i -> "https://issuer.example.com/statuslist/" + i.getArgument(0));
         when(participantContextService.getParticipantContext(eq(PARTICIPANT_CONTEXT_ID)))
                 .thenReturn(success(IdentityHubParticipantContext.Builder.newInstance()
                         .participantContextId(PARTICIPANT_CONTEXT_ID)
@@ -254,6 +255,22 @@ class BitstringStatusListManagerTest {
         verify(participantContextService).getParticipantContext(PARTICIPANT_CONTEXT_ID);
         verify(generator).signCredential(eq(PARTICIPANT_CONTEXT_ID), any(), eq(CredentialFormat.VC2_0_JOSE));
         verifyNoMoreInteractions(store, generator, participantContextService);
+    }
+
+    @Test
+    void getActiveCredential_whenEmptyResult_shouldIdentifyNewOneByItsUrl() {
+        when(store.queryForUpdate(any())).thenReturn(StoreResult.success(List.of()));
+        when(store.update(any())).thenReturn(StoreResult.success());
+        when(store.create(any())).thenReturn(StoreResult.success());
+
+        var entry = manager.getActiveCredential(PARTICIPANT_CONTEXT_ID);
+
+        assertThat(entry).isSucceeded().satisfies(e -> {
+            var credential = e.statusListCredential().getVerifiableCredential().credential();
+            assertThat(credential.getId()).startsWith("https://issuer.example.com/statuslist/");
+            assertThat(credential.getCredentialSubject()).singleElement().satisfies(subject -> assertThat(subject.getId()).startsWith("urn:uuid:"));
+            assertThat(e.createCredentialStatus().id()).startsWith("urn:uuid:");
+        });
     }
 
     @Test

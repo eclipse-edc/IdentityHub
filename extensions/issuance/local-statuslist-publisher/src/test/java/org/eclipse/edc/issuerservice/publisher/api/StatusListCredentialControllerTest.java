@@ -24,6 +24,7 @@ import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCre
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialStore;
 import org.eclipse.edc.junit.annotations.ApiTest;
 import org.eclipse.edc.spi.monitor.Monitor;
+import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.StoreResult;
 import org.eclipse.edc.web.jersey.testfixtures.RestControllerTestBase;
 import org.junit.jupiter.api.BeforeEach;
@@ -37,6 +38,7 @@ import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -78,6 +80,19 @@ class StatusListCredentialControllerTest extends RestControllerTestBase {
                 .header("Content-Type", "application/vc+jwt")
                 .body(equalTo(RAW_CREDENTIAL));
         verifyNoInteractions(monitor);
+    }
+
+    @Test
+    void resolveStatusListCredential_identifiedByUrl() {
+        var url = "http://localhost:%s/statuslist/foobar/%s".formatted(port, CREDENTIAL_ID);
+        when(store.query(any())).thenReturn(StoreResult.success(List.of()));
+        when(store.query(withCredentialId(url))).thenReturn(StoreResult.success(List.of(credentialResource)));
+
+        baseRequest()
+                .get("/foobar/" + CREDENTIAL_ID)
+                .then()
+                .statusCode(200)
+                .body(equalTo(RAW_CREDENTIAL));
     }
 
     @Test
@@ -151,7 +166,12 @@ class StatusListCredentialControllerTest extends RestControllerTestBase {
 
     @Override
     protected Object controller() {
-        return new StatusListCredentialController(store, monitor, () -> objectMapper);
+        return new StatusListCredentialController(store, monitor, () -> objectMapper, "http://localhost:%s/statuslist/foobar".formatted(port));
+    }
+
+    private QuerySpec withCredentialId(String credentialId) {
+        return argThat(query -> query != null && query.getFilterExpression().stream()
+                .anyMatch(criterion -> criterion.getOperandLeft().equals("verifiableCredential.credential.id") && criterion.getOperandRight().equals(credentialId)));
     }
 
     private RequestSpecification baseRequest() {

@@ -16,13 +16,10 @@ package org.eclipse.edc.issuerservice.credentials.statuslist.bitstring;
 
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialStatus;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialStore;
-import org.eclipse.edc.issuerservice.spi.credentials.statuslist.StatusListCredentialUrl;
 import org.eclipse.edc.issuerservice.spi.credentials.statuslist.StatusListInfo;
 import org.eclipse.edc.issuerservice.spi.credentials.statuslist.StatusListInfoFactory;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.ServiceResult;
-
-import java.net.URI;
 
 import static org.eclipse.edc.iam.verifiablecredentials.spi.VcConstants.BITSTRING_STATUS_LIST_PREFIX;
 import static org.eclipse.edc.iam.verifiablecredentials.spi.model.revocation.bitstringstatuslist.BitstringStatusListStatus.BITSTRING_STATUS_LIST_CREDENTIAL_LITERAL;
@@ -53,7 +50,8 @@ public class BitstringStatusListFactory implements StatusListInfoFactory {
 
         var ix = Integer.parseInt(index.toString());
 
-        var credentialId = StatusListCredentialUrl.extractIdFromUrl(URI.create(statusListCredentialId.toString()));
+        // status list credentials are identified by the URL they are published at
+        var credentialId = statusListCredentialId.toString();
 
         var query = QuerySpec.Builder.newInstance().filter(criterion("verifiableCredential.credential.id", "=", credentialId)).build();
 

@@ -32,4 +32,13 @@ public interface StatusListCredentialPublisher {
      */
     Result<String> publish(VerifiableCredentialResource verifiableCredentialResource);
 
+    /**
+     * The URL at which a status list credential will be published. It is needed before the status list credential is
+     * signed, because a status list credential is identified by this URL, as the Bitstring Status List requires.
+     *
+     * @param statusListId the ID from which the publisher derives the URL, e.g. a UUID
+     * @return the URL
+     */
+    String publicUrl(String statusListId);
+
 }

@@ -29,7 +29,13 @@ public class LocalCredentialPublisher implements StatusListCredentialPublisher {
 
     @Override
     public Result<String> publish(VerifiableCredentialResource verifiableCredentialResource) {
-        return Result.success(createUrl(baseUrl, verifiableCredentialResource));
+        // the status list credential is served from the credential store, at the URL that identifies it
+        return Result.success(verifiableCredentialResource.getVerifiableCredential().credential().getId());
+    }
+
+    @Override
+    public String publicUrl(String statusListId) {
+        return createUrl(baseUrl, statusListId);
     }
 
 }

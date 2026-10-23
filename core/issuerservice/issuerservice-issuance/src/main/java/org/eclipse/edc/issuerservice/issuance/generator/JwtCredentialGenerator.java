@@ -41,6 +41,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import static java.util.Optional.ofNullable;
 import static org.eclipse.edc.issuerservice.issuance.generator.Constants.CREDENTIAL_STATUS;
 import static org.eclipse.edc.issuerservice.issuance.generator.Constants.CREDENTIAL_SUBJECT;
 import static org.eclipse.edc.issuerservice.issuance.generator.Constants.TYPE;
@@ -96,7 +97,8 @@ public class JwtCredentialGenerator implements CredentialGenerator {
                     .claims(ISSUER, credential.getIssuer().id())
                     .claims(ISSUED_AT, Date.from(clock.instant()))
                     .claims(NOT_BEFORE, Date.from(credential.getIssuanceDate()))
-                    .claims(JWT_ID, UUID.randomUUID().toString())
+                    // VC-JWT maps jti to the credential's id
+                    .claims(JWT_ID, ofNullable(credential.getId()).orElseGet(() -> "urn:uuid:" + UUID.randomUUID()))
                     .claims(SUBJECT, holderDid)
                     .claims(VERIFIABLE_CREDENTIAL_CLAIM, createVcClaim(credential, types));
 
@@ -117,7 +119,7 @@ public class JwtCredentialGenerator implements CredentialGenerator {
         ctx.add(VcConstants.W3C_CREDENTIALS_URL);
         ctx.addAll(additionalContext);
         return VerifiableCredential.Builder.newInstance()
-                .id(UUID.randomUUID().toString())
+                .id("urn:uuid:" + UUID.randomUUID())
                 .contexts(new ArrayList<>(ctx))
                 .issuer(new Issuer(issuer))
                 .dataModelVersion(DataModelVersion.V_1_1)
