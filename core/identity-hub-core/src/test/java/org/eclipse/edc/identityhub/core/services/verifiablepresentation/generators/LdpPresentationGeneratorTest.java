@@ -158,6 +158,14 @@ class LdpPresentationGeneratorTest extends PresentationGeneratorTest {
     }
 
     @Test
+    void createPresentation_proofPurposeIsAuthentication() {
+        var result = creator.generatePresentation(participantContextId, List.of(), PRIVATE_KEY_ALIAS, PUBLIC_KEY_ID, issuerId, ADDITIONAL_DATA);
+
+        var purpose = proof(result).getJsonArray(SECURITY_VOCAB + "proofPurpose").getJsonObject(0);
+        assertThat(purpose.getString("@id")).isEqualTo(SECURITY_VOCAB + "authentication");
+    }
+
+    @Test
     void createPresentation_proofHasNoChallenge() {
         var result = creator.generatePresentation(participantContextId, List.of(), PRIVATE_KEY_ALIAS, PUBLIC_KEY_ID, issuerId, ADDITIONAL_DATA);
 
