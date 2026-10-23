@@ -32,6 +32,7 @@ import org.eclipse.edc.identityhub.spi.keypair.events.KeyPairActivated;
 import org.eclipse.edc.identityhub.spi.keypair.events.KeyPairRevoked;
 import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairResource;
 import org.eclipse.edc.identityhub.spi.participantcontext.events.ParticipantContextUpdated;
+import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyPairUsage;
 import org.eclipse.edc.identityhub.transaction.TrackingTransactionContext;
 import org.eclipse.edc.keys.KeyParserRegistryImpl;
 import org.eclipse.edc.keys.keyparsers.JwkParser;
@@ -603,7 +604,39 @@ class DidDocumentServiceImplTest {
         verify(publisherMock).publish(eq(did));
         // CS-PRES-13: a verifier only accepts a VP whose signing key the DID document declares for authentication
         assertThat(doc.getAuthentication()).containsExactly(keyId);
-        // DCP v1.0 §4.1: the signing key MUST have capabilityInvocation verification relationship
+        assertThat(doc.getAssertionMethod()).isEmpty();
+        assertThat(doc.getCapabilityInvocation()).isEmpty();
+    }
+
+    @Test
+    void onKeyPairActivated_credentialSigningKey_shouldOnlyBeAssertionMethod() throws JOSEException {
+        var keyId = "key-id";
+        var doc = activateKeyPair(keyId, KeyPairResource.Builder.newCredentialSigning());
+
+        assertThat(doc.getAssertionMethod()).containsExactly(keyId);
+        assertThat(doc.getAuthentication()).isEmpty();
+        assertThat(doc.getCapabilityInvocation()).isEmpty();
+    }
+
+    @Test
+    void onKeyPairActivated_tokenSigningKey_shouldOnlyBeCapabilityInvocation() throws JOSEException {
+        var keyId = "key-id";
+        var doc = activateKeyPair(keyId, KeyPairResource.Builder.newTokenSigning());
+
+        // DCP v1.0 §4.3.3: the signing key of a self-issued ID token MUST have the capabilityInvocation relationship
+        assertThat(doc.getCapabilityInvocation()).containsExactly(keyId);
+        assertThat(doc.getAssertionMethod()).isEmpty();
+        assertThat(doc.getAuthentication()).isEmpty();
+    }
+
+    @Test
+    void onKeyPairActivated_keyWithAllUsages_shouldHaveAllRelationships() throws JOSEException {
+        var keyId = "key-id";
+        var doc = activateKeyPair(keyId, KeyPairResource.Builder.newInstance()
+                .usage(KeyPairUsage.CREDENTIAL_SIGNING, KeyPairUsage.PRESENTATION_SIGNING, KeyPairUsage.TOKEN_SIGNING));
+
+        assertThat(doc.getAssertionMethod()).containsExactly(keyId);
+        assertThat(doc.getAuthentication()).containsExactly(keyId);
         assertThat(doc.getCapabilityInvocation()).containsExactly(keyId);
     }
 
@@ -659,6 +692,8 @@ class DidDocumentServiceImplTest {
                 .controller(did)
                 .type(JSON_WEB_KEY_2020)
                 .build());
+        doc.getAssertionMethod().add(keyId);
+        doc.getCapabilityInvocation().add(keyId);
         var didResource = DidResource.Builder.newInstance().did(did).state(DidState.GENERATED).document(doc).build();
 
         when(didResourceStoreMock.queryForUpdate(argThat(byParticipantInDidOrder(TEST_PARTICIPANT_ID)))).thenReturn(List.of(didResource));
@@ -683,8 +718,10 @@ class DidDocumentServiceImplTest {
         assertThat(doc.getVerificationMethod()).filteredOn(vm -> vm.getId().equals(keyId))
                 .singleElement()
                 .satisfies(vm -> assertThat(vm.getPublicKeyJwk()).isEqualTo(key.toPublicJWK().toJSONObject()));
+        // the relationships follow the usages of the latest activation
         assertThat(doc.getAuthentication()).containsExactly(keyId);
-        assertThat(doc.getCapabilityInvocation()).containsExactly(keyId);
+        assertThat(doc.getAssertionMethod()).isEmpty();
+        assertThat(doc.getCapabilityInvocation()).isEmpty();
         verify(didResourceStoreMock).update(any());
         verify(publisherMock).publish(eq(did));
     }
@@ -865,7 +902,7 @@ class DidDocumentServiceImplTest {
 
     @SuppressWarnings("unchecked")
     @Test
-    @DisplayName("CS-PRES-13: a revoked key is removed from the authentication relationship as well as from the verification methods")
+    @DisplayName("CS-PRES-13: a revoked key is removed from all verification relationships as well as from the verification methods")
     void onKeyPairRevoked() throws JOSEException {
         var keyId = "key-id";
         var doc = createDidDocument().verificationMethod(List.of(VerificationMethod.Builder.newInstance()
@@ -874,6 +911,7 @@ class DidDocumentServiceImplTest {
                         .build()))
                 .authentication(List.of(keyId))
                 .capabilityInvocation(List.of(keyId))
+                .assertionMethod(List.of(keyId))
                 .build();
         var did = doc.getId();
         var didResource = DidResource.Builder.newInstance().did(did).state(DidState.GENERATED).document(doc).build();
@@ -902,6 +940,8 @@ class DidDocumentServiceImplTest {
         assertThat(doc.getAuthentication()).doesNotContain(keyId);
         // a revoked key must not stay behind as a capabilityInvocation method either
         assertThat(doc.getCapabilityInvocation()).doesNotContain(keyId);
+        // nor as an assertionMethod
+        assertThat(doc.getAssertionMethod()).doesNotContain(keyId);
     }
 
     @SuppressWarnings("unchecked")
@@ -975,5 +1015,28 @@ class DidDocumentServiceImplTest {
                         .id(TEST_DID + "#key-1")
                         .publicKeyMultibase("saflasjdflaskjdflasdkfj")
                         .build()));
+    }
+
+    private DidDocument activateKeyPair(String keyId, KeyPairResource.Builder keyPairResource) throws JOSEException {
+        var key = new ECKeyGenerator(Curve.P_256).keyID(keyId).generate();
+        var doc = createDidDocument().build();
+        var didResource = DidResource.Builder.newInstance().did(doc.getId()).state(DidState.GENERATED).document(doc).build();
+
+        when(didResourceStoreMock.queryForUpdate(argThat(byParticipantInDidOrder(TEST_PARTICIPANT_ID)))).thenReturn(List.of(didResource));
+        when(didResourceStoreMock.update(any())).thenReturn(StoreResult.success());
+        when(didResourceStoreMock.queryForUpdate(argThat(byDid(doc.getId())))).thenReturn(List.of(didResource));
+        when(publisherMock.publish(doc.getId())).thenReturn(Result.success());
+
+        service.on(EventEnvelope.Builder.newInstance()
+                .at(System.currentTimeMillis())
+                .id(UUID.randomUUID().toString())
+                .payload(KeyPairActivated.Builder.newInstance()
+                        .keyId(keyId)
+                        .keyPairResource(keyPairResource.id(UUID.randomUUID().toString()).build())
+                        .participantContextId(TEST_PARTICIPANT_ID)
+                        .publicKey(key.toPublicJWK().toJSONString(), JSON_WEB_KEY_2020)
+                        .build())
+                .build());
+        return doc;
     }
 }
