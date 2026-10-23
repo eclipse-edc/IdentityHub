@@ -29,6 +29,7 @@ import org.eclipse.edc.identityhub.spi.did.store.DidResourceStore;
 import org.eclipse.edc.identityhub.spi.keypair.events.KeyPairActivated;
 import org.eclipse.edc.identityhub.spi.keypair.events.KeyPairRevoked;
 import org.eclipse.edc.identityhub.spi.participantcontext.events.ParticipantContextUpdated;
+import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyPairUsage;
 import org.eclipse.edc.keys.spi.KeyParserRegistry;
 import org.eclipse.edc.participantcontext.spi.store.ParticipantContextStore;
 import org.eclipse.edc.participantcontext.spi.types.ParticipantContext;
@@ -54,6 +55,7 @@ import java.security.KeyPair;
 import java.security.PublicKey;
 import java.text.ParseException;
 import java.util.Collection;
+import java.util.List;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -332,15 +334,12 @@ public class DidDocumentServiceImpl implements DidDocumentService, EventSubscrib
                                 .controller(dd.getDocument().getId())
                                 .type(event.getKeyType())
                                 .build());
-                        // the key signs this participant's Verifiable Presentations, and a verifier only accepts a VP
-                        // whose signing key the DID document declares for authentication (DCP §5.4.3)
-                        if (!dd.getDocument().getAuthentication().contains(event.getKeyId())) {
-                            dd.getDocument().getAuthentication().add(event.getKeyId());
-                        }
-                        // DCP v1.0 §4.1: the signing key MUST have capabilityInvocation verification relationship
-                        if (!dd.getDocument().getCapabilityInvocation().contains(event.getKeyId())) {
-                            dd.getDocument().getCapabilityInvocation().add(event.getKeyId());
-                        }
+                        // the key is declared only for the verification relationships of its usages, so that e.g. a
+                        // token signing key cannot be used to sign credentials. A re-activated key pair may have
+                        // different usages, so relationships of earlier activations are removed first.
+                        removeVerificationRelationships(dd.getDocument(), event.getKeyId());
+                        event.getKeyPairResource().getUsage()
+                                .forEach(usage -> verificationRelationship(dd.getDocument(), usage).add(event.getKeyId()));
                         return ServiceResult.from(didResourceStore.update(dd))
                                 .compose(v -> isActive ? publish(dd.getDid()) : success());
                     })
@@ -352,6 +351,28 @@ public class DidDocumentServiceImpl implements DidDocumentService, EventSubscrib
                 monitor.warning("Updating DID documents after activating a KeyPair failed: %s".formatted(errors));
             }
         });
+    }
+
+    /**
+     * Returns the verification relationship of the DID document that declares keys for the given usage:
+     * <ul>
+     *     <li>credentials are verified with the issuer's {@code assertionMethod} keys (VC Data Model, Controlled Identifiers)</li>
+     *     <li>a verifier only accepts a VP whose signing key is declared for {@code authentication} (DCP §5.4.3)</li>
+     *     <li>the signing key of a self-issued ID token MUST have the {@code capabilityInvocation} relationship (DCP §4.3.3)</li>
+     * </ul>
+     */
+    private List<String> verificationRelationship(DidDocument document, KeyPairUsage usage) {
+        return switch (usage) {
+            case CREDENTIAL_SIGNING -> document.getAssertionMethod();
+            case PRESENTATION_SIGNING -> document.getAuthentication();
+            case TOKEN_SIGNING -> document.getCapabilityInvocation();
+        };
+    }
+
+    private void removeVerificationRelationships(DidDocument document, String keyId) {
+        document.getAssertionMethod().removeIf(keyId::equals);
+        document.getAuthentication().removeIf(keyId::equals);
+        document.getCapabilityInvocation().removeIf(keyId::equals);
     }
 
     private Result<JWK> tryParseJwk(String serialized) {
@@ -371,9 +392,8 @@ public class DidDocumentServiceImpl implements DidDocumentService, EventSubscrib
             var errors = didResources.stream()
                     .peek(didResource -> {
                         didResource.getDocument().getVerificationMethod().removeIf(vm -> vm.getId().equals(keyId));
-                        // a revoked key must no longer be offered for authentication either
-                        didResource.getDocument().getAuthentication().removeIf(keyId::equals);
-                        didResource.getDocument().getCapabilityInvocation().removeIf(keyId::equals);
+                        // a revoked key must no longer be offered for any verification relationship either
+                        removeVerificationRelationships(didResource.getDocument(), keyId);
                     })
                     .map(didResourceStore::update)
                     .filter(StoreResult::failed)
