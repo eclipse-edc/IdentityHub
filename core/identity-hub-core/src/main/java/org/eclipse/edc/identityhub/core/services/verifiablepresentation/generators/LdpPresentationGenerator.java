@@ -67,6 +67,7 @@ public class LdpPresentationGenerator implements PresentationGenerator<JsonObjec
     public static final String TYPE_ADDITIONAL_DATA = "types";
     public static final String HOLDER_PROPERTY = "holder";
     public static final URI ASSERTION_METHOD = URI.create("https://w3id.org/security#assertionMethod");
+    public static final URI JSON_WEB_KEY_2020 = URI.create("https://w3id.org/security#JsonWebKey2020");
     private final PrivateKeyResolver privateKeyResolver;
     private final SignatureSuiteRegistry signatureSuiteRegistry;
     private final String defaultSignatureSuite;
@@ -157,7 +158,7 @@ public class LdpPresentationGenerator implements PresentationGenerator<JsonObjec
                 .build();
 
         var audience = Optional.ofNullable(additionalData.get(JwtRegisteredClaimNames.AUDIENCE)).map(Object::toString).orElse(null);
-        return signPresentation(presentationObject, suite, suiteIdentifier, pk, publicKeyId, additionalData.get(CONTROLLER_ADDITIONAL_DATA).toString(), audience);
+        return signPresentation(presentationObject, suite, pk, publicKeyId, additionalData.get(CONTROLLER_ADDITIONAL_DATA).toString(), audience);
     }
 
     @NotNull
@@ -176,7 +177,7 @@ public class LdpPresentationGenerator implements PresentationGenerator<JsonObjec
         return array.build();
     }
 
-    private JsonObject signPresentation(JsonObject presentationObject, SignatureSuite suite, String suiteIdentifier, PrivateKey pk, String publicKeyId, String controller,
+    private JsonObject signPresentation(JsonObject presentationObject, SignatureSuite suite, PrivateKey pk, String publicKeyId, String controller,
                                         @Nullable String audience) {
         var composedKeyId = publicKeyId;
         if (!publicKeyId.startsWith(controller)) {
@@ -185,20 +186,18 @@ public class LdpPresentationGenerator implements PresentationGenerator<JsonObjec
 
         var keyIdUri = URI.create(composedKeyId);
         var controllerUri = URI.create(controller);
-        var verificationMethodType = URI.create(suiteIdentifier);
 
         var jwk = CryptoConverter.createJwk(new KeyPair(null, pk));
 
-        var keypair = new JsonWebKeyPair(keyIdUri, verificationMethodType, controllerUri, jwk);
+        var keypair = new JsonWebKeyPair(keyIdUri, JSON_WEB_KEY_2020, controllerUri, jwk);
 
         var now = clock.instant();
         var proofDraft = Jws2020ProofDraft.Builder.newInstance()
                 .proofPurpose(ASSERTION_METHOD)
-                .verificationMethod(new JsonWebKeyPair(keyIdUri, verificationMethodType, controllerUri, null))
+                .verificationMethod(new JsonWebKeyPair(keyIdUri, JSON_WEB_KEY_2020, controllerUri, null))
                 .created(now)
                 .expires(now.plus(vpLifetime))
                 .domain(audience)
-                .challenge(UUID.randomUUID().toString())
                 .mapper(typeManager.getMapper(typeContext))
                 .build();
 

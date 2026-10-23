@@ -14,9 +14,14 @@
 
 package org.eclipse.edc.identityhub.core.services.verifiablepresentation.generators;
 
+import com.apicatalog.jsonld.loader.DocumentLoader;
+import com.apicatalog.ld.signature.VerificationMethod;
+import com.apicatalog.vc.method.resolver.MethodResolver;
+import com.apicatalog.vc.proof.Proof;
 import com.nimbusds.jose.jwk.Curve;
 import jakarta.json.JsonObject;
 import org.eclipse.edc.iam.decentralizedclaims.spi.verification.SignatureSuiteRegistry;
+import org.eclipse.edc.iam.decentralizedclaims.spi.verification.VerifierContext;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredentialContainer;
 import org.eclipse.edc.identityhub.spi.model.IdentityHubConstants;
@@ -24,18 +29,23 @@ import org.eclipse.edc.jsonld.TitaniumJsonLd;
 import org.eclipse.edc.jsonld.util.JacksonJsonLd;
 import org.eclipse.edc.junit.testfixtures.TestUtils;
 import org.eclipse.edc.keys.spi.PrivateKeyResolver;
+import org.eclipse.edc.security.signature.jws2020.JsonWebKeyPair;
 import org.eclipse.edc.security.signature.jws2020.Jws2020SignatureSuite;
+import org.eclipse.edc.security.token.jwt.CryptoConverter;
 import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.spi.types.TypeManager;
 import org.eclipse.edc.verifiablecredentials.jwt.JwtCreationUtils;
 import org.eclipse.edc.verifiablecredentials.jwt.TestConstants;
 import org.eclipse.edc.verifiablecredentials.linkeddata.LdpIssuer;
+import org.eclipse.edc.verifiablecredentials.linkeddata.LdpVerifier;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import tools.jackson.databind.ObjectMapper;
 
+import java.net.URI;
+import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
 import java.time.Clock;
@@ -53,6 +63,7 @@ import static org.eclipse.edc.identityhub.spi.model.IdentityHubConstants.DID_CON
 import static org.eclipse.edc.identityhub.spi.model.IdentityHubConstants.JWS_2020_URL;
 import static org.eclipse.edc.identityhub.spi.model.IdentityHubConstants.PRESENTATION_EXCHANGE_URL;
 import static org.eclipse.edc.identityhub.spi.model.IdentityHubConstants.W3C_CREDENTIALS_URL;
+import static org.eclipse.edc.junit.assertions.AbstractResultAssert.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -69,17 +80,16 @@ class LdpPresentationGeneratorTest extends PresentationGeneratorTest {
     private final PrivateKeyResolver privateKeyResolver = mock();
     private final TypeManager typeManager = mock();
     private final String participantContextId = "test-participant";
+    private final SignatureSuiteRegistry signatureSuiteRegistryMock = mock();
     private LdpPresentationGenerator creator;
+    private KeyPair vpSigningKey;
 
     @BeforeEach
     void setup() throws NoSuchAlgorithmException {
-        var vpSigningKey = KeyPairGenerator.getInstance("Ed25519")
-                .generateKeyPair()
-                .getPrivate();
+        vpSigningKey = KeyPairGenerator.getInstance("Ed25519").generateKeyPair();
 
         when(privateKeyResolver.resolvePrivateKey(eq(participantContextId), any())).thenReturn(Result.failure("no key found"));
-        when(privateKeyResolver.resolvePrivateKey(eq(participantContextId), eq(PRIVATE_KEY_ALIAS))).thenReturn(Result.success(vpSigningKey));
-        var signatureSuiteRegistryMock = mock(SignatureSuiteRegistry.class);
+        when(privateKeyResolver.resolvePrivateKey(eq(participantContextId), eq(PRIVATE_KEY_ALIAS))).thenReturn(Result.success(vpSigningKey.getPrivate()));
         var suite = new Jws2020SignatureSuite(new ObjectMapper());
         when(signatureSuiteRegistryMock.getForId(IdentityHubConstants.JWS_2020_SIGNATURE_SUITE)).thenReturn(suite);
         when(signatureSuiteRegistryMock.getAllSuites()).thenReturn(List.of(suite));
@@ -115,7 +125,51 @@ class LdpPresentationGeneratorTest extends PresentationGeneratorTest {
         var proof = proof(result);
         assertThat(proofValue(proof, "domain")).isEqualTo("did:web:verifier");
         assertThat(proofValue(proof, "expiration")).isEqualTo(NOW.plus(LIFETIME).toString());
-        assertThat(proofValue(proof, "challenge")).isNotBlank();
+    }
+
+    @Test
+    void createPresentation_isVerifiable() {
+        var controller = ADDITIONAL_DATA.get("controller").toString();
+        var presentation = creator.generatePresentation(participantContextId, List.of(), PRIVATE_KEY_ALIAS, PUBLIC_KEY_ID, controller, ADDITIONAL_DATA);
+
+        // the holder's DID document, which publishes the public key under the verification method that the proof references
+        var publicKey = CryptoConverter.createJwk(new KeyPair(vpSigningKey.getPublic(), null)).toPublicJWK();
+        var didDocument = new MethodResolver() {
+            @Override
+            public VerificationMethod resolve(URI id, DocumentLoader loader, Proof proof) {
+                return new JsonWebKeyPair(id, LdpPresentationGenerator.JSON_WEB_KEY_2020, URI.create(controller), publicKey);
+            }
+
+            @Override
+            public boolean isAccepted(URI id) {
+                return id.toString().equals(controller + "#" + PUBLIC_KEY_ID);
+            }
+        };
+        var verifier = LdpVerifier.Builder.newInstance()
+                .signatureSuites(signatureSuiteRegistryMock)
+                .jsonLd(initializeJsonLd())
+                .typeManager(typeManager)
+                .typeContext("test")
+                .methodResolvers(List.of(didDocument))
+                .clock(Clock.fixed(NOW, ZoneOffset.UTC))
+                .build();
+
+        assertThat(verifier.verify(presentation.toString(), VerifierContext.Builder.newInstance().verifier(verifier).build())).isSucceeded();
+    }
+
+    @Test
+    void createPresentation_proofHasNoChallenge() {
+        var result = creator.generatePresentation(participantContextId, List.of(), PRIVATE_KEY_ALIAS, PUBLIC_KEY_ID, issuerId, ADDITIONAL_DATA);
+
+        assertThat(proof(result)).doesNotContainKey(SECURITY_VOCAB + "challenge");
+    }
+
+    @Test
+    void createPresentation_verificationMethodIsJsonWebKey2020() {
+        var result = creator.generatePresentation(participantContextId, List.of(), PRIVATE_KEY_ALIAS, PUBLIC_KEY_ID, issuerId, ADDITIONAL_DATA);
+
+        var verificationMethod = proof(result).getJsonArray(SECURITY_VOCAB + "verificationMethod").getJsonObject(0);
+        assertThat(verificationMethod.getJsonArray("@type").getString(0)).isEqualTo(SECURITY_VOCAB + "JsonWebKey2020");
     }
 
     @Test
