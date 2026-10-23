@@ -136,7 +136,8 @@ public class BitstringStatusListManager implements StatusListManager {
     /**
      * Signs a status list credential again: it is valid for the configured validity from now on, and a status list that
      * is shorter than the configured length is extended to it. Existing entries keep their indexes. Only the bitstring,
-     * the dates and the {@link #BITSTRING_SIZE} change, so the status list credential keeps its ID and URL.
+     * the dates and the {@link #BITSTRING_SIZE} change, so the status list credential keeps its URL. It keeps its ID too,
+     * unless it was identified by a UUID instead of its URL, c.f. {@link #credentialId(VerifiableCredentialResource)}.
      * <p>
      * The given resource is left unchanged if signing fails.
      */
@@ -153,7 +154,7 @@ public class BitstringStatusListManager implements StatusListManager {
             return ServiceResult.unexpected(encodedList.getFailureDetail());
         }
 
-        var renewedCredential = renewedCopy(container.credential(), encodedList.getContent());
+        var renewedCredential = renewedCopy(container.credential(), credentialId(statusListCredential), encodedList.getContent());
         var signed = credentialGenerator.signCredential(statusListCredential.getParticipantContextId(), renewedCredential, container.format());
         if (signed.failed()) {
             return ServiceResult.unexpected(signed.getFailureDetail());
@@ -295,10 +296,20 @@ public class BitstringStatusListManager implements StatusListManager {
     }
 
     /**
-     * Copies a status list credential with the given bitstring, valid for the configured validity from now on.
+     * The ID of a status list credential. Status list credentials that were created before were identified by a UUID
+     * instead of the URL they are published at. They are identified by that URL from now on, if the publisher confirms it.
+     */
+    private String credentialId(VerifiableCredentialResource statusListCredential) {
+        var id = statusListCredential.getVerifiableCredential().credential().getId();
+        var url = publicUri(statusListCredential);
+        return url != null && publisher.publicUrl(id).filter(url::equals).isPresent() ? url : id;
+    }
+
+    /**
+     * Copies a status list credential with the given ID and bitstring, valid for the configured validity from now on.
      */
     @SuppressWarnings("unchecked")
-    private VerifiableCredential renewedCopy(VerifiableCredential credential, String encodedList) {
+    private VerifiableCredential renewedCopy(VerifiableCredential credential, String id, String encodedList) {
         var subjects = credential.getCredentialSubject().stream()
                 .map(subject -> CredentialSubject.Builder.newInstance()
                         .id(subject.getId())
@@ -313,7 +324,7 @@ public class BitstringStatusListManager implements StatusListManager {
         }
         var now = clock.instant();
         return VerifiableCredential.Builder.newInstance()
-                .id(credential.getId())
+                .id(id)
                 .contexts(new ArrayList<>(credential.getContext()))
                 .types(types)
                 .issuer(credential.getIssuer())
@@ -393,15 +404,19 @@ public class BitstringStatusListManager implements StatusListManager {
         // generate new bitstring status credential. The W3C Bitstring Status List builds on the VC Data Model 2.0
         var now = clock.instant();
 
+        // the Bitstring Status List requires the status list credential to be identified by the URL it is published at
+        var statusListId = UUID.randomUUID().toString();
+        var credentialId = publisher.publicUrl(statusListId).orElse(statusListId);
+
         var credential = VerifiableCredential.Builder.newInstance()
                 .credentialSubject(CredentialSubject.Builder.newInstance()
-                        .id(UUID.randomUUID().toString())
+                        .id("urn:uuid:" + UUID.randomUUID())
                         .claim("type", BITSTRING_STATUS_LIST)
                         .claim("statusPurpose", REVOCATION)
                         .claim("encodedList", createEmptyBitstring())
                         //todo: add support for statusMessage, statusSize, etc.
                         .build())
-                .id(UUID.randomUUID().toString())
+                .id(credentialId)
                 .context(VC_PREFIX_V2)
                 .dataModelVersion(DataModelVersion.V_2_0)
                 .issuanceDate(now)

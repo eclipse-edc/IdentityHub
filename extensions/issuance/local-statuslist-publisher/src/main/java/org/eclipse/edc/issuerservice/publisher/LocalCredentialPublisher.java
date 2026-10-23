@@ -18,6 +18,8 @@ import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCre
 import org.eclipse.edc.issuerservice.spi.credentials.statuslist.StatusListCredentialPublisher;
 import org.eclipse.edc.spi.result.Result;
 
+import java.util.Optional;
+
 import static org.eclipse.edc.issuerservice.spi.credentials.statuslist.StatusListCredentialUrl.createUrl;
 
 public class LocalCredentialPublisher implements StatusListCredentialPublisher {
@@ -30,6 +32,11 @@ public class LocalCredentialPublisher implements StatusListCredentialPublisher {
     @Override
     public Result<String> publish(VerifiableCredentialResource verifiableCredentialResource) {
         return Result.success(createUrl(baseUrl, verifiableCredentialResource));
+    }
+
+    @Override
+    public Optional<String> publicUrl(String statusListId) {
+        return Optional.of(createUrl(baseUrl, statusListId));
     }
 
 }

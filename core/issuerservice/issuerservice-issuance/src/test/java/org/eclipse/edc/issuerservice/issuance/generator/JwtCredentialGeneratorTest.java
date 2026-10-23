@@ -87,6 +87,7 @@ public class JwtCredentialGeneratorTest {
         assertThat(container.rawVc()).isNotNull();
         assertThat(container.format()).isEqualTo(VC1_0_JWT);
         assertThat(container.credential()).satisfies(verifiableCredential -> {
+            assertThat(verifiableCredential.getId()).startsWith("urn:uuid:");
             assertThat(verifiableCredential.getContext()).contains("https://www.w3.org/2018/credentials/v1");
             assertThat(verifiableCredential.getType()).contains("MembershipCredential");
             assertThat(verifiableCredential.getIssuer().id()).isEqualTo("did:example:issuer");
@@ -102,9 +103,11 @@ public class JwtCredentialGeneratorTest {
         var extractedClaims = extractJwtClaims(container.rawVc());
 
         REQUIRED_CLAIMS.forEach(claim -> assertThat(extractedClaims.getClaim(claim)).describedAs("Claim '%s' cannot be null", claim).isNotNull());
+        assertThat(extractedClaims.getJWTID()).isEqualTo(container.credential().getId());
         assertThat(extractJwtHeader(container.rawVc()).getKeyID()).isEqualTo("did:example:issuer#%s".formatted(PUBLIC_KEY_ID));
         assertThat(extractedClaims.getClaim(VERIFIABLE_CREDENTIAL_CLAIM)).isInstanceOfSatisfying(Map.class, vcClaim -> {
             assertThat((List) vcClaim.get("type")).contains("MembershipCredential");
+            assertThat(vcClaim.get("id")).isEqualTo(container.credential().getId());
             assertThat((Map) vcClaim.get("credentialSubject")).containsAllEntriesOf(subjectClaims);
         });
     }

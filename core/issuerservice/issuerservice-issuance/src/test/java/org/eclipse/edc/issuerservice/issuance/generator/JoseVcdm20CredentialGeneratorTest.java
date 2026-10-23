@@ -91,6 +91,7 @@ class JoseVcdm20CredentialGeneratorTest {
         assertThat(container.rawVc()).isNotNull();
         assertThat(container.format()).isEqualTo(VC2_0_JOSE);
         assertThat(container.credential()).satisfies(verifiableCredential -> {
+            assertThat(verifiableCredential.getId()).startsWith("urn:uuid:");
             assertThat(verifiableCredential.getContext()).contains(W3C_CREDENTIALS_URL_V2);
             assertThat(verifiableCredential.getType()).contains("MembershipCredential");
             assertThat(verifiableCredential.getIssuer().id()).isEqualTo("did:example:issuer");

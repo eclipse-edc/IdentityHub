@@ -85,7 +85,7 @@ public class JoseVcdm20CredentialGenerator implements CredentialGenerator {
         ctx.addAll(definition.getAdditionalContext());
         //noinspection unchecked
         var builder = VerifiableCredential.Builder.newInstance()
-                .id(UUID.randomUUID().toString())
+                .id("urn:uuid:" + UUID.randomUUID())
                 .issuer(new Issuer(issuerId))
                 .contexts(ctx)
                 .dataModelVersion(DataModelVersion.V_2_0)

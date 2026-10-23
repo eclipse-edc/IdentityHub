@@ -76,11 +76,11 @@ public class LocalStatusListCredentialPublisherExtension implements ServiceExten
     public void initialize(ServiceExtensionContext context) {
         portMappingRegistry.register(new PortMapping(STATUS_LIST, config.port(), config.path()));
 
-        webServer.registerResource(STATUS_LIST, new StatusListCredentialController(store, monitor, () -> typeManager.getMapper(JSON_LD)));
+        var baseUrl = baseUrl();
+        webServer.registerResource(STATUS_LIST, new StatusListCredentialController(store, monitor, () -> typeManager.getMapper(JSON_LD), baseUrl));
 
         // holders fetch the status lists from this address to check the status of their credentials. Over plain HTTP,
         // anybody on the path can replace a status list
-        var baseUrl = baseUrl();
         if (!baseUrl.startsWith("https://")) {
             monitor.warning("Status list credentials are published at '%s', which does not use https. Set '%s' to an https address."
                     .formatted(baseUrl, CALLBACK_ADDRESS_SETTING));

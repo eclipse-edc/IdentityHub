@@ -45,6 +45,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.IntStream;
 
@@ -254,6 +255,34 @@ class BitstringStatusListManagerTest {
         verify(participantContextService).getParticipantContext(PARTICIPANT_CONTEXT_ID);
         verify(generator).signCredential(eq(PARTICIPANT_CONTEXT_ID), any(), eq(CredentialFormat.VC2_0_JOSE));
         verifyNoMoreInteractions(store, generator, participantContextService);
+    }
+
+    @Test
+    void getActiveCredential_whenEmptyResult_shouldIdentifyNewOneByItsUrl() {
+        when(publisher.publicUrl(any())).thenAnswer(i -> Optional.of("https://issuer.example.com/statuslist/" + i.getArgument(0)));
+        when(store.queryForUpdate(any())).thenReturn(StoreResult.success(List.of()));
+        when(store.update(any())).thenReturn(StoreResult.success());
+        when(store.create(any())).thenReturn(StoreResult.success());
+
+        var entry = manager.getActiveCredential(PARTICIPANT_CONTEXT_ID);
+
+        assertThat(entry).isSucceeded().satisfies(e -> {
+            var credential = e.statusListCredential().getVerifiableCredential().credential();
+            assertThat(credential.getId()).startsWith("https://issuer.example.com/statuslist/");
+            assertThat(credential.getCredentialSubject()).singleElement().satisfies(subject -> assertThat(subject.getId()).startsWith("urn:uuid:"));
+            assertThat(e.createCredentialStatus().id()).startsWith("urn:uuid:");
+        });
+    }
+
+    @Test
+    void getActiveCredential_whenEmptyResult_andUrlUnknownBeforePublishing_shouldIdentifyNewOneByUuid() {
+        when(store.queryForUpdate(any())).thenReturn(StoreResult.success(List.of()));
+        when(store.update(any())).thenReturn(StoreResult.success());
+        when(store.create(any())).thenReturn(StoreResult.success());
+
+        var entry = manager.getActiveCredential(PARTICIPANT_CONTEXT_ID);
+
+        assertThat(entry).isSucceeded().satisfies(e -> assertThat(UUID.fromString(e.statusListCredential().getVerifiableCredential().credential().getId())).isNotNull());
     }
 
     @Test
@@ -656,6 +685,28 @@ class BitstringStatusListManagerTest {
                 .containsExactly("VerifiableCredential", "BitstringStatusListCredential"));
         verify(generator).signCredential(eq(PARTICIPANT_CONTEXT_ID),
                 argThat(credential -> credential.getType().equals(List.of("VerifiableCredential", "BitstringStatusListCredential"))), any());
+    }
+
+    @Test
+    void renew_whenIdentifiedByUuid_andPublisherConfirmsUrl_shouldIdentifyItByUrl() {
+        var url = "https://issuer.example.com/statuslist/status-list-credential-id";
+        when(publisher.publicUrl("status-list-credential-id")).thenReturn(Optional.of(url));
+        var statusList = statusListResource(MIN_BITSTRING_SIZE).metadata(BITSTRING_SIZE, MIN_BITSTRING_SIZE).metadata(PUBLIC_URL, url).build();
+
+        var result = manager.renew(statusList);
+
+        assertThat(result).isSucceeded().satisfies(renewed -> assertThat(renewed.getVerifiableCredential().credential().getId()).isEqualTo(url));
+    }
+
+    @Test
+    void renew_whenIdentifiedByUuid_andPublishedElsewhere_shouldKeepId() {
+        when(publisher.publicUrl("status-list-credential-id")).thenReturn(Optional.of("https://issuer.example.com/statuslist/status-list-credential-id"));
+        var statusList = statusListResource(MIN_BITSTRING_SIZE).metadata(BITSTRING_SIZE, MIN_BITSTRING_SIZE)
+                .metadata(PUBLIC_URL, "https://old.example.com/statuslist/status-list-credential-id").build();
+
+        var result = manager.renew(statusList);
+
+        assertThat(result).isSucceeded().satisfies(renewed -> assertThat(renewed.getVerifiableCredential().credential().getId()).isEqualTo("status-list-credential-id"));
     }
 
     @Test
