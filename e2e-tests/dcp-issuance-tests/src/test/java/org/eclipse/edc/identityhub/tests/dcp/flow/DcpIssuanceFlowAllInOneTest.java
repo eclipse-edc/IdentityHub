@@ -31,7 +31,7 @@ import org.eclipse.edc.iam.did.spi.document.VerificationMethod;
 import org.eclipse.edc.iam.did.spi.resolution.DidPublicKeyResolver;
 import org.eclipse.edc.iam.did.spi.resolution.DidResolver;
 import org.eclipse.edc.iam.did.spi.resolution.DidResolverRegistry;
-import org.eclipse.edc.iam.verifiablecredentials.revocation.bitstring.BitstringStatusListRevocationService;
+import org.eclipse.edc.iam.verifiablecredentials.revocation.statuslist2021.StatusList2021RevocationService;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredential;
 import org.eclipse.edc.identityhub.spi.credential.request.model.HolderRequestState;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.CredentialUsage;
@@ -100,7 +100,6 @@ import static org.assertj.core.api.InstanceOfAssertFactories.LIST;
 import static org.assertj.core.api.InstanceOfAssertFactories.MAP;
 import static org.awaitility.Awaitility.await;
 import static org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat.VC1_0_JWT;
-import static org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat.VC2_0_JOSE;
 import static org.eclipse.edc.identityhub.verifiablecredentials.testfixtures.JwtCreationUtil.generateJwt;
 import static org.eclipse.edc.junit.assertions.AbstractResultAssert.assertThat;
 import static org.eclipse.edc.util.io.Ports.getFreePort;
@@ -149,6 +148,14 @@ public class DcpIssuanceFlowAllInOneTest {
          */
         static Config renewalConfig() {
             return ConfigFactory.fromMap(Map.of("edc.iam.credential.renewal.graceperiod", "2"));
+        }
+
+        /**
+         * Issues under the VCDM 1.1 profile, so that the status of the credentials is held by a StatusList2021 credential.
+         * The other tests use the default profile, with a Bitstring Status List.
+         */
+        static Config profileConfig() {
+            return ConfigFactory.fromMap(Map.of("edc.issuer.dcp.profile", "vc11-sl2021/jwt"));
         }
 
         @BeforeAll
@@ -279,7 +286,7 @@ public class DcpIssuanceFlowAllInOneTest {
                     assertThat(vc.getHolderId()).isEqualTo(participantDid);
                     assertThat(vc.getVerifiableCredential().credential().getCredentialStatus())
                             .hasSize(1)
-                            .allSatisfy(t -> assertThat(t.type()).isEqualTo("BitstringStatusListEntry"));
+                            .allSatisfy(t -> assertThat(t.type()).isEqualTo("StatusList2021Entry"));
                 });
                 assertThat(credentials).anySatisfy(vc -> {
                     assertThat(vc.getUsage()).isEqualTo(CredentialUsage.IssuanceTracking);
@@ -426,7 +433,7 @@ public class DcpIssuanceFlowAllInOneTest {
 
             var keyId = SignedJWT.parse(issuer.getStatusListCredential().getVerifiableCredential().rawVc()).getHeader().getKeyID();
             assertThat(keyId).isNotNull();
-            assertIsVcdm20Jose(issuer.getStatusListCredential());
+            assertIsVcdm11StatusList2021(issuer.getStatusListCredential());
 
             var credentials = issuer.getHolderCredentials(participantDid, PARTICIPANT_ID, participantToken);
 
@@ -451,25 +458,23 @@ public class DcpIssuanceFlowAllInOneTest {
 
             var afterRevocationKeyId = SignedJWT.parse(issuer.getStatusListCredential().getVerifiableCredential().rawVc()).getHeader().getKeyID();
             assertThat(afterRevocationKeyId).isEqualTo(keyId);
-            assertIsVcdm20Jose(issuer.getStatusListCredential());
+            assertIsVcdm11StatusList2021(issuer.getStatusListCredential());
             assertThat(revocationService(identityHub).checkValidity(credentialStatus)).isFailed()
                     .detail().startsWith("Credential status is 'revocation'");
         }
 
         /**
-         * Asserts that the status list credential is secured according to VCDM 2.0 with JOSE (VC-JOSE-COSE): the payload of
-         * the JWT is the credential itself.
+         * Asserts that the status list credential of the VCDM 1.1 credentials is a StatusList2021 credential, secured as a
+         * VC-JWT like them: the credential is the "vc" claim of the JWT.
          */
-        private void assertIsVcdm20Jose(VerifiableCredentialResource statusListCredential) throws ParseException {
-            assertThat(statusListCredential.getVerifiableCredential().format()).isEqualTo(VC2_0_JOSE);
+        private void assertIsVcdm11StatusList2021(VerifiableCredentialResource statusListCredential) throws ParseException {
+            assertThat(statusListCredential.getVerifiableCredential().format()).isEqualTo(VC1_0_JWT);
             var jwt = SignedJWT.parse(statusListCredential.getVerifiableCredential().rawVc());
-            assertThat(jwt.getHeader().getType()).hasToString("vc+jwt");
-            var claims = jwt.getJWTClaimsSet();
-            assertThat(claims.getClaim("vc")).isNull();
-            assertThat(claims.getClaim("@context")).asInstanceOf(LIST).containsExactly("https://www.w3.org/ns/credentials/v2");
-            assertThat(claims.getStringListClaim("type")).containsExactly("VerifiableCredential", "BitstringStatusListCredential");
-            assertThat(claims.getClaim("credentialSubject")).asInstanceOf(LIST).singleElement().asInstanceOf(MAP)
-                    .containsEntry("type", "BitstringStatusList")
+            var vc = jwt.getJWTClaimsSet().getJSONObjectClaim("vc");
+            assertThat(vc.get("@context")).asInstanceOf(LIST).containsExactly("https://www.w3.org/2018/credentials/v1", "https://w3id.org/vc/status-list/2021/v1");
+            assertThat(vc.get("type")).asInstanceOf(LIST).containsExactly("VerifiableCredential", "StatusList2021Credential");
+            assertThat(vc.get("credentialSubject")).asInstanceOf(MAP)
+                    .containsEntry("type", "StatusList2021")
                     .containsEntry("statusPurpose", "revocation")
                     .containsKey("encodedList");
         }
@@ -477,8 +482,8 @@ public class DcpIssuanceFlowAllInOneTest {
         /**
          * A revocation service without a cache, that downloads the status list credential each time.
          */
-        private BitstringStatusListRevocationService revocationService(IdentityHub identityHub) {
-            return new BitstringStatusListRevocationService(identityHub.getService(TypeManager.class).getMapper(), 0, List.of("*/*"),
+        private StatusList2021RevocationService revocationService(IdentityHub identityHub) {
+            return new StatusList2021RevocationService(identityHub.getService(TypeManager.class).getMapper(), 0, List.of("*/*"),
                     identityHub.getService(EdcHttpClient.class), identityHub.getService(TokenValidationService.class),
                     identityHub.getService(DidPublicKeyResolver.class));
         }
@@ -643,6 +648,7 @@ public class DcpIssuanceFlowAllInOneTest {
                 .configurationProvider(DefaultRuntimes.Issuer::config)
                 .configurationProvider(DefaultRuntimes.IdentityHub::config)
                 .configurationProvider(Tests::renewalConfig)
+                .configurationProvider(Tests::profileConfig)
                 .paramProvider(IdentityHub.class, IdentityHub::forContext)
                 .paramProvider(IssuerService.class, IssuerService::forContext)
                 .build();
@@ -667,6 +673,7 @@ public class DcpIssuanceFlowAllInOneTest {
                 .configurationProvider(DefaultRuntimes.Issuer::config)
                 .configurationProvider(DefaultRuntimes.IdentityHub::config)
                 .configurationProvider(Tests::renewalConfig)
+                .configurationProvider(Tests::profileConfig)
                 .configurationProvider(() -> POSTGRESQL_EXTENSION.configFor(ISSUER))
                 .paramProvider(IdentityHub.class, IdentityHub::forContext)
                 .paramProvider(IssuerService.class, IssuerService::forContext)

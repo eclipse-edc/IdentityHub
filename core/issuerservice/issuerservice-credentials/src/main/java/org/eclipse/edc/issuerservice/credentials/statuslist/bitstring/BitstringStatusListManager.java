@@ -14,9 +14,7 @@
 
 package org.eclipse.edc.issuerservice.credentials.statuslist.bitstring;
 
-import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialSubject;
-import org.eclipse.edc.iam.verifiablecredentials.spi.model.DataModelVersion;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.Issuer;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredential;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredentialContainer;
@@ -55,15 +53,16 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static java.util.Optional.ofNullable;
-import static org.eclipse.edc.iam.verifiablecredentials.spi.VcConstants.BITSTRING_STATUS_LIST_PREFIX;
-import static org.eclipse.edc.iam.verifiablecredentials.spi.VcConstants.VC_PREFIX_V2;
 import static org.eclipse.edc.iam.verifiablecredentials.spi.model.revocation.bitstringstatuslist.BitstringStatusListCredential.BITSTRING_ENCODED_LIST_LITERAL;
-import static org.eclipse.edc.iam.verifiablecredentials.spi.model.revocation.bitstringstatuslist.BitstringStatusListCredential.BITSTRING_STATUSLIST_CREDENTIAL;
-import static org.eclipse.edc.issuerservice.credentials.statuslist.bitstring.BitstringConstants.BITSTRING_STATUS_LIST;
 import static org.eclipse.edc.issuerservice.credentials.statuslist.bitstring.BitstringConstants.REVOCATION;
 import static org.eclipse.edc.issuerservice.credentials.statuslist.bitstring.BitstringConstants.VERIFIABLE_CREDENTIAL;
 import static org.eclipse.edc.participantcontext.spi.types.ParticipantResource.filterByParticipantContextId;
 
+/**
+ * Manages the bitstring based status lists of an issuer, c.f. {@link StatusListType}. Holder credentials get an entry on
+ * a status list of the given type, which the DCP profile of the issuer names. Status lists of other types, e.g. those
+ * created under another profile before, are still renewed, so that the status of their credentials can be verified.
+ */
 public class BitstringStatusListManager implements StatusListManager {
 
     /**
@@ -79,8 +78,10 @@ public class BitstringStatusListManager implements StatusListManager {
     private final BitstringStatusListConfiguration configuration;
     private final Clock clock;
     private final Monitor monitor;
+    private final StatusListType type;
 
-    public BitstringStatusListManager(CredentialStore store,
+    public BitstringStatusListManager(StatusListType type,
+                                      CredentialStore store,
                                       TransactionContext transactionContext,
                                       CredentialGeneratorRegistry credentialGenerator,
                                       IdentityHubParticipantContextService participantContextService,
@@ -96,6 +97,7 @@ public class BitstringStatusListManager implements StatusListManager {
         this.configuration = configuration;
         this.clock = clock;
         this.monitor = monitor;
+        this.type = type;
     }
 
     @Override
@@ -116,7 +118,7 @@ public class BitstringStatusListManager implements StatusListManager {
             return usableCredential.getContent()
                     .map(ServiceResult::success)
                     .orElseGet(() -> createNewStatusListCredential(participantContextId))
-                    .map(cred -> new BitstringStatusListCredentialEntry(statusListIndex(cred), cred, publicUri(cred)));
+                    .map(cred -> new BitstringStatusListCredentialEntry(type, statusListIndex(cred), cred, publicUri(cred)));
         });
     }
 
@@ -143,12 +145,17 @@ public class BitstringStatusListManager implements StatusListManager {
     @Override
     public ServiceResult<VerifiableCredentialResource> renew(VerifiableCredentialResource statusListCredential) {
         var container = statusListCredential.getVerifiableCredential();
+        // the status list may be of another type than new ones, e.g. one created under another profile before
+        var listType = StatusListType.forSubjectType(container.credential().getCredentialSubject().get(0).getClaim("", "type"));
+        if (listType.isEmpty()) {
+            return ServiceResult.unexpected("Status list credential '%s' is of an unsupported type".formatted(statusListCredential.getId()));
+        }
         var bitString = decode(statusListCredential);
         if (bitString.failed()) {
             return ServiceResult.unexpected(bitString.getFailureDetail());
         }
         var extendedBitString = extend(bitString.getContent());
-        var encodedList = BitString.Writer.newInstance().writeMultibase(extendedBitString);
+        var encodedList = listType.get().encode(extendedBitString);
         if (encodedList.failed()) {
             return ServiceResult.unexpected(encodedList.getFailureDetail());
         }
@@ -175,9 +182,11 @@ public class BitstringStatusListManager implements StatusListManager {
     public void renewExpiring(Duration within) {
         var deadline = clock.instant().plus(within);
         var expiring = new ArrayList<StatusListKey>();
-        QueryPages.forEachPage(allBitstringStatusLists(), PAGE_SIZE, this::query, VerifiableCredentialResource::getId,
-                page -> page.stream().filter(statusList -> expiresBefore(statusList, deadline))
-                        .forEach(statusList -> expiring.add(new StatusListKey(statusList.getParticipantContextId(), statusList.getId()))));
+        for (var listType : StatusListType.values()) {
+            QueryPages.forEachPage(allStatusLists(listType), PAGE_SIZE, this::query, VerifiableCredentialResource::getId,
+                    page -> page.stream().filter(statusList -> expiresBefore(statusList, deadline))
+                            .forEach(statusList -> expiring.add(new StatusListKey(statusList.getParticipantContextId(), statusList.getId()))));
+        }
 
         for (var statusList : expiring) {
             try {
@@ -194,7 +203,7 @@ public class BitstringStatusListManager implements StatusListManager {
      * that no other runtime can hand out the same index before this one has been incremented, c.f. {@link StatusListManager}
      */
     private ServiceResult<Optional<VerifiableCredentialResource>> findUsableStatusListCredential(String participantContextId) {
-        var credentialQueryResult = store.queryForUpdate(whereTypeIsBitstringCredential(participantContextId));
+        var credentialQueryResult = store.queryForUpdate(whereStatusListTypeIs(participantContextId));
         if (credentialQueryResult.failed()) {
             return ServiceResult.fromFailure(credentialQueryResult);
         }
@@ -347,7 +356,7 @@ public class BitstringStatusListManager implements StatusListManager {
     private Result<BitString> decode(VerifiableCredentialResource statusListCredential) {
         var credential = statusListCredential.getVerifiableCredential().credential();
         var encodedList = credential.getCredentialSubject().stream()
-                .map(subject -> subject.getClaim(BITSTRING_STATUS_LIST_PREFIX, BITSTRING_ENCODED_LIST_LITERAL))
+                .map(subject -> subject.getClaim("", BITSTRING_ENCODED_LIST_LITERAL))
                 .filter(Objects::nonNull)
                 .findFirst();
         if (encodedList.isEmpty()) {
@@ -390,32 +399,32 @@ public class BitstringStatusListManager implements StatusListManager {
         }
         var participantDid = participant.getContent().getDid();
 
-        // generate new bitstring status credential. The W3C Bitstring Status List builds on the VC Data Model 2.0
+        // generate new status list credential, in the data model and format of the issuer's profile
         var now = clock.instant();
 
-        // the Bitstring Status List requires the status list credential to be identified by the URL it is published at
+        // both status lists require the status list credential to be identified by the URL it is published at
         var credentialId = publisher.publicUrl(UUID.randomUUID().toString());
 
         var credential = VerifiableCredential.Builder.newInstance()
                 .credentialSubject(CredentialSubject.Builder.newInstance()
                         .id("urn:uuid:" + UUID.randomUUID())
-                        .claim("type", BITSTRING_STATUS_LIST)
+                        .claim("type", type.subjectType())
                         .claim("statusPurpose", REVOCATION)
                         .claim("encodedList", createEmptyBitstring())
                         //todo: add support for statusMessage, statusSize, etc.
                         .build())
                 .id(credentialId)
-                .context(VC_PREFIX_V2)
-                .dataModelVersion(DataModelVersion.V_2_0)
+                .contexts(type.contexts())
+                .dataModelVersion(type.dataModelVersion())
                 .issuanceDate(now)
                 .expirationDate(now.plus(configuration.validity()))
                 .issuer(new Issuer(participantDid))
-                .types(List.of(VERIFIABLE_CREDENTIAL, BITSTRING_STATUSLIST_CREDENTIAL))
+                .types(List.of(VERIFIABLE_CREDENTIAL, type.credentialType()))
                 .build();
 
         // sign and package in resource
         //do not upsert - this must be an insert
-        return credentialGenerator.signCredential(participantContextId, credential, CredentialFormat.VC2_0_JOSE)
+        return credentialGenerator.signCredential(participantContextId, credential, type.format())
                 .map(signedCredential -> createCredentialResource(participantContextId, signedCredential, participantDid))
                 .compose(this::storeResource)
                 .compose(this::publish)
@@ -481,7 +490,7 @@ public class BitstringStatusListManager implements StatusListManager {
         var bs = BitString.Builder.newInstance()
                 .size(configuration.bitstringSize())
                 .build();
-        return BitString.Writer.newInstance().writeMultibase(bs).orElseThrow(f -> new EdcException(f.getFailureDetail()));
+        return type.encode(bs).orElseThrow(f -> new EdcException(f.getFailureDetail()));
     }
 
     private @Nullable String publicUri(VerifiableCredentialResource res) {
@@ -513,17 +522,17 @@ public class BitstringStatusListManager implements StatusListManager {
         return !isFull(statusListCredential);
     }
 
-    private QuerySpec allBitstringStatusLists() {
+    private QuerySpec allStatusLists(StatusListType listType) {
         return QuerySpec.Builder.newInstance()
-                .filter(new Criterion("verifiableCredential.credential.credentialSubject.type", "=", BITSTRING_STATUS_LIST))
+                .filter(new Criterion("verifiableCredential.credential.credentialSubject.type", "=", listType.subjectType()))
                 .filter(new Criterion("usage", "=", CredentialUsage.StatusList.toString()))
                 .build();
     }
 
-    private QuerySpec whereTypeIsBitstringCredential(String participantContextId) {
+    private QuerySpec whereStatusListTypeIs(String participantContextId) {
         return QuerySpec.Builder.newInstance()
                 .filter(filterByParticipantContextId(participantContextId))
-                .filter(new Criterion("verifiableCredential.credential.credentialSubject.type", "=", BITSTRING_STATUS_LIST))
+                .filter(new Criterion("verifiableCredential.credential.credentialSubject.type", "=", type.subjectType()))
                 .filter(new Criterion("usage", "=", CredentialUsage.StatusList.toString()))
                 // oldest first: the status list credentials are locked in this order, so a runtime that waits for a lock
                 // does so on a status list that existed before, without holding the lock of a newer one. Otherwise it could

@@ -109,7 +109,6 @@ credential type and requirements for issuance:
 ```json
 {
   "credentialType": "MembershipCredential",
-  "format": "vc20-bssl/jwt",
   "jsonSchema": "",
   "validity": 1000000,
   "attestations": [
@@ -159,8 +158,11 @@ public class CredentialDefinition {
 The following properties are defined:
 
 - `credentialType`: The credential type, e.g. `MembershipCredential`
-- `format`: The credential format, e.g. `vc20-bssl/jwt` or `vc11-sl2021/jwt`. This should correspond to
-  the [DCP profile](https://eclipse-dataspace-dcp.github.io/decentralized-claims-protocol/v1.0.1/#profiles-of-the-decentralized-claims-protocol).
+- `format`: The format of the issued credentials, e.g. `VC1_0_JWT` or `VC2_0_JOSE`. It is not part of the Admin API
+  request: credential definitions that are created or updated through the Admin API get the format of the Issuer
+  Service's [DCP profile](#dcp-profile). A credential definition with another format, e.g. one created through the
+  `CredentialDefinitionService`, is issued in that format, and its credentials get an entry on the status list of the
+  profile.
 - `jsonSchema`: The unparsed credential JSON Schema (mutually exclusive with `jsonSchemaUrl`).
 - `jsonSchemaUrl`: A URL pointing to the credential JSON Schema (mutually exclusive with `jsonSchema`).
 - `validity`: An optional validity defining the length of time the credential should be valid for in milliseconds.
@@ -170,6 +172,24 @@ The following properties are defined:
 - `mappings`: How data is mapped into the issued credential. Mappings may not write to the properties the Issuer
   Service sets itself (`@context`, `id`, `type`, `issuer`, `issuanceDate`, `validFrom`, `expirationDate`, `validUntil`,
   `credentialStatus` and `proof`).
+
+### DCP profile
+
+The Issuer Service has one
+[DCP profile](https://eclipse-dataspace-dcp.github.io/decentralized-claims-protocol/v1.0.1/#profiles-of-the-decentralized-claims-protocol),
+configured with `edc.issuer.dcp.profile`. It determines how the status of the issued credentials is presented:
+
+| Profile                   | Status list                                                       |
+|---------------------------|-------------------------------------------------------------------|
+| `vc20-bssl/jwt` (default) | Bitstring Status List, a VCDM 2.0 credential secured with JOSE    |
+| `vc11-sl2021/jwt`         | StatusList2021, a VCDM 1.1 credential secured as a VC-JWT         |
+
+Credentials are issued in the format of their credential definition, which may differ from that of the profile. A
+VCDM 1.1 credential issued under `vc20-bssl/jwt`, for example, refers to a VCDM 2.0 Bitstring Status List credential.
+
+The Issuer Service does not start with a profile that is not registered, or that it cannot handle. Other profiles can
+be supported by extensions: they register the profile in the `DcpProfileRegistry`, add a `CredentialGenerator` for its
+format and provide a `StatusListManager` for its status list type.
 
 ### Request Processing
 

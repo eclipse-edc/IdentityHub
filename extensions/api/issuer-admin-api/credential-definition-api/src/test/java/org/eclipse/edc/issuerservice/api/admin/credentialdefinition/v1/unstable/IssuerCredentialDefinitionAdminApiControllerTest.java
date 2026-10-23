@@ -17,6 +17,8 @@ package org.eclipse.edc.issuerservice.api.admin.credentialdefinition.v1.unstable
 import io.restassured.specification.RequestSpecification;
 import org.eclipse.edc.api.auth.spi.AuthorizationService;
 import org.eclipse.edc.identityhub.api.Versions;
+import org.eclipse.edc.identityhub.protocols.dcp.issuer.spi.DcpIssuerProfile;
+import org.eclipse.edc.identityhub.protocols.dcp.spi.model.DcpProfile;
 import org.eclipse.edc.issuerservice.spi.issuance.credentialdefinition.CredentialDefinitionService;
 import org.eclipse.edc.issuerservice.spi.issuance.model.CredentialDefinition;
 import org.eclipse.edc.junit.annotations.ComponentTest;
@@ -32,12 +34,15 @@ import java.util.Set;
 import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat.VC1_0_JWT;
+import static org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat.VC2_0_JOSE;
 import static org.hamcrest.Matchers.emptyString;
 import static org.hamcrest.Matchers.endsWith;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ComponentTest
@@ -48,6 +53,7 @@ class IssuerCredentialDefinitionAdminApiControllerTest extends RestControllerTes
 
     private final CredentialDefinitionService credentialDefinitionService = mock();
     private final AuthorizationService authorizationService = mock();
+    private final DcpIssuerProfile issuerProfile = () -> new DcpProfile("vc20-bssl/jwt", VC2_0_JOSE, "BitstringStatusListEntry");
 
     @BeforeEach
     void setUp() {
@@ -66,6 +72,9 @@ class IssuerCredentialDefinitionAdminApiControllerTest extends RestControllerTes
                 .statusCode(201)
                 .header("Location", endsWith("/credentialdefinitions/test-id"))
                 .body(emptyString());
+
+        // the format of the request is not used, but that of the issuer's DCP profile
+        verify(credentialDefinitionService).createCredentialDefinition(argThat(definition -> definition.getFormatAsEnum() == VC2_0_JOSE));
     }
 
     @Test
@@ -92,6 +101,8 @@ class IssuerCredentialDefinitionAdminApiControllerTest extends RestControllerTes
                 .log().ifValidationFails()
                 .statusCode(200)
                 .body(emptyString());
+
+        verify(credentialDefinitionService).updateCredentialDefinition(argThat(definition -> definition.getFormatAsEnum() == VC2_0_JOSE));
     }
 
     @Test
@@ -168,7 +179,7 @@ class IssuerCredentialDefinitionAdminApiControllerTest extends RestControllerTes
 
     @Override
     protected Object controller() {
-        return new IssuerCredentialDefinitionAdminApiController(authorizationService, credentialDefinitionService);
+        return new IssuerCredentialDefinitionAdminApiController(authorizationService, credentialDefinitionService, issuerProfile);
     }
 
     private RequestSpecification baseRequest() {

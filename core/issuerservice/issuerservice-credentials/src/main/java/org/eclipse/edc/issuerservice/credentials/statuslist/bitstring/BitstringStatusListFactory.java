@@ -21,24 +21,28 @@ import org.eclipse.edc.issuerservice.spi.credentials.statuslist.StatusListInfoFa
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.ServiceResult;
 
-import static org.eclipse.edc.iam.verifiablecredentials.spi.VcConstants.BITSTRING_STATUS_LIST_PREFIX;
 import static org.eclipse.edc.iam.verifiablecredentials.spi.model.revocation.bitstringstatuslist.BitstringStatusListStatus.BITSTRING_STATUS_LIST_CREDENTIAL_LITERAL;
 import static org.eclipse.edc.iam.verifiablecredentials.spi.model.revocation.bitstringstatuslist.BitstringStatusListStatus.BITSTRING_STATUS_LIST_INDEX_LITERAL;
 import static org.eclipse.edc.spi.query.Criterion.criterion;
 
+/**
+ * Creates the {@link StatusListInfo} of the status entries of the given {@link StatusListType}.
+ */
 public class BitstringStatusListFactory implements StatusListInfoFactory {
 
     private final CredentialStore credentialStore;
+    private final StatusListType type;
 
-    public BitstringStatusListFactory(CredentialStore credentialStore) {
+    public BitstringStatusListFactory(CredentialStore credentialStore, StatusListType type) {
         this.credentialStore = credentialStore;
+        this.type = type;
     }
 
     @Override
     public ServiceResult<StatusListInfo> create(CredentialStatus credentialStatus) {
 
-        var statusListCredentialId = credentialStatus.getProperty(BITSTRING_STATUS_LIST_PREFIX, BITSTRING_STATUS_LIST_CREDENTIAL_LITERAL);
-        var index = credentialStatus.getProperty(BITSTRING_STATUS_LIST_PREFIX, BITSTRING_STATUS_LIST_INDEX_LITERAL);
+        var statusListCredentialId = credentialStatus.getProperty("", BITSTRING_STATUS_LIST_CREDENTIAL_LITERAL);
+        var index = credentialStatus.getProperty("", BITSTRING_STATUS_LIST_INDEX_LITERAL);
 
         if (statusListCredentialId == null) {
             return ServiceResult.unexpected("The credential status with ID '%s' is invalid, the '%s' field is missing".formatted(credentialStatus.id(), BITSTRING_STATUS_LIST_CREDENTIAL_LITERAL));
@@ -53,7 +57,11 @@ public class BitstringStatusListFactory implements StatusListInfoFactory {
         // status list credentials are identified by the URL they are published at
         var credentialId = statusListCredentialId.toString();
 
-        var query = QuerySpec.Builder.newInstance().filter(criterion("verifiableCredential.credential.id", "=", credentialId)).build();
+        // the status list must be of the type the entry names, so that its bitstring is encoded as that type requires
+        var query = QuerySpec.Builder.newInstance()
+                .filter(criterion("verifiableCredential.credential.id", "=", credentialId))
+                .filter(criterion("verifiableCredential.credential.credentialSubject.type", "=", type.subjectType()))
+                .build();
 
         // the status list credential stays locked until the surrounding transaction completes, so that a status change can be
         // written back without overwriting one that another runtime made in the meantime, c.f. StatusListInfoFactory
@@ -61,6 +69,6 @@ public class BitstringStatusListFactory implements StatusListInfoFactory {
                 .compose(resources -> resources.size() == 1
                         ? ServiceResult.success(resources.iterator().next())
                         : ServiceResult.notFound("Cannot find the StatusList credential with id " + credentialId))
-                .map(credential -> new BitstringStatusInfo(ix, credential));
+                .map(credential -> new BitstringStatusInfo(type, ix, credential));
     }
 }

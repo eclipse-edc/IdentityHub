@@ -21,6 +21,7 @@ plugins {
 dependencies {
     api(project(":spi:issuerservice:issuerservice-issuance-spi"))
     api(project(":spi:verifiable-credential-spi"))
+    implementation(project(":protocols:dcp:dcp-issuer:dcp-issuer-spi"))
     implementation(project(":extensions:api:issuer-admin-api:issuer-admin-api-configuration"))
     implementation(libs.edc.spi.core)
     implementation(libs.jakarta.rsApi)

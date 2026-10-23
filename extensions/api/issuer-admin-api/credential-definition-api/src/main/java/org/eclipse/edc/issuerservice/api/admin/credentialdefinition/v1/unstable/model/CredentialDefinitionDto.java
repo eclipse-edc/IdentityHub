@@ -16,7 +16,7 @@ package org.eclipse.edc.issuerservice.api.admin.credentialdefinition.v1.unstable
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.CredentialProfile;
+import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat;
 import org.eclipse.edc.issuerservice.spi.issuance.model.CredentialDefinition;
 import org.eclipse.edc.issuerservice.spi.issuance.model.CredentialRuleDefinition;
 import org.eclipse.edc.issuerservice.spi.issuance.model.MappingDefinition;
@@ -32,7 +32,8 @@ import java.util.Map;
 import static java.util.Objects.requireNonNull;
 
 /**
- * DTO for {@link CredentialDefinition}.
+ * DTO for {@link CredentialDefinition}. It has no format: credential definitions that are created or updated through the
+ * API get the format of the issuer's DCP profile.
  */
 
 @JsonDeserialize(builder = CredentialDefinitionDto.Builder.class)
@@ -43,7 +44,6 @@ public class CredentialDefinitionDto {
     private final List<MappingDefinition> mappings = new ArrayList<>();
     private final List<String> additionalContext = new ArrayList<>();
     private final Map<String, Object> privateProperties = new HashMap<>();
-    private String format;
     private String credentialType;
     private String jsonSchema;
     private String jsonSchemaUrl;
@@ -59,10 +59,6 @@ public class CredentialDefinitionDto {
 
     public String getCredentialType() {
         return credentialType;
-    }
-
-    public String getFormat() {
-        return format;
     }
 
     public String getJsonSchema() {
@@ -97,14 +93,20 @@ public class CredentialDefinitionDto {
         return privateProperties;
     }
 
-    public CredentialDefinition toCredentialDefinition(String participantContextId) {
+    /**
+     * Converts the DTO to a {@link CredentialDefinition}.
+     *
+     * @param participantContextId the participant context the credential definition belongs to
+     * @param format               the format of the credentials, i.e. that of the issuer's DCP profile
+     */
+    public CredentialDefinition toCredentialDefinition(String participantContextId, CredentialFormat format) {
         return CredentialDefinition.Builder.newInstance()
                 .id(id)
                 .credentialType(credentialType)
                 .jsonSchema(jsonSchema)
                 .jsonSchemaUrl(jsonSchemaUrl)
                 .validity(validity)
-                .formatFrom(CredentialProfile.formatForProfile(format).orElseThrow(f -> new IllegalArgumentException(f.getFailureDetail())))
+                .formatFrom(format)
                 .attestations(attestations)
                 .rules(rules)
                 .mappings(mappings)
@@ -150,11 +152,6 @@ public class CredentialDefinitionDto {
 
         public Builder validity(long validity) {
             this.entity.validity = validity;
-            return this;
-        }
-
-        public Builder format(String format) {
-            this.entity.format = format;
             return this;
         }
 
