@@ -28,6 +28,7 @@ import jakarta.ws.rs.core.SecurityContext;
 import org.eclipse.edc.api.auth.spi.AuthorizationService;
 import org.eclipse.edc.api.auth.spi.RequiredScope;
 import org.eclipse.edc.identityhub.api.Versions;
+import org.eclipse.edc.identityhub.protocols.dcp.issuer.spi.DcpIssuerProfile;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.IdentityHubParticipantContext;
 import org.eclipse.edc.issuerservice.api.admin.credentialdefinition.v1.unstable.model.CredentialDefinitionDto;
 import org.eclipse.edc.issuerservice.spi.issuance.credentialdefinition.CredentialDefinitionService;
@@ -48,11 +49,14 @@ public class IssuerCredentialDefinitionAdminApiController implements IssuerCrede
 
     private final AuthorizationService authorizationService;
     private final CredentialDefinitionService credentialDefinitionService;
+    private final DcpIssuerProfile issuerProfile;
 
 
-    public IssuerCredentialDefinitionAdminApiController(AuthorizationService authorizationService, CredentialDefinitionService credentialDefinitionService) {
+    public IssuerCredentialDefinitionAdminApiController(AuthorizationService authorizationService, CredentialDefinitionService credentialDefinitionService,
+                                                        DcpIssuerProfile issuerProfile) {
         this.authorizationService = authorizationService;
         this.credentialDefinitionService = credentialDefinitionService;
+        this.issuerProfile = issuerProfile;
     }
 
     @POST
@@ -60,7 +64,7 @@ public class IssuerCredentialDefinitionAdminApiController implements IssuerCrede
     @Override
     public Response createCredentialDefinition(@PathParam("participantContextId") String participantContextId, CredentialDefinitionDto definitionDto, @Context SecurityContext context) {
         return authorizationService.authorize(context, participantContextId, participantContextId, IdentityHubParticipantContext.class)
-                .compose(u -> credentialDefinitionService.createCredentialDefinition(definitionDto.toCredentialDefinition(participantContextId)))
+                .compose(u -> credentialDefinitionService.createCredentialDefinition(definitionDto.toCredentialDefinition(participantContextId, issuerProfile.get().format())))
                 .map(v -> Response.created(URI.create(Versions.STABLE + "/participants/%s/credentialdefinitions/%s".formatted(participantContextId, definitionDto.getId()))).build())
                 .orElseThrow(exceptionMapper(CredentialDefinition.class, definitionDto.getId()));
     }
@@ -70,7 +74,7 @@ public class IssuerCredentialDefinitionAdminApiController implements IssuerCrede
     @Override
     public Response updateCredentialDefinition(@PathParam("participantContextId") String participantContextId, CredentialDefinitionDto credentialDefinition, @Context SecurityContext context) {
         return authorizationService.authorize(context, participantContextId, credentialDefinition.getId(), CredentialDefinition.class)
-                .compose(u -> credentialDefinitionService.updateCredentialDefinition(credentialDefinition.toCredentialDefinition(participantContextId)))
+                .compose(u -> credentialDefinitionService.updateCredentialDefinition(credentialDefinition.toCredentialDefinition(participantContextId, issuerProfile.get().format())))
                 .map(v -> Response.ok().build())
                 .orElseThrow(exceptionMapper(CredentialDefinition.class, credentialDefinition.getId()));
     }

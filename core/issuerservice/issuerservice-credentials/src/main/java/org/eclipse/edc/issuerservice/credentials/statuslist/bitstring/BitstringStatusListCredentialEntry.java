@@ -21,17 +21,19 @@ import org.eclipse.edc.issuerservice.spi.credentials.statuslist.StatusListCreden
 import java.util.Map;
 import java.util.UUID;
 
-import static org.eclipse.edc.issuerservice.credentials.statuslist.bitstring.BitstringConstants.BITSTRING_STATUS_LIST_ENTRY;
-
-public record BitstringStatusListCredentialEntry(int statusListIndex, VerifiableCredentialResource statusListCredential,
+/**
+ * An entry on a status list credential of the given type.
+ */
+public record BitstringStatusListCredentialEntry(StatusListType type, int statusListIndex, VerifiableCredentialResource statusListCredential,
                                                  String credentialUrl) implements StatusListCredentialEntry {
 
     @Override
     public CredentialStatus createCredentialStatus() {
-        return new CredentialStatus("urn:uuid:" + UUID.randomUUID(), BITSTRING_STATUS_LIST_ENTRY,
+        return new CredentialStatus("urn:uuid:" + UUID.randomUUID(), type().entryType(),
                 Map.of(
                         "statusPurpose", statusListCredential().getVerifiableCredential().credential().getCredentialSubject().get(0).getClaim("", "statusPurpose"),
-                        "statusListIndex", statusListIndex(),
+                        // both status lists require the index as a base-10 string
+                        "statusListIndex", String.valueOf(statusListIndex()),
                         "statusListCredential", credentialUrl()
                 ));
     }

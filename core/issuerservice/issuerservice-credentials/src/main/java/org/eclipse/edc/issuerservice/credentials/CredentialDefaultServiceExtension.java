@@ -14,11 +14,13 @@
 
 package org.eclipse.edc.issuerservice.credentials;
 
+import org.eclipse.edc.identityhub.protocols.dcp.issuer.spi.DcpIssuerProfile;
 import org.eclipse.edc.identityhub.spi.participantcontext.IdentityHubParticipantContextService;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialStore;
 import org.eclipse.edc.issuerservice.credentials.statuslist.StatusListInfoFactoryRegistryImpl;
 import org.eclipse.edc.issuerservice.credentials.statuslist.bitstring.BitstringStatusListConfiguration;
 import org.eclipse.edc.issuerservice.credentials.statuslist.bitstring.BitstringStatusListManager;
+import org.eclipse.edc.issuerservice.credentials.statuslist.bitstring.StatusListType;
 import org.eclipse.edc.issuerservice.spi.credentials.statuslist.StatusListCredentialPublisher;
 import org.eclipse.edc.issuerservice.spi.credentials.statuslist.StatusListInfoFactoryRegistry;
 import org.eclipse.edc.issuerservice.spi.credentials.statuslist.StatusListManager;
@@ -27,6 +29,7 @@ import org.eclipse.edc.runtime.metamodel.annotation.Configuration;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;
 import org.eclipse.edc.runtime.metamodel.annotation.Provider;
+import org.eclipse.edc.spi.EdcException;
 import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.spi.system.ExecutorInstrumentation;
 import org.eclipse.edc.spi.system.ServiceExtension;
@@ -62,6 +65,8 @@ public class CredentialDefaultServiceExtension implements ServiceExtension {
     private ExecutorInstrumentation executorInstrumentation;
     @Inject
     private Monitor monitor;
+    @Inject
+    private DcpIssuerProfile issuerProfile;
 
     private BitstringStatusListManager statusListManager;
     private ScheduledExecutorService renewalExecutor;
@@ -76,12 +81,20 @@ public class CredentialDefaultServiceExtension implements ServiceExtension {
         return new StatusListInfoFactoryRegistryImpl();
     }
 
+    /**
+     * The status list manager for the status list type of the issuer's DCP profile. The runtime does not start with a
+     * profile whose status list type it cannot handle: such a profile needs another status list manager.
+     */
     @Provider(isDefault = true)
     public StatusListManager statusListManager() {
         if (statusListManager == null) {
+            var profile = issuerProfile.get();
+            var type = StatusListType.forEntryType(profile.statusListType())
+                    .orElseThrow(() -> new EdcException("The status list type '%s' of the DCP profile '%s' is not supported, it needs another StatusListManager"
+                            .formatted(profile.statusListType(), profile.name())));
             // replaces the values that cannot be used as they are, and warns about them
             statusListConfiguration = statusListConfiguration.validated(monitor);
-            statusListManager = new BitstringStatusListManager(store, transactionContext, registry, participantContextService, credentialPublisher,
+            statusListManager = new BitstringStatusListManager(type, store, transactionContext, registry, participantContextService, credentialPublisher,
                     statusListConfiguration, clock, monitor);
         }
         return statusListManager;

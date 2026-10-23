@@ -67,6 +67,11 @@ public class CredentialGeneratorRegistryImpl implements CredentialGeneratorRegis
     }
 
     @Override
+    public boolean supports(CredentialFormat credentialFormat) {
+        return generators.containsKey(credentialFormat);
+    }
+
+    @Override
     public Result<VerifiableCredentialContainer> generateCredential(String participantContextId, String participantId, CredentialGenerationRequest credentialGenerationRequest, Map<String, Object> claims) {
 
         return issuanceClaimsMapper.apply(credentialGenerationRequest.definition().getMappings(), claims)

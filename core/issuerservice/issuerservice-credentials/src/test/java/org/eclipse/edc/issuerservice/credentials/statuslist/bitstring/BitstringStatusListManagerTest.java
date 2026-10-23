@@ -38,6 +38,7 @@ import org.eclipse.edc.transaction.spi.NoopTransactionContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.EnumSource;
 
 import java.time.Clock;
@@ -49,6 +50,8 @@ import java.util.UUID;
 import java.util.stream.IntStream;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat.VC1_0_JWT;
+import static org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat.VC2_0_JOSE;
 import static org.eclipse.edc.issuerservice.credentials.statuslist.bitstring.BitstringStatusListConfiguration.DEFAULT_RENEWAL_PERIOD_SECONDS;
 import static org.eclipse.edc.issuerservice.credentials.statuslist.bitstring.BitstringStatusListConfiguration.DEFAULT_RENEWAL_THRESHOLD_SECONDS;
 import static org.eclipse.edc.issuerservice.credentials.statuslist.bitstring.BitstringStatusListConfiguration.MIN_BITSTRING_SIZE;
@@ -56,6 +59,8 @@ import static org.eclipse.edc.issuerservice.credentials.statuslist.bitstring.Bit
 import static org.eclipse.edc.issuerservice.credentials.statuslist.bitstring.BitstringStatusListManager.CURRENT_INDEX;
 import static org.eclipse.edc.issuerservice.credentials.statuslist.bitstring.BitstringStatusListManager.IS_ACTIVE;
 import static org.eclipse.edc.issuerservice.credentials.statuslist.bitstring.BitstringStatusListManager.PUBLIC_URL;
+import static org.eclipse.edc.issuerservice.credentials.statuslist.bitstring.StatusListType.BITSTRING_STATUS_LIST;
+import static org.eclipse.edc.issuerservice.credentials.statuslist.bitstring.StatusListType.STATUS_LIST_2021;
 import static org.eclipse.edc.junit.assertions.AbstractResultAssert.assertThat;
 import static org.eclipse.edc.spi.result.ServiceResult.success;
 import static org.mockito.ArgumentMatchers.any;
@@ -82,9 +87,7 @@ class BitstringStatusListManagerTest {
     private static final Instant NOW = Instant.parse("2026-10-12T10:00:00Z");
     private static final Duration VALIDITY = Duration.ofDays(365);
     private final Monitor monitor = mock();
-    private final BitstringStatusListManager manager = new BitstringStatusListManager(store, new NoopTransactionContext(), generator, participantContextService, publisher,
-            new BitstringStatusListConfiguration(MIN_BITSTRING_SIZE, VALIDITY.toSeconds(), DEFAULT_RENEWAL_PERIOD_SECONDS, DEFAULT_RENEWAL_THRESHOLD_SECONDS),
-            Clock.fixed(NOW, ZoneOffset.UTC), monitor);
+    private final BitstringStatusListManager manager = manager(BITSTRING_STATUS_LIST);
 
     @BeforeEach
     void setUp() {
@@ -99,6 +102,8 @@ class BitstringStatusListManagerTest {
 
         when(generator.signCredential(any(), any(), any()))
                 .thenAnswer(i -> Result.success(new VerifiableCredentialContainer("test-raw-token", i.getArgument(2), i.getArgument(1))));
+        // no status lists of a type, unless a test has some
+        when(store.query(any())).thenReturn(StoreResult.success(List.of()));
     }
 
     @Test
@@ -400,7 +405,7 @@ class BitstringStatusListManagerTest {
 
     @Test
     void incrementIndex() {
-        var entry = new BitstringStatusListCredentialEntry(42, createVerifiableCredentialResource().build(), "http://bar.com/quizz");
+        var entry = new BitstringStatusListCredentialEntry(BITSTRING_STATUS_LIST, 42, createVerifiableCredentialResource().build(), "http://bar.com/quizz");
         when(store.update(any())).thenReturn(StoreResult.success());
         assertThat(manager.incrementIndex(entry)).isSucceeded();
 
@@ -411,7 +416,7 @@ class BitstringStatusListManagerTest {
     @Test
     void incrementIndex_whenNotExist_shouldInsert() {
         when(store.update(any())).thenReturn(StoreResult.notFound("foo"));
-        var entry = new BitstringStatusListCredentialEntry(42, createVerifiableCredentialResource().build(), "http://bar.com/quizz");
+        var entry = new BitstringStatusListCredentialEntry(BITSTRING_STATUS_LIST, 42, createVerifiableCredentialResource().build(), "http://bar.com/quizz");
         when(store.create(any())).thenReturn(StoreResult.success());
         assertThat(manager.incrementIndex(entry)).isSucceeded();
 
@@ -423,7 +428,7 @@ class BitstringStatusListManagerTest {
     @Test
     void incrementIndex_whenUpdateFails() {
         when(store.update(any())).thenReturn(StoreResult.generalError("foo"));
-        var entry = new BitstringStatusListCredentialEntry(42, createVerifiableCredentialResource().build(), "http://bar.com/quizz");
+        var entry = new BitstringStatusListCredentialEntry(BITSTRING_STATUS_LIST, 42, createVerifiableCredentialResource().build(), "http://bar.com/quizz");
         assertThat(manager.incrementIndex(entry)).isFailed().detail().contains("foo");
 
         verify(store).update(any());
@@ -434,7 +439,7 @@ class BitstringStatusListManagerTest {
     void incrementIndex_whenStoreFails_shouldReturnFailure() {
         when(store.update(any())).thenReturn(StoreResult.notFound("foo"));
         when(store.create(any())).thenReturn(StoreResult.generalError("bar"));
-        var entry = new BitstringStatusListCredentialEntry(42, createVerifiableCredentialResource().build(), "http://bar.com/quizz");
+        var entry = new BitstringStatusListCredentialEntry(BITSTRING_STATUS_LIST, 42, createVerifiableCredentialResource().build(), "http://bar.com/quizz");
         assertThat(manager.incrementIndex(entry)).isFailed().detail().contains("bar");
 
         verify(store).update(any());
@@ -476,6 +481,56 @@ class BitstringStatusListManagerTest {
         });
         verify(generator).signCredential(eq(PARTICIPANT_CONTEXT_ID), argThat(credential -> credential.getDataModelVersion() == DataModelVersion.V_2_0),
                 eq(CredentialFormat.VC2_0_JOSE));
+    }
+
+    @Test
+    void getActiveCredential_whenCreateNew_withStatusList2021_shouldCreateVcdm11Credential() {
+        when(store.queryForUpdate(any())).thenReturn(StoreResult.success(List.of()));
+        when(store.update(any())).thenReturn(StoreResult.success());
+        when(store.create(any())).thenReturn(StoreResult.success());
+
+        var entry = manager(STATUS_LIST_2021).getActiveCredential(PARTICIPANT_CONTEXT_ID);
+
+        assertThat(entry).isSucceeded().satisfies(e -> {
+            assertThat(e.statusListCredential().getVerifiableCredential().format()).isEqualTo(VC1_0_JWT);
+            var credential = e.statusListCredential().getVerifiableCredential().credential();
+            assertThat(credential.getContext()).containsExactly("https://www.w3.org/2018/credentials/v1", "https://w3id.org/vc/status-list/2021/v1");
+            assertThat(credential.getDataModelVersion()).isEqualTo(DataModelVersion.V_1_1);
+            assertThat(credential.getType()).containsExactly("VerifiableCredential", "StatusList2021Credential");
+            assertThat(credential.getCredentialSubject()).singleElement().satisfies(subject -> {
+                assertThat(subject.getClaims()).containsEntry("type", "StatusList2021").containsEntry("statusPurpose", "revocation");
+                // StatusList2021 requires a base64 encoded list, without the multibase prefix of the Bitstring Status List
+                assertThat(subject.getClaims().get("encodedList").toString()).startsWith("H4sI");
+            });
+            assertThat(bitString(e.statusListCredential()).length()).isEqualTo(MIN_BITSTRING_SIZE);
+        });
+        verify(store, times(2)).queryForUpdate(isStatusListQuery("StatusList2021"));
+        verify(generator).signCredential(eq(PARTICIPANT_CONTEXT_ID), any(), eq(VC1_0_JWT));
+    }
+
+    @ParameterizedTest
+    @CsvSource({ "STATUS_LIST_2021, StatusList2021, StatusList2021Entry", "BITSTRING_STATUS_LIST, BitstringStatusList, BitstringStatusListEntry" })
+    void getActiveCredential_shouldCreateStatusEntryOfItsType(StatusListType type, String subjectType, String entryType) {
+        var statusList = statusListResource(type, MIN_BITSTRING_SIZE, NOW.plus(Duration.ofDays(265)))
+                .metadata(BITSTRING_SIZE, MIN_BITSTRING_SIZE)
+                .metadata(CURRENT_INDEX, 42)
+                .metadata(PUBLIC_URL, "http://bar.com/quizz")
+                .metadata(IS_ACTIVE, true)
+                .build();
+        when(store.queryForUpdate(isStatusListQuery(subjectType))).thenReturn(StoreResult.success(List.of(statusList)));
+
+        var entry = manager(type).getActiveCredential(PARTICIPANT_CONTEXT_ID);
+
+        assertThat(entry).isSucceeded().satisfies(e -> {
+            assertThat(e.statusListCredential()).isSameAs(statusList);
+            var status = e.createCredentialStatus();
+            assertThat(status.type()).isEqualTo(entryType);
+            // both status lists require the index as a base-10 string
+            assertThat(status.additionalProperties())
+                    .containsEntry("statusListIndex", "42")
+                    .containsEntry("statusPurpose", "revocation")
+                    .containsEntry("statusListCredential", "http://bar.com/quizz");
+        });
     }
 
     @Test
@@ -662,6 +717,23 @@ class BitstringStatusListManagerTest {
     }
 
     @Test
+    void renew_whenStatusList2021_shouldKeepItsEncoding() {
+        var statusList = statusListResource(STATUS_LIST_2021, MIN_BITSTRING_SIZE, NOW.plus(Duration.ofDays(265)), 7)
+                .metadata(BITSTRING_SIZE, MIN_BITSTRING_SIZE)
+                .build();
+
+        var result = manager.renew(statusList);
+
+        assertThat(result).isSucceeded().satisfies(renewed -> {
+            var encodedList = renewed.getVerifiableCredential().credential().getCredentialSubject().get(0).getClaims().get("encodedList");
+            assertThat(encodedList.toString()).startsWith("H4sI");
+            var bitString = bitString(renewed);
+            assertThat(IntStream.range(0, bitString.length()).filter(bitString::get)).containsExactly(7);
+        });
+        verify(generator).signCredential(eq(PARTICIPANT_CONTEXT_ID), any(), eq(VC1_0_JWT));
+    }
+
+    @Test
     void renew_whenVerifiableCredentialTypeIsMissing_shouldAddIt() {
         var statusList = statusListResource(MIN_BITSTRING_SIZE).metadata(BITSTRING_SIZE, MIN_BITSTRING_SIZE).build();
         // like the status list credentials that were created before
@@ -696,7 +768,7 @@ class BitstringStatusListManagerTest {
     void renewExpiring_shouldRenewCredentialsThatExpireWithinThreshold() {
         var expiring = statusListResource(MIN_BITSTRING_SIZE, NOW.plus(Duration.ofDays(10))).metadata(BITSTRING_SIZE, MIN_BITSTRING_SIZE).build();
         var notExpiring = statusListResource(MIN_BITSTRING_SIZE, NOW.plus(Duration.ofDays(200))).metadata(BITSTRING_SIZE, MIN_BITSTRING_SIZE).build();
-        when(store.query(any())).thenReturn(StoreResult.success(List.of(expiring, notExpiring)));
+        when(store.query(isStatusListQuery("BitstringStatusList"))).thenReturn(StoreResult.success(List.of(expiring, notExpiring)));
         when(store.queryForUpdate(isIdQuery(expiring.getId()))).thenReturn(StoreResult.success(List.of(expiring)));
         when(store.update(any())).thenReturn(StoreResult.success());
 
@@ -715,7 +787,7 @@ class BitstringStatusListManagerTest {
     @Test
     void renewExpiring_whenPublishingFails_shouldNotStoreIt() {
         var expiring = statusListResource(MIN_BITSTRING_SIZE, NOW.plus(Duration.ofDays(10))).metadata(BITSTRING_SIZE, MIN_BITSTRING_SIZE).build();
-        when(store.query(any())).thenReturn(StoreResult.success(List.of(expiring)));
+        when(store.query(isStatusListQuery("BitstringStatusList"))).thenReturn(StoreResult.success(List.of(expiring)));
         when(store.queryForUpdate(isIdQuery(expiring.getId()))).thenReturn(StoreResult.success(List.of(expiring)));
         when(publisher.publish(any())).thenReturn(Result.failure("publication target unavailable"));
 
@@ -730,7 +802,7 @@ class BitstringStatusListManagerTest {
     void renewExpiring_whenRenewedByAnotherRuntimeMeanwhile_shouldSkipIt() {
         var expiring = statusListResource(MIN_BITSTRING_SIZE, NOW.plus(Duration.ofDays(10))).metadata(BITSTRING_SIZE, MIN_BITSTRING_SIZE).build();
         var renewedMeanwhile = statusListResource(MIN_BITSTRING_SIZE, NOW.plus(Duration.ofDays(365))).id(expiring.getId()).metadata(BITSTRING_SIZE, MIN_BITSTRING_SIZE).build();
-        when(store.query(any())).thenReturn(StoreResult.success(List.of(expiring)));
+        when(store.query(isStatusListQuery("BitstringStatusList"))).thenReturn(StoreResult.success(List.of(expiring)));
         when(store.queryForUpdate(isIdQuery(expiring.getId()))).thenReturn(StoreResult.success(List.of(renewedMeanwhile)));
 
         manager.renewExpiring(Duration.ofDays(30));
@@ -743,7 +815,7 @@ class BitstringStatusListManagerTest {
     void renewExpiring_whenOneFails_shouldRenewTheOthers() {
         var failing = statusListResource(MIN_BITSTRING_SIZE, NOW.plus(Duration.ofDays(10))).metadata(BITSTRING_SIZE, MIN_BITSTRING_SIZE).build();
         var other = statusListResource(MIN_BITSTRING_SIZE, NOW.plus(Duration.ofDays(10))).metadata(BITSTRING_SIZE, MIN_BITSTRING_SIZE).build();
-        when(store.query(any())).thenReturn(StoreResult.success(List.of(failing, other)));
+        when(store.query(isStatusListQuery("BitstringStatusList"))).thenReturn(StoreResult.success(List.of(failing, other)));
         when(store.queryForUpdate(isIdQuery(failing.getId()))).thenThrow(new EdcPersistenceException("database unavailable"));
         when(store.queryForUpdate(isIdQuery(other.getId()))).thenReturn(StoreResult.success(List.of(other)));
         when(store.update(any())).thenReturn(StoreResult.success());
@@ -752,6 +824,36 @@ class BitstringStatusListManagerTest {
 
         verify(store).update(argThat(r -> r.getId().equals(other.getId())));
         verify(monitor).warning(contains(failing.getId()), any(EdcPersistenceException.class));
+    }
+
+    @Test
+    void renewExpiring_shouldRenewStatusListsOfAllTypes() {
+        var statusList2021 = statusListResource(STATUS_LIST_2021, MIN_BITSTRING_SIZE, NOW.plus(Duration.ofDays(10))).metadata(BITSTRING_SIZE, MIN_BITSTRING_SIZE).build();
+        var bitstringStatusList = statusListResource(BITSTRING_STATUS_LIST, MIN_BITSTRING_SIZE, NOW.plus(Duration.ofDays(10))).metadata(BITSTRING_SIZE, MIN_BITSTRING_SIZE).build();
+        when(store.query(isStatusListQuery("StatusList2021"))).thenReturn(StoreResult.success(List.of(statusList2021)));
+        when(store.query(isStatusListQuery("BitstringStatusList"))).thenReturn(StoreResult.success(List.of(bitstringStatusList)));
+        when(store.queryForUpdate(isIdQuery(statusList2021.getId()))).thenReturn(StoreResult.success(List.of(statusList2021)));
+        when(store.queryForUpdate(isIdQuery(bitstringStatusList.getId()))).thenReturn(StoreResult.success(List.of(bitstringStatusList)));
+        when(store.update(any())).thenReturn(StoreResult.success());
+
+        manager.renewExpiring(Duration.ofDays(30));
+
+        verify(store).update(argThat(r -> r.getId().equals(statusList2021.getId())));
+        verify(store).update(argThat(r -> r.getId().equals(bitstringStatusList.getId())));
+        verify(generator).signCredential(eq(PARTICIPANT_CONTEXT_ID), any(), eq(VC1_0_JWT));
+        verify(generator).signCredential(eq(PARTICIPANT_CONTEXT_ID), any(), eq(VC2_0_JOSE));
+    }
+
+    private BitstringStatusListManager manager(StatusListType type) {
+        return new BitstringStatusListManager(type, store, new NoopTransactionContext(), generator, participantContextService, publisher,
+                new BitstringStatusListConfiguration(MIN_BITSTRING_SIZE, VALIDITY.toSeconds(), DEFAULT_RENEWAL_PERIOD_SECONDS, DEFAULT_RENEWAL_THRESHOLD_SECONDS),
+                Clock.fixed(NOW, ZoneOffset.UTC), monitor);
+    }
+
+    private QuerySpec isStatusListQuery(String subjectType) {
+        return argThat(query -> query != null && query.getFilterExpression().stream()
+                .anyMatch(criterion -> "verifiableCredential.credential.credentialSubject.type".equals(criterion.getOperandLeft()) &&
+                        subjectType.equals(criterion.getOperandRight())));
     }
 
     private QuerySpec isIdQuery(String id) {
@@ -780,6 +882,14 @@ class BitstringStatusListManagerTest {
     }
 
     private VerifiableCredentialResource.Builder statusListResource(CredentialFormat format, int bitstringSize, Instant expirationDate, int... setIndexes) {
+        return statusListResource(BITSTRING_STATUS_LIST, format, bitstringSize, expirationDate, setIndexes);
+    }
+
+    private VerifiableCredentialResource.Builder statusListResource(StatusListType type, int bitstringSize, Instant expirationDate, int... setIndexes) {
+        return statusListResource(type, type.format(), bitstringSize, expirationDate, setIndexes);
+    }
+
+    private VerifiableCredentialResource.Builder statusListResource(StatusListType type, CredentialFormat format, int bitstringSize, Instant expirationDate, int... setIndexes) {
         var bitString = BitString.Builder.newInstance().size(bitstringSize).build();
         for (var index : setIndexes) {
             bitString.set(index, true);
@@ -787,15 +897,15 @@ class BitstringStatusListManagerTest {
         var credential = VerifiableCredential.Builder.newInstance()
                 .id("status-list-credential-id")
                 .type("VerifiableCredential")
-                .type("BitstringStatusListCredential")
+                .type(type.credentialType())
                 .issuer(new Issuer("did:web:issuer"))
                 .issuanceDate(NOW.minus(Duration.ofDays(100)))
                 .expirationDate(expirationDate)
                 .credentialSubject(CredentialSubject.Builder.newInstance()
                         .id("status-list-subject-id")
-                        .claim("type", "BitstringStatusList")
+                        .claim("type", type.subjectType())
                         .claim("statusPurpose", "revocation")
-                        .claim("encodedList", BitString.Writer.newInstance().writeMultibase(bitString).getContent())
+                        .claim("encodedList", type.encode(bitString).getContent())
                         .build())
                 .build();
         return VerifiableCredentialResource.Builder.newStatusList()

@@ -26,9 +26,17 @@ In order for credential status lists to work we must make a few general assumpti
   short-circuited
 - status list credentials are always stored in signed JWT form. Other content types may be supported,
   cf. [here](#using-the-publicly-available-status-list-credential).
-- new status list credentials use the VC Data Model 2.0, secured with JOSE (VC-JOSE-COSE), i.e. the payload of the JWT
-  is the credential itself. Status list credentials that were created before use the VC Data Model 1.1, i.e. the
-  credential is the `vc` claim of the JWT, and keep that format when they are signed again.
+- the DCP profile of the IssuerService (`edc.issuer.dcp.profile`) determines the kind of status list that holder
+  credentials of any format get an entry on:
+    - `vc11-sl2021/jwt`: holder credentials get a `StatusList2021Entry` on a
+      [StatusList2021](https://www.w3.org/TR/2023/WD-vc-status-list-20230427/) credential. It uses the VC Data Model
+      1.1 and is secured as a VC-JWT, i.e. the credential is the `vc` claim of the JWT.
+    - `vc20-bssl/jwt` (default): holder credentials get a `BitstringStatusListEntry` on a
+      [Bitstring Status List](https://www.w3.org/TR/vc-bitstring-status-list/) credential. It uses the VC Data Model
+      2.0 and is secured with JOSE (VC-JOSE-COSE), i.e. the payload of the JWT is the credential itself.
+
+  Status list credentials of the other kind, e.g. those created under another profile before, are still renewed and
+  their holder credentials can still be revoked. Status list credentials keep their format when they are signed again.
 
 ## Creating credentials with status information
 

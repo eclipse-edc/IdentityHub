@@ -15,8 +15,11 @@
 package org.eclipse.edc.issuerservice.credentials;
 
 import org.eclipse.edc.boot.system.injection.ObjectFactory;
+import org.eclipse.edc.identityhub.protocols.dcp.issuer.spi.DcpIssuerProfile;
+import org.eclipse.edc.identityhub.protocols.dcp.spi.model.DcpProfile;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialStore;
 import org.eclipse.edc.junit.extensions.DependencyInjectionExtension;
+import org.eclipse.edc.spi.EdcException;
 import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.spi.persistence.EdcPersistenceException;
 import org.eclipse.edc.spi.result.StoreResult;
@@ -35,10 +38,13 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThatNoException;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat.VC2_0_JOSE;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -51,12 +57,14 @@ class CredentialDefaultServiceExtensionTest {
     private final ScheduledExecutorService renewalExecutor = mock();
     private final CredentialStore store = mock();
     private final Monitor monitor = mock();
+    private DcpProfile issuerProfile = new DcpProfile("vc20-bssl/jwt", VC2_0_JOSE, "BitstringStatusListEntry");
 
     @BeforeEach
     void setUp(ServiceExtensionContext context) {
         context.registerService(ExecutorInstrumentation.class, executorInstrumentation);
         context.registerService(CredentialStore.class, store);
         context.registerService(Clock.class, Clock.systemUTC());
+        context.registerService(DcpIssuerProfile.class, () -> issuerProfile);
         context.registerService(Monitor.class, monitor);
         when(executorInstrumentation.instrument(any(ScheduledExecutorService.class), anyString())).thenReturn(renewalExecutor);
         when(store.query(any())).thenReturn(StoreResult.success(List.of()));
@@ -73,7 +81,7 @@ class CredentialDefaultServiceExtensionTest {
         var task = ArgumentCaptor.forClass(Runnable.class);
         verify(renewalExecutor).scheduleAtFixedRate(task.capture(), eq(0L), eq(3600L), eq(TimeUnit.SECONDS));
         task.getValue().run();
-        verify(store).query(any());
+        verify(store, atLeastOnce()).query(any());
 
         extension.shutdown();
         verify(renewalExecutor).shutdownNow();
@@ -128,5 +136,15 @@ class CredentialDefaultServiceExtensionTest {
         extension.start();
 
         verifyNoInteractions(executorInstrumentation);
+    }
+
+    @Test
+    void statusListManager_whenStatusListTypeOfProfileNotSupported_shouldFail(ObjectFactory objectFactory) {
+        issuerProfile = new DcpProfile("custom/jwt", VC2_0_JOSE, "CustomStatusListEntry");
+        var extension = objectFactory.constructInstance(CredentialDefaultServiceExtension.class);
+
+        // the runtime does not start with a profile that needs another StatusListManager
+        assertThatThrownBy(extension::statusListManager).isInstanceOf(EdcException.class)
+                .hasMessageContaining("CustomStatusListEntry").hasMessageContaining("custom/jwt");
     }
 }

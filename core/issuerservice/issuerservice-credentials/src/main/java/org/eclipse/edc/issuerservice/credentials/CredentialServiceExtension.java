@@ -22,6 +22,7 @@ import org.eclipse.edc.identityhub.spi.participantcontext.IdentityHubParticipant
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialStore;
 import org.eclipse.edc.issuerservice.credentials.offers.IssuerCredentialOfferServiceImpl;
 import org.eclipse.edc.issuerservice.credentials.statuslist.bitstring.BitstringStatusListFactory;
+import org.eclipse.edc.issuerservice.credentials.statuslist.bitstring.StatusListType;
 import org.eclipse.edc.issuerservice.spi.credentials.CredentialStatusService;
 import org.eclipse.edc.issuerservice.spi.credentials.IssuerCredentialOfferService;
 import org.eclipse.edc.issuerservice.spi.credentials.statuslist.StatusListCredentialPublisher;
@@ -41,7 +42,6 @@ import java.time.Clock;
 
 import static org.eclipse.edc.identityhub.protocols.dcp.spi.DcpConstants.DCP_SCOPE_V_1_0;
 import static org.eclipse.edc.issuerservice.credentials.CredentialServiceExtension.NAME;
-import static org.eclipse.edc.issuerservice.credentials.statuslist.bitstring.BitstringConstants.BITSTRING_STATUS_LIST_ENTRY;
 
 @Extension(value = NAME)
 public class CredentialServiceExtension implements ServiceExtension {
@@ -84,7 +84,9 @@ public class CredentialServiceExtension implements ServiceExtension {
 
     @Provider
     public CredentialStatusService getStatusListService(ServiceExtensionContext context) {
-        statusListInfoFactoryRegistry.register(BITSTRING_STATUS_LIST_ENTRY, new BitstringStatusListFactory(store));
+        for (var type : StatusListType.values()) {
+            statusListInfoFactoryRegistry.register(type.entryType(), new BitstringStatusListFactory(store, type));
+        }
 
         return new CredentialStatusServiceImpl(store, transactionContext, context.getMonitor(), statusListInfoFactoryRegistry, statusListManager,
                 statusListCredentialPublisher);

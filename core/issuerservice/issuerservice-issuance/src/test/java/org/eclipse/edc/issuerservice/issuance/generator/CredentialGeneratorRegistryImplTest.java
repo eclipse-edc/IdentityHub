@@ -40,6 +40,7 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat.VC1_0_JWT;
+import static org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat.VC2_0_JOSE;
 import static org.eclipse.edc.identityhub.spi.participantcontext.model.KeyPairUsage.CREDENTIAL_SIGNING;
 import static org.eclipse.edc.junit.assertions.AbstractResultAssert.assertThat;
 import static org.eclipse.edc.spi.result.ServiceResult.success;
@@ -85,6 +86,14 @@ public class CredentialGeneratorRegistryImplTest {
         var result = credentialGeneratorRegistry.generateCredential("participantContextId", "holderId", request, Map.of());
 
         assertThat(result).isSucceeded();
+    }
+
+    @Test
+    void supports_shouldTellWhetherGeneratorWasAdded() {
+        credentialGeneratorRegistry.addGenerator(VC1_0_JWT, mock(CredentialGenerator.class));
+
+        assertThat(credentialGeneratorRegistry.supports(VC1_0_JWT)).isTrue();
+        assertThat(credentialGeneratorRegistry.supports(VC2_0_JOSE)).isFalse();
     }
 
     @Test

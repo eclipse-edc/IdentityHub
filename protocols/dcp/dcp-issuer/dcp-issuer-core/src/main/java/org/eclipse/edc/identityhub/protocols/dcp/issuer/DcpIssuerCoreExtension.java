@@ -19,6 +19,7 @@ import org.eclipse.edc.iam.decentralizedclaims.spi.CredentialServiceUrlResolver;
 import org.eclipse.edc.iam.did.spi.resolution.DidPublicKeyResolver;
 import org.eclipse.edc.iam.did.spi.resolution.DidResolverRegistry;
 import org.eclipse.edc.identityhub.protocols.dcp.issuer.spi.DcpIssuerMetadataService;
+import org.eclipse.edc.identityhub.protocols.dcp.issuer.spi.DcpIssuerProfile;
 import org.eclipse.edc.identityhub.protocols.dcp.issuer.spi.DcpIssuerService;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.DcpHolderTokenVerifier;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.DcpProfileRegistry;
@@ -30,6 +31,7 @@ import org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationPipelin
 import org.eclipse.edc.issuerservice.spi.issuance.credentialdefinition.CredentialDefinitionService;
 import org.eclipse.edc.issuerservice.spi.issuance.delivery.CredentialStorageClient;
 import org.eclipse.edc.issuerservice.spi.issuance.events.IssuanceObservable;
+import org.eclipse.edc.issuerservice.spi.issuance.generator.CredentialGeneratorRegistry;
 import org.eclipse.edc.issuerservice.spi.issuance.process.store.IssuanceProcessStore;
 import org.eclipse.edc.issuerservice.spi.issuance.rule.CredentialRuleDefinitionEvaluator;
 import org.eclipse.edc.jwt.validation.jti.JtiValidationStore;
@@ -55,6 +57,8 @@ import org.eclipse.edc.verifiablecredentials.jwt.rules.IssuerEqualsSubjectRule;
 
 import java.time.Clock;
 
+import static java.util.Optional.ofNullable;
+import static org.eclipse.edc.identityhub.spi.verifiablecredentials.model.CredentialProfile.DCP_PROFILE_VC20;
 import static org.eclipse.edc.spi.constants.CoreConstants.JSON_LD;
 import static org.eclipse.edc.spi.result.Result.failure;
 import static org.eclipse.edc.spi.result.Result.success;
@@ -64,6 +68,7 @@ public class DcpIssuerCoreExtension implements ServiceExtension {
 
     public static final String DCP_ISSUER_SELF_ISSUED_TOKEN_CONTEXT = "dcp-issuer-si";
     static final String ACCESSTOKEN_JTI_VALIDATION_ACTIVATE = "edc.iam.accesstoken.jti.validation";
+    static final String ISSUER_PROFILE = "edc.issuer.dcp.profile";
     private static final String CREDENTIAL_SERVICE_TYPE = "CredentialService";
 
     @Inject
@@ -122,6 +127,12 @@ public class DcpIssuerCoreExtension implements ServiceExtension {
 
     @Inject
     private DcpProfileRegistry profileRegistry;
+    @Inject
+    private CredentialGeneratorRegistry credentialGeneratorRegistry;
+    @Setting(description = "The DCP profile of the issuer, e.g. 'vc20-bssl/jwt' (VCDM 2.0 Bitstring Status List) or 'vc11-sl2021/jwt' " +
+            "(VCDM 1.1 StatusList2021). It determines the kind of status list that holds the status of the issued credentials, whatever their format.",
+            defaultValue = DCP_PROFILE_VC20, key = ISSUER_PROFILE)
+    private String profileName;
     @Setting(description = "Activates the JTI check: access tokens can only be used once to guard against replay attacks", defaultValue = "false", key = ACCESSTOKEN_JTI_VALIDATION_ACTIVATE)
     private boolean activateJtiCheck;
     @Inject(required = false)
@@ -146,6 +157,28 @@ public class DcpIssuerCoreExtension implements ServiceExtension {
             rulesRegistry.addRule(DCP_ISSUER_SELF_ISSUED_TOKEN_CONTEXT, new RequiredJtiValidationRule(jtiValidationStore, context.getMonitor()));
         }
 
+    }
+
+    /**
+     * Rejects a profile that is not registered, or whose format cannot be generated, so that the runtime does not start
+     * with it. Profiles can be registered by other extensions until now. Whether its status list type can be handled is
+     * up to the status list manager.
+     */
+    @Override
+    public void prepare() {
+        var profile = profileRegistry.getProfile(profileName);
+        if (profile == null) {
+            throw new EdcException(unknownProfile());
+        }
+        if (!credentialGeneratorRegistry.supports(profile.format())) {
+            throw new EdcException("The DCP profile '%s' ('%s') cannot be handled, there is no credential generator for its format %s"
+                    .formatted(profileName, ISSUER_PROFILE, profile.format()));
+        }
+    }
+
+    @Provider
+    public DcpIssuerProfile issuerProfile() {
+        return () -> ofNullable(profileRegistry.getProfile(profileName)).orElseThrow(() -> new EdcException(unknownProfile()));
     }
 
     @Provider
@@ -182,5 +215,9 @@ public class DcpIssuerCoreExtension implements ServiceExtension {
                     .map(service -> success(service.getServiceEndpoint()))
                     .orElseGet(() -> failure("No Service endpoint '%s' found on DID Document.".formatted(CREDENTIAL_SERVICE_TYPE)));
         };
+    }
+
+    private String unknownProfile() {
+        return "The DCP profile '%s' ('%s') is not registered".formatted(profileName, ISSUER_PROFILE);
     }
 }

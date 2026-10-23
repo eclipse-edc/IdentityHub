@@ -38,6 +38,14 @@ public interface CredentialGeneratorRegistry {
     void addGenerator(CredentialFormat credentialFormat, CredentialGenerator generator);
 
     /**
+     * Whether credentials of the given {@link CredentialFormat} can be generated, i.e. a generator was added for it.
+     *
+     * @param credentialFormat The credential format
+     * @return true if a generator was added for the format
+     */
+    boolean supports(CredentialFormat credentialFormat);
+
+    /**
      * Generates credentials based on the given {@link CredentialGenerationRequest}s and claims.
      *
      * @param participantContextId         The participant context ID

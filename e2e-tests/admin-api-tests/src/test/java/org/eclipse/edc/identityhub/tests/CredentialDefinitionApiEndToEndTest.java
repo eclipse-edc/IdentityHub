@@ -48,6 +48,7 @@ import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat.VC1_0_JWT;
+import static org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat.VC2_0_JOSE;
 import static org.eclipse.edc.identityhub.tests.TestData.ISSUER_RUNTIME_NAME;
 import static org.eclipse.edc.identityhub.tests.fixtures.TestFunctions.authorizeOauth2;
 import static org.eclipse.edc.identityhub.tests.fixtures.TestFunctions.authorizeTokenBased;
@@ -102,9 +103,11 @@ public class CredentialDefinitionApiEndToEndTest {
                     .statusCode(201)
                     .header("Location", Matchers.endsWith("/credentialdefinitions/test-definition-id"));
 
+            // the format of the request is not used, but that of the issuer's DCP profile
             assertThat(service.findCredentialDefinitionById(definition.getParticipantContextId(), definition.getId())).isSucceeded()
+                    .satisfies(created -> assertThat(created.getFormatAsEnum()).isEqualTo(VC2_0_JOSE))
                     .usingRecursiveComparison()
-                    .ignoringFields("createdAt")
+                    .ignoringFields("createdAt", "format")
                     .isEqualTo(definition);
         }
 
@@ -209,8 +212,7 @@ public class CredentialDefinitionApiEndToEndTest {
                               "id": "%s",
                               "credentialType": "MembershipCredential",
                               "jsonSchema": "{}",
-                              "jsonSchemaUrl": "https://example.org/membership-credential-schema.json",
-                              "format": "VC1_0_JWT"
+                              "jsonSchemaUrl": "https://example.org/membership-credential-schema.json"
                             }
                             """.formatted(id))
                     .post("/v1/participants/%s/credentialdefinitions".formatted(USER))
@@ -248,8 +250,7 @@ public class CredentialDefinitionApiEndToEndTest {
                               "credentialType": "MembershipCredential",
                               "jsonSchema": "{}",
                               "jsonSchemaUrl": "https://example.org/membership-credential-schema.json",
-                              "attestations": ["notfound"],
-                              "format": "VC1_0_JWT"
+                              "attestations": ["notfound"]
                             }
                             """)
                     .post("/v1/participants/%s/credentialdefinitions".formatted(USER))
@@ -451,8 +452,10 @@ public class CredentialDefinitionApiEndToEndTest {
 
             var updatedDefinition = service.findCredentialDefinitionById(definition.getParticipantContextId(), definition.getId()).getContent();
 
+            // the format of the request is not used, but that of the issuer's DCP profile
+            assertThat(updatedDefinition.getFormatAsEnum()).isEqualTo(VC2_0_JOSE);
             assertThat(updatedDefinition).usingRecursiveComparison()
-                    .ignoringFields("createdAt")
+                    .ignoringFields("createdAt", "format")
                     .isEqualTo(definition);
         }
 
