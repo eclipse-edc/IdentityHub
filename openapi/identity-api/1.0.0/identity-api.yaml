@@ -168,46 +168,6 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/ApiErrorDetail"
-  /v1/participants/{participantContextId}/sts/secret:
-    post:
-      tags:
-      - Participant Context
-      description: Regenerates the client secret of the STS account of a ParticipantContext
-        and returns the new secret. The previous secret is no longer valid.
-      operationId: regenerateStsClientSecret
-      parameters:
-      - name: participantContextId
-        in: path
-        required: true
-        style: simple
-        explode: false
-        schema:
-          type: string
-      responses:
-        "200":
-          description: The client secret was regenerated successfully
-          content:
-            application/json:
-              schema:
-                type: string
-        "401":
-          description: "The request could not be completed, because either the authentication\
-            \ was missing or was not valid."
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/ApiErrorDetail"
-        "404":
-          description: "A ParticipantContext with the given ID does not exist, or\
-            \ it has no STS account."
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/ApiErrorDetail"
   /v1/participants/{participantContextId}/dids/query:
     post:
       tags:
@@ -247,6 +207,46 @@ paths:
         "401":
           description: "The request could not be completed, because either the authentication\
             \ was missing or was not valid."
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiErrorDetail"
+  /v1/participants/{participantContextId}/sts/secret:
+    post:
+      tags:
+      - Participant Context
+      description: Regenerates the client secret of the STS account of a ParticipantContext
+        and returns the new secret. The previous secret is no longer valid.
+      operationId: regenerateStsClientSecret
+      parameters:
+      - name: participantContextId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: The client secret was regenerated successfully
+          content:
+            application/json:
+              schema:
+                type: string
+        "401":
+          description: "The request could not be completed, because either the authentication\
+            \ was missing or was not valid."
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiErrorDetail"
+        "404":
+          description: "A ParticipantContext with the given ID does not exist, or\
+            \ it has no STS account."
           content:
             application/json:
               schema:
@@ -1314,6 +1314,58 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/ApiErrorDetail"
+  /v1/participants/{participantContextId}/token:
+    post:
+      tags:
+      - Participant Context
+      description: Regenerates the API token for a ParticipantContext and returns
+        the new token.
+      operationId: regenerateParticipantToken
+      parameters:
+      - name: participantContextId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ParticipantManifest"
+      responses:
+        "200":
+          description: The API token was regenerated successfully
+          content:
+            application/json:
+              schema:
+                type: string
+        "400":
+          description: "Request body was malformed, or the request could not be processed"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiErrorDetail"
+        "401":
+          description: "The request could not be completed, because either the authentication\
+            \ was missing or was not valid."
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiErrorDetail"
+        "404":
+          description: A ParticipantContext with the given ID does not exist.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiErrorDetail"
   /v1/credentials:
     get:
       tags:
@@ -1367,58 +1419,6 @@ paths:
                 items:
                   $ref: "#/components/schemas/ApiErrorDetail"
       deprecated: true
-  /v1/participants/{participantContextId}/token:
-    post:
-      tags:
-      - Participant Context
-      description: Regenerates the API token for a ParticipantContext and returns
-        the new token.
-      operationId: regenerateParticipantToken
-      parameters:
-      - name: participantContextId
-        in: path
-        required: true
-        style: simple
-        explode: false
-        schema:
-          type: string
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/ParticipantManifest"
-      responses:
-        "200":
-          description: The API token was regenerated successfully
-          content:
-            application/json:
-              schema:
-                type: string
-        "400":
-          description: "Request body was malformed, or the request could not be processed"
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/ApiErrorDetail"
-        "401":
-          description: "The request could not be completed, because either the authentication\
-            \ was missing or was not valid."
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/ApiErrorDetail"
-        "404":
-          description: A ParticipantContext with the given ID does not exist.
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/ApiErrorDetail"
   /v1/participants/{participantContextId}/scopes:
     put:
       tags:
