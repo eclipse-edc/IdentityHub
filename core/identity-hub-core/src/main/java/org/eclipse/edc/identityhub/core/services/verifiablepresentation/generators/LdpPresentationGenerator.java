@@ -66,7 +66,7 @@ public class LdpPresentationGenerator implements PresentationGenerator<JsonObjec
 
     public static final String TYPE_ADDITIONAL_DATA = "types";
     public static final String HOLDER_PROPERTY = "holder";
-    public static final URI ASSERTION_METHOD = URI.create("https://w3id.org/security#assertionMethod");
+    public static final URI AUTHENTICATION = URI.create("https://w3id.org/security#authentication");
     public static final URI JSON_WEB_KEY_2020 = URI.create("https://w3id.org/security#JsonWebKey2020");
     private final PrivateKeyResolver privateKeyResolver;
     private final SignatureSuiteRegistry signatureSuiteRegistry;
@@ -193,7 +193,7 @@ public class LdpPresentationGenerator implements PresentationGenerator<JsonObjec
 
         var now = clock.instant();
         var proofDraft = Jws2020ProofDraft.Builder.newInstance()
-                .proofPurpose(ASSERTION_METHOD)
+                .proofPurpose(AUTHENTICATION)
                 .verificationMethod(new JsonWebKeyPair(keyIdUri, JSON_WEB_KEY_2020, controllerUri, null))
                 .created(now)
                 .expires(now.plus(vpLifetime))
