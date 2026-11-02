@@ -18,7 +18,31 @@ paths:
         content:
           application/x-www-form-urlencoded:
             schema:
-              $ref: "#/components/schemas/token_request"
+              required:
+              - audience
+              - client_id
+              - client_secret
+              - grant_type
+              type: object
+              properties:
+                audience:
+                  type: string
+                  description: Audience for the SI token
+                bearer_access_scope:
+                  type: string
+                  description: Scope to be added in the VP token
+                client_id:
+                  type: string
+                  description: Id of the client requesting an SI token
+                client_secret:
+                  type: string
+                  description: Secret of the client requesting an SI token
+                grant_type:
+                  type: string
+                  description: "Type of grant: must be set to client_credentials"
+                token:
+                  type: string
+                  description: VP token to be added as a claim in the SI token
             encoding:
               audience:
                 style: form
@@ -49,6 +73,13 @@ paths:
                   $ref: "#/components/schemas/StsTokenErrorResponse"
 components:
   schemas:
+    StsTokenErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+        error_description:
+          type: string
     StsTokenResponse:
       type: object
       properties:
@@ -59,36 +90,3 @@ components:
           format: int64
         token_type:
           type: string
-    StsTokenErrorResponse:
-      type: object
-      properties:
-        error:
-          type: string
-        error_description:
-          type: string
-    token_request:
-      required:
-      - audience
-      - client_id
-      - client_secret
-      - grant_type
-      type: object
-      properties:
-        audience:
-          type: string
-          description: Audience for the SI token
-        bearer_access_scope:
-          type: string
-          description: Scope to be added in the VP token
-        client_id:
-          type: string
-          description: Id of the client requesting an SI token
-        client_secret:
-          type: string
-          description: Secret of the client requesting an SI token
-        grant_type:
-          type: string
-          description: "Type of grant: must be set to client_credentials"
-        token:
-          type: string
-          description: VP token to be added as a claim in the SI token
