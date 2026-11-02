@@ -25,11 +25,6 @@ CREATE TABLE IF NOT EXISTS holders
     properties             JSON DEFAULT '{}',                         -- JSON serialization of the properties
     CONSTRAINT holders_participant_id_pk PRIMARY KEY (participant_context_id, holder_id)
 );
--- migration of tables in which the holder ID was unique across all participant contexts. The unique index takes the
--- place of the composite primary key, and is a no-op if the table already has it
-ALTER TABLE holders DROP CONSTRAINT IF EXISTS holders_pkey;
-DROP INDEX IF EXISTS holders_holder_id_uindex;
-CREATE UNIQUE INDEX IF NOT EXISTS holders_participant_id_pk ON holders (participant_context_id, holder_id);
 -- a participant context has at most one holder per DID. A table that already holds such duplicates is left as it is,
 -- with a warning, until they are deleted
 DO

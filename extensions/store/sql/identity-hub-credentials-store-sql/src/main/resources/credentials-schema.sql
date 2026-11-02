@@ -30,11 +30,6 @@ CREATE TABLE IF NOT EXISTS credential_resource
     usage                  VARCHAR             NOT NULL, -- 'holder', 'statuslist' or 'issuancetracking'
     CONSTRAINT credential_resource_participant_id_pk PRIMARY KEY (participant_context_id, id)
 );
--- migration of tables in which the credential ID was unique across all participant contexts. The unique index takes
--- the place of the composite primary key, and is a no-op if the table already has it
-ALTER TABLE credential_resource DROP CONSTRAINT IF EXISTS credential_resource_pkey;
-DROP INDEX IF EXISTS credential_resource_credential_id_uindex;
-CREATE UNIQUE INDEX IF NOT EXISTS credential_resource_participant_id_pk ON credential_resource (participant_context_id, id);
 COMMENT ON COLUMN credential_resource.id IS 'ID of the VC, duplicated here for indexing purposes';
 COMMENT ON COLUMN credential_resource.raw_vc IS 'Representation of the VC exactly as it was received by the issuer. Can be JWT or JSON(-LD) ';
 COMMENT ON COLUMN credential_resource.vc_format IS '0 = JSON-LD, 1 = JWT';
