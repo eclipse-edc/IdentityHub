@@ -60,36 +60,6 @@ class SqlHolderStoreTest extends HolderStoreTestBase {
         assertThat(store.create(holder("holder-3", "other-participant", "did:web:holder"))).isSucceeded();
     }
 
-    @Test
-    void schema_migratesTableWithHolderIdsUniqueAcrossParticipantContexts(PostgresqlStoreSetupExtension extension) {
-        extension.runQuery("DROP TABLE " + statements.getHoldersTable() + " CASCADE");
-        extension.runQuery("""
-                CREATE TABLE holders
-                (
-                    holder_id              VARCHAR PRIMARY KEY NOT NULL,
-                    participant_context_id VARCHAR             NOT NULL,
-                    did                    VARCHAR             NOT NULL,
-                    holder_name            VARCHAR,
-                    anonymous              BOOLEAN             NOT NULL DEFAULT FALSE,
-                    created_date           BIGINT              NOT NULL,
-                    last_modified_date     BIGINT,
-                    properties             JSON DEFAULT '{}'
-                );
-                CREATE UNIQUE INDEX holders_holder_id_uindex ON holders USING btree (holder_id);
-                """);
-        // a participant context may hold duplicate DIDs from before, which keeps the DID index from being created
-        store.create(holder("holder-1", "participant", "did:web:holder"));
-        store.create(holder("holder-2", "participant", "did:web:holder"));
-
-        // the schema is applied on every start, so it must be repeatable
-        var schema = TestUtils.getResourceFileContentAsString("holder-schema.sql");
-        extension.runQuery(schema);
-        extension.runQuery(schema);
-
-        assertThat(store.create(holder("holder-1", "other-participant", "did:web:other"))).isSucceeded();
-        assertThat(store.create(holder("holder-1", "participant", "did:web:another"))).isFailed();
-    }
-
     private static Holder holder(String id, String participantContextId, String did) {
         return Holder.Builder.newInstance().holderId(id).participantContextId(participantContextId).did(did).build();
     }

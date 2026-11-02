@@ -71,19 +71,6 @@ class SqlIssuanceProcessStoreTest extends IssuanceProcessStoreTestBase {
     }
 
     @Test
-    void schema_shouldAddLeaseAndVersionColumnsToExistingTable(PostgresqlStoreSetupExtension extension) {
-        extension.runQuery("ALTER TABLE %s DROP COLUMN leased_by, DROP COLUMN leased_at, DROP COLUMN lease_duration, DROP COLUMN version"
-                .formatted(statements.getIssuanceProcessTable()));
-
-        extension.runQuery(TestUtils.getResourceFileContentAsString("issuance-process-schema.sql"));
-
-        var process = createIssuanceProcess("holder-pid");
-        assertThat(store.save(process)).isSucceeded();
-        Assertions.assertThat(store.nextNotLeased(1)).extracting(IssuanceProcess::getId).containsExactly(process.getId());
-        Assertions.assertThat(leaseUtil.isLeased(process.getId(), RUNTIME_ID)).isTrue();
-    }
-
-    @Test
     void save_whenHolderPidUsed_shouldNotAbortTransaction(PostgresqlStoreSetupExtension extension, QueryExecutor queryExecutor) {
         var transactionContext = new LocalTransactionContext(mock(Monitor.class));
         var transactionalStore = createTransactionalStore(extension, queryExecutor, transactionContext);

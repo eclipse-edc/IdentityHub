@@ -35,13 +35,6 @@ CREATE TABLE IF NOT EXISTS edc_issuance_process
     version                     BIGINT  DEFAULT 0 NOT NULL
 );
 
--- Add lease columns to tables created before the lease was moved from edc_lease to the issuance process row
-ALTER TABLE edc_issuance_process ADD COLUMN IF NOT EXISTS leased_by VARCHAR;
-ALTER TABLE edc_issuance_process ADD COLUMN IF NOT EXISTS leased_at BIGINT;
-ALTER TABLE edc_issuance_process ADD COLUMN IF NOT EXISTS lease_duration INTEGER;
--- Add the version column to tables created before optimistic locking was introduced
-ALTER TABLE edc_issuance_process ADD COLUMN IF NOT EXISTS version BIGINT DEFAULT 0 NOT NULL;
-
 COMMENT ON COLUMN edc_issuance_process.leased_at IS 'posix timestamp of lease';
 COMMENT ON COLUMN edc_issuance_process.lease_duration IS 'duration of lease in milliseconds';
 COMMENT ON COLUMN edc_issuance_process.version IS 'version of the entity, incremented on every save, used for optimistic locking';

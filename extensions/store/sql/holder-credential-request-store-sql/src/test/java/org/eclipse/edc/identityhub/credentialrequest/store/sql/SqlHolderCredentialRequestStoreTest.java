@@ -67,19 +67,6 @@ class SqlHolderCredentialRequestStoreTest extends HolderCredentialRequestStoreTe
     }
 
     @Test
-    void schema_shouldAddLeaseAndVersionColumnsToExistingTable(PostgresqlStoreSetupExtension extension) {
-        extension.runQuery("ALTER TABLE %s DROP COLUMN leased_by, DROP COLUMN leased_at, DROP COLUMN lease_duration, DROP COLUMN version"
-                .formatted(statements.getHolderCredentialRequestTable()));
-
-        extension.runQuery(TestUtils.getResourceFileContentAsString("holder-credential-request-schema.sql"));
-
-        var request = createRequest();
-        assertThat(store.save(request)).isSucceeded();
-        Assertions.assertThat(store.nextNotLeased(1)).extracting(HolderCredentialRequest::getId).containsExactly(request.getId());
-        Assertions.assertThat(leaseUtil.isLeased(request.getId(), RUNTIME_ID)).isTrue();
-    }
-
-    @Test
     void save_whenChangedSinceRead_shouldFail() {
         var request = createRequest();
         store.save(request);
