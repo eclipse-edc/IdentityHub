@@ -18,8 +18,10 @@
   resources. Also referred to as: mgmt api
 - API Key: a secret string that is used to authenticate/authorize a request and that is typically sent in the HTTP
   header. Also referred to as: API token, API secret, credential
-- Super-user: service principal with pre-defined roles that grant elevated access permissions. Also referred to as:
-  admin, root user
+- Scope: a permission granted to a service principal, of the form `<api>[:<resource>]:<action>`, e.g.
+  `identity-api:keypairs:write`. Also referred to as: permission
+- Super-user: service principal with the admin scope of an API (`identity-api:admin`, `issuer-admin-api:admin`), which
+  grants elevated access permissions. Also referred to as: admin, root user
 
 ## 2. Requirements
 
@@ -58,7 +60,7 @@ service is needed to perform the resource lookup.
 
 Some operations in the Identity API _require_ elevated access rights, for example modifying participant contexts, or
 listing resources across multiple participant contexts. The elevated access is tied to
-a [built-in role](#51-built-in-roles). The super-user has that role.
+the [admin scope](#51-scopes) of the API. The super-user has that scope.
 
 In addition, the super-user is able to perform every operation "on behalf of" a normal user. That means even if the
 super-user's `ServicePrincipal` does not technically own a resource, permissions to read and modify are still granted.
@@ -164,7 +166,8 @@ public KeyPairResource findById(@PathParam("keyPairId") String id, @Context Secu
 Here, the `AuthorizationService` is consulted to determine whether `participantContextId` is permitted to access
 a `KeyPairResource` with `id`.
 
-> There is one exception to this, which is authorizing [built-in roles](#51-built-in-roles).
+> There is one exception to this: a service principal with the [admin scope](#51-scopes) of the API is authorized to
+> access the resources of every participant context.
 
 ### 4.2 The `AuthorizationService` and resource lookup functions
 
@@ -214,7 +217,8 @@ public class AuthorizationServiceImpl implements AuthorizationService {
             return ServiceResult.notFound(/* error message */);
         }
 
-        if (securityContext.isUserInRole(ServicePrincipal.ROLE_ADMIN)) {
+        // a principal holding an admin scope is elevated and may access resources across participant contexts
+        if (securityContext.getUserPrincipal() instanceof ParticipantPrincipal principal && isAdmin(principal.scope())) {
             return ServiceResult.success();
         }
 
@@ -228,106 +232,77 @@ public class AuthorizationServiceImpl implements AuthorizationService {
 }
 ```
 
-## 5. Role-based access control (RBAC)
+## 5. Scope-based access control
 
 So far, we have only granted access based on whether a service principal _owns_ a resource or not.
 In other words, if _only_ the resource owner is granted access, not even the super-user can modify a participant's
 key-pair resources.
 
 This is not sufficient, because the super-user should have access to all resources, e.g. when API keys are lost or
-compromised, or participants require administrative assistance. Thus, as per default behaviour, the built-in super-user
-role is granted access to all resources of all participant contexts.
+compromised, or participants require administrative assistance. In addition, a service principal should only be able to
+perform the operations it needs, e.g. read its credentials, but not rotate its keys. Both are expressed with _scopes_.
 
-From an operations perspective it may even become necessary to have a more elaborate permissions concept in place. For
-example, there may be a "security-admin" role, that manages key pair resources and thus has to have access to _all_ key
-pair resources or all participants, but is denied access to everything else.
+### 5.1 Scopes
 
-### 5.1 Built-in roles
+A scope has the form `<api>[:<resource>]:<action>`, where `<action>` is `read`, `write` or `admin`:
 
-Out-of-the-box, IdentityHub comes with only one single built-in role called `"admin"`. This role is comparable to
-the `root` user on a Unix system. By default, there is one service principal that has the `"admin"` role, which is the
-super-user. While the service principal's name is arbitrary, the role it assumes is `"admin"`. Other service
-principals can assume the `"admin"` role.
+- the Identity API uses the namespace `identity-api`, with the resources `participants`, `keypairs`, `dids` and
+  `credentials`, e.g. `identity-api:keypairs:write`;
+- the IssuerService administration API uses the namespace `issuer-admin-api`, with the resources `attestations`,
+  `credentialdefinitions`, `credentials`, `holders` and `issuanceprocesses`.
 
-> Note: the name `"admin"` is available via a constant `ServicePrincipal.ROLE_ADMIN`
+A stronger action includes the weaker ones (`admin` ⊇ `write` ⊇ `read`), and a scope without a resource applies to all
+resources of the API: `identity-api:write` grants every `identity-api:<resource>:write` and `:read` scope. The constants
+are defined in `IdentityApiScopes` and `IssuerAdminApiScopes`.
 
-All other service principals (i.e. `ParticipantContexts`) have no roles assigned to them when they are created.
+The admin scope (`identity-api:admin`, `issuer-admin-api:admin`) elevates the service principal: it may access the
+resources of every participant context, and call the endpoints reserved to the super-user, e.g. creating participant
+contexts, activating and deactivating them, or setting their scopes. A service principal with an admin scope is the
+super-user; there may be several. Each API only honours its own admin scope: `issuer-admin-api:admin` doesn't elevate
+a principal on the Identity API (`ApiScopeFilter` narrows the scopes of a principal to the namespace of the API).
 
-Built-in roles cannot be changed, and they cannot be configured, they are essentially hard-wired into the code base.
-Some endpoints are accessible _only_ to principals with the `"admin"` role. The authorization decision is made based on
-the `jakarta.annotation.security.RolesAllowed` annotation on the controller method, even before the request hits the
-controller, therefor this value must be compile-time constant.
-
-For example creating `ParticipantContexts`:
+Every controller method declares the scope it requires with `@RequiredScope`, which is checked before the request
+reaches the controller. A method without `@RequiredScope` can't be called at all: its access is denied, and a warning is
+logged at startup.
 
 ```java
 
 @POST
-@RolesAllowed(ServicePrincipal.ROLE_ADMIN)
-public String createParticipant(ParticipantManifest manifest) {
+@RequiredScope(IdentityApiScopes.ADMIN)
+public CreateParticipantContextResponse createParticipant(ParticipantManifest manifest) {
     // impl
 }
 ```
 
-> Using static role matching for the super-user was a conscientious architectural decision, as the business value of
-> configuring the name of the `"admin"` role was deemed minimal.
+Where the scopes of a service principal come from depends on the authentication method:
 
-Out-of-the-box, IdentityHub does **not have** any users/participant contexts/principals configured.
+- with API keys, they are stored with the participant context: set in the `scopes` of the `ParticipantManifest` when it
+  is created, or with `PUT /v1/participants/{participantContextId}/scopes` by the super-user. A participant context
+  created without scopes gets `identity-api:read`, `identity-api:write`, `issuer-admin-api:read` and
+  `issuer-admin-api:write`;
+- with OAuth2 tokens, they are the `scope` claim of the token, issued by the authorization server.
+
+Out-of-the-box, IdentityHub does **not have** any users/participant contexts/principals configured: the operator creates
+the first participant context with an admin scope, e.g. with an OAuth2 token issued for the super-user.
 
 ### 5.2 Extensibility
 
-Out-of-the box, IdentityHub comes with a pretty basic role concept: there is the `"admin"`, and there is everyone else.
+The scope checks and the resource ownership checks can be customized by providing another `AuthorizationService`, e.g.
+to grant a principal access to the key pairs of all participant contexts based on a custom scope:
 
-Depending on the deployment scenario and the complexity of the installation, a more elaborate RBAC concept with more
-permission levels may be required. Thus, the RBAC system used by EDC is extensible in two aspects:
-
-1. role concept
-2. access permissions based on roles
-
-#### 5.2.1 Customize roles via Identity API
-
-Roles are just labels that a `ParticipantContext` has attached to them, and there is no need for a complicated rule
-engine. The super-user can assign arbitrary roles to participants.
-
-New `ParticipantContexts` don't have any roles assigned to them when they are created.
-
-#### 5.2.2 Customize access permissions
-
-Developers can customize the set of roles that are available in an IdentityHub, and they can customize the permissions
-associated with each role. There is no rule engine or complicated permissions model, but rather the customization is
-achieved by simply extending the `AuthorizationService`.
-There are several ways to implement RBAC:
-
-- based on the resource type. Here, the principal with the `"security-admin"` role is granted access to objects of type
-  `KeyPairResource`:
-  ```java
-  public class ResourceTypeBasedAuthService implements AuthorizationService {
+```java
+public class KeyPairAdminAuthorizationService implements AuthorizationService {
     @Override
-    public ServiceResult<Void> isAuthorized(SecurityContext securityContext, String resourceId, Class<?> resourceClass) {
-        if(KeyPairResource.class.equals(resourceClass) && securityContext.isUserInRole("security-admin")){
+    public ServiceResult<Void> authorize(SecurityContext securityContext, String resourceOwnerId, String resourceId, Class<? extends ParticipantResource> resourceClass) {
+        if (KeyPairResource.class.equals(resourceClass) && hasScope(securityContext, "identity-api:keypairs:admin")) {
             return ServiceResult.success();
-        }        
-        return ServiceResult.unauthorized(/*error message*/)
+        }
+        return delegate.authorize(securityContext, resourceOwnerId, resourceId, resourceClass);
     }
-  }
-  ```
+}
+```
 
-- based on the individual resource ("by-ID"). Here, the principal with the `"security-admin"` role is granted access to
-  objects with white-listed IDs:
-
-  ```java
-    public class ResourceInstanceBasedAuthService implements AuthorizationService {
-    @Override
-    public ServiceResult<Void> isAuthorized(SecurityContext securityContext, String resourceId, Class<?> resourceClass) {
-        if(ALLOWED_RESOURCE_IDS.contains(resourceId) && securityContext.isUserInRole("security-admin")){
-            return ServiceResult.success();
-        }        
-        return ServiceResult.unauthorized(/*error message*/)
-    }
-  }
-  ```
-
-  > These are just examples to illustrate the concept. Do not use constants to specify allowed resources.
+> This is just an example to illustrate the concept.
 
 ## 6. Modularity and pluggability
 
@@ -338,7 +313,8 @@ While technically possible, swapping out the authentication module is **not** re
 is essential functionality implemented there such as resolving the `ServicePrincipal` from the database or realizing the
 elevated access restriction on some controller methods.
 
-However, swapping out the authorization module is possible, and necessary if RBAC is supposed to be customized.
+However, swapping out the authorization module is possible, and necessary if the scope-based access control is
+supposed to be customized.
 
 ## 7. General security considerations
 
