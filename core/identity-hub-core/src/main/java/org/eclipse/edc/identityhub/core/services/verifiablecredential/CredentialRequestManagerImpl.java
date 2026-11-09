@@ -71,6 +71,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadLocalRandom;
@@ -215,26 +216,20 @@ public class CredentialRequestManagerImpl extends AbstractStateEntityManager<Hol
     }
 
     /**
-     * Sends a {@code CredentialRequestMessage} for the given request to the Issuer's Credential Request API, authenticated
-     * with a freshly created Self-Issued ID token.
+     * Prepares the {@code CredentialRequestMessage} for the given request to the Issuer's Credential Request API,
+     * authenticated with a freshly created Self-Issued ID token. It is sent by {@link #sendCredentialRequest(Request)}.
      * <p>
      * The request was persisted in {@link HolderRequestState#REQUESTING} before, so that an interruption cannot lose the
      * fact that the Issuer may already have received the message. Recovery, like a retry, re-enters this method with the
      * same {@code holderPid}, which lets the Issuer recognize the duplicate - see {@link #mapResponseAsIssuerPid(Response)}
      * for how that answer is interpreted.
-     * <p>
-     * No transaction is open while the message is sent, so that waiting for the Issuer does not hold a database
-     * connection, nor any locks. The lease on the request keeps other runtimes from processing it in the meantime.
      *
      * @param request  the request to send, in state {@link HolderRequestState#REQUESTING}
      * @param endpoint the base URL of the Issuer's Issuer Service, as resolved from its DID document
-     * @return a StatusResult containing the Issuer-assigned issuance process ID, or {@link #UNKNOWN_ISSUER_PID} if the
-     *         Issuer accepted the request without reporting one. This can happen if an issuance request already exists on
-     *         the issuer side and HTTP 409 is returned. Fails if the token, the message or the HTTP exchange failed, with
-     *         {@link ResponseStatus#ERROR_RETRY} if another attempt may succeed, i.e. unless the message could not be
-     *         assembled or the Issuer refused it.
+     * @return a StatusResult containing the HTTP request to send. Fails with {@link ResponseStatus#ERROR_RETRY} if the
+     *         token could not be created, and with {@link ResponseStatus#FATAL_ERROR} if the message could not be assembled.
      */
-    private StatusResult<String> sendCredentialRequest(HolderCredentialRequest request, String endpoint) {
+    private StatusResult<Request> prepareCredentialRequest(HolderCredentialRequest request, String endpoint) {
         var issuerDid = request.getIssuerDid();
         var holderPid = request.getId();
         var requestedCredentials = request.getIdsAndFormats();
@@ -251,19 +246,35 @@ public class CredentialRequestManagerImpl extends AbstractStateEntityManager<Hol
         if (httpRequest.failed()) {
             return StatusResult.failure(FATAL_ERROR, httpRequest.getFailureDetail());
         }
-        return executeCredentialRequest(httpRequest.getContent());
+        return StatusResult.success(httpRequest.getContent());
     }
 
     /**
-     * Performs the HTTP exchange with the Issuer's Credential Request API. An Issuer that cannot be reached at all is
-     * reported as retryable, because that is precisely the temporary outage another attempt is meant to ride out.
+     * Performs the HTTP exchange with the Issuer's Credential Request API asynchronously, so that the state machine goes
+     * on with other requests while waiting for the Issuer. No transaction is open while the message is sent, so that
+     * waiting for the Issuer does not hold a database connection, nor any locks. The lease on the request keeps other
+     * runtimes from processing it in the meantime.
+     * <p>
+     * An Issuer that cannot be reached at all is reported as retryable, because that is precisely the temporary outage
+     * another attempt is meant to ride out. The returned future never completes exceptionally.
+     *
+     * @return a future containing the Issuer-assigned issuance process ID, or {@link #UNKNOWN_ISSUER_PID} if the Issuer
+     *         accepted the request without reporting one. This can happen if an issuance request already exists on the
+     *         issuer side and HTTP 409 is returned. Fails with {@link ResponseStatus#ERROR_RETRY} if another attempt may
+     *         succeed, i.e. unless the Issuer refused the request.
      */
-    private StatusResult<String> executeCredentialRequest(Request httpRequest) {
-        try (var response = httpClient.execute(httpRequest)) {
-            return mapResponseAsIssuerPid(response);
-        } catch (IOException e) {
-            return StatusResult.failure(ERROR_RETRY, "Error sending DCP Credential Request: %s".formatted(e.getMessage()));
+    private CompletableFuture<StatusResult<String>> sendCredentialRequest(Request httpRequest) {
+        try {
+            return httpClient.executeAsync(httpRequest, List.of())
+                    .thenApply(this::mapResponseAsIssuerPid)
+                    .exceptionally(throwable -> StatusResult.failure(ERROR_RETRY, "Error sending DCP Credential Request: %s".formatted(causeMessage(throwable))));
+        } catch (Exception e) {
+            return CompletableFuture.completedFuture(StatusResult.failure(ERROR_RETRY, "Error sending DCP Credential Request: %s".formatted(e.getMessage())));
         }
+    }
+
+    private static String causeMessage(Throwable throwable) {
+        return throwable instanceof CompletionException && throwable.getCause() != null ? throwable.getCause().getMessage() : throwable.getMessage();
     }
 
     private StatusResult<Void> transitionRequested(HolderCredentialRequest req, String issuerPid) {
@@ -335,7 +346,8 @@ public class CredentialRequestManagerImpl extends AbstractStateEntityManager<Hol
 
         return telemetry.contextPropagationMiddleware(() -> entityRetryProcessFactory.<HolderCredentialRequest, Void>retryProcessor(holderCredentialRequest)
                 .doProcess(Process.result("Resolve the Issuer's CredentialRequest endpoint", (request, unused) -> retryOnException(() -> getCredentialRequestEndpoint(request))))
-                .doProcess(Process.result("Send the DCP CredentialRequestMessage", (request, endpoint) -> retryOnException(() -> sendCredentialRequest(request, endpoint))))
+                .doProcess(Process.result("Prepare the DCP CredentialRequestMessage", (request, endpoint) -> retryOnException(() -> prepareCredentialRequest(request, endpoint))))
+                .doProcess(Process.futureResult("Send the DCP CredentialRequestMessage", (request, httpRequest) -> sendCredentialRequest(httpRequest)))
                 .onSuccess((request, issuerPid) -> transactionContext.execute(() -> handleCredentialResponse(issuerPid, request)))
                 .onFailure((request, throwable) -> transactionContext.execute(() -> transitionRetry(request)))
                 .onFinalFailure((request, throwable) -> transactionContext.execute(() -> transitionError(request, throwable.getMessage())))

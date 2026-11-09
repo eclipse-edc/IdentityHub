@@ -421,10 +421,17 @@ request fails right away. The following settings control this:
 | `edc.iam.credential.request.state-machine.iteration-wait-millis` | How long the state machine waits between iterations in milliseconds | `1000` |
 | `edc.iam.credential.request.state-machine.batch-size`   | How many credential requests are processed per iteration     | `10`     |
 
-The state machine leases a batch of credential requests at once, and processes them one by one. The lease must outlast
-the processing of the whole batch, otherwise another runtime may send the same credential requests in the meantime. So
-the credential requests are sent with a call timeout, and without retries of the HTTP client, as the state machine
-retries them anyway. A warning is logged if the batch size times the call timeout is not less than the lease duration.
+The state machine leases a batch of credential requests at once. It prepares them one by one, i.e. resolves the
+issuer's endpoint and creates the self-issued ID token, and sends them asynchronously: it goes on with the next credential
+request while waiting for the issuer, so that the credential requests of a batch are sent concurrently. How many are in
+flight at once is limited by the runtime's HTTP client, with `edc.http.client.max.requests` in total and
+`edc.http.client.max.requests.per.host` per issuer (`64` and `5` by default). A deployment in which many participants
+request credentials from the same issuer may raise the latter.
+
+The lease must outlast the processing of the whole batch, otherwise another runtime may send the same credential
+requests in the meantime. So the credential requests are sent with a call timeout, and without retries of the HTTP
+client, as the state machine retries them anyway. A warning is logged if the batch size times the call timeout is not
+less than the lease duration.
 
 | Setting                                                          | Description                                                          | Default  |
 |------------------------------------------------------------------|----------------------------------------------------------------------|----------|

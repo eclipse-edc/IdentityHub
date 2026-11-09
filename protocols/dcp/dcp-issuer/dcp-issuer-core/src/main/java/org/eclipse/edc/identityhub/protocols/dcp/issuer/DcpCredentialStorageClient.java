@@ -19,6 +19,7 @@ import jakarta.json.JsonObject;
 import okhttp3.MediaType;
 import okhttp3.Request;
 import okhttp3.RequestBody;
+import okhttp3.Response;
 import org.eclipse.edc.http.spi.EdcHttpClient;
 import org.eclipse.edc.iam.decentralizedclaims.spi.CredentialServiceUrlResolver;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredential;
@@ -46,7 +47,10 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.function.Supplier;
 
 import static jakarta.json.stream.JsonCollectors.toJsonArray;
@@ -96,15 +100,31 @@ public class DcpCredentialStorageClient implements CredentialStorageClient {
 
     @Override
     public Result<Void> deliverCredentials(IssuanceProcess issuanceProcess, Collection<VerifiableCredentialContainer> credentials) {
-        return send(issuanceProcess, () -> createCredentialMessage(issuanceProcess, credentials), "Error delivering credentials");
+        return prepareRequest(issuanceProcess, () -> createCredentialMessage(issuanceProcess, credentials), "Error delivering credentials")
+                .compose(this::sendRequest);
+    }
+
+    @Override
+    public CompletableFuture<Result<Void>> deliverCredentialsAsync(IssuanceProcess issuanceProcess, Collection<VerifiableCredentialContainer> credentials) {
+        return sendRequestAsync(prepareRequest(issuanceProcess, () -> createCredentialMessage(issuanceProcess, credentials), "Error delivering credentials"));
     }
 
     @Override
     public Result<Void> deliverRejection(IssuanceProcess issuanceProcess, @Nullable String rejectionReason) {
-        return send(issuanceProcess, () -> createRejectionMessage(issuanceProcess, rejectionReason), "Error delivering rejection");
+        return prepareRequest(issuanceProcess, () -> createRejectionMessage(issuanceProcess, rejectionReason), "Error delivering rejection")
+                .compose(this::sendRequest);
     }
 
-    private Result<Void> send(IssuanceProcess issuanceProcess, Supplier<JsonObject> messageSupplier, String errorMessage) {
+    @Override
+    public CompletableFuture<Result<Void>> deliverRejectionAsync(IssuanceProcess issuanceProcess, @Nullable String rejectionReason) {
+        return sendRequestAsync(prepareRequest(issuanceProcess, () -> createRejectionMessage(issuanceProcess, rejectionReason), "Error delivering rejection"));
+    }
+
+    /**
+     * Prepares the HTTP request carrying the message to the Holder's Storage API: resolves the Holder's Credential
+     * Service and creates the self-issued token. Nothing is sent yet.
+     */
+    private Result<Request> prepareRequest(IssuanceProcess issuanceProcess, Supplier<JsonObject> messageSupplier, String errorMessage) {
         try {
             var issuerDid = participantContextStore.findById(issuanceProcess.getParticipantContextId()).map(ParticipantContext::getIdentity)
                     .orElseThrow(failure -> new EdcException("Participant context not found"));
@@ -118,35 +138,62 @@ public class DcpCredentialStorageClient implements CredentialStorageClient {
             var selfIssuedTokenJwt = getAuthToken(issuanceProcess.getParticipantContextId(), participantDid, issuerDid, resolveHolderAccessToken(issuanceProcess))
                     .orElseThrow(failure -> new EdcException("Error creating self-issued token"));
 
-            return sendRequest(messageSupplier.get(), url, selfIssuedTokenJwt);
+            return createRequest(messageSupplier.get(), url, selfIssuedTokenJwt);
         } catch (EdcException e) {
             monitor.warning(errorMessage, e);
             return failure("%s: %s".formatted(errorMessage, e.getMessage()));
         }
     }
 
-    private @NotNull Result<Void> sendRequest(JsonObject credentialMessage, String url, TokenRepresentation selfIssuedTokenJwt) {
-        try {
-            var requestJson = typeManager.getMapper(typeContext).writeValueAsString(credentialMessage);
-            var request = new Request.Builder()
-                    .post(RequestBody.create(requestJson, MediaType.parse("application/json")))
-                    .url(url)
-                    .addHeader("Authorization", "Bearer %s".formatted(selfIssuedTokenJwt.getToken()))
-                    .build();
+    private @NotNull Result<Request> createRequest(JsonObject credentialMessage, String url, TokenRepresentation selfIssuedTokenJwt) {
+        var requestJson = typeManager.getMapper(typeContext).writeValueAsString(credentialMessage);
+        return Result.success(new Request.Builder()
+                .post(RequestBody.create(requestJson, MediaType.parse("application/json")))
+                .url(url)
+                .addHeader("Authorization", "Bearer %s".formatted(selfIssuedTokenJwt.getToken()))
+                .build());
+    }
 
-            try (var response = httpClient.execute(request)) {
-
-                if (response.isSuccessful()) {
-                    return Result.success();
-                }
-                return failure("Credential Message failed: HTTP %s".formatted(response.code()));
-            }
-
-
+    private Result<Void> sendRequest(Request request) {
+        try (var response = httpClient.execute(request)) {
+            return mapResponse(response);
         } catch (IOException e) {
             monitor.warning("Error writing credentials", e);
             return failure("Error writing credentials: %s".formatted(e.getMessage()));
         }
+    }
+
+    /**
+     * Sends the prepared request asynchronously, so that the state machine goes on with other issuance processes while
+     * waiting for the Holder. The returned future never completes exceptionally.
+     */
+    private CompletableFuture<Result<Void>> sendRequestAsync(Result<Request> request) {
+        if (request.failed()) {
+            return CompletableFuture.completedFuture(request.mapFailure());
+        }
+        try {
+            return httpClient.executeAsync(request.getContent(), List.of())
+                    .thenApply(response -> {
+                        try (response) {
+                            return mapResponse(response);
+                        }
+                    })
+                    .exceptionally(throwable -> {
+                        var cause = throwable instanceof CompletionException && throwable.getCause() != null ? throwable.getCause() : throwable;
+                        monitor.warning("Error writing credentials", cause);
+                        return failure("Error writing credentials: %s".formatted(cause.getMessage()));
+                    });
+        } catch (Exception e) {
+            monitor.warning("Error writing credentials", e);
+            return CompletableFuture.completedFuture(failure("Error writing credentials: %s".formatted(e.getMessage())));
+        }
+    }
+
+    private Result<Void> mapResponse(Response response) {
+        if (response.isSuccessful()) {
+            return Result.success();
+        }
+        return failure("Credential Message failed: HTTP %s".formatted(response.code()));
     }
 
     private JsonObject createCredentialMessage(IssuanceProcess issuanceProcess, Collection<VerifiableCredentialContainer> credentials) {
