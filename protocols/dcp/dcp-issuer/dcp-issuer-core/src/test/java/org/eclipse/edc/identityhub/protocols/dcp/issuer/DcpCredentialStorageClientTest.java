@@ -54,6 +54,8 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 
+import static java.util.concurrent.CompletableFuture.completedFuture;
+import static java.util.concurrent.CompletableFuture.failedFuture;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat.VC1_0_JWT;
 import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialMessage.CREDENTIALS_TERM;
@@ -74,6 +76,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 class DcpCredentialStorageClientTest {
@@ -215,6 +218,60 @@ class DcpCredentialStorageClientTest {
         var result = client.deliverCredentials(issuanceProcess(), List.of(credential()));
 
         assertThat(result).isFailed().detail().contains("connection reset");
+    }
+
+    @Test
+    void deliverCredentialsAsync_success() {
+        when(httpClient.executeAsync(any(Request.class), any())).thenReturn(completedFuture(response(200)));
+        var process = issuanceProcess();
+
+        var result = client.deliverCredentialsAsync(process, List.of(credential())).join();
+
+        assertThat(result).isSucceeded();
+        var requestCaptor = ArgumentCaptor.forClass(Request.class);
+        verify(httpClient).executeAsync(requestCaptor.capture(), eq(List.of()));
+        assertThat(requestCaptor.getValue().url().toString()).isEqualTo(CREDENTIAL_SERVICE_URL + "/credentials");
+        assertThat(requestCaptor.getValue().header("Authorization")).isEqualTo("Bearer si-token");
+    }
+
+    @Test
+    void deliverCredentialsAsync_whenHttpNon2xx_returnsFailure() {
+        when(httpClient.executeAsync(any(Request.class), any())).thenReturn(completedFuture(response(500)));
+
+        var result = client.deliverCredentialsAsync(issuanceProcess(), List.of(credential())).join();
+
+        assertThat(result).isFailed().detail().contains("HTTP 500");
+    }
+
+    @Test
+    void deliverCredentialsAsync_whenIoException_returnsFailure() {
+        when(httpClient.executeAsync(any(Request.class), any())).thenReturn(failedFuture(new IOException("connection reset")));
+
+        var result = client.deliverCredentialsAsync(issuanceProcess(), List.of(credential())).join();
+
+        assertThat(result).isFailed().detail().contains("connection reset");
+    }
+
+    @Test
+    void deliverCredentialsAsync_whenStsTokenCreationFails_returnsFailureWithoutSending() {
+        when(secureTokenService.createToken(anyString(), anyMap(), isNull())).thenReturn(Result.failure("sts failure"));
+
+        var result = client.deliverCredentialsAsync(issuanceProcess(), List.of(credential())).join();
+
+        assertThat(result).isFailed().detail().contains("Error creating self-issued token");
+        verifyNoInteractions(httpClient);
+    }
+
+    @Test
+    void deliverRejectionAsync_success() {
+        when(httpClient.executeAsync(any(Request.class), any())).thenReturn(completedFuture(response(200)));
+
+        var result = client.deliverRejectionAsync(issuanceProcess(), "nope").join();
+
+        assertThat(result).isSucceeded();
+        var requestCaptor = ArgumentCaptor.forClass(Request.class);
+        verify(httpClient).executeAsync(requestCaptor.capture(), eq(List.of()));
+        assertThat(requestCaptor.getValue().url().toString()).isEqualTo(CREDENTIAL_SERVICE_URL + "/credentials");
     }
 
     // IS-DELIV-03: when the holder's original request SI token contained a 'token' claim (access token), the delivery SI token

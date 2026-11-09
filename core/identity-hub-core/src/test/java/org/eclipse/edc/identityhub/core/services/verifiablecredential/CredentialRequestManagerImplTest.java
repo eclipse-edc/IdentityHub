@@ -62,10 +62,12 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.stream.IntStream;
 
+import static java.util.concurrent.CompletableFuture.completedFuture;
 import static org.awaitility.Awaitility.await;
 import static org.eclipse.edc.identityhub.protocols.dcp.spi.DcpConstants.DCP_SCOPE_V_1_0;
 import static org.eclipse.edc.identityhub.spi.credential.request.model.HolderRequestState.CREATED;
@@ -201,7 +203,7 @@ class CredentialRequestManagerImplTest {
         @DisplayName("CS-REQ-01 / CS-REQ-02 / CS-REQ-03: the CredentialRequestMessage, its SI token and the discovered endpoint are formed as the spec requires")
         void processRequesting_shouldSendRequest() throws IOException {
             when(resolver.resolve(eq(ISSUER_DID))).thenReturn(success(didDocument()));
-            when(httpClient.execute(any(Request.class))).thenReturn(response(201, "Created", "test-issuance-process-id"));
+            when(httpClient.executeAsync(any(Request.class), any())).thenReturn(completedFuture(response(201, "Created", "test-issuance-process-id")));
             when(configuration.bearerAccessScope()).thenReturn(null);
 
             var rq = createRequest()
@@ -217,7 +219,7 @@ class CredentialRequestManagerImplTest {
                 inOrder.verify(resolver).resolve(eq(ISSUER_DID));
                 inOrder.verify(sts).createToken(anyString(), anyMap(), isNull());
                 inOrder.verify(jsonLd).compact(any(), eq(DCP_SCOPE_V_1_0));
-                inOrder.verify(httpClient).execute(any(Request.class));
+                inOrder.verify(httpClient).executeAsync(any(Request.class), any());
                 inOrder.verify(store).save(argThat(r -> r.getState() == REQUESTED.code() && r.getIssuerPid() != null));
             });
         }
@@ -227,7 +229,7 @@ class CredentialRequestManagerImplTest {
         @DisplayName("CS-REQ-01 / CS-REQ-02 / CS-REQ-03: the CredentialRequestMessage, its SI token and the discovered endpoint are formed as the spec requires with bearer access scope")
         void processRequesting_shouldSendRequest_whenAccessBearerScopeSet() throws IOException {
             when(resolver.resolve(eq(ISSUER_DID))).thenReturn(success(didDocument()));
-            when(httpClient.execute(any(Request.class))).thenReturn(response(201, "Created", "test-issuance-process-id"));
+            when(httpClient.executeAsync(any(Request.class), any())).thenReturn(completedFuture(response(201, "Created", "test-issuance-process-id")));
             when(configuration.bearerAccessScope()).thenReturn("bearer_access_scope");
 
             var rq = createRequest()
@@ -243,7 +245,7 @@ class CredentialRequestManagerImplTest {
                 inOrder.verify(resolver).resolve(eq(ISSUER_DID));
                 inOrder.verify(sts).createToken(anyString(), anyMap(), eq("bearer_access_scope"));
                 inOrder.verify(jsonLd).compact(any(), eq(DCP_SCOPE_V_1_0));
-                inOrder.verify(httpClient).execute(any(Request.class));
+                inOrder.verify(httpClient).executeAsync(any(Request.class), any());
                 inOrder.verify(store).save(argThat(r -> r.getState() == REQUESTED.code() && r.getIssuerPid() != null));
             });
         }
@@ -320,7 +322,7 @@ class CredentialRequestManagerImplTest {
         @DisplayName("CS-REQ-06: a client error from the issuer moves the request to ERROR at once, as the identical retry would be refused again")
         void processRequesting_whenIssuerReturnsError_shouldTransitionToError() throws IOException {
             when(resolver.resolve(eq(ISSUER_DID))).thenReturn(success(didDocument()));
-            when(httpClient.execute(any(Request.class))).thenReturn(response(400, "Bad Request", "issuer failure bad request"));
+            when(httpClient.executeAsync(any(Request.class), any())).thenReturn(completedFuture(response(400, "Bad Request", "issuer failure bad request")));
 
             var rq = createRequest()
                     .state(REQUESTING.code())
@@ -335,7 +337,7 @@ class CredentialRequestManagerImplTest {
                 var inOrder = inOrder(resolver, store, httpClient, sts);
                 inOrder.verify(resolver).resolve(eq(ISSUER_DID));
                 inOrder.verify(sts).createToken(anyString(), anyMap(), ArgumentMatchers.isNull());
-                inOrder.verify(httpClient).execute(any(Request.class));
+                inOrder.verify(httpClient).executeAsync(any(Request.class), any());
                 inOrder.verify(store, times(1)).save(argThat(r -> r.getState() == ERROR.code() && r.getErrorDetail().contains("issuer failure bad request")));
             });
         }
@@ -343,7 +345,7 @@ class CredentialRequestManagerImplTest {
         @Test
         void processRequesting_whenRequestWasSavedByOtherRuntime_shouldNotReportError() throws IOException {
             when(resolver.resolve(eq(ISSUER_DID))).thenReturn(success(didDocument()));
-            when(httpClient.execute(any(Request.class))).thenReturn(response(400, "Bad Request", "issuer failure bad request"));
+            when(httpClient.executeAsync(any(Request.class), any())).thenReturn(completedFuture(response(400, "Bad Request", "issuer failure bad request")));
             // e.g. the lease of this runtime expired, and another runtime processed the request and saved it
             when(store.save(any())).thenReturn(StoreResult.conflict("changed since it was read"));
 
@@ -390,9 +392,9 @@ class CredentialRequestManagerImplTest {
                 transactions.put("token", transactionContext.currentTransaction());
                 return success(TokenRepresentation.Builder.newInstance().build());
             });
-            when(httpClient.execute(any(Request.class))).thenAnswer(i -> {
+            when(httpClient.executeAsync(any(Request.class), any())).thenAnswer(i -> {
                 transactions.put("send", transactionContext.currentTransaction());
-                return response(201, "Created", "test-issuance-process-id");
+                return completedFuture(response(201, "Created", "test-issuance-process-id"));
             });
             when(store.save(argThat(r -> r != null && r.getState() == REQUESTED.code()))).thenAnswer(i -> {
                 transactions.put("save", transactionContext.currentTransaction());
@@ -420,8 +422,8 @@ class CredentialRequestManagerImplTest {
         void processRequesting_whenIssuerReportsDuplicate_shouldNotTransitionToError() throws IOException {
             // a request that was already sent once (state REQUESTING); the issuer answers with 409/duplicate
             when(resolver.resolve(eq(ISSUER_DID))).thenReturn(success(didDocument()));
-            when(httpClient.execute(any(Request.class))).thenReturn(response(409, "Conflict",
-                    "[{\"message\":\"An issuance process with holderPid 'test-request' already exists\"}]"));
+            when(httpClient.executeAsync(any(Request.class), any())).thenReturn(completedFuture(response(409, "Conflict",
+                    "[{\"message\":\"An issuance process with holderPid 'test-request' already exists\"}]")));
 
             var rq = createRequest()
                     .state(REQUESTING.code())
@@ -446,8 +448,8 @@ class CredentialRequestManagerImplTest {
         void processRequesting_whenIssuerReportsDuplicateWithLocation_shouldRecordIssuerPid() throws IOException {
             when(resolver.resolve(eq(ISSUER_DID))).thenReturn(success(didDocument()));
             // EDC Issuers report the existing issuance process in the Location header, like for a new one
-            when(httpClient.execute(any(Request.class))).thenReturn(response(409, "Conflict", "",
-                    "/v1/participants/issuer/requests/existing-issuer-pid"));
+            when(httpClient.executeAsync(any(Request.class), any())).thenReturn(completedFuture(response(409, "Conflict", "",
+                    "/v1/participants/issuer/requests/existing-issuer-pid")));
             var rq = createRequest()
                     .state(REQUESTING.code())
                     .build();
@@ -500,7 +502,7 @@ class CredentialRequestManagerImplTest {
         void processRequesting_whenEndpointsRestrictedAndEndpointAllowListed_shouldSendRequest() throws IOException {
             var service = restrictedService(Set.of("issuer-service"));
             when(resolver.resolve(eq(ISSUER_DID))).thenReturn(success(didDocument("http://issuer-service:8080/issuance")));
-            when(httpClient.execute(any(Request.class))).thenReturn(response(201, "Created", "", "/issuance/requests/issuer-pid"));
+            when(httpClient.executeAsync(any(Request.class), any())).thenReturn(completedFuture(response(201, "Created", "", "/issuance/requests/issuer-pid")));
             var rq = createRequest()
                     .state(REQUESTING.code())
                     .build();
@@ -511,7 +513,7 @@ class CredentialRequestManagerImplTest {
             service.start();
             try {
                 await().atMost(MAX_DURATION).untilAsserted(() -> {
-                    verify(httpClient).execute(argThat((Request r) -> r.url().toString().equals("http://issuer-service:8080/issuance/credentials")));
+                    verify(httpClient).executeAsync(argThat((Request r) -> r.url().toString().equals("http://issuer-service:8080/issuance/credentials")), any());
                     Assertions.assertThat(rq.getState()).isEqualTo(REQUESTED.code());
                 });
             } finally {
@@ -522,7 +524,7 @@ class CredentialRequestManagerImplTest {
         @Test
         void processRequesting_whenEndpointsNotRestricted_shouldSendRequestToAnyEndpoint() throws IOException {
             when(resolver.resolve(eq(ISSUER_DID))).thenReturn(success(didDocument("http://10.0.0.1:8080/issuance")));
-            when(httpClient.execute(any(Request.class))).thenReturn(response(201, "Created", "", "/issuance/requests/issuer-pid"));
+            when(httpClient.executeAsync(any(Request.class), any())).thenReturn(completedFuture(response(201, "Created", "", "/issuance/requests/issuer-pid")));
             var rq = createRequest()
                     .state(REQUESTING.code())
                     .build();
@@ -533,7 +535,7 @@ class CredentialRequestManagerImplTest {
             credentialRequestService.start();
 
             await().atMost(MAX_DURATION).untilAsserted(() -> {
-                verify(httpClient).execute(argThat((Request r) -> r.url().toString().equals("http://10.0.0.1:8080/issuance/credentials")));
+                verify(httpClient).executeAsync(argThat((Request r) -> r.url().toString().equals("http://10.0.0.1:8080/issuance/credentials")), any());
                 Assertions.assertThat(rq.getState()).isEqualTo(REQUESTED.code());
             });
         }
@@ -560,7 +562,7 @@ class CredentialRequestManagerImplTest {
         void processRequesting_whenBodyIsNoIssuerPid_shouldNotRecordIt() throws IOException {
             when(resolver.resolve(eq(ISSUER_DID))).thenReturn(success(didDocument()));
             // e.g. a page served by whatever the endpoint points at
-            when(httpClient.execute(any(Request.class))).thenReturn(response(200, "OK", "<html><body>some content</body></html>"));
+            when(httpClient.executeAsync(any(Request.class), any())).thenReturn(completedFuture(response(200, "OK", "<html><body>some content</body></html>")));
             var rq = createRequest()
                     .state(REQUESTING.code())
                     .build();
@@ -580,7 +582,7 @@ class CredentialRequestManagerImplTest {
         @Test
         void processRequesting_whenBodyIsJsonWithIssuerPid_shouldRecordIt() throws IOException {
             when(resolver.resolve(eq(ISSUER_DID))).thenReturn(success(didDocument()));
-            when(httpClient.execute(any(Request.class))).thenReturn(response(201, "Created", "{\"issuerPid\": \"issuer-pid\", \"status\": \"RECEIVED\"}"));
+            when(httpClient.executeAsync(any(Request.class), any())).thenReturn(completedFuture(response(201, "Created", "{\"issuerPid\": \"issuer-pid\", \"status\": \"RECEIVED\"}")));
             var rq = createRequest()
                     .state(REQUESTING.code())
                     .build();
@@ -597,9 +599,33 @@ class CredentialRequestManagerImplTest {
         }
 
         @Test
+        void processRequesting_whileIssuerHasNotAnswered_shouldProcessOtherRequests() {
+            when(resolver.resolve(eq(ISSUER_DID))).thenReturn(success(didDocument()));
+            // the Issuer never answers the first request, but answers the second one
+            when(httpClient.executeAsync(any(Request.class), any()))
+                    .thenReturn(new CompletableFuture<>())
+                    .thenReturn(completedFuture(response(201, "Created", "", "/issuance/requests/issuer-pid")));
+            var waiting = createRequest().id("waiting-request").state(REQUESTING.code()).build();
+            var answered = createRequest().id("answered-request").state(REQUESTING.code()).build();
+            when(store.nextNotLeased(anyInt(), stateIs(REQUESTING.code())))
+                    .thenReturn(List.of(waiting, answered))
+                    .thenReturn(List.of());
+
+            credentialRequestService.start();
+
+            // waiting for the Issuer does not hold up the state machine
+            await().atMost(MAX_DURATION).untilAsserted(() -> {
+                Assertions.assertThat(answered.getState()).isEqualTo(REQUESTED.code());
+                Assertions.assertThat(answered.getIssuerPid()).isEqualTo("issuer-pid");
+            });
+            Assertions.assertThat(waiting.getState()).isEqualTo(REQUESTING.code());
+            verify(store, never()).save(argThat(r -> r != null && "waiting-request".equals(r.getId())));
+        }
+
+        @Test
         void processRequesting_whenLocationIsNoIssuerPid_shouldNotRecordIt() throws IOException {
             when(resolver.resolve(eq(ISSUER_DID))).thenReturn(success(didDocument()));
-            when(httpClient.execute(any(Request.class))).thenReturn(response(201, "Created", "", "/issuance/requests/%3Cscript%3E"));
+            when(httpClient.executeAsync(any(Request.class), any())).thenReturn(completedFuture(response(201, "Created", "", "/issuance/requests/%3Cscript%3E")));
             var rq = createRequest()
                     .state(REQUESTING.code())
                     .build();

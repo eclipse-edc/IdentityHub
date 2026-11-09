@@ -58,6 +58,7 @@ import static org.eclipse.edc.identityhub.spi.verifiablecredentials.model.Verifi
 import static org.eclipse.edc.participantcontext.spi.types.ParticipantResource.filterByParticipantContextId;
 import static org.eclipse.edc.spi.persistence.StateEntityStore.hasState;
 import static org.eclipse.edc.spi.persistence.StateEntityStore.isNotPending;
+import static org.eclipse.edc.statemachine.retry.processor.Process.futureResult;
 import static org.eclipse.edc.statemachine.retry.processor.Process.result;
 
 public class IssuanceProcessManagerImpl extends AbstractStateEntityManager<IssuanceProcess, IssuanceProcessStore> implements IssuanceProcessManager {
@@ -111,7 +112,7 @@ public class IssuanceProcessManagerImpl extends AbstractStateEntityManager<Issua
     private CompletableFuture<StatusResult<Void>> processDelivering(IssuanceProcess process) {
         return entityRetryProcessFactory.retryProcessor(process)
                 .doProcess(result("Sign Credentials", (p, result) -> signRecordedCredentials(p)))
-                .doProcess(result("Deliver Credentials", this::deliverCredentials))
+                .doProcess(futureResult("Deliver Credentials", this::deliverCredentials))
                 .onSuccess((t, credentials) -> transitionToDelivered(t)
                         .onSuccess(v -> observable.invokeForEach(l -> l.delivered(t, credentials))))
                 .onFailure((t, throwable) -> transitionToDelivering(t))
@@ -127,7 +128,7 @@ public class IssuanceProcessManagerImpl extends AbstractStateEntityManager<Issua
     @WithSpan(value = "issuance.rejecting")
     private CompletableFuture<StatusResult<Void>> processRejecting(IssuanceProcess process) {
         return entityRetryProcessFactory.retryProcessor(process)
-                .doProcess(result("Deliver Rejection", (p, unused) -> deliverRejection(p)))
+                .doProcess(futureResult("Deliver Rejection", (p, unused) -> deliverRejection(p)))
                 .onSuccess((t, unused) -> transitionToError(t))
                 .onFailure((t, throwable) -> transitionToRejecting(t))
                 .onFinalFailure((t, throwable) -> {
@@ -301,12 +302,16 @@ public class IssuanceProcessManagerImpl extends AbstractStateEntityManager<Issua
         return credential.getCredentialSubject().stream().findFirst().map(CredentialSubject::getId).orElse(null);
     }
 
+    /**
+     * Delivers the credentials to the Holder asynchronously, so that the state machine goes on with other processes while
+     * waiting for the Holder.
+     */
     @WithSpan(value = "issuance.deliver-credential")
-    private StatusResult<Collection<VerifiableCredentialContainer>> deliverCredentials(IssuanceProcess process, Collection<VerifiableCredentialContainer> credentials) {
-        var result = credentialStorageClient.deliverCredentials(process, credentials);
-        if (result.succeeded()) {
-            return StatusResult.success(credentials);
-        } else return StatusResult.failure(ResponseStatus.ERROR_RETRY);
+    private CompletableFuture<StatusResult<Collection<VerifiableCredentialContainer>>> deliverCredentials(IssuanceProcess process, Collection<VerifiableCredentialContainer> credentials) {
+        return credentialStorageClient.deliverCredentialsAsync(process, credentials)
+                .thenApply(result -> result.succeeded()
+                        ? StatusResult.success(credentials)
+                        : StatusResult.<Collection<VerifiableCredentialContainer>>failure(ResponseStatus.ERROR_RETRY));
     }
 
     private StatusResult<Void> transitionToDelivered(IssuanceProcess process) {
@@ -353,15 +358,15 @@ public class IssuanceProcessManagerImpl extends AbstractStateEntityManager<Issua
      * the error detail of the process.
      */
     @WithSpan(value = "issuance.deliver-rejection")
-    private StatusResult<Void> deliverRejection(IssuanceProcess process) {
+    private CompletableFuture<StatusResult<Void>> deliverRejection(IssuanceProcess process) {
         try {
-            var result = credentialStorageClient.deliverRejection(process, REJECTION_REASON);
-            if (result.succeeded()) {
-                return StatusResult.success();
-            }
-            return StatusResult.failure(ResponseStatus.ERROR_RETRY, result.getFailureDetail());
+            return credentialStorageClient.deliverRejectionAsync(process, REJECTION_REASON)
+                    .thenApply(result -> result.succeeded()
+                            ? StatusResult.<Void>success()
+                            : StatusResult.<Void>failure(ResponseStatus.ERROR_RETRY, result.getFailureDetail()))
+                    .exceptionally(throwable -> StatusResult.failure(ResponseStatus.ERROR_RETRY, throwable.getMessage()));
         } catch (Exception e) {
-            return StatusResult.failure(ResponseStatus.ERROR_RETRY, e.getMessage());
+            return CompletableFuture.completedFuture(StatusResult.failure(ResponseStatus.ERROR_RETRY, e.getMessage()));
         }
     }
 

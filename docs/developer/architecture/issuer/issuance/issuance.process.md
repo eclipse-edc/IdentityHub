@@ -453,11 +453,17 @@ unavailable. The following settings control this:
 | `edc.issuer.issuance.state-machine.iteration-wait-millis` | How long the state machine waits between iterations in milliseconds | `1000` |
 | `edc.issuer.issuance.state-machine.batch-size`  | How many `IssuanceProcess`es are processed per iteration     | `10`     |
 
-The state machine leases a batch of `IssuanceProcess`es at once, and processes them one by one. The lease must outlast
-the processing of the whole batch, otherwise another IssuerService runtime may process the same `IssuanceProcess`es in
-the meantime, and e.g. issue and deliver their credentials twice. So the credentials are delivered with a call timeout,
-and without retries of the HTTP client, as the state machine retries the delivery anyway. A warning is logged if the
-batch size times the call timeout is not less than the lease duration.
+The state machine leases a batch of `IssuanceProcess`es at once. It generates, records and signs the credentials one
+by one, and delivers them, as well as rejections, asynchronously: it goes on with the next `IssuanceProcess` while
+waiting for the holder, so that the deliveries of a batch run concurrently. How many are in flight at once is limited by
+the runtime's HTTP client, with `edc.http.client.max.requests` in total and `edc.http.client.max.requests.per.host` per
+holder's credential service (`64` and `5` by default). A deployment in which many holders share a credential service,
+e.g. a multi-tenant IdentityHub, may raise the latter.
+
+The lease must outlast the processing of the whole batch, otherwise another IssuerService runtime may process the same
+`IssuanceProcess`es in the meantime, and e.g. issue and deliver their credentials twice. So the credentials are
+delivered with a call timeout, and without retries of the HTTP client, as the state machine retries the delivery
+anyway. A warning is logged if the batch size times the call timeout is not less than the lease duration.
 
 | Setting                                                   | Description                                                                 | Default  |
 |-----------------------------------------------------------|-----------------------------------------------------------------------------|----------|

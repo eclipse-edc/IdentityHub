@@ -53,6 +53,8 @@ import java.time.Duration;
 import java.util.List;
 import java.util.UUID;
 
+import static java.util.concurrent.CompletableFuture.completedFuture;
+import static java.util.concurrent.CompletableFuture.failedFuture;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 import static org.eclipse.edc.identityhub.protocols.dcp.spi.DcpConstants.DCP_SCOPE_V_1_0;
@@ -131,23 +133,23 @@ class CredentialRequestManagerRetryTest {
     @Test
     @DisplayName("an unreachable Issuer is attempted again, and the request fails once the retry limit is exhausted")
     void unreachableIssuer_isRetriedUntilTheLimit_thenErrors() throws IOException {
-        when(httpClient.execute(any(Request.class))).thenThrow(new IOException("Failed to connect to issuer.com"));
+        when(httpClient.executeAsync(any(Request.class), any())).thenReturn(failedFuture(new IOException("Failed to connect to issuer.com")));
         var holderPid = initiate();
 
         manager.start();
 
         await().atMost(MAX_DURATION).untilAsserted(() -> assertThat(store.findById(holderPid).stateAsEnum()).isEqualTo(ERROR));
         // the first attempt, then one retry for each unit of the limit
-        verify(httpClient, times(RETRY_LIMIT + 1)).execute(any(Request.class));
+        verify(httpClient, times(RETRY_LIMIT + 1)).executeAsync(any(Request.class), any());
         assertThat(store.findById(holderPid).getErrorDetail()).contains("Failed to connect to issuer.com");
     }
 
     @Test
     @DisplayName("a request that could not be sent goes through once the Issuer is reachable again")
     void unreachableIssuer_recoversOnLaterAttempt() throws IOException {
-        when(httpClient.execute(any(Request.class)))
-                .thenThrow(new IOException("Failed to connect to issuer.com"))
-                .thenReturn(created("https://issuer.com/api/issuance/requests/issuance-process-id"));
+        when(httpClient.executeAsync(any(Request.class), any()))
+                .thenReturn(failedFuture(new IOException("Failed to connect to issuer.com")))
+                .thenReturn(completedFuture(created("https://issuer.com/api/issuance/requests/issuance-process-id")));
         var holderPid = initiate();
 
         manager.start();
@@ -157,33 +159,33 @@ class CredentialRequestManagerRetryTest {
             assertThat(request.stateAsEnum()).isEqualTo(REQUESTED);
             assertThat(request.getIssuerPid()).isEqualTo("issuance-process-id");
         });
-        verify(httpClient, times(2)).execute(any(Request.class));
+        verify(httpClient, times(2)).executeAsync(any(Request.class), any());
     }
 
     @Test
     @DisplayName("an Issuer answering with a server error is attempted again")
     void serverError_isRetried() throws IOException {
-        when(httpClient.execute(any(Request.class)))
-                .thenReturn(response(503, "Service Unavailable", "maintenance"))
-                .thenReturn(created("https://issuer.com/api/issuance/requests/issuance-process-id"));
+        when(httpClient.executeAsync(any(Request.class), any()))
+                .thenReturn(completedFuture(response(503, "Service Unavailable", "maintenance")))
+                .thenReturn(completedFuture(created("https://issuer.com/api/issuance/requests/issuance-process-id")));
         var holderPid = initiate();
 
         manager.start();
 
         await().atMost(MAX_DURATION).untilAsserted(() -> assertThat(store.findById(holderPid).stateAsEnum()).isEqualTo(REQUESTED));
-        verify(httpClient, times(2)).execute(any(Request.class));
+        verify(httpClient, times(2)).executeAsync(any(Request.class), any());
     }
 
     @Test
     @DisplayName("an Issuer refusing the request is not asked again")
     void clientError_isTerminal() throws IOException {
-        when(httpClient.execute(any(Request.class))).thenReturn(response(400, "Bad Request", "unknown credential object"));
+        when(httpClient.executeAsync(any(Request.class), any())).thenReturn(completedFuture(response(400, "Bad Request", "unknown credential object")));
         var holderPid = initiate();
 
         manager.start();
 
         await().atMost(MAX_DURATION).untilAsserted(() -> assertThat(store.findById(holderPid).stateAsEnum()).isEqualTo(ERROR));
-        await().during(Duration.ofMillis(200)).untilAsserted(() -> verify(httpClient, times(1)).execute(any(Request.class)));
+        await().during(Duration.ofMillis(200)).untilAsserted(() -> verify(httpClient, times(1)).executeAsync(any(Request.class), any()));
         assertThat(store.findById(holderPid).getErrorDetail()).contains("unknown credential object");
     }
 
@@ -208,13 +210,13 @@ class CredentialRequestManagerRetryTest {
         when(resolver.resolve(ISSUER_DID))
                 .thenReturn(Result.failure("Error resolving DID: did:web:issuer. HTTP Code was: 503"))
                 .thenReturn(issuerDidDocument());
-        when(httpClient.execute(any(Request.class))).thenReturn(created("https://issuer.com/api/issuance/requests/issuance-process-id"));
+        when(httpClient.executeAsync(any(Request.class), any())).thenReturn(completedFuture(created("https://issuer.com/api/issuance/requests/issuance-process-id")));
         var holderPid = initiate();
 
         manager.start();
 
         await().atMost(MAX_DURATION).untilAsserted(() -> assertThat(store.findById(holderPid).stateAsEnum()).isEqualTo(REQUESTED));
-        verify(httpClient, times(1)).execute(any(Request.class));
+        verify(httpClient, times(1)).executeAsync(any(Request.class), any());
     }
 
     @Test
@@ -252,13 +254,13 @@ class CredentialRequestManagerRetryTest {
         when(sts.createToken(anyString(), anyMap(), isNull()))
                 .thenReturn(Result.failure("vault unavailable"))
                 .thenReturn(success(TokenRepresentation.Builder.newInstance().token("token").build()));
-        when(httpClient.execute(any(Request.class))).thenReturn(created("https://issuer.com/api/issuance/requests/issuance-process-id"));
+        when(httpClient.executeAsync(any(Request.class), any())).thenReturn(completedFuture(created("https://issuer.com/api/issuance/requests/issuance-process-id")));
         var holderPid = initiate();
 
         manager.start();
 
         await().atMost(MAX_DURATION).untilAsserted(() -> assertThat(store.findById(holderPid).stateAsEnum()).isEqualTo(REQUESTED));
-        verify(httpClient, times(1)).execute(any(Request.class));
+        verify(httpClient, times(1)).executeAsync(any(Request.class), any());
     }
 
     @Test
@@ -267,7 +269,7 @@ class CredentialRequestManagerRetryTest {
         when(sts.createToken(anyString(), anyMap(), isNull()))
                 .thenThrow(new EdcPersistenceException("database unavailable"))
                 .thenReturn(success(TokenRepresentation.Builder.newInstance().token("token").build()));
-        when(httpClient.execute(any(Request.class))).thenReturn(created("https://issuer.com/api/issuance/requests/issuance-process-id"));
+        when(httpClient.executeAsync(any(Request.class), any())).thenReturn(completedFuture(created("https://issuer.com/api/issuance/requests/issuance-process-id")));
         var holderPid = initiate();
 
         manager.start();

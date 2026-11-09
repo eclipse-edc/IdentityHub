@@ -59,9 +59,12 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import static java.util.Collections.emptyList;
+import static java.util.concurrent.CompletableFuture.completedFuture;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 import static org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat.VC1_0_JWT;
@@ -80,6 +83,7 @@ import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -112,6 +116,9 @@ public class IssuanceProcessManagerImplTest {
         when(issuanceProcessStore.nextNotLeased(anyInt(), stateIs(REJECTING.code()))).thenReturn(emptyList());
         when(credentialStore.query(any())).thenReturn(StoreResult.success(emptyList()));
         when(credentialStorageClient.deliverRejection(any(), any())).thenReturn(Result.success());
+        // the manager delivers asynchronously; the default implementations delegate to the synchronous deliveries stubbed by the tests
+        when(credentialStorageClient.deliverCredentialsAsync(any(), any())).thenCallRealMethod();
+        when(credentialStorageClient.deliverRejectionAsync(any(), any())).thenCallRealMethod();
 
         issuanceProcessManager = createManager(Clock.systemUTC(), new EntityRetryProcessConfiguration(1, () -> new ExponentialWaitStrategy(0L)), 20);
     }
@@ -405,6 +412,36 @@ public class IssuanceProcessManagerImplTest {
             verify(credentialStatusService, never()).addCredential(any(), any());
             verify(credentialStore, never()).create(any());
         });
+    }
+
+    @DisplayName("waiting for a Holder to accept the credentials does not hold up the delivery of other processes")
+    @Test
+    void delivering_whileHolderHasNotAnswered_shouldDeliverOtherProcesses() {
+        var waiting = processIn(DELIVERING).id("waiting-process").build();
+        var answered = processIn(DELIVERING).id("answered-process").build();
+        var credential = membershipCredential();
+
+        when(issuanceProcessStore.nextNotLeased(anyInt(), stateIs(DELIVERING.code())))
+                .thenReturn(List.of(waiting, answered))
+                .thenReturn(emptyList());
+        var savedStates = new ConcurrentHashMap<String, Integer>();
+        when(issuanceProcessStore.save(any())).thenAnswer(invocation -> {
+            var saved = invocation.getArgument(0, IssuanceProcess.class);
+            savedStates.put(saved.getId(), saved.getState());
+            return StoreResult.success();
+        });
+        when(credentialStore.query(any())).thenReturn(StoreResult.success(List.of(recordOf(waiting, credential.credential()))));
+        when(credentialStore.update(any())).thenReturn(StoreResult.success());
+        when(credentialGenerator.signCredential(any(), any(), any())).thenReturn(Result.success(credential));
+        // the Holder of the first process never answers
+        doReturn(new CompletableFuture<>()).when(credentialStorageClient).deliverCredentialsAsync(eq(waiting), any());
+        doReturn(completedFuture(Result.success())).when(credentialStorageClient).deliverCredentialsAsync(eq(answered), any());
+
+        issuanceProcessManager.start();
+
+        await().untilAsserted(() -> assertThat(savedStates).containsEntry(answered.getId(), DELIVERED.code()));
+        assertThat(savedStates).doesNotContainKey(waiting.getId());
+        assertThat(waiting.getState()).isEqualTo(DELIVERING.code());
     }
 
     @DisplayName("IS-DELIV-07: the recorded credentials are delivered with a validity that starts when they are signed")
