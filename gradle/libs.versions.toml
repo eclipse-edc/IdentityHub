@@ -116,6 +116,6 @@ connector = [
 ]
 
 [plugins]
-edc-build = { id = "org.eclipse.edc.edc-build", version = "1.5.3" }
+edc-build = { id = "org.eclipse.edc.edc-build", version = "1.5.4" }
 autodoc = { id = "org.eclipse.edc.autodoc", version.ref = "edc" }
 shadow = { id = "com.gradleup.shadow", version = "9.6.1" }
