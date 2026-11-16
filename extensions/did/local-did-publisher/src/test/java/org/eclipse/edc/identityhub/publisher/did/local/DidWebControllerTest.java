@@ -16,6 +16,7 @@ package org.eclipse.edc.identityhub.publisher.did.local;
 
 import io.restassured.specification.RequestSpecification;
 import org.eclipse.edc.iam.did.spi.document.DidDocument;
+import org.eclipse.edc.iam.did.spi.document.VerificationMethod;
 import org.eclipse.edc.identityhub.spi.did.DidWebParser;
 import org.eclipse.edc.identityhub.spi.did.model.DidResource;
 import org.eclipse.edc.identityhub.spi.did.model.DidState;
@@ -31,6 +32,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.edc.identityhub.publisher.did.local.TestFunctions.createDidResource;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.emptyString;
+import static org.hamcrest.Matchers.hasItem;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.mock;
@@ -86,6 +88,29 @@ class DidWebControllerTest extends RestControllerTestBase {
 
         // verify that the query to the store was issued using the parsed DID
         verify(storeMock).query(argThat(qs -> qs.getFilterExpression().stream().anyMatch(c -> c.getOperandRight().equals("did:web:localhost%%3A%s:foo:bar".formatted(port)))));
+    }
+
+    @Test
+    void getDidDocument_keyIsAuthenticationAndCapabilityInvocation() {
+        var did = "did:web:testdid1";
+        var keyId = did + "#key-1";
+        var resource = createDidResource(did).state(DidState.PUBLISHED)
+                .document(DidDocument.Builder.newInstance()
+                        .id(did)
+                        .verificationMethod(List.of(VerificationMethod.Builder.newInstance()
+                                .id(keyId)
+                                .publicKeyMultibase("z6MkhaXgBZDvotDkL5257faiztiGiC2QtKLGpbnnEGta2doK")
+                                .build()))
+                        .build())
+                .build();
+        when(storeMock.query(any())).thenReturn(List.of(resource));
+
+        baseRequest()
+                .get("/.well-known/did.json")
+                .then()
+                .statusCode(200)
+                .body("authentication", hasItem(keyId))
+                .body("capabilityInvocation", hasItem(keyId));
     }
 
     @Test

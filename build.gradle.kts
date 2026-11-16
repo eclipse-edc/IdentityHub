@@ -32,6 +32,15 @@ buildscript {
 val edcBuildId = libs.plugins.edc.build.get().pluginId
 
 allprojects {
+    if (name != "identity-did-spi-patch") {
+        configurations.configureEach {
+            resolutionStrategy.dependencySubstitution {
+                substitute(module("org.eclipse.edc:identity-did-spi"))
+                    .using(project(":spi:identity-did-spi-patch"))
+            }
+        }
+    }
+
     apply(plugin = edcBuildId)
     apply(plugin = "org.eclipse.edc.autodoc")
 

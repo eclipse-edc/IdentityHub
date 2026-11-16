@@ -17,6 +17,7 @@ include(":spi:participant-context-spi")
 include(":spi:verifiable-credential-spi")
 include(":spi:keypair-spi")
 include(":spi:did-spi")
+include(":spi:identity-did-spi-patch")
 include(":spi:holder-credential-request-spi")
 include(":spi:sts-spi")
 

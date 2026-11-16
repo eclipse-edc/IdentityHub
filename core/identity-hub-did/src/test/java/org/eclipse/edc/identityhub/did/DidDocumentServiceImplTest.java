@@ -572,7 +572,9 @@ class DidDocumentServiceImplTest {
         service.on(event);
 
         verify(didResourceStoreMock).query(any(QuerySpec.class));
-        verify(didResourceStoreMock).update(argThat(dr -> dr.getDocument().getVerificationMethod().stream().anyMatch(vm -> vm.getId().equals(keyId))));
+        verify(didResourceStoreMock).update(argThat(dr -> dr.getDocument().getVerificationMethod().stream().anyMatch(vm -> vm.getId().equals(keyId)) &&
+                dr.getDocument().getAuthentication().contains(keyId) &&
+                dr.getDocument().getCapabilityInvocation().contains(keyId)));
         verify(didResourceStoreMock).findById(did); // happens during the publishing
         verifyNoMoreInteractions(didResourceStoreMock);
         verify(publisherMock).publish(eq(did));
@@ -697,6 +699,7 @@ class DidDocumentServiceImplTest {
                         .id(keyId)
                         .publicKeyJwk(new ECKeyGenerator(Curve.P_256).keyID(keyId).generate().toJSONObject())
                         .build()))
+                .authentication(List.of(keyId))
                 .build();
         var did = doc.getId();
         var didResource = DidResource.Builder.newInstance().did(did).state(DidState.GENERATED).document(doc).build();
@@ -718,7 +721,9 @@ class DidDocumentServiceImplTest {
 
         verify(didResourceStoreMock).query(any(QuerySpec.class));
         // assert that the DID Doc does not contain a VerificationMethod with the ID that was revoked
-        verify(didResourceStoreMock).update(argThat(dr -> dr.getDocument().getVerificationMethod().stream().noneMatch(vm -> vm.getId().equals(keyId))));
+        verify(didResourceStoreMock).update(argThat(dr -> dr.getDocument().getVerificationMethod().stream().noneMatch(vm -> vm.getId().equals(keyId)) &&
+                !dr.getDocument().getAuthentication().contains(keyId) &&
+                !dr.getDocument().getCapabilityInvocation().contains(keyId)));
         verifyNoMoreInteractions(didResourceStoreMock);
         verifyNoInteractions(publisherMock);
     }
