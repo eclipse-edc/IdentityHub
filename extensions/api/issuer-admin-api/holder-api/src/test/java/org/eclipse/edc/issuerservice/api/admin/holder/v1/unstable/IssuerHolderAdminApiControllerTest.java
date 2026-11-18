@@ -28,6 +28,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.Base64;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -38,7 +39,10 @@ import static org.hamcrest.Matchers.endsWith;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 @ComponentTest
@@ -105,6 +109,88 @@ class IssuerHolderAdminApiControllerTest extends RestControllerTestBase {
                 .log().ifValidationFails()
                 .statusCode(404)
                 .body(notNullValue());
+    }
+
+    @Test
+    void patchHolder() {
+        var patched = createHolder("test-id", "did:web:test", "test name");
+        when(holderService.patchHolder(any(), any(), any(), any(), any(), any())).thenReturn(ServiceResult.success(patched));
+
+        var response = baseRequest()
+                .body(Map.of("did", "did:web:test", "name", "test name", "properties", Map.of("foo", "bar"), "removed", List.of("baz")))
+                .patch("/test-id")
+                .then()
+                .log().ifValidationFails()
+                .statusCode(200)
+                .extract().body().as(Holder.class);
+
+        assertThat(response).usingRecursiveComparison().isEqualTo(patched);
+        verify(holderService).patchHolder(any(), eq("test-id"), eq("did:web:test"), eq("test name"), eq(Map.of("foo", "bar")), eq(Set.of("baz")));
+    }
+
+    @Test
+    void patchHolder_whenRemovedMissing() {
+        var patched = createHolder("test-id", "did:web:test", "test name");
+        when(holderService.patchHolder(any(), any(), any(), any(), any(), any())).thenReturn(ServiceResult.success(patched));
+
+        baseRequest()
+                .body(Map.of("did", "did:web:test", "name", "test name", "properties", Map.of("foo", "bar")))
+                .patch("/test-id")
+                .then()
+                .log().ifValidationFails()
+                .statusCode(200);
+
+        verify(holderService).patchHolder(any(), eq("test-id"), eq("did:web:test"), eq("test name"), eq(Map.of("foo", "bar")), eq(Set.of()));
+    }
+
+    @Test
+    void patchHolder_notFound() {
+        when(holderService.patchHolder(any(), any(), any(), any(), any(), any())).thenReturn(ServiceResult.notFound("not found"));
+
+        baseRequest()
+                .body(Map.of("did", "did:web:test", "name", "test name"))
+                .patch("/test-id")
+                .then()
+                .log().ifValidationFails()
+                .statusCode(404)
+                .body(notNullValue());
+    }
+
+    @Test
+    void patchHolder_whenDidOrNameDoNotMatch() {
+        when(holderService.patchHolder(any(), any(), any(), any(), any(), any())).thenReturn(ServiceResult.badRequest("does not match"));
+
+        baseRequest()
+                .body(Map.of("did", "did:web:other", "name", "test name"))
+                .patch("/test-id")
+                .then()
+                .log().ifValidationFails()
+                .statusCode(400)
+                .body(notNullValue());
+    }
+
+    @Test
+    void patchHolder_whenPropertySetAndRemoved() {
+        baseRequest()
+                .body(Map.of("did", "did:web:test", "properties", Map.of("foo", "bar"), "removed", List.of("foo")))
+                .patch("/test-id")
+                .then()
+                .log().ifValidationFails()
+                .statusCode(400);
+
+        verifyNoInteractions(holderService);
+    }
+
+    @Test
+    void patchHolder_whenDidMissing() {
+        baseRequest()
+                .body(Map.of("properties", Map.of("foo", "bar")))
+                .patch("/test-id")
+                .then()
+                .log().ifValidationFails()
+                .statusCode(400);
+
+        verifyNoInteractions(holderService);
     }
 
     @Test

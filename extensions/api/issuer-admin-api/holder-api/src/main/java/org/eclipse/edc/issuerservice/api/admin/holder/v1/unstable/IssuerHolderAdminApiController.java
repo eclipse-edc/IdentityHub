@@ -17,6 +17,7 @@ package org.eclipse.edc.issuerservice.api.admin.holder.v1.unstable;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.DELETE;
 import jakarta.ws.rs.GET;
+import jakarta.ws.rs.PATCH;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
@@ -30,9 +31,11 @@ import org.eclipse.edc.api.auth.spi.RequiredScope;
 import org.eclipse.edc.identityhub.api.Versions;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.IdentityHubParticipantContext;
 import org.eclipse.edc.issuerservice.api.admin.holder.v1.unstable.model.HolderDto;
+import org.eclipse.edc.issuerservice.api.admin.holder.v1.unstable.model.HolderPatchDto;
 import org.eclipse.edc.issuerservice.spi.holder.HolderService;
 import org.eclipse.edc.issuerservice.spi.holder.model.Holder;
 import org.eclipse.edc.spi.query.QuerySpec;
+import org.eclipse.edc.web.spi.exception.InvalidRequestException;
 
 import java.net.URI;
 import java.util.Collection;
@@ -83,6 +86,21 @@ public class IssuerHolderAdminApiController implements IssuerHolderAdminApi {
                 .compose(u -> holderService.updateHolder(holder.toHolder(participantContextId)))
                 .map(v -> Response.ok().build())
                 .orElseThrow(exceptionMapper(Holder.class, holder.id()));
+    }
+
+    @PATCH
+    @Path("/{holderId}")
+    @RequiredScope("issuer-admin-api:holders:write")
+    @Override
+    public Holder patchHolder(@PathParam("participantContextId") String participantContextId, @PathParam("holderId") String holderId, HolderPatchDto patch, @Context SecurityContext context) {
+        if (patch == null) {
+            throw new InvalidRequestException("Request body is missing.");
+        }
+        patch.validate().orElseThrow(failure -> new InvalidRequestException(failure.getMessages()));
+
+        return authorizationService.authorize(context, participantContextId, holderId, Holder.class)
+                .compose(u -> holderService.patchHolder(participantContextId, holderId, patch.did(), patch.name(), patch.properties(), patch.removed()))
+                .orElseThrow(exceptionMapper(Holder.class, holderId));
     }
 
     @GET

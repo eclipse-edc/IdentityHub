@@ -23,8 +23,11 @@ import org.eclipse.edc.spi.result.ServiceResult;
 import org.eclipse.edc.transaction.spi.TransactionContext;
 
 import java.util.Collection;
+import java.util.Map;
+import java.util.Objects;
 
 import static org.eclipse.edc.spi.result.ServiceResult.from;
+import static org.eclipse.edc.spi.result.ServiceResult.success;
 
 public class HolderServiceImpl implements HolderService {
     private final TransactionContext transactionContext;
@@ -50,6 +53,27 @@ public class HolderServiceImpl implements HolderService {
     public ServiceResult<Void> updateHolder(Holder holder) {
         return transactionContext.execute(() -> checkDidAvailable(holder)
                 .compose(v -> from(holderStore.update(holder))));
+    }
+
+    @Override
+    public ServiceResult<Holder> patchHolder(String participantContextId, String holderId, String did, String name, Map<String, Object> properties, Collection<String> removedProperties) {
+        return transactionContext.execute(() -> from(holderStore.findById(participantContextId, holderId))
+                .compose(existingHolder -> {
+                    if (!Objects.equals(existingHolder.getDid(), did)) {
+                        return ServiceResult.badRequest("The DID '%s' does not match the DID of holder '%s'.".formatted(did, holderId));
+                    }
+                    if (!Objects.equals(existingHolder.getHolderName(), name)) {
+                        return ServiceResult.badRequest("The name '%s' does not match the name of holder '%s'.".formatted(name, holderId));
+                    }
+
+                    //short-circuit if no changes
+                    if (properties.isEmpty() && removedProperties.isEmpty()) {
+                        return success(existingHolder);
+                    }
+
+                    existingHolder.updateProperties(properties, removedProperties);
+                    return from(holderStore.update(existingHolder)).map(v -> existingHolder);
+                }));
     }
 
     @Override

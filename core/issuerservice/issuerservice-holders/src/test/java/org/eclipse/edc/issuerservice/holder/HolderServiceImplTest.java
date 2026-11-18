@@ -23,6 +23,8 @@ import org.eclipse.edc.transaction.spi.NoopTransactionContext;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.edc.junit.assertions.AbstractResultAssert.assertThat;
@@ -82,16 +84,66 @@ class HolderServiceImplTest {
         verify(holderStore, never()).update(any());
     }
 
+    @Test
+    void patchHolder() {
+        var existing = holderBuilder("holder-id").holderName("holder name").isAnonymous(true).createdAt(1000L).lastModifiedAt(1000L)
+                .property("role", "member").property("region", "eu").build();
+        when(holderStore.findById(PARTICIPANT_CONTEXT_ID, "holder-id")).thenReturn(StoreResult.success(existing));
+        when(holderStore.update(any())).thenReturn(StoreResult.success());
+
+        var result = holderService.patchHolder(PARTICIPANT_CONTEXT_ID, "holder-id", DID, "holder name", Map.of("role", "operator", "tier", "gold"), Set.of("region", "unknown"));
+
+        assertThat(result).isSucceeded().satisfies(patched -> {
+            assertThat(patched.getProperties()).containsOnly(Map.entry("role", "operator"), Map.entry("tier", "gold"));
+            assertThat(patched.getDid()).isEqualTo(DID);
+            assertThat(patched.getHolderName()).isEqualTo("holder name");
+            assertThat(patched.isAnonymous()).isTrue();
+            assertThat(patched.getCreatedAt()).isEqualTo(1000L);
+            assertThat(patched.getLastModifiedAt()).isGreaterThan(1000L);
+        });
+        verify(holderStore).update(existing);
+    }
+
+    @Test
+    void patchHolder_whenNotFound_shouldReturnNotFound() {
+        when(holderStore.findById(any(), any())).thenReturn(StoreResult.notFound("not found"));
+
+        assertThat(holderService.patchHolder(PARTICIPANT_CONTEXT_ID, "holder-id", DID, null, Map.of(), Set.of())).isFailed()
+                .satisfies(failure -> assertThat(failure.getReason()).isEqualTo(ServiceFailure.Reason.NOT_FOUND));
+        verify(holderStore, never()).update(any());
+    }
+
+    @Test
+    void patchHolder_whenDidDoesNotMatch_shouldReturnBadRequest() {
+        when(holderStore.findById(any(), any())).thenReturn(StoreResult.success(holder("holder-id")));
+
+        assertThat(holderService.patchHolder(PARTICIPANT_CONTEXT_ID, "holder-id", "did:web:other", null, Map.of("foo", "bar"), Set.of())).isFailed()
+                .satisfies(failure -> assertThat(failure.getReason()).isEqualTo(ServiceFailure.Reason.BAD_REQUEST));
+        verify(holderStore, never()).update(any());
+    }
+
+    @Test
+    void patchHolder_whenNameDoesNotMatch_shouldReturnBadRequest() {
+        when(holderStore.findById(any(), any())).thenReturn(StoreResult.success(holderBuilder("holder-id").holderName("holder name").build()));
+
+        assertThat(holderService.patchHolder(PARTICIPANT_CONTEXT_ID, "holder-id", DID, "other name", Map.of("foo", "bar"), Set.of())).isFailed()
+                .satisfies(failure -> assertThat(failure.getReason()).isEqualTo(ServiceFailure.Reason.BAD_REQUEST));
+        verify(holderStore, never()).update(any());
+    }
+
     private static boolean filtersBy(QuerySpec query, String property, String value) {
         return query.getFilterExpression().stream()
                 .anyMatch(criterion -> property.equals(criterion.getOperandLeft()) && value.equals(criterion.getOperandRight()));
     }
 
     private static Holder holder(String holderId) {
+        return holderBuilder(holderId).build();
+    }
+
+    private static Holder.Builder holderBuilder(String holderId) {
         return Holder.Builder.newInstance()
                 .holderId(holderId)
                 .participantContextId(PARTICIPANT_CONTEXT_ID)
-                .did(DID)
-                .build();
+                .did(DID);
     }
 }
