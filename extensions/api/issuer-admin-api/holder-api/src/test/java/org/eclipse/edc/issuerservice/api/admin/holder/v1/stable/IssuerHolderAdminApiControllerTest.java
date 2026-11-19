@@ -12,12 +12,13 @@
  *
  */
 
-package org.eclipse.edc.issuerservice.api.admin.holder.v1.unstable;
+package org.eclipse.edc.issuerservice.api.admin.holder.v1.stable;
 
 import io.restassured.specification.RequestSpecification;
 import org.eclipse.edc.api.auth.spi.AuthorizationService;
 import org.eclipse.edc.identityhub.api.Versions;
-import org.eclipse.edc.issuerservice.api.admin.holder.v1.unstable.model.HolderDto;
+import org.eclipse.edc.issuerservice.api.admin.holder.v1.IssuerHolderAdminApiController;
+import org.eclipse.edc.issuerservice.api.admin.holder.v1.model.HolderDto;
 import org.eclipse.edc.issuerservice.spi.holder.HolderService;
 import org.eclipse.edc.issuerservice.spi.holder.model.Holder;
 import org.eclipse.edc.junit.annotations.ComponentTest;

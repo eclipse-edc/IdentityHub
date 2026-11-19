@@ -15,7 +15,7 @@
 package org.eclipse.edc.issuerservice.api.admin.holder.v2alpha;
 
 import org.eclipse.edc.identityhub.api.Versions;
-import org.eclipse.edc.issuerservice.api.admin.holder.v1.unstable.IssuerHolderAdminApiControllerTest;
+import org.eclipse.edc.issuerservice.api.admin.holder.v1.stable.IssuerHolderAdminApiControllerTest;
 import org.eclipse.edc.issuerservice.spi.holder.model.Holder;
 import org.eclipse.edc.junit.annotations.ComponentTest;
 import org.eclipse.edc.spi.result.ServiceResult;

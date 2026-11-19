@@ -24,7 +24,7 @@ import jakarta.ws.rs.core.SecurityContext;
 import org.eclipse.edc.api.auth.spi.AuthorizationService;
 import org.eclipse.edc.api.auth.spi.RequiredScope;
 import org.eclipse.edc.identityhub.api.Versions;
-import org.eclipse.edc.issuerservice.api.admin.holder.v1.unstable.IssuerHolderAdminApiController;
+import org.eclipse.edc.issuerservice.api.admin.holder.v1.IssuerHolderAdminApiController;
 import org.eclipse.edc.issuerservice.api.admin.holder.v2alpha.model.HolderPatchDto;
 import org.eclipse.edc.issuerservice.spi.holder.HolderService;
 import org.eclipse.edc.issuerservice.spi.holder.model.Holder;

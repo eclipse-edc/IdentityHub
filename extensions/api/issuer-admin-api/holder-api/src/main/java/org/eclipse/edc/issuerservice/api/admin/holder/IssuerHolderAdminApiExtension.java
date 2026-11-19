@@ -16,7 +16,7 @@ package org.eclipse.edc.issuerservice.api.admin.holder;
 
 import org.eclipse.edc.api.auth.spi.AuthorizationService;
 import org.eclipse.edc.identityhub.spi.webcontext.IdentityHubApiContext;
-import org.eclipse.edc.issuerservice.api.admin.holder.v1.unstable.IssuerHolderAdminApiController;
+import org.eclipse.edc.issuerservice.api.admin.holder.v1.IssuerHolderAdminApiController;
 import org.eclipse.edc.issuerservice.api.admin.holder.v2alpha.IssuerHolderAdminApiV2AlphaController;
 import org.eclipse.edc.issuerservice.spi.holder.HolderService;
 import org.eclipse.edc.issuerservice.spi.holder.model.Holder;

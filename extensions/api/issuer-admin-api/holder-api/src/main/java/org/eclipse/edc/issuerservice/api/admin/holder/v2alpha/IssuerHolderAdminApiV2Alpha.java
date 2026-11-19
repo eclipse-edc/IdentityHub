@@ -24,7 +24,7 @@ import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.ws.rs.core.SecurityContext;
-import org.eclipse.edc.issuerservice.api.admin.holder.v1.unstable.IssuerHolderAdminApi;
+import org.eclipse.edc.issuerservice.api.admin.holder.v1.IssuerHolderAdminApi;
 import org.eclipse.edc.issuerservice.api.admin.holder.v2alpha.model.HolderPatchDto;
 import org.eclipse.edc.issuerservice.spi.holder.model.Holder;
 import org.eclipse.edc.web.spi.ApiErrorDetail;
