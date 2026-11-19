@@ -910,6 +910,68 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/ApiErrorDetail"
+    patch:
+      tags:
+      - Issuer Service Holder Admin API
+      description: "Updates the properties of a holder. 'did' and 'name' must be equal\
+        \ to those of the stored holder and cannot be changed. The entries of 'properties'\
+        \ are added to the holder's properties, replacing the values of existing keys,\
+        \ and the keys in 'removed' are removed. Everything else is left as it is."
+      operationId: patchHolder
+      parameters:
+      - name: participantContextId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: holderId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/HolderPatchDto"
+      responses:
+        "200":
+          description: The holder was updated successfully. The response contains
+            the updated holder.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Holder"
+        "400":
+          description: "Request body was malformed, or the DID or the name do not\
+            \ match the stored holder"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiErrorDetail"
+        "401":
+          description: "The request could not be completed, because either the authentication\
+            \ was missing or was not valid."
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiErrorDetail"
+        "404":
+          description: Can't update the holder because it was not found.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiErrorDetail"
   /v1/participants/{participantContextId}/issuanceprocesses/query:
     post:
       tags:
@@ -1340,6 +1402,24 @@ components:
           type: object
           additionalProperties:
             type: object
+    HolderPatchDto:
+      required:
+      - did
+      type: object
+      properties:
+        did:
+          type: string
+        name:
+          type: string
+        properties:
+          type: object
+          additionalProperties:
+            type: object
+        removed:
+          uniqueItems: true
+          type: array
+          items:
+            type: string
     IssuanceProcessDto:
       type: object
       properties:
