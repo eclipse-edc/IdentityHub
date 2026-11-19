@@ -39,6 +39,7 @@ import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyDescriptor;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyPairUsage;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantManifest;
 import org.eclipse.edc.identityhub.spi.transformation.DiscriminatorMappingRegistry;
+import org.eclipse.edc.identityhub.spi.transformation.ScopeMappingRegistry;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStatus;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialResource;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialStore;
@@ -64,6 +65,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.DeserializationFeature;
@@ -979,6 +981,44 @@ public class PresentationApiEndToEndTest {
          * extracts a (potentially empty) list of verifiable credentials from a JWT-VP
          */
         @SuppressWarnings("unchecked")
+        // a dataspace-specific discriminator of the DCP type alias, and a scope alias of the dataspace's own
+        @ParameterizedTest
+        @CsvSource({
+                "'org\\.eclipse\\.dspace\\.dcp\\.vc\\.type:aurora\\.(.+):read', org.eclipse.dspace.dcp.vc.type:aurora.AlumniCredential:read",
+                "'org\\.aurora\\.vc\\.type:(.+):read', org.aurora.vc.type:AlumniCredential:read"
+        })
+        void query_withScopeMapping_shouldSelectCredentialsOfIssuer(String pattern, String scope, IdentityHub identityHub, CredentialStore store, ScopeMappingRegistry scopeMappingRegistry)
+                throws JacksonException, JOSEException {
+            // two credentials of the same type from different issuers, e.g. the membership credentials of two dataspaces
+            storeCredential(TestData.VC_EXAMPLE, CredentialFormat.VC1_0_JWT, store, "did:web:issuer.aurora.example");
+            storeCredential(TestData.VC_EXAMPLE_OTHER_NAMESPACE, CredentialFormat.VC1_0_JWT, store, "did:web:issuer.borealis.example");
+
+            when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq("did:web:consumer#key1"))).thenReturn(Result.success(CONSUMER_KEY.toPublicKey()));
+            when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq("did:web:provider#key1"))).thenReturn(Result.success(PROVIDER_KEY.toPublicKey()));
+
+            // the scopes of one dataspace select its credential type from its issuer only
+            scopeMappingRegistry.addMapping(pattern, new Criterion("verifiableCredential.credential.type", "contains", "$1"));
+            scopeMappingRegistry.addMapping(pattern, new Criterion("issuerId", "=", "did:web:issuer.aurora.example"));
+            var token = generateSiToken(scope);
+
+            var response = identityHub.getCredentialsEndpoint().baseRequest()
+                    .contentType(JSON)
+                    .header(AUTHORIZATION, "Bearer " + token)
+                    .body(VALID_QUERY_WITH_FQCT_SCOPE_TEMPLATE.formatted(DSPACE_DCP_V_1_0_CONTEXT, scope))
+                    .post("/v1/participants/%s/presentations/query".formatted(TEST_PARTICIPANT_CONTEXT_ID))
+                    .then()
+                    .statusCode(200)
+                    .log().ifValidationFails()
+                    .extract().body().as(JsonObject.class);
+
+            assertThat(response)
+                    .hasEntrySatisfying("presentation", jsonValue ->
+                            assertThat(vpTokensExtractor(jsonValue)).hasSize(1)
+                                    .first()
+                                    .satisfies(vpToken -> assertThat(extractCredentials(vpToken)).singleElement()
+                                            .satisfies(credential -> assertThat(credential.getContext()).contains("https://example.org/2026/foo/bar"))));
+        }
+
         private List<VerifiableCredential> extractCredentials(String vpToken) {
             try {
                 var jwt = SignedJWT.parse(vpToken);
@@ -1053,11 +1093,15 @@ public class PresentationApiEndToEndTest {
         }
 
         private VerifiableCredentialResource storeCredential(String jsonContent, CredentialFormat format, CredentialStore store) throws JacksonException {
+            return storeCredential(jsonContent, format, store, "https://example.edu/issuers/565049");
+        }
+
+        private VerifiableCredentialResource storeCredential(String jsonContent, CredentialFormat format, CredentialStore store, String issuerId) throws JacksonException {
             var cred = OBJECT_MAPPER.readValue(jsonContent, VerifiableCredential.class);
             var res = VerifiableCredentialResource.Builder.newHolder()
                     .state(VcStatus.ISSUED)
                     .credential(new VerifiableCredentialContainer(rawCredential(jsonContent, format), format, cred))
-                    .issuerId("https://example.edu/issuers/565049")
+                    .issuerId(issuerId)
                     .holderId("did:example:ebfeb1f712ebc6f1c276e12ec21")
                     .participantContextId(TEST_PARTICIPANT_CONTEXT_ID)
                     .build();
