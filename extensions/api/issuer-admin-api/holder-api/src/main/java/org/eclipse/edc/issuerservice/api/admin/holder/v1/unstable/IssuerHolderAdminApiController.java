@@ -17,7 +17,6 @@ package org.eclipse.edc.issuerservice.api.admin.holder.v1.unstable;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.DELETE;
 import jakarta.ws.rs.GET;
-import jakarta.ws.rs.PATCH;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
@@ -31,11 +30,9 @@ import org.eclipse.edc.api.auth.spi.RequiredScope;
 import org.eclipse.edc.identityhub.api.Versions;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.IdentityHubParticipantContext;
 import org.eclipse.edc.issuerservice.api.admin.holder.v1.unstable.model.HolderDto;
-import org.eclipse.edc.issuerservice.api.admin.holder.v1.unstable.model.HolderPatchDto;
 import org.eclipse.edc.issuerservice.spi.holder.HolderService;
 import org.eclipse.edc.issuerservice.spi.holder.model.Holder;
 import org.eclipse.edc.spi.query.QuerySpec;
-import org.eclipse.edc.web.spi.exception.InvalidRequestException;
 
 import java.net.URI;
 import java.util.Collection;
@@ -49,8 +46,8 @@ import static org.eclipse.edc.web.spi.exception.ServiceResultHandler.exceptionMa
 @Path(Versions.STABLE + "/participants/{participantContextId}/holders")
 public class IssuerHolderAdminApiController implements IssuerHolderAdminApi {
 
-    private final AuthorizationService authorizationService;
-    private final HolderService holderService;
+    protected final AuthorizationService authorizationService;
+    protected final HolderService holderService;
 
     public IssuerHolderAdminApiController(AuthorizationService authorizationService, HolderService holderService) {
         this.authorizationService = authorizationService;
@@ -63,7 +60,7 @@ public class IssuerHolderAdminApiController implements IssuerHolderAdminApi {
     public Response addHolder(@PathParam("participantContextId") String participantContextId, HolderDto holder, @Context SecurityContext context) {
         return authorizationService.authorize(context, participantContextId, participantContextId, IdentityHubParticipantContext.class)
                 .compose(u -> holderService.createHolder(holder.toHolder(participantContextId)))
-                .map(v -> Response.created(URI.create(Versions.STABLE + "/participants/%s/holders/%s".formatted(participantContextId, holder.id()))).build())
+                .map(v -> Response.created(URI.create(versionPath() + "/participants/%s/holders/%s".formatted(participantContextId, holder.id()))).build())
                 .orElseThrow(exceptionMapper(Holder.class, holder.id()));
     }
 
@@ -88,21 +85,6 @@ public class IssuerHolderAdminApiController implements IssuerHolderAdminApi {
                 .orElseThrow(exceptionMapper(Holder.class, holder.id()));
     }
 
-    @PATCH
-    @Path("/{holderId}")
-    @RequiredScope("issuer-admin-api:holders:write")
-    @Override
-    public Holder patchHolder(@PathParam("participantContextId") String participantContextId, @PathParam("holderId") String holderId, HolderPatchDto patch, @Context SecurityContext context) {
-        if (patch == null) {
-            throw new InvalidRequestException("Request body is missing.");
-        }
-        patch.validate().orElseThrow(failure -> new InvalidRequestException(failure.getMessages()));
-
-        return authorizationService.authorize(context, participantContextId, holderId, Holder.class)
-                .compose(u -> holderService.patchHolder(participantContextId, holderId, patch.did(), patch.name(), patch.properties(), patch.removed()))
-                .orElseThrow(exceptionMapper(Holder.class, holderId));
-    }
-
     @GET
     @RequiredScope("issuer-admin-api:holders:read")
     @Path("/{holderId}")
@@ -124,5 +106,13 @@ public class IssuerHolderAdminApiController implements IssuerHolderAdminApi {
                 .map(collection -> collection.stream()
                         .filter(holder -> authorizationService.authorize(context, participantContextId, holder.getHolderId(), Holder.class).succeeded()).toList())
                 .orElseThrow(exceptionMapper(Holder.class, null));
+    }
+
+    /**
+     * The URL path of the API version this controller is served under, e.g. {@code /v1}. Used to build the {@code Location}
+     * header of newly created holders.
+     */
+    protected String versionPath() {
+        return Versions.STABLE;
     }
 }

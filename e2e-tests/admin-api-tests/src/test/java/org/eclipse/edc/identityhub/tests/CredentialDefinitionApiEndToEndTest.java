@@ -42,6 +42,8 @@ import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.List;
 import java.util.Map;
@@ -70,8 +72,9 @@ public class CredentialDefinitionApiEndToEndTest {
                     .forEach(pc -> pcService.deleteParticipantContext(pc.getParticipantContextId()).getContent());
         }
 
-        @Test
-        void createCredentialDefinition(IssuerService issuer, CredentialDefinitionService service, AttestationDefinitionStore store) {
+        @ParameterizedTest(name = "{0}")
+        @ValueSource(strings = {"/v1", "/v2alpha"})
+        void createCredentialDefinition(String version, IssuerService issuer, CredentialDefinitionService service, AttestationDefinitionStore store) {
 
             store.create(AttestationDefinition.Builder.newInstance().id("user-attestation").attestationType("type").participantContextId(USER).build());
 
@@ -98,10 +101,10 @@ public class CredentialDefinitionApiEndToEndTest {
                     .contentType(ContentType.JSON)
                     .header(authorizeUser(USER, issuer))
                     .body(definition)
-                    .post("/v1/participants/%s/credentialdefinitions".formatted(USER))
+                    .post(version + "/participants/%s/credentialdefinitions".formatted(USER))
                     .then()
                     .statusCode(201)
-                    .header("Location", Matchers.endsWith("/credentialdefinitions/test-definition-id"));
+                    .header("Location", Matchers.endsWith(version + "/participants/%s/credentialdefinitions/test-definition-id".formatted(USER)));
 
             // the format of the request is not used, but that of the issuer's DCP profile
             assertThat(service.findCredentialDefinitionById(definition.getParticipantContextId(), definition.getId())).isSucceeded()
@@ -333,8 +336,9 @@ public class CredentialDefinitionApiEndToEndTest {
             assertThat(res).isEmpty();
         }
 
-        @Test
-        void getById(IssuerService issuer, CredentialDefinitionService service) {
+        @ParameterizedTest(name = "{0}")
+        @ValueSource(strings = {"/v1", "/v2alpha"})
+        void getById(String version, IssuerService issuer, CredentialDefinitionService service) {
             issuer.createParticipant(USER);
 
             var definition = CredentialDefinition.Builder.newInstance()
@@ -350,7 +354,7 @@ public class CredentialDefinitionApiEndToEndTest {
 
             var res = issuer.getAdminEndpoint().baseRequest()
                     .header(authorizeUser(USER, issuer))
-                    .get("/v1/participants/%s/credentialdefinitions/test-credential-definition-id".formatted(USER))
+                    .get(version + "/participants/%s/credentialdefinitions/test-credential-definition-id".formatted(USER))
                     .then()
                     .statusCode(200)
                     .body(Matchers.notNullValue())

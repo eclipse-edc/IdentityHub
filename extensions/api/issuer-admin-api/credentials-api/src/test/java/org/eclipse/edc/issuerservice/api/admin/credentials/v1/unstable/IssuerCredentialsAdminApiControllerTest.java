@@ -56,14 +56,14 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
-class IssuerCredentialsAdminApiControllerTest extends RestControllerTestBase {
+public class IssuerCredentialsAdminApiControllerTest extends RestControllerTestBase {
 
     public static final String CREDENTIAL_OBJECT_ID = "test-id";
-    private static final String PARTICIPANT_ID = "test-participant";
-    private static final String PARTICIPANT_ID_ENCODED = Base64.getUrlEncoder().encodeToString(PARTICIPANT_ID.getBytes());
-    private final CredentialStatusService credentialStatusService = mock();
-    private final AuthorizationService authorizationService = mock();
-    private final IssuerCredentialOfferService credentialOfferService = mock();
+    protected static final String PARTICIPANT_ID = "test-participant";
+    protected static final String PARTICIPANT_ID_ENCODED = Base64.getUrlEncoder().encodeToString(PARTICIPANT_ID.getBytes());
+    protected final CredentialStatusService credentialStatusService = mock();
+    protected final AuthorizationService authorizationService = mock();
+    protected final IssuerCredentialOfferService credentialOfferService = mock();
 
     @BeforeEach
     void setUp() {
@@ -240,6 +240,10 @@ class IssuerCredentialsAdminApiControllerTest extends RestControllerTestBase {
         verify(credentialOfferService).sendCredentialOffer(anyString(), eq("holder"), anyCollection(), any());
     }
 
+    protected String versionPath() {
+        return Versions.STABLE;
+    }
+
     @Override
     protected Object controller() {
         return new IssuerCredentialsAdminApiController(authorizationService, credentialStatusService, credentialOfferService);
@@ -261,10 +265,10 @@ class IssuerCredentialsAdminApiControllerTest extends RestControllerTestBase {
                 .build();
     }
 
-    private RequestSpecification baseRequest() {
+    protected RequestSpecification baseRequest() {
         return given()
                 .contentType("application/json")
-                .baseUri("http://localhost:" + port + Versions.STABLE + "/participants/%s/credentials".formatted(PARTICIPANT_ID_ENCODED))
+                .baseUri("http://localhost:" + port + versionPath() + "/participants/%s/credentials".formatted(PARTICIPANT_ID_ENCODED))
                 .when();
     }
 }

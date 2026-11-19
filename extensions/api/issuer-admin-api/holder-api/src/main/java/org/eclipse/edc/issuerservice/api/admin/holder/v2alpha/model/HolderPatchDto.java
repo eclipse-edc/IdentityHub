@@ -12,7 +12,7 @@
  *
  */
 
-package org.eclipse.edc.issuerservice.api.admin.holder.v1.unstable.model;
+package org.eclipse.edc.issuerservice.api.admin.holder.v2alpha.model;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.eclipse.edc.issuerservice.spi.holder.model.Holder;

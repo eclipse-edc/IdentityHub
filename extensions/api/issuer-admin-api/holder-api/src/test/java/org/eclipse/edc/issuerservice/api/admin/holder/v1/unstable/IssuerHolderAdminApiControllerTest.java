@@ -28,7 +28,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.Base64;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -39,19 +38,16 @@ import static org.hamcrest.Matchers.endsWith;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 @ComponentTest
-class IssuerHolderAdminApiControllerTest extends RestControllerTestBase {
+public class IssuerHolderAdminApiControllerTest extends RestControllerTestBase {
 
-    private static final String PARTICIPANT_ID = "test-participant";
-    private static final String PARTICIPANT_ID_ENCODED = Base64.getUrlEncoder().encodeToString(PARTICIPANT_ID.getBytes());
-    private final HolderService holderService = mock();
-    private final AuthorizationService authorizationService = mock();
+    protected static final String PARTICIPANT_ID = "test-participant";
+    protected static final String PARTICIPANT_ID_ENCODED = Base64.getUrlEncoder().encodeToString(PARTICIPANT_ID.getBytes());
+    protected final HolderService holderService = mock();
+    protected final AuthorizationService authorizationService = mock();
 
     @BeforeEach
     void setUp() {
@@ -68,7 +64,7 @@ class IssuerHolderAdminApiControllerTest extends RestControllerTestBase {
                 .then()
                 .log().ifValidationFails()
                 .statusCode(201)
-                .header("Location", endsWith("/holders/test-id"))
+                .header("Location", endsWith(versionPath() + "/participants/%s/holders/test-id".formatted(PARTICIPANT_ID_ENCODED)))
                 .body(emptyString());
     }
 
@@ -109,88 +105,6 @@ class IssuerHolderAdminApiControllerTest extends RestControllerTestBase {
                 .log().ifValidationFails()
                 .statusCode(404)
                 .body(notNullValue());
-    }
-
-    @Test
-    void patchHolder() {
-        var patched = createHolder("test-id", "did:web:test", "test name");
-        when(holderService.patchHolder(any(), any(), any(), any(), any(), any())).thenReturn(ServiceResult.success(patched));
-
-        var response = baseRequest()
-                .body(Map.of("did", "did:web:test", "name", "test name", "properties", Map.of("foo", "bar"), "removed", List.of("baz")))
-                .patch("/test-id")
-                .then()
-                .log().ifValidationFails()
-                .statusCode(200)
-                .extract().body().as(Holder.class);
-
-        assertThat(response).usingRecursiveComparison().isEqualTo(patched);
-        verify(holderService).patchHolder(any(), eq("test-id"), eq("did:web:test"), eq("test name"), eq(Map.of("foo", "bar")), eq(Set.of("baz")));
-    }
-
-    @Test
-    void patchHolder_whenRemovedMissing() {
-        var patched = createHolder("test-id", "did:web:test", "test name");
-        when(holderService.patchHolder(any(), any(), any(), any(), any(), any())).thenReturn(ServiceResult.success(patched));
-
-        baseRequest()
-                .body(Map.of("did", "did:web:test", "name", "test name", "properties", Map.of("foo", "bar")))
-                .patch("/test-id")
-                .then()
-                .log().ifValidationFails()
-                .statusCode(200);
-
-        verify(holderService).patchHolder(any(), eq("test-id"), eq("did:web:test"), eq("test name"), eq(Map.of("foo", "bar")), eq(Set.of()));
-    }
-
-    @Test
-    void patchHolder_notFound() {
-        when(holderService.patchHolder(any(), any(), any(), any(), any(), any())).thenReturn(ServiceResult.notFound("not found"));
-
-        baseRequest()
-                .body(Map.of("did", "did:web:test", "name", "test name"))
-                .patch("/test-id")
-                .then()
-                .log().ifValidationFails()
-                .statusCode(404)
-                .body(notNullValue());
-    }
-
-    @Test
-    void patchHolder_whenDidOrNameDoNotMatch() {
-        when(holderService.patchHolder(any(), any(), any(), any(), any(), any())).thenReturn(ServiceResult.badRequest("does not match"));
-
-        baseRequest()
-                .body(Map.of("did", "did:web:other", "name", "test name"))
-                .patch("/test-id")
-                .then()
-                .log().ifValidationFails()
-                .statusCode(400)
-                .body(notNullValue());
-    }
-
-    @Test
-    void patchHolder_whenPropertySetAndRemoved() {
-        baseRequest()
-                .body(Map.of("did", "did:web:test", "properties", Map.of("foo", "bar"), "removed", List.of("foo")))
-                .patch("/test-id")
-                .then()
-                .log().ifValidationFails()
-                .statusCode(400);
-
-        verifyNoInteractions(holderService);
-    }
-
-    @Test
-    void patchHolder_whenDidMissing() {
-        baseRequest()
-                .body(Map.of("properties", Map.of("foo", "bar")))
-                .patch("/test-id")
-                .then()
-                .log().ifValidationFails()
-                .statusCode(400);
-
-        verifyNoInteractions(holderService);
     }
 
     @Test
@@ -288,12 +202,16 @@ class IssuerHolderAdminApiControllerTest extends RestControllerTestBase {
     }
 
 
+    protected String versionPath() {
+        return Versions.STABLE;
+    }
+
     @Override
     protected Object controller() {
         return new IssuerHolderAdminApiController(authorizationService, holderService);
     }
 
-    private Holder createHolder(String id, String did, String name) {
+    protected Holder createHolder(String id, String did, String name) {
         return Holder.Builder.newInstance()
                 .participantContextId(PARTICIPANT_ID)
                 .holderId(id)
@@ -302,10 +220,10 @@ class IssuerHolderAdminApiControllerTest extends RestControllerTestBase {
                 .build();
     }
 
-    private RequestSpecification baseRequest() {
+    protected RequestSpecification baseRequest() {
         return given()
                 .contentType("application/json")
-                .baseUri("http://localhost:" + port + Versions.STABLE + "/participants/%s/holders".formatted(PARTICIPANT_ID_ENCODED))
+                .baseUri("http://localhost:" + port + versionPath() + "/participants/%s/holders".formatted(PARTICIPANT_ID_ENCODED))
                 .when();
     }
 }

@@ -40,10 +40,10 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 @ComponentTest
-class IssuanceProcessAdminApiControllerTest extends RestControllerTestBase {
+public class IssuanceProcessAdminApiControllerTest extends RestControllerTestBase {
 
-    private final IssuanceProcessService issuanceProcessService = mock();
-    private final AuthorizationService authService = mock();
+    protected final IssuanceProcessService issuanceProcessService = mock();
+    protected final AuthorizationService authService = mock();
 
     @BeforeEach
     void setUp() {
@@ -113,19 +113,23 @@ class IssuanceProcessAdminApiControllerTest extends RestControllerTestBase {
         assertThat(dto).isEmpty();
     }
 
+    protected String versionPath() {
+        return Versions.STABLE;
+    }
+
     @Override
     protected Object controller() {
         return new IssuanceProcessAdminApiController(issuanceProcessService, authService);
     }
 
-    private RequestSpecification baseRequest(String participantContextId) {
+    protected RequestSpecification baseRequest(String participantContextId) {
         return given()
                 .contentType("application/json")
-                .baseUri("http://localhost:" + port + Versions.STABLE + "/participants/%s/issuanceprocesses".formatted(participantContextId))
+                .baseUri("http://localhost:" + port + versionPath() + "/participants/%s/issuanceprocesses".formatted(participantContextId))
                 .when();
     }
 
-    private RequestSpecification baseRequest() {
+    protected RequestSpecification baseRequest() {
         return baseRequest("test-issuer");
     }
 

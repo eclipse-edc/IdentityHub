@@ -42,6 +42,8 @@ import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.Map;
 
@@ -80,13 +82,14 @@ public class AttestationApiEndToEndTest {
                     .forEach(pc -> pcService.deleteParticipantContext(pc.getParticipantContextId()).getContent());
         }
 
-        @Test
-        void createAttestationDefinition(IssuerService issuer, AttestationDefinitionStore store, IssuerService issuerService) {
+        @ParameterizedTest(name = "{0}")
+        @ValueSource(strings = {"/v1", "/v2alpha"})
+        void createAttestationDefinition(String version, IssuerService issuer, AttestationDefinitionStore store, IssuerService issuerService) {
             issuer.getAdminEndpoint().baseRequest()
                     .contentType(JSON)
                     .header(authorizeUser(USER, issuerService))
                     .body(createAttestationDefinition("test-id", "test-type", Map.of("foo", "bar")))
-                    .post("/v1/participants/%s/attestations".formatted(USER))
+                    .post(version + "/participants/%s/attestations".formatted(USER))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(201);
@@ -122,8 +125,9 @@ public class AttestationApiEndToEndTest {
 
         }
 
-        @Test
-        void queryAttestations(IssuerService issuer, AttestationDefinitionStore store, HolderStore holderStore) {
+        @ParameterizedTest(name = "{0}")
+        @ValueSource(strings = {"/v1", "/v2alpha"})
+        void queryAttestations(String version, IssuerService issuer, AttestationDefinitionStore store, HolderStore holderStore) {
 
             var p1 = createHolder("p1", "did:web:foobar", "Foo Bar");
             var p2 = createHolder("p2", "did:web:barbaz", "Bar Baz");
@@ -147,7 +151,7 @@ public class AttestationApiEndToEndTest {
                             .sortOrder(SortOrder.ASC)
                             .filter(criterion("attestationType", "=", "test-type"))
                             .build())
-                    .post("/v1/participants/%s/attestations/query".formatted(USER))
+                    .post(version + "/participants/%s/attestations/query".formatted(USER))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(200)

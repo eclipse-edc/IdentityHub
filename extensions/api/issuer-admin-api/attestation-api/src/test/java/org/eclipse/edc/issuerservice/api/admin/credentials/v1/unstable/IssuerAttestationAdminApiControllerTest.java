@@ -39,11 +39,11 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 @ApiTest
-class IssuerAttestationAdminApiControllerTest extends RestControllerTestBase {
+public class IssuerAttestationAdminApiControllerTest extends RestControllerTestBase {
 
-    private static final String PARTICIPANT_ID = "test-participant";
-    private final AttestationDefinitionService attestationDefinitionService = mock();
-    private final AuthorizationService authorizationService = mock();
+    protected static final String PARTICIPANT_ID = "test-participant";
+    protected final AttestationDefinitionService attestationDefinitionService = mock();
+    protected final AuthorizationService authorizationService = mock();
 
     @BeforeEach
     void setUp() {
@@ -61,7 +61,7 @@ class IssuerAttestationAdminApiControllerTest extends RestControllerTestBase {
                 .post()
                 .then()
                 .statusCode(201)
-                .header("Location", Matchers.endsWith("/attestations/test-id"));
+                .header("Location", Matchers.endsWith(versionPath() + "/participants/%s/attestations/test-id".formatted(PARTICIPANT_ID)));
     }
 
     @Test
@@ -148,15 +148,19 @@ class IssuerAttestationAdminApiControllerTest extends RestControllerTestBase {
                 .statusCode(400);
     }
 
+    protected String versionPath() {
+        return Versions.STABLE;
+    }
+
     @Override
     protected Object controller() {
         return new IssuerAttestationAdminApiController(authorizationService, attestationDefinitionService);
     }
 
-    private RequestSpecification baseRequest() {
+    protected RequestSpecification baseRequest() {
         return given()
                 .contentType("application/json")
-                .baseUri("http://localhost:" + port + Versions.STABLE + "/participants/%s/attestations".formatted(PARTICIPANT_ID))
+                .baseUri("http://localhost:" + port + versionPath() + "/participants/%s/attestations".formatted(PARTICIPANT_ID))
                 .when();
     }
 

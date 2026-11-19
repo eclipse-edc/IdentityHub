@@ -17,6 +17,7 @@ package org.eclipse.edc.issuerservice.api.admin.credentials;
 import org.eclipse.edc.api.auth.spi.AuthorizationService;
 import org.eclipse.edc.identityhub.spi.webcontext.IdentityHubApiContext;
 import org.eclipse.edc.issuerservice.api.admin.credentials.v1.unstable.IssuerAttestationAdminApiController;
+import org.eclipse.edc.issuerservice.api.admin.credentials.v2alpha.IssuerAttestationAdminApiV2AlphaController;
 import org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationDefinitionService;
 import org.eclipse.edc.issuerservice.spi.issuance.model.AttestationDefinition;
 import org.eclipse.edc.participantcontext.spi.types.ParticipantResource;
@@ -52,6 +53,7 @@ public class IssuerAttestationAdminApiExtension implements ServiceExtension {
         authorizationService.addLookupFunction(AttestationDefinition.class, this::findById);
         var controller = new IssuerAttestationAdminApiController(authorizationService, attestationDefinitionService);
         webService.registerResource(IdentityHubApiContext.ISSUERADMIN, controller);
+        webService.registerResource(IdentityHubApiContext.ISSUERADMIN, new IssuerAttestationAdminApiV2AlphaController(authorizationService, attestationDefinitionService));
     }
 
     private ParticipantResource findById(String owner, String id) {
