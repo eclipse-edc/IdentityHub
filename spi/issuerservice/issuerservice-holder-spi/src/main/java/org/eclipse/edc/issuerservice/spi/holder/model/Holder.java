@@ -20,6 +20,7 @@ import org.eclipse.edc.participantcontext.spi.types.AbstractParticipantResource;
 import tools.jackson.databind.annotation.JsonDeserialize;
 import tools.jackson.databind.annotation.JsonPOJOBuilder;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -67,6 +68,18 @@ public class Holder extends AbstractParticipantResource {
 
     public Map<String, Object> getProperties() {
         return properties;
+    }
+
+    /**
+     * Updates the properties of this holder in place and sets the last-modified timestamp.
+     *
+     * @param updated entries to add. The value of an existing key is replaced.
+     * @param removed keys to remove. Keys that this holder does not have are ignored.
+     */
+    public void updateProperties(Map<String, Object> updated, Collection<String> removed) {
+        properties.putAll(updated);
+        properties.keySet().removeAll(removed);
+        lastModifiedAt = clock.millis();
     }
 
 

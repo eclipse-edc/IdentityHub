@@ -21,7 +21,7 @@ import org.eclipse.edc.identityhub.spi.participantcontext.IdentityHubParticipant
 import org.eclipse.edc.identityhub.tests.fixtures.DefaultRuntimes;
 import org.eclipse.edc.identityhub.tests.fixtures.SharedPostgresqlEndToEndExtension;
 import org.eclipse.edc.identityhub.tests.fixtures.issuerservice.IssuerService;
-import org.eclipse.edc.issuerservice.api.admin.holder.v1.unstable.model.HolderDto;
+import org.eclipse.edc.issuerservice.api.admin.holder.v1.model.HolderDto;
 import org.eclipse.edc.issuerservice.spi.holder.HolderService;
 import org.eclipse.edc.issuerservice.spi.holder.model.Holder;
 import org.eclipse.edc.junit.annotations.EndToEndTest;
@@ -38,6 +38,8 @@ import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.RegisterExtension;
+
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.edc.identityhub.tests.TestData.ISSUER_RUNTIME_NAME;
@@ -177,6 +179,146 @@ public class HolderApiEndToEndTest {
                     .then()
                     .statusCode(403);
 
+        }
+
+        @Test
+        void patchHolder(IssuerService issuer, HolderService service) {
+            var initialHolder = Holder.Builder.newInstance()
+                    .participantContextId(USER)
+                    .holderId("test-participant-id")
+                    .did("did:web:foo")
+                    .holderName("Foo")
+                    .property("role", "member")
+                    .property("region", "eu")
+                    .build();
+            service.createHolder(initialHolder);
+
+            issuer.getAdminEndpoint().baseRequest()
+                    .contentType(ContentType.JSON)
+                    .header(authorizeUser(USER, issuer))
+                    .body("""
+                            {
+                              "did": "did:web:foo",
+                              "name": "Foo",
+                              "properties": {
+                                "role": "operator",
+                                "tier": "gold"
+                              },
+                              "removed": ["region"]
+                            }
+                            """)
+                    .patch("/v1/participants/%s/holders/%s".formatted(USER, "test-participant-id"))
+                    .then()
+                    .statusCode(200)
+                    .body("holderId", Matchers.equalTo("test-participant-id"))
+                    .body("properties.role", Matchers.equalTo("operator"));
+
+            assertThat(service.findById(USER, "test-participant-id")).isSucceeded()
+                    .satisfies(holder -> {
+                        assertThat(holder.getDid()).isEqualTo("did:web:foo");
+                        assertThat(holder.getHolderName()).isEqualTo("Foo");
+                        assertThat(holder.getProperties()).containsOnly(Map.entry("role", "operator"), Map.entry("tier", "gold"));
+                    });
+        }
+
+        @Test
+        void patchHolder_notFound(IssuerService issuer) {
+            issuer.getAdminEndpoint().baseRequest()
+                    .contentType(ContentType.JSON)
+                    .header(authorizeUser(USER, issuer))
+                    .body("""
+                            {
+                              "did": "did:web:foo",
+                              "name": "Foo"
+                            }
+                            """)
+                    .patch("/v1/participants/%s/holders/%s".formatted(USER, "test-participant-id"))
+                    .then()
+                    .statusCode(404);
+        }
+
+        @Test
+        void patchHolder_whenDidDoesNotMatch(IssuerService issuer, HolderService service) {
+            service.createHolder(createHolder("test-participant-id", "did:web:foo", "Foo"));
+
+            issuer.getAdminEndpoint().baseRequest()
+                    .contentType(ContentType.JSON)
+                    .header(authorizeUser(USER, issuer))
+                    .body("""
+                            {
+                              "did": "did:web:bar",
+                              "name": "Foo",
+                              "properties": {
+                                "role": "operator",
+                                "tier": "gold"
+                              },
+                              "removed": ["region"]
+                            }
+                            """)
+                    .patch("/v1/participants/%s/holders/%s".formatted(USER, "test-participant-id"))
+                    .then()
+                    .statusCode(400);
+
+            assertThat(service.findById(USER, "test-participant-id")).isSucceeded()
+                    .satisfies(holder -> {
+                        assertThat(holder.getDid()).isEqualTo("did:web:foo");
+                        assertThat(holder.getProperties()).isEmpty();
+                    });
+        }
+
+        @Test
+        void patchHolder_whenNameDoesNotMatch(IssuerService issuer, HolderService service) {
+            service.createHolder(createHolder("test-participant-id", "did:web:foo", "Foo"));
+
+            issuer.getAdminEndpoint().baseRequest()
+                    .contentType(ContentType.JSON)
+                    .header(authorizeUser(USER, issuer))
+                    .body("""
+                            {
+                              "did": "did:web:foo",
+                              "name": "Bar",
+                              "properties": {
+                                "role": "operator",
+                                "tier": "gold"
+                              },
+                              "removed": ["region"]
+                            }
+                            """)
+                    .patch("/v1/participants/%s/holders/%s".formatted(USER, "test-participant-id"))
+                    .then()
+                    .statusCode(400);
+
+            assertThat(service.findById(USER, "test-participant-id")).isSucceeded()
+                    .satisfies(holder -> {
+                        assertThat(holder.getHolderName()).isEqualTo("Foo");
+                        assertThat(holder.getProperties()).isEmpty();
+                    });
+        }
+
+        @Test
+        void patchHolder_notAuthorized(IssuerService issuer, HolderService service) {
+            service.createHolder(createHolder("test-participant-id", "did:web:foo", "Foo"));
+
+            issuer.getAdminEndpoint().baseRequest()
+                    .contentType(ContentType.JSON)
+                    .header(authorizeUser("anotherUser", issuer))
+                    .body("""
+                            {
+                              "did": "did:web:foo",
+                              "name": "Foo",
+                              "properties": {
+                                "role": "operator",
+                                "tier": "gold"
+                              },
+                              "removed": ["region"]
+                            }
+                            """)
+                    .patch("/v1/participants/%s/holders/%s".formatted(USER, "test-participant-id"))
+                    .then()
+                    .statusCode(403);
+
+            assertThat(service.findById(USER, "test-participant-id")).isSucceeded()
+                    .satisfies(holder -> assertThat(holder.getProperties()).isEmpty());
         }
 
         @Test

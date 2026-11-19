@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2025 Cofinity-X
+ *  Copyright (c) 2026 Metaform Systems, Inc.
  *
  *  This program and the accompanying materials are made available under the
  *  terms of the Apache License, Version 2.0 which is available at
@@ -8,11 +8,11 @@
  *  SPDX-License-Identifier: Apache-2.0
  *
  *  Contributors:
- *       Cofinity-X - initial API and implementation
+ *       Metaform Systems, Inc. - initial API and implementation
  *
  */
 
-package org.eclipse.edc.issuerservice.api.admin.holder.v1.unstable;
+package org.eclipse.edc.issuerservice.api.admin.holder.v1;
 
 import io.swagger.v3.oas.annotations.OpenAPIDefinition;
 import io.swagger.v3.oas.annotations.Operation;
@@ -25,7 +25,8 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.SecurityContext;
-import org.eclipse.edc.issuerservice.api.admin.holder.v1.unstable.model.HolderDto;
+import org.eclipse.edc.issuerservice.api.admin.holder.v1.model.HolderDto;
+import org.eclipse.edc.issuerservice.api.admin.holder.v1.model.HolderPatchDto;
 import org.eclipse.edc.issuerservice.spi.holder.model.Holder;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.web.spi.ApiErrorDetail;
@@ -78,6 +79,24 @@ public interface IssuerHolderAdminApi {
             }
     )
     Response updateHolder(String participantContextId, HolderDto holder, SecurityContext context);
+
+    @Operation(description = "Updates the properties of a holder. 'did' and 'name' must be equal to those of the stored holder and cannot be changed. " +
+            "The entries of 'properties' are added to the holder's properties, replacing the values of existing keys, and the keys in " +
+            "'removed' are removed. Everything else is left as it is.",
+            operationId = "patchHolder",
+            requestBody = @RequestBody(content = @Content(schema = @Schema(implementation = HolderPatchDto.class), mediaType = "application/json")),
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "The holder was updated successfully. The response contains the updated holder.",
+                            content = @Content(schema = @Schema(implementation = Holder.class), mediaType = "application/json")),
+                    @ApiResponse(responseCode = "400", description = "Request body was malformed, or the DID or the name do not match the stored holder",
+                            content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json")),
+                    @ApiResponse(responseCode = "401", description = "The request could not be completed, because either the authentication was missing or was not valid.",
+                            content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json")),
+                    @ApiResponse(responseCode = "404", description = "Can't update the holder because it was not found.",
+                            content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json"))
+            }
+    )
+    Holder patchHolder(String participantContextId, String holderId, HolderPatchDto patch, SecurityContext context);
 
     @Operation(description = "Gets metadata for a certain holder.",
             operationId = "getHolderById",
