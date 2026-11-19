@@ -28,8 +28,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.eclipse.edc.identityhub.tests.TestData.ISSUER_RUNTIME_NAME;
 
@@ -65,23 +63,21 @@ public class IssuerServiceOauth2ScopeEndToEndTest {
                 .forEach(pc -> pcService.deleteParticipantContext(pc.getParticipantContextId()).getContent());
     }
 
-    @ParameterizedTest(name = "{0}")
-    @ValueSource(strings = {"/v1", "/v2alpha"})
-    void issuerAdminApi_readScope_canRead(String version, IssuerService issuer) {
+    @Test
+    void issuerAdminApi_readScope_canRead(IssuerService issuer) {
         issuer.createParticipant(USER);
 
         issuer.getAdminEndpoint().baseRequest()
                 .contentType(ContentType.JSON)
                 .header(authorize("issuer-admin-api:read"))
                 .body(QuerySpec.max())
-                .post(version + "/participants/%s/holders/query".formatted(USER))
+                .post("/v1/participants/%s/holders/query".formatted(USER))
                 .then()
                 .statusCode(200);
     }
 
-    @ParameterizedTest(name = "{0}")
-    @ValueSource(strings = {"/v1", "/v2alpha"})
-    void issuerAdminApi_readScope_cannotWrite(String version, IssuerService issuer) {
+    @Test
+    void issuerAdminApi_readScope_cannotWrite(IssuerService issuer) {
         issuer.createParticipant(USER);
 
         issuer.getAdminEndpoint().baseRequest()
@@ -94,7 +90,7 @@ public class IssuerServiceOauth2ScopeEndToEndTest {
                           "name": null
                         }
                         """)
-                .post(version + "/participants/%s/holders".formatted(USER))
+                .post("/v1/participants/%s/holders".formatted(USER))
                 .then()
                 .statusCode(403);
     }

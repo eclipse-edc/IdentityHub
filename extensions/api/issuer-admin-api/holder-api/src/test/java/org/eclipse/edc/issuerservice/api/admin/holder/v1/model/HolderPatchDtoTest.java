@@ -12,7 +12,7 @@
  *
  */
 
-package org.eclipse.edc.issuerservice.api.admin.holder.v2alpha.model;
+package org.eclipse.edc.issuerservice.api.admin.holder.v1.model;
 
 import org.junit.jupiter.api.Test;
 

@@ -4,11 +4,5 @@
     "urlPath": "/v1",
     "lastUpdated": "2026-11-02T14:06:00Z",
     "maturity": "stable"
-  },
-  {
-    "version": "2.0.0-alpha",
-    "urlPath": "/v2alpha",
-    "lastUpdated": "2026-11-18T17:00:00Z",
-    "maturity": "alpha"
   }
 ]

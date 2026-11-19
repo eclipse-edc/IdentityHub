@@ -61,7 +61,7 @@ public class IssuerAttestationAdminApiController implements IssuerAttestationAdm
 
         return authorizationService.authorize(securityContext, participantContextId, participantContextId, IdentityHubParticipantContext.class)
                 .compose(u -> attestationDefinitionService.createAttestation(createAttestationDefinition(participantContextId, attestationRequest)))
-                .map(u -> Response.created(URI.create(versionPath() + "/participants/%s/attestations/%s".formatted(participantContextId, attestationRequest.id()))).build())
+                .map(u -> Response.created(URI.create(Versions.STABLE + "/participants/%s/attestations/%s".formatted(participantContextId, attestationRequest.id()))).build())
                 .orElseThrow(AuthorizationResultHandler.exceptionMapper(AttestationDefinition.class));
     }
 
@@ -99,13 +99,5 @@ public class IssuerAttestationAdminApiController implements IssuerAttestationAdm
                 .configuration(attestationRequest.configuration())
                 .privateProperties(attestationRequest.privateProperties())
                 .build();
-    }
-
-    /**
-     * The URL path of the API version this controller is served under, e.g. {@code /v1}. Used to build the {@code Location}
-     * header of newly created resources.
-     */
-    protected String versionPath() {
-        return Versions.STABLE;
     }
 }

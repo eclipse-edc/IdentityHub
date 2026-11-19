@@ -38,8 +38,6 @@ import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.Map;
 
@@ -65,9 +63,8 @@ public class HolderApiEndToEndTest {
 
         }
 
-        @ParameterizedTest(name = "{0}")
-        @ValueSource(strings = {"/v1", "/v2alpha"})
-        void createHolder(String version, IssuerService issuer) {
+        @Test
+        void createHolder(IssuerService issuer) {
             issuer.getAdminEndpoint().baseRequest()
                     .contentType(ContentType.JSON)
                     .header(authorizeUser(USER, issuer))
@@ -78,10 +75,10 @@ public class HolderApiEndToEndTest {
                               "name": null
                             }
                             """)
-                    .post(version + "/participants/%s/holders".formatted(USER))
+                    .post("/v1/participants/%s/holders".formatted(USER))
                     .then()
                     .statusCode(201)
-                    .header("Location", Matchers.endsWith(version + "/participants/%s/holders/test-participant-id".formatted(USER)));
+                    .header("Location", Matchers.endsWith("/holders/test-participant-id"));
         }
 
         @Test
@@ -210,7 +207,7 @@ public class HolderApiEndToEndTest {
                               "removed": ["region"]
                             }
                             """)
-                    .patch("/v2alpha/participants/%s/holders/%s".formatted(USER, "test-participant-id"))
+                    .patch("/v1/participants/%s/holders/%s".formatted(USER, "test-participant-id"))
                     .then()
                     .statusCode(200)
                     .body("holderId", Matchers.equalTo("test-participant-id"))
@@ -235,7 +232,7 @@ public class HolderApiEndToEndTest {
                               "name": "Foo"
                             }
                             """)
-                    .patch("/v2alpha/participants/%s/holders/%s".formatted(USER, "test-participant-id"))
+                    .patch("/v1/participants/%s/holders/%s".formatted(USER, "test-participant-id"))
                     .then()
                     .statusCode(404);
         }
@@ -258,7 +255,7 @@ public class HolderApiEndToEndTest {
                               "removed": ["region"]
                             }
                             """)
-                    .patch("/v2alpha/participants/%s/holders/%s".formatted(USER, "test-participant-id"))
+                    .patch("/v1/participants/%s/holders/%s".formatted(USER, "test-participant-id"))
                     .then()
                     .statusCode(400);
 
@@ -287,7 +284,7 @@ public class HolderApiEndToEndTest {
                               "removed": ["region"]
                             }
                             """)
-                    .patch("/v2alpha/participants/%s/holders/%s".formatted(USER, "test-participant-id"))
+                    .patch("/v1/participants/%s/holders/%s".formatted(USER, "test-participant-id"))
                     .then()
                     .statusCode(400);
 
@@ -316,7 +313,7 @@ public class HolderApiEndToEndTest {
                               "removed": ["region"]
                             }
                             """)
-                    .patch("/v2alpha/participants/%s/holders/%s".formatted(USER, "test-participant-id"))
+                    .patch("/v1/participants/%s/holders/%s".formatted(USER, "test-participant-id"))
                     .then()
                     .statusCode(403);
 
@@ -360,15 +357,14 @@ public class HolderApiEndToEndTest {
             assertThat(res).isEmpty();
         }
 
-        @ParameterizedTest(name = "{0}")
-        @ValueSource(strings = {"/v1", "/v2alpha"})
-        void getById(String version, IssuerService issuer, HolderService service) {
+        @Test
+        void getById(IssuerService issuer, HolderService service) {
             var expectedParticipant = createHolder("test-participant-id", "did:web:foo", "foobar");
             service.createHolder(expectedParticipant);
 
             var res = issuer.getAdminEndpoint().baseRequest()
                     .header(authorizeUser(USER, issuer))
-                    .get(version + "/participants/%s/holders/test-participant-id".formatted(USER))
+                    .get("/v1/participants/%s/holders/test-participant-id".formatted(USER))
                     .then()
                     .statusCode(200)
                     .body(Matchers.notNullValue())

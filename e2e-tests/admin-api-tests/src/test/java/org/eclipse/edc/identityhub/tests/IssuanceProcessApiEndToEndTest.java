@@ -38,8 +38,6 @@ import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.List;
 import java.util.Map;
@@ -62,9 +60,8 @@ public class IssuanceProcessApiEndToEndTest {
 
         }
 
-        @ParameterizedTest(name = "{0}")
-        @ValueSource(strings = {"/v1", "/v2alpha"})
-        void getIssuanceProcess(String version, IssuerService issuerService, IssuanceProcessStore store) {
+        @Test
+        void getIssuanceProcess(IssuerService issuerService, IssuanceProcessStore store) {
             var issuer = "issuer";
 
             var process = createIssuanceProcess(issuer);
@@ -73,7 +70,7 @@ public class IssuanceProcessApiEndToEndTest {
             issuerService.getAdminEndpoint().baseRequest()
                     .contentType(JSON)
                     .header(authorizeUser(issuer, issuerService))
-                    .get(version + "/participants/%s/issuanceprocesses/%s".formatted(issuer, process.getId()))
+                    .get("/v1/participants/%s/issuanceprocesses/%s".formatted(issuer, process.getId()))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(200)
@@ -86,9 +83,8 @@ public class IssuanceProcessApiEndToEndTest {
                     .body("holderId", equalTo(process.getHolderId()));
         }
 
-        @ParameterizedTest(name = "{0}")
-        @ValueSource(strings = {"/v1", "/v2alpha"})
-        void getIssuanceProcess_notAuthorized(String version, IssuerService issuerService, IssuanceProcessStore store) {
+        @Test
+        void getIssuanceProcess_notAuthorized(IssuerService issuerService, IssuanceProcessStore store) {
             var issuer = "issuer";
             var issuer2 = "issuer2";
             issuerService.createParticipant(issuer);
@@ -99,7 +95,7 @@ public class IssuanceProcessApiEndToEndTest {
             issuerService.getAdminEndpoint().baseRequest()
                     .contentType(JSON)
                     .header(authorizeUser(issuer2, issuerService))
-                    .get(version + "/participants/%s/issuanceprocesses/%s".formatted(issuer, process.getId()))
+                    .get("/v1/participants/%s/issuanceprocesses/%s".formatted(issuer, process.getId()))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(403);

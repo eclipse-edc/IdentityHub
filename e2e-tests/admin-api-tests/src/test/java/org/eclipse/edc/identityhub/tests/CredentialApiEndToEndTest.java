@@ -60,8 +60,6 @@ import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.ObjectMapper;
@@ -171,9 +169,8 @@ public class CredentialApiEndToEndTest {
                     .forEach(holder -> holderStore.deleteById(holder.getParticipantContextId(), holder.getHolderId()).getContent());
         }
 
-        @ParameterizedTest(name = "{0}")
-        @ValueSource(strings = {"/v1", "/v2alpha"})
-        void revoke_whenNotYetRevoked(String version, IssuerService issuer, CredentialStore credentialStore) {
+        @Test
+        void revoke_whenNotYetRevoked(IssuerService issuer, CredentialStore credentialStore) {
             var statusListCredential = createRevocationCredential(exampleRevocationCredential(STATUS_LIST_CREDENTIAL_URL), EXAMPLE_REVOCATION_CREDENTIAL_JWT);
             // track the original bitstring
             var originalBitstring = statusListCredential.getVerifiableCredential().credential().getCredentialSubject().get(0).getClaim("", "encodedList");
@@ -184,7 +181,7 @@ public class CredentialApiEndToEndTest {
                     .baseRequest()
                     .contentType(JSON)
                     .header(authorizeUser(USER, issuer))
-                    .post(version + "/participants/%s/credentials/test-cred/revoke".formatted(USER))
+                    .post("/v1/participants/%s/credentials/test-cred/revoke".formatted(USER))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(204);
@@ -372,9 +369,8 @@ public class CredentialApiEndToEndTest {
 
         }
 
-        @ParameterizedTest(name = "{0}")
-        @ValueSource(strings = {"/v1", "/v2alpha"})
-        void checkStatus(String version, IssuerService issuer, CredentialStore credentialStore) {
+        @Test
+        void checkStatus(IssuerService issuer, CredentialStore credentialStore) {
 
             // create revocation credential
             var res = createRevocationCredential(exampleRevocationCredential(STATUS_LIST_CREDENTIAL_URL), EXAMPLE_REVOCATION_CREDENTIAL_JWT);
@@ -386,7 +382,7 @@ public class CredentialApiEndToEndTest {
             issuer.getAdminEndpoint()
                     .baseRequest()
                     .header(authorizeUser(USER, issuer))
-                    .get(version + "/participants/%s/credentials/test-cred/status".formatted(USER))
+                    .get("/v1/participants/%s/credentials/test-cred/status".formatted(USER))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(200)

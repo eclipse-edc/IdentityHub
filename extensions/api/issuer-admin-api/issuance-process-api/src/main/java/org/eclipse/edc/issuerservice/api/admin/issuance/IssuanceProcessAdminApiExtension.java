@@ -17,7 +17,6 @@ package org.eclipse.edc.issuerservice.api.admin.issuance;
 import org.eclipse.edc.api.auth.spi.AuthorizationService;
 import org.eclipse.edc.identityhub.spi.webcontext.IdentityHubApiContext;
 import org.eclipse.edc.issuerservice.api.admin.issuance.v1.unstable.IssuanceProcessAdminApiController;
-import org.eclipse.edc.issuerservice.api.admin.issuance.v2alpha.IssuanceProcessAdminApiV2AlphaController;
 import org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcess;
 import org.eclipse.edc.issuerservice.spi.issuance.process.IssuanceProcessService;
 import org.eclipse.edc.participantcontext.spi.types.ParticipantResource;
@@ -54,7 +53,6 @@ public class IssuanceProcessAdminApiExtension implements ServiceExtension {
 
         var controller = new IssuanceProcessAdminApiController(issuanceProcessService, authorizationService);
         webService.registerResource(IdentityHubApiContext.ISSUERADMIN, controller);
-        webService.registerResource(IdentityHubApiContext.ISSUERADMIN, new IssuanceProcessAdminApiV2AlphaController(issuanceProcessService, authorizationService));
     }
 
     private ParticipantResource findById(String owner, String id) {

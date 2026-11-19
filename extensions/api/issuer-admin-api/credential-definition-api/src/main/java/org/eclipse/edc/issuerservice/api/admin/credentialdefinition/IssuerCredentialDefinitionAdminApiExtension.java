@@ -18,7 +18,6 @@ import org.eclipse.edc.api.auth.spi.AuthorizationService;
 import org.eclipse.edc.identityhub.protocols.dcp.issuer.spi.DcpIssuerProfile;
 import org.eclipse.edc.identityhub.spi.webcontext.IdentityHubApiContext;
 import org.eclipse.edc.issuerservice.api.admin.credentialdefinition.v1.unstable.IssuerCredentialDefinitionAdminApiController;
-import org.eclipse.edc.issuerservice.api.admin.credentialdefinition.v2alpha.IssuerCredentialDefinitionAdminApiV2AlphaController;
 import org.eclipse.edc.issuerservice.spi.issuance.credentialdefinition.CredentialDefinitionService;
 import org.eclipse.edc.issuerservice.spi.issuance.model.CredentialDefinition;
 import org.eclipse.edc.participantcontext.spi.types.ParticipantResource;
@@ -55,7 +54,6 @@ public class IssuerCredentialDefinitionAdminApiExtension implements ServiceExten
         authorizationService.addLookupFunction(CredentialDefinition.class, this::findById);
         var controller = new IssuerCredentialDefinitionAdminApiController(authorizationService, credentialDefinitionService, issuerProfile);
         webService.registerResource(IdentityHubApiContext.ISSUERADMIN, controller);
-        webService.registerResource(IdentityHubApiContext.ISSUERADMIN, new IssuerCredentialDefinitionAdminApiV2AlphaController(authorizationService, credentialDefinitionService, issuerProfile));
     }
 
     private ParticipantResource findById(String owner, String id) {

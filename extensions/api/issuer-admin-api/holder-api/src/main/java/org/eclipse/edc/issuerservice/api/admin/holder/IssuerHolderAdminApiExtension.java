@@ -17,7 +17,6 @@ package org.eclipse.edc.issuerservice.api.admin.holder;
 import org.eclipse.edc.api.auth.spi.AuthorizationService;
 import org.eclipse.edc.identityhub.spi.webcontext.IdentityHubApiContext;
 import org.eclipse.edc.issuerservice.api.admin.holder.v1.IssuerHolderAdminApiController;
-import org.eclipse.edc.issuerservice.api.admin.holder.v2alpha.IssuerHolderAdminApiV2AlphaController;
 import org.eclipse.edc.issuerservice.spi.holder.HolderService;
 import org.eclipse.edc.issuerservice.spi.holder.model.Holder;
 import org.eclipse.edc.participantcontext.spi.types.ParticipantResource;
@@ -52,7 +51,6 @@ public class IssuerHolderAdminApiExtension implements ServiceExtension {
         authorizationService.addLookupFunction(Holder.class, this::findById);
         var controller = new IssuerHolderAdminApiController(authorizationService, holderService);
         webService.registerResource(IdentityHubApiContext.ISSUERADMIN, controller);
-        webService.registerResource(IdentityHubApiContext.ISSUERADMIN, new IssuerHolderAdminApiV2AlphaController(authorizationService, holderService));
     }
 
     private ParticipantResource findById(String owner, String id) {

@@ -46,14 +46,14 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ComponentTest
-public class IssuerCredentialDefinitionAdminApiControllerTest extends RestControllerTestBase {
+class IssuerCredentialDefinitionAdminApiControllerTest extends RestControllerTestBase {
 
-    protected static final String PARTICIPANT_ID = "test-participant";
-    protected static final String PARTICIPANT_ID_ENCODED = Base64.getUrlEncoder().encodeToString(PARTICIPANT_ID.getBytes());
+    private static final String PARTICIPANT_ID = "test-participant";
+    private static final String PARTICIPANT_ID_ENCODED = Base64.getUrlEncoder().encodeToString(PARTICIPANT_ID.getBytes());
 
-    protected final CredentialDefinitionService credentialDefinitionService = mock();
-    protected final AuthorizationService authorizationService = mock();
-    protected final DcpIssuerProfile issuerProfile = () -> new DcpProfile("vc20-bssl/jwt", VC2_0_JOSE, "BitstringStatusListEntry");
+    private final CredentialDefinitionService credentialDefinitionService = mock();
+    private final AuthorizationService authorizationService = mock();
+    private final DcpIssuerProfile issuerProfile = () -> new DcpProfile("vc20-bssl/jwt", VC2_0_JOSE, "BitstringStatusListEntry");
 
     @BeforeEach
     void setUp() {
@@ -70,7 +70,7 @@ public class IssuerCredentialDefinitionAdminApiControllerTest extends RestContro
                 .then()
                 .log().ifValidationFails()
                 .statusCode(201)
-                .header("Location", endsWith(versionPath() + "/participants/%s/credentialdefinitions/test-id".formatted(PARTICIPANT_ID_ENCODED)))
+                .header("Location", endsWith("/credentialdefinitions/test-id"))
                 .body(emptyString());
 
         // the format of the request is not used, but that of the issuer's DCP profile
@@ -177,19 +177,15 @@ public class IssuerCredentialDefinitionAdminApiControllerTest extends RestContro
         assertThat(dto).isEmpty();
     }
 
-    protected String versionPath() {
-        return Versions.STABLE;
-    }
-
     @Override
     protected Object controller() {
         return new IssuerCredentialDefinitionAdminApiController(authorizationService, credentialDefinitionService, issuerProfile);
     }
 
-    protected RequestSpecification baseRequest() {
+    private RequestSpecification baseRequest() {
         return given()
                 .contentType("application/json")
-                .baseUri("http://localhost:" + port + versionPath() + "/participants/%s/credentialdefinitions".formatted(PARTICIPANT_ID_ENCODED))
+                .baseUri("http://localhost:" + port + Versions.STABLE + "/participants/%s/credentialdefinitions".formatted(PARTICIPANT_ID_ENCODED))
                 .when();
     }
 

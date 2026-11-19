@@ -65,7 +65,7 @@ public class IssuerCredentialDefinitionAdminApiController implements IssuerCrede
     public Response createCredentialDefinition(@PathParam("participantContextId") String participantContextId, CredentialDefinitionDto definitionDto, @Context SecurityContext context) {
         return authorizationService.authorize(context, participantContextId, participantContextId, IdentityHubParticipantContext.class)
                 .compose(u -> credentialDefinitionService.createCredentialDefinition(definitionDto.toCredentialDefinition(participantContextId, issuerProfile.get().format())))
-                .map(v -> Response.created(URI.create(versionPath() + "/participants/%s/credentialdefinitions/%s".formatted(participantContextId, definitionDto.getId()))).build())
+                .map(v -> Response.created(URI.create(Versions.STABLE + "/participants/%s/credentialdefinitions/%s".formatted(participantContextId, definitionDto.getId()))).build())
                 .orElseThrow(exceptionMapper(CredentialDefinition.class, definitionDto.getId()));
     }
 
@@ -111,13 +111,5 @@ public class IssuerCredentialDefinitionAdminApiController implements IssuerCrede
         authorizationService.authorize(context, participantContextId, credentialDefinitionId, CredentialDefinition.class)
                 .compose(u -> credentialDefinitionService.deleteCredentialDefinition(participantContextId, credentialDefinitionId))
                 .orElseThrow(exceptionMapper(CredentialDefinition.class, credentialDefinitionId));
-    }
-
-    /**
-     * The URL path of the API version this controller is served under, e.g. {@code /v1}. Used to build the {@code Location}
-     * header of newly created resources.
-     */
-    protected String versionPath() {
-        return Versions.STABLE;
     }
 }
