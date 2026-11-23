@@ -135,7 +135,7 @@ public class DcpPresentationFlowWithDockerTest {
 
         var response = createParticipant(identityHub, baseCredentialServiceUrl);
 
-        try (var tckContainer = new GenericContainer<>("eclipsedataspacetck/dcp-tck-runtime:1.2.1")
+        try (var tckContainer = new GenericContainer<>("eclipsedataspacetck/dcp-tck-runtime:1.2.2")
                 .withExtraHost("host.docker.internal", "host-gateway")
                 .withExposedPorts(CALLBACK_PORT)
                 .withEnv(Map.ofEntries(
